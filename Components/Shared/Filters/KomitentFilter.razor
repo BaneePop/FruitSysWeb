@@ -1,0 +1,50 @@
+@using FruitSysWeb.Models  <!-- DODAJTE OVO -->
+@using FruitSysWeb.Services
+@inject KomitentService KomitentService
+
+<div class="col-md-@Size mb-3">
+    <label class="form-label fw-bold">@Label</label>
+    <select class="form-select" @bind="SelectedKomitentId" @onchange="HandleKomitentChange">
+        <option value="">@DefaultText</option>
+        @foreach (var komitent in komitenti)
+        {
+            <option value="@komitent.Id">@komitent.Naziv</option>  <!-- Id umesto ID -->
+        }
+    </select>
+</div>
+
+@code {
+    private List<Komitent> komitenti = new();
+
+    [Parameter] public string Label { get; set; } = "Komitent";
+    [Parameter] public string DefaultText { get; set; } = "Svi komitenti";
+    [Parameter] public long? SelectedKomitentId { get; set; }
+    [Parameter] public EventCallback<long?> SelectedKomitentIdChanged { get; set; }
+    [Parameter] public int Size { get; set; } = 2;
+    [Parameter] public string? KomitentTip { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        komitenti = await KomitentService.UcitajSveKomitente();
+        
+        if (!string.IsNullOrEmpty(KomitentTip))
+        {
+            // Uklonite ovaj deo koji koristi 'Tip' property koji ne postoji
+            // ili dodajte Tip property u Komitent model
+            komitenti = komitenti.ToList(); // Privremeno uklonite filter
+        }
+    }
+
+    private async Task HandleKomitentChange(ChangeEventArgs e)
+    {
+        if (long.TryParse(e.Value?.ToString(), out long id))
+        {
+            SelectedKomitentId = id;
+        }
+        else
+        {
+            SelectedKomitentId = null;
+        }
+        await SelectedKomitentIdChanged.InvokeAsync(SelectedKomitentId);
+    }
+}

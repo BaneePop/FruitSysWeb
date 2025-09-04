@@ -1,0 +1,524 @@
+@page "/izvjestaji"
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Components.Shared.Filters
+@using FruitSysWeb.Components.Shared.Layout
+@inject IFinansijeService FinansijeService
+@inject IProizvodnjaService ProizvodnjaService
+@inject IExportService ExportService
+@inject IJSRuntime JSRuntime
+
+<style>
+    .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .report-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border-left: 4px solid #198754;
+        height: 100%;
+    }
+    
+    .report-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    
+    .report-icon {
+        font-size: 2rem;
+        color: #198754;
+        margin-bottom: 1rem;
+    }
+    
+    .report-title {
+        font-weight: 600;
+        color: #0f5132;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .report-desc {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+        min-height: 40px;
+    }
+    
+    .report-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .report-btn {
+        flex: 1;
+        min-width: 120px;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+    }
+    
+    .report-btn-primary {
+        background: #198754;
+        color: white;
+    }
+    
+    .report-btn-primary:hover {
+        background: #0f5132;
+    }
+    
+    .report-btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .report-btn-secondary:hover {
+        background: #495057;
+    }
+    
+    .custom-report-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+</style>
+
+<!-- Header -->
+<div class="financial-header text-white py-4 mb-4">
+    <div class="container-fluid">
+        <h1 class="h2 mb-1">
+            <i class="bi bi-clipboard-data me-2"></i>Izveštaji
+        </h1>
+        <p class="mb-0">Generisanje i pregled poslovnih izveštaja</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Quick Reports Grid -->
+    <div class="reports-grid">
+        <!-- Finansijski izveštaji -->
+        <div class="report-card">
+            <div class="report-icon">
+                <i class="bi bi-cash-coin"></i>
+            </div>
+            <div class="report-title">Finansijski Izveštaji</div>
+            <div class="report-desc">
+                Kompletni pregled prihoda, rashoda, salda i prometa po komitentima
+            </div>
+            <div class="report-actions">
+                <button class="report-btn report-btn-primary" @onclick="GenerisiFinansijskiIzvestaj">
+                    <i class="bi bi-file-earmark-text me-1"></i>Pregled
+                </button>
+                <button class="report-btn report-btn-secondary" @onclick="ExportFinansijeExcel">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Proizvodnja izveštaji -->
+        <div class="report-card">
+            <div class="report-icon">
+                <i class="bi bi-gear"></i>
+            </div>
+            <div class="report-title">Proizvodnja Izveštaji</div>
+            <div class="report-desc">
+                Analiza radnih naloga, efikasnosti proizvodnje i utroška sirovina
+            </div>
+            <div class="report-actions">
+                <button class="report-btn report-btn-primary" @onclick="GenerisiProizvodnjaIzvestaj">
+                    <i class="bi bi-file-earmark-text me-1"></i>Pregled
+                </button>
+                <button class="report-btn report-btn-secondary" @onclick="ExportProizvodnjaExcel">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Lager izveštaji -->
+        <div class="report-card">
+            <div class="report-icon">
+                <i class="bi bi-boxes"></i>
+            </div>
+            <div class="report-title">Lager Izveštaji</div>
+            <div class="report-desc">
+                Stanje zaliha, promet robe, upozorenja za minimalne zalihe
+            </div>
+            <div class="report-actions">
+                <button class="report-btn report-btn-primary" @onclick="GenerisiLagerIzvestaj">
+                    <i class="bi bi-file-earmark-text me-1"></i>Pregled
+                </button>
+                <button class="report-btn report-btn-secondary" @onclick="ExportLagerExcel">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Analitički izveštaji -->
+        <div class="report-card">
+            <div class="report-icon">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="report-title">Analitički Izveštaji</div>
+            <div class="report-desc">
+                Trend analize, KPI pokazatelji, uporedni pregledi po periodima
+            </div>
+            <div class="report-actions">
+                <button class="report-btn report-btn-primary" @onclick="GenerisiAnalitickiIzvestaj">
+                    <i class="bi bi-file-earmark-text me-1"></i>Pregled
+                </button>
+                <button class="report-btn report-btn-secondary" @onclick="ExportAnalitikaExcel">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Knjigovodstveni izveštaji -->
+        <div class="report-card">
+            <div class="report-icon">
+                <i class="bi bi-journal"></i>
+            </div>
+            <div class="report-title">Knjigovodstveni Izveštaji</div>
+            <div class="report-desc">
+                Bilans stanja, bilans uspeha, izveštaj o toknovima gotovine
+            </div>
+            <div class="report-actions">
+               @*  <button class="report-btn report-btn-primary" @onclick="GenerisiKnjigovodstveniIzvestaj">
+                    <i class="bi bi-file-earmark-text me-1"></i>Pregled
+                </button> *@
+                <button class="report-btn report-btn-secondary" @onclick="ExportKnjigovodstvoExcel">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Poreski izveštaji -->
+        <div class="report-card">
+            <div class="report-icon">
+                <i class="bi bi-calculator"></i>
+            </div>
+            <div class="report-title">Poreski Izveštaji</div>
+            <div class="report-desc">
+                PDV prijave, porez na dobit, izveštaji za poresku upravu
+            </div>
+            <div class="report-actions">
+                @* <button class="report-btn report-btn-primary" @onclick="GenerisiPoreskiIzvestaj"> *@
+                    <i class="bi bi-file-earmark-text me-1"></i>Pregled
+                @* </button> *@
+                <button class="report-btn report-btn-secondary" @onclick="ExportPoreskiExcel">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Report Generator -->
+    <div class="custom-report-section">
+        <h4 class="mb-3"><i class="bi bi-sliders me-2"></i>Prilagođeni Izveštaj</h4>
+        
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label fw-bold">Tip izveštaja:</label>
+                <select class="form-select" @bind="selectedReportType">
+                    <option value="finansije">Finansijski</option>
+                    <option value="proizvodnja">Proizvodnja</option>
+                    <option value="lager">Lager</option>
+                    <option value="analitika">Analitički</option>
+                </select>
+            </div>
+
+            <DateFilter Label="Od datuma" 
+                        SelectedDate="@customReportRequest.OdDatum" 
+                        SelectedDateChanged="@(value => { customReportRequest.OdDatum = value; })"
+                        Size="3" />
+
+            <DateFilter Label="Do datuma" 
+                        SelectedDate="@customReportRequest.DoDatum" 
+                        SelectedDateChanged="@(value => { customReportRequest.DoDatum = value; })"
+                        Size="3" />
+
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary w-100" @onclick="GenerisiCustomIzvestaj">
+                    <i class="bi bi-gear me-2"></i>Generiši Izveštaj
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Results -->
+    @if (showReportResults)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="dashboard-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="bi bi-list-check me-2"></i>
+                            Rezultati Izveštaja - @GetReportTypeName(selectedReportType)
+                        </h5>
+                        <div>
+                            <button class="btn btn-success btn-sm me-2" @onclick="ExportTrenutniIzvestaj">
+                                <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                            </button>
+                            <button class="btn btn-danger btn-sm" @onclick="ExportTrenutniPdf">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (reportData == null || !reportData.Any())
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Nema podataka za prikaz za izabrane parametre.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-header-dark">
+                                    <tr>
+                                        @foreach (var column in reportColumns)
+                                        {
+                                            <th>@column</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in reportData)
+                                    {
+                                        <tr>
+                                            @foreach (var value in item)
+                                            {
+                                                <td>@value</td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-3 text-end">
+                            <small class="text-muted">
+                                Generisano: @DateTime.Now.ToString("dd.MM.yyyy HH:mm") | 
+                                Ukupno zapisa: @reportData.Count
+                            </small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string selectedReportType = "finansije";
+    private FilterRequest customReportRequest = new FilterRequest();
+    private bool showReportResults = false;
+    private List<List<string>> reportData = new List<List<string>>();
+    private List<string> reportColumns = new List<string>();
+
+    protected override void OnInitialized()
+    {
+        var pocetakMeseca = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        customReportRequest.OdDatum = pocetakMeseca;
+        customReportRequest.DoDatum = DateTime.Now;
+    }
+
+    private async Task GenerisiCustomIzvestaj()
+    {
+        try
+        {
+            showReportResults = true;
+            
+            switch (selectedReportType)
+            {
+                case "finansije":
+                    await GenerisiFinansijskiIzvestaj();
+                    break;
+                case "proizvodnja":
+                    await GenerisiProizvodnjaIzvestaj();
+                    break;
+                case "lager":
+                    await GenerisiLagerIzvestaj();
+                    break;
+                case "analitika":
+                    await GenerisiAnalitickiIzvestaj();
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri generisanju izveštaja: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška: {ex.Message}");
+        }
+    }
+
+    private async Task GenerisiFinansijskiIzvestaj()
+    {
+        var podaci = await FinansijeService.UcitajFinansijskiIzvestaj(customReportRequest);
+        @* PripremiPodatkeZaPrikaz(podaci); *@
+    }
+
+    private async Task GenerisiProizvodnjaIzvestaj()
+    {
+        var podaci = await ProizvodnjaService.UcitajIzvestajProizvodnje(customReportRequest);
+       @*  PripremiPodatkeZaPrikaz(podaci); *@
+    }
+
+    private async Task GenerisiLagerIzvestaj()
+    {
+        // Simulacija podataka za lager - implementirajte po potrebi
+        reportColumns = new List<string> { "Artikal", "Stanje", "Jedinica", "Vrednost (RSD)" };
+        reportData = new List<List<string>>
+        {
+            new List<string> { "Šećer", "1,200.00", "kg", "84,000.00" },
+            new List<string> { "Brašno", "2,500.00", "kg", "75,000.00" },
+            new List<string> { "Ulje", "800.00", "l", "96,000.00" }
+        };
+        await Task.CompletedTask;
+
+    }
+
+    private async Task GenerisiAnalitickiIzvestaj()
+    {
+        // Simulacija analitičkih podataka
+        reportColumns = new List<string> { "Pokazatelj", "Trenutno", "Prošli period", "Promena" };
+        reportData = new List<List<string>>
+        {
+            new List<string> { "Ukupni prihodi", "1,250,000.00", "1,100,000.00", "+13.6%" },
+            new List<string> { "Operativni rashodi", "850,000.00", "780,000.00", "+9.0%" },
+            new List<string> { "Neto profit", "400,000.00", "320,000.00", "+25.0%" }
+       
+        
+        };
+        await Task.CompletedTask;
+    }
+
+    @* private async Task GenerisiKnjigovodstveniIzvestaj()
+    {
+        await JSRuntime.InvokeVoidAsync("alert", "Knjigovodstveni izveštaji su u pripremi.");
+    }
+
+    private void PripremiPodatkeZaPrikaz<T>(List<T> podaci)
+    {
+        if (podaci == null || !podaci.Any())
+        {
+        reportData = new List<List<string>>();
+        return;
+        }
+
+        // Dobijanje propertija za kolone
+        var properties = typeof(T).GetProperties();
+        reportColumns = properties.Select(p => p.Name).ToList();
+
+        // Priprema podataka za prikaz
+        reportData = podaci.Select(item =>
+        properties.Select(p =>
+        {
+            var value = p.GetValue(item);
+                if (value == null) 
+                    return string.Empty;
+                if (value is decimal decimalValue)
+                    return decimalValue.ToString("N2");
+                else if (value is DateTime dateValue)
+                    return dateValue.ToString("dd.MM.yyyy");
+                else if (value is bool boolValue)
+                    return boolValue ? "Da" : "Ne";
+                return value.ToString();
+            }).ToList()
+         ).ToList();
+        } *@
+
+    private string GetReportTypeName(string reportType)
+    {
+        return reportType switch
+        {
+            "finansije" => "Finansijski Izveštaj",
+            "proizvodnja" => "Izveštaj Proizvodnje",
+            "lager" => "Lager Izveštaj",
+            "analitika" => "Analitički Izveštaj",
+            _ => "Izveštaj"
+        };
+    }
+
+    private async Task ExportTrenutniIzvestaj()
+    {
+        try
+        {
+            // Konvertujemo podatke u format pogodan za export
+            var exportData = reportData.Select(row => 
+            {
+                var dict = new Dictionary<string, object>();
+                for (int i = 0; i < reportColumns.Count; i++)
+                {
+                    dict[reportColumns[i]] = row[i];
+                }
+                return dict;
+            }).ToList();
+
+            var excelData = ExportService.ExportToExcel(exportData);
+            var fileName = $"{selectedReportType}_izvestaj_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu: {ex.Message}");
+        }
+    }
+
+    private async Task ExportTrenutniPdf()
+    {
+        await JSRuntime.InvokeVoidAsync("alert", "PDF export će biti dostupan uskoro.");
+    }
+
+    private async Task ExportFinansijeExcel()
+    {
+        await GenerisiFinansijskiIzvestaj();
+        await ExportTrenutniIzvestaj();
+    }
+
+    private async Task ExportProizvodnjaExcel()
+    {
+        await GenerisiProizvodnjaIzvestaj();
+        await ExportTrenutniIzvestaj();
+    }
+
+    private async Task ExportLagerExcel()
+    {
+        await GenerisiLagerIzvestaj();
+        await ExportTrenutniIzvestaj();
+    }
+
+    private async Task ExportAnalitikaExcel()
+    {
+        await GenerisiAnalitickiIzvestaj();
+        await ExportTrenutniIzvestaj();
+    }
+
+    private async Task ExportKnjigovodstvoExcel()
+    {
+        await JSRuntime.InvokeVoidAsync("alert", "Export knjigovodstvenih izveštaja je u pripremi.");
+    }
+
+    private async Task ExportPoreskiExcel()
+    {
+        await JSRuntime.InvokeVoidAsync("alert", "Export poreskih izveštaja je u pripremi.");
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
+    }
+}

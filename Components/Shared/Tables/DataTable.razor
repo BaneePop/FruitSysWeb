@@ -1,0 +1,77 @@
+@using System.Reflection
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover mb-0">
+        <thead class="table-header-dark">
+            <tr>
+                @foreach (var column in Columns)
+                {
+                    <th>@column</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Data)
+            {
+                <tr>
+                    @foreach (var property in Properties)
+                    {
+                        <td>@GetPropertyValue(item, property)</td>
+                    }
+                </tr>
+            }
+        </tbody>
+        @if (ShowFooter)
+        {
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="@(Properties.Count - 1)" class="text-end fw-bold">UKUPNO:</td>
+                    <td class="text-end fw-bold">@TotalValue.ToString("N2")</td>
+                </tr>
+            </tfoot>
+        }
+    </table>
+</div>
+
+@code {
+    private List<PropertyInfo> Properties = new();
+
+    [Parameter] public List<object> Data { get; set; } = new();
+    [Parameter] public List<string> Columns { get; set; } = new();
+    [Parameter] public bool ShowFooter { get; set; } = true;
+    [Parameter] public decimal TotalValue { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Data.Any())
+        {
+            Properties = Data.First().GetType().GetProperties().ToList();
+        }
+    }
+
+    private string GetPropertyValue(object item, PropertyInfo property)
+    {
+        // Dodajte null check za item
+        if (item == null) return string.Empty;
+        
+        var value = property.GetValue(item);
+        
+        if (value == null) return string.Empty;
+        
+        if (value is decimal decimalValue)
+        {
+            return decimalValue.ToString("N2");
+        }
+        else if (value is DateTime dateValue)
+        {
+            return dateValue.ToString("dd.MM.yyyy");
+        }
+        else if (value is bool boolValue)
+        {
+            return boolValue ? "Da" : "Ne";
+        }
+        
+        // Dodajte ToString() sa null check
+        return value?.ToString() ?? string.Empty;
+    }
+}

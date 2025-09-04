@@ -1,0 +1,352 @@
+@page "/proizvodnja"
+@page "/prerada-pregled"
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Components.Shared.Filters
+
+@using FruitSysWeb.Components.Shared.Tables
+@using FruitSysWeb.Components.Shared.Layout
+@inject IProizvodnjaService ProizvodnjaService
+@inject IExportService ExportService
+@inject IJSRuntime JSRuntime
+
+<style>
+    .production-section {
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        color: #0f5132;
+        border-bottom: 2px solid #198754;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+    }
+    
+    .view-toggle {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .view-toggle:hover {
+        transform: scale(1.05);
+    }
+</style>
+
+<!-- Header -->
+<div class="bg-primary text-white py-3 mb-4">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-gear-fill me-2"></i>
+                    @(isPreradaPregled ? "Pregled Prerade - Analiza" : "Pregled Prerade - Radni Nalozi")
+                </h1>
+            </div>
+            <div class="col-md-6 text-end">
+                <span class="badge bg-light text-dark fs-6">
+                    <i class="bi bi-database me-1"></i>@(podaci?.Count ?? 0) stavki
+                </span>
+                <button class="btn btn-outline-light ms-2 view-toggle" @onclick="ToggleView">
+                    <i class="bi @(isPreradaPregled ? "bi-list" : "bi-bar-chart") me-1"></i>
+                    @(isPreradaPregled ? "Standardni pregled" : "Analiza prerade")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-funnel me-2"></i>Filteri pretrage
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <DateFilter Label="Od datuma" 
+                                    SelectedDate="@filterRequest.OdDatum" 
+                                    SelectedDateChanged="@(value => { filterRequest.OdDatum = value; })"
+                                    Size="2" />
+
+                        <DateFilter Label="Do datuma" 
+                                    SelectedDate="@filterRequest.DoDatum" 
+                                    SelectedDateChanged="@(value => { filterRequest.DoDatum = value; })"
+                                    Size="2" />
+
+                        <TextFilter Label="Radni nalog"
+                                    Placeholder="Unesite broj naloga..."
+                                    TextValue="@filterRequest.RadniNalog"
+                                    TextValueChanged="@(value => { filterRequest.RadniNalog = value; })"
+                                    Size="2" />
+
+                        <KomitentFilter Label="Komitent"
+                                        SelectedKomitentId="@filterRequest.KomitentId" 
+                                        SelectedKomitentIdChanged="@(value => { filterRequest.KomitentId = value; })"
+                                        Size="2" />
+
+                        <ArtikalFilter Label="Artikal"
+                                       SelectedArtikalId="@filterRequest.ArtikalId" 
+                                       SelectedArtikalIdChanged="@(value => { filterRequest.ArtikalId = value; })"
+                                       Size="2" />
+
+                        <div class="col-md-2 mb-3 d-flex align-items-end">
+                            <div class="d-grid gap-2 w-100">
+                                <button class="btn btn-primary" @onclick="UcitajPodatke">
+                                    <i class="bi bi-search me-2"></i>Primeni filtere
+                                </button>
+                                <button class="btn btn-outline-secondary" @onclick="ResetujFiltere">
+                                    <i class="bi bi-arrow-clockwise me-2"></i>Resetuj
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Buttons -->
+    <ExportButtons HasData="@(podaci?.Count > 0)"
+                   OnExportExcel="ExportToExcel"
+                   OnExportPdf="ExportToPdf" />
+
+    <!-- Production Charts -->
+    @if (podaci?.Count > 0)
+    {
+        <div class="row mb-4 production-section">
+            <div class="col-md-12">
+                <div class="dashboard-card">
+                    <h5 class="section-title">
+                        <i class="bi bi-bar-chart me-2"></i>Proizvodnja po Artiklima
+                    </h5>
+                    @* <BarChart Config="@proizvodnjaChartConfig" Height="300" /> *@
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Results Section -->
+    @if (podaci == null)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Učitavanje podataka</strong> - Molimo sačekajte...
+                </div>
+            </div>
+        </div>
+    }
+    else if (!podaci.Any())
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Nema podataka</strong> - Nema pronađenih podataka za izabrane filtere.
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row production-section">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-list-check me-2"></i>
+                            @(isPreradaPregled ? "Analiza prerade - Gotov proizvod vs Sirovina" : "Rezultati pretrage")
+                            <span class="badge bg-primary ms-2">@podaci.Count stavki</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (isPreradaPregled)
+                        {
+                            @* <DataTable Data="@preradaPodaci.Cast<object>().ToList()"
+                                       Columns="@preradaTableColumns"
+                                       TotalValue="@preradaPodaci.Sum(x => (x.KolicinaGotovProizvod ?? 0) + (x.KolicinaSirovina ?? 0))"
+                                       ShowFooter="true" /> *@
+                        }
+                        else
+                        {
+                            @* <DataTable Data="@podaci.Cast<object>().ToList()"
+                                       Columns="@proizvodnjaTableColumns"
+                                       TotalValue="@podaci.Sum(x => x.Kolicina)"
+                                       ShowFooter="true" /> *@
+                        }
+                    </div>
+                    <div class="card-footer bg-light">
+                        Poslednje ažuriranje: @DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") |
+                        Prikaz: <strong>@(isPreradaPregled ? "Analiza prerade" : "Standardni pregled")</strong> |
+                        Ukupno: <strong>@UkupnaKolicina.ToString("N2")</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ProizvodnjaModel> podaci = new List<ProizvodnjaModel>();
+    private List<PreradaPregledModel> preradaPodaci = new List<PreradaPregledModel>();
+    private FilterRequest filterRequest = new FilterRequest();
+    private bool isPreradaPregled = false;
+
+    // Chart configurations
+@*     private BarConfig proizvodnjaChartConfig;
+ *@
+    // Table columns
+    private List<string> proizvodnjaTableColumns = new List<string> 
+    { 
+        "Datum", "Radni Nalog", "Artikal", "Količina", "Komitent", "Klasifikacija" 
+    };
+
+    private List<string> preradaTableColumns = new List<string> 
+    { 
+        "Datum", "Radni Nalog", "Artikal", "Gotov Proizvod", "Sirovina", "Komitent" 
+    };
+
+    private decimal UkupnaKolicina => isPreradaPregled ? 
+        preradaPodaci.Sum(x => (x.KolicinaGotovProizvod ?? 0) + (x.KolicinaSirovina ?? 0)) : 
+        podaci.Sum(x => x.Kolicina);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var pocetakMeseca = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        filterRequest.OdDatum = pocetakMeseca;
+        filterRequest.DoDatum = DateTime.Now;
+        
+        await UcitajPodatke();
+        await KreirajChartove();
+    }
+
+    private async Task UcitajPodatke()
+    {
+        try
+        {
+            podaci = await ProizvodnjaService.UcitajIzvestajProizvodnje(filterRequest);
+            
+            // Automatska podela na osnovu TipArtikla za analizu prerade
+            preradaPodaci = podaci.Select(pm => new PreradaPregledModel
+            {
+                Datum = pm.Datum,
+                RadniNalog = pm.RadniNalog,
+                Artikal = pm.Artikal,
+                KolicinaGotovProizvod = pm.TipArtikla == 2 ? pm.Kolicina : 0,
+                KolicinaSirovina = pm.TipArtikla != 2 ? pm.Kolicina : 0,
+                Komitent = pm.Komitent
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju podataka: {ex.Message}");
+            podaci = new List<ProizvodnjaModel>();
+            preradaPodaci = new List<PreradaPregledModel>();
+        }
+    }
+
+    private async Task KreirajChartove()
+    {
+        try
+        {
+            var proizvodnjaPoArtiklima = await ProizvodnjaService.UcitajProizvodnjuPoArtiklima(filterRequest);
+            
+           @*  proizvodnjaChartConfig = ChartHelper.CreateBarChart(
+                proizvodnjaPoArtiklima.Keys.ToArray(),
+                proizvodnjaPoArtiklima.Values.ToArray(),
+                "Količina (kg)",
+                "rgba(13, 110, 253, 0.8)"
+            ); *@
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri kreiranju chartova: {ex.Message}");
+        }
+    }
+
+    private void ToggleView()
+    {
+        isPreradaPregled = !isPreradaPregled;
+    }
+
+    private async Task ResetujFiltere()
+    {
+        var pocetakMeseca = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        filterRequest = new FilterRequest
+        {
+            OdDatum = pocetakMeseca,
+            DoDatum = DateTime.Now
+        };
+        
+        await UcitajPodatke();
+        await KreirajChartove();
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            byte[] excelData;
+            if (isPreradaPregled)
+            {
+                excelData = ExportService.ExportToExcel(preradaPodaci);
+            }
+            else
+            {
+                excelData = ExportService.ExportToExcel(podaci);
+            }
+            
+            var fileName = $"proizvodnja_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u Excel: {ex.Message}");
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        try
+        {
+            byte[] pdfData;
+            if (isPreradaPregled)
+            {
+                pdfData = ExportService.ExportToPdf(preradaPodaci);
+            }
+            else
+            {
+                pdfData = ExportService.ExportToPdf(podaci);
+            }
+            
+            var fileName = $"proizvodnja_export_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+            await DownloadFile(pdfData, fileName, "application/pdf");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u PDF: {ex.Message}");
+        }
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
+    }
+
+    // Model za analizu prerade
+    public class PreradaPregledModel
+    {
+        public DateTime? Datum { get; set; }
+        public string RadniNalog { get; set; } = string.Empty;
+        public string Artikal { get; set; } = string.Empty;
+        public decimal? KolicinaGotovProizvod { get; set; }
+        public decimal? KolicinaSirovina { get; set; }
+        public string Komitent { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,14 @@
+<div class="d-flex justify-content-end gap-2 mb-4">
+    <button class="btn btn-success" @onclick="OnExportExcel" disabled="@(!HasData)">
+        <i class="bi bi-file-earmark-excel me-2"></i>Preuzmi Excel
+    </button>
+    <button class="btn btn-danger" @onclick="OnExportPdf" disabled="@(!HasData)">
+        <i class="bi bi-file-earmark-pdf me-2"></i>Preuzmi PDF
+    </button>
+</div>
+
+@code {
+    [Parameter] public bool HasData { get; set; }
+    [Parameter] public EventCallback OnExportExcel { get; set; }
+    [Parameter] public EventCallback OnExportPdf { get; set; }
+}

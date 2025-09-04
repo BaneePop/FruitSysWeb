@@ -1,0 +1,414 @@
+﻿@page "/"
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@* @using FruitSysWeb.Components.Shared.Charts *@
+@using FruitSysWeb.Components.Shared.Layout
+@inject IFinansijeService FinansijeService
+@inject IProizvodnjaService ProizvodnjaService
+@inject IExportService exportService
+
+
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .quick-action {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border-left: 4px solid #198754;
+    }
+    
+    .quick-action:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    
+    .quick-action-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #198754;
+    }
+    
+    .quick-action-title {
+        font-weight: 600;
+        color: #0f5132;
+        margin-bottom: 0.5rem;
+    }
+    
+    .quick-action-desc {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .refresh-btn {
+        border: none;
+        background: #f8f9fa;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .refresh-btn:hover {
+        background: #e9ecef;
+    }
+</style>
+
+<!-- Header -->
+<div class="financial-header text-white py-4 mb-4">
+    <div class="container-fluid">
+        <h1 class="h2 mb-1">
+            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+        </h1>
+        <p class="mb-0">Pregled ključnih poslovnih pokazatelja</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Quick Actions -->
+    <div class="dashboard-grid">
+        <div class="quick-action" @onclick="NavigateToFinansije">
+            <div class="quick-action-icon">
+                <i class="bi bi-cash-coin"></i>
+            </div>
+            <div class="quick-action-title">Finansije</div>
+            <div class="quick-action-desc">Pregled prihoda, rashoda i salda</div>
+        </div>
+
+        <div class="quick-action" @onclick="NavigateToProizvodnja">
+            <div class="quick-action-icon">
+                <i class="bi bi-gear"></i>
+            </div>
+            <div class="quick-action-title">Proizvodnja</div>
+            <div class="quick-action-desc">Radni nalozi i analiza prerade</div>
+        </div>
+
+        <div class="quick-action" @onclick="NavigateToLager">
+            <div class="quick-action-icon">
+                <i class="bi bi-boxes"></i>
+            </div>
+            <div class="quick-action-title">Lager</div>
+            <div class="quick-action-desc">Stanje sirovina i gotovih proizvoda</div>
+        </div>
+
+        <div class="quick-action" @onclick="NavigateToIzvjestaji">
+            <div class="quick-action-icon">
+                <i class="bi bi-clipboard-data"></i>
+            </div>
+            <div class="quick-action-title">Izveštaji</div>
+            <div class="quick-action-desc">Detaljni poslovni izveštaji</div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <DashboardStats Value1="@ukupnoSaldo"
+                    Value2="@ukupnaVrednostLager"
+                    Value3="@ukupnaProizvodnja"
+                    Value4="@brojAktivnihNaloga"
+                    Label1="Ukupno Saldo"
+                    Label2="Vrednost Lager"
+                    Label3="Proizvodnja (kg)"
+                    Label4="Aktivni Nalozi"
+                    Icon1="bi-cash-coin"
+                    Icon2="bi-box-seam"
+                    Icon3="bi-gear"
+                    Icon4="bi-clipboard-check" />
+
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <!-- Top Kupci -->
+        <div class="col-md-6">
+            <div class="dashboard-card">
+                <div class="section-header">
+                    <h5 class="section-title">
+                        <i class="bi bi-currency-exchange me-2"></i>Top 5 Kupaca
+                    </h5>
+                    <button class="refresh-btn" @onclick="UcitajTopKupce" title="Osveži podatke">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+               @*  <BarChart Config="@kupciChartConfig" Height="250" /> *@
+            </div>
+        </div>
+
+        <!-- Top Dobavljaci -->
+        <div class="col-md-6">
+            <div class="dashboard-card">
+                <div class="section-header">
+                    <h5 class="section-title">
+                        <i class="bi bi-truck me-2"></i>Top 5 Dobavljača
+                    </h5>
+                    <button class="refresh-btn" @onclick="UcitajTopDobavljace" title="Osveži podatke">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+               @*  <BarChart Config="@dobavljaciChartConfig" Height="250" /> *@
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Proizvodnja po artiklima -->
+        <div class="col-md-6">
+            <div class="dashboard-card">
+                <div class="section-header">
+                    <h5 class="section-title">
+                        <i class="bi bi-bar-chart me-2"></i>Proizvodnja po Artiklima
+                    </h5>
+                    <button class="refresh-btn" @onclick="UcitajProizvodnjuPoArtiklima" title="Osveži podatke">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+                @* <BarChart Config="@proizvodnjaChartConfig" Height="250" /> *@
+            </div>
+        </div>
+
+        <!-- Lager stanje -->
+        <div class="col-md-6">
+            <div class="dashboard-card">
+                <div class="section-header">
+                    <h5 class="section-title">
+                        <i class="bi bi-pie-chart me-2"></i>Struktura Lager-a
+                    </h5>
+                        <i class="bi bi-arrow-clockwise"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="dashboard-card">
+                <h5 class="section-title">
+                    <i class="bi bi-clock-history me-2"></i>Poslednja aktivnost
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-header-dark">
+                            <tr>
+                                <th>Vreme</th>
+                                <th>Akcija</th>
+                                <th>Detalji</th>
+                                <th>Korisnik</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>@DateTime.Now.AddMinutes(-5).ToString("HH:mm")</td>
+                                <td><span class="badge bg-success">Proizvodnja</span></td>
+                                <td>Završen radni nalog #PR-2024-001</td>
+                                <td>admin</td>
+                            </tr>
+                            <tr>
+                                <td>@DateTime.Now.AddMinutes(-15).ToString("HH:mm")</td>
+                                <td><span class="badge bg-primary">Finansije</span></td>
+                                <td>Kreiran novi račun #F-2024-056</td>
+                                <td>admin</td>
+                            </tr>
+                            <tr>
+                                <td>@DateTime.Now.AddMinutes(-30).ToString("HH:mm")</td>
+                                <td><span class="badge bg-info">Lager</span></td>
+                                <td>Primljena nova pošiljka sirovina</td>
+                                <td>lager@example.com</td>
+                            </tr>
+                            <tr>
+                                <td>@DateTime.Now.AddHours(-1).ToString("HH:mm")</td>
+                                <td><span class="badge bg-warning">Izvještaj</span></td>
+                                <td>Generisan mesečni finansijski izvještaj</td>
+                                <td>admin</td>
+                            </tr>
+                            <tr>
+                                <td>@DateTime.Now.AddHours(-2).ToString("HH:mm")</td>
+                                <td><span class="badge bg-secondary">Sistem</span></td>
+                                <td>Automatska backup procedura</td>
+                                <td>system</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private decimal ukupnoSaldo = 0;
+    private decimal ukupnaVrednostLager = 0;
+    private decimal ukupnaProizvodnja = 0;
+    private int brojAktivnihNaloga = 0;
+
+    // Chart configurations
+
+    
+    @inject NavigationManager NavigationManager
+    protected override async Task OnInitializedAsync()
+    {
+        await UcitajStatistike();
+        await UcitajSveChartove();
+    }
+
+    private async Task UcitajStatistike()
+    {
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddMonths(-1),
+                DoDatum = DateTime.Now
+            };
+
+            ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filter);
+            ukupnaProizvodnja = await ProizvodnjaService.UcitajUkupnuProizvodnju(filter);
+            brojAktivnihNaloga = await ProizvodnjaService.UcitajBrojAktivnihNaloga(filter);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju statistika: {ex.Message}");
+        }
+    }
+
+    private async Task UcitajSveChartove()
+    {
+        await UcitajTopKupce();
+        await UcitajTopDobavljace();
+        await UcitajProizvodnjuPoArtiklima();
+    }
+
+    private async Task UcitajTopKupce()
+    {
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddMonths(-1),
+                DoDatum = DateTime.Now
+            };
+
+            var topKupci = await FinansijeService.UcitajTopKupce(filter);
+            
+           @*  kupciChartConfig = ChartHelper.CreateBarChart(
+                topKupci.Keys.Take(5).ToArray(),
+                topKupci.Values.Take(5).ToArray(),
+                "Saldo (RSD)",
+                "rgba(40, 167, 69, 0.8)"
+            ); *@
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju top kupaca: {ex.Message}");
+        }
+    }
+
+    private async Task UcitajTopDobavljace()
+    {
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddMonths(-1),
+                DoDatum = DateTime.Now
+            };
+
+            var topDobavljaci = await FinansijeService.UcitajTopDobavljace(filter);
+            
+           @*  dobavljaciChartConfig = ChartHelper.CreateBarChart(
+                topDobavljaci.Keys.Take(5).ToArray(),
+                topDobavljaci.Values.Take(5).ToArray(),
+                "Saldo (RSD)",
+                "rgba(220, 53, 69, 0.8)" *@
+            @* ); *@
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju top dobavljača: {ex.Message}");
+        }
+    }
+
+    private async Task UcitajProizvodnjuPoArtiklima()
+    {
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddMonths(-1),
+                DoDatum = DateTime.Now
+            };
+
+            var proizvodnjaPoArtiklima = await ProizvodnjaService.UcitajProizvodnjuPoArtiklima(filter);
+           @*  
+            proizvodnjaChartConfig = ChartHelper.CreateBarChart(
+                proizvodnjaPoArtiklima.Keys.Take(5).ToArray(),
+                proizvodnjaPoArtiklima.Values.Take(5).ToArray(),
+                "Količina (kg)",
+                "rgba(13, 110, 253, 0.8)"
+            ); *@
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju proizvodnje po artiklima: {ex.Message}");
+        }
+    }
+
+    @* private async Task UcitajLagerStanje()
+    {
+        try
+        {
+            var sirovine = await LagerService.UcitajStanjeSirovina();
+            var ukupnoSirovine = sirovine.Values.Sum();
+            
+            var ambalaza = await LagerService.UcitajStanjeAmbalaze();
+            var ukupnoAmbalaza = ambalaza.Values.Sum();
+            
+            var gotovProizvod = await LagerService.UcitajStanjeGotovihProizvoda();
+            var ukupnoGotovProizvod = gotovProizvod.Values.Sum();
+
+            var labels = new[] { "Sirovine", "Ambalaza", "Gotov Proizvod" };
+            var values = new[] { ukupnoSirovine, ukupnoAmbalaza, ukupnoGotovProizvod };
+            var colors = new[] { "#28a745", "#20c997", "#0dcaf0" }; 
+            lagerChartConfig = ChartHelper.CreatePieChart(labels, values, colors);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju stanja lagera: {ex.Message}");
+        }
+    } *@
+
+    private void NavigateToFinansije()
+    {
+        NavigationManager.NavigateTo("/finansije");
+    }
+
+    private void NavigateToProizvodnja()
+    {
+        NavigationManager.NavigateTo("/proizvodnja");
+    }
+
+    private void NavigateToLager()
+    {
+        // Dodati kada kreirate Lager stranicu
+        NavigationManager.NavigateTo("/lager");
+    }
+
+    private void NavigateToIzvjestaji()
+    {
+        // Dodati kada kreirate Izvještaje stranicu
+        NavigationManager.NavigateTo("/izvjestaji");
+    }
+    @inject NavigationManager NavigationManager
+}

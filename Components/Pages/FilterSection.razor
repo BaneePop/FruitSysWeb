@@ -1,0 +1,67 @@
+@namespace FruitSysWeb.Components.Pages
+
+<div class="card border-primary">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-funnel me-2"></i>Filteri pretrage
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label fw-bold">Od datuma:</label>
+                <input type="date" class="form-control" 
+                       @bind="FilterOdDatum" 
+                       @bind:format="yyyy-MM-dd" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label fw-bold">Do datuma:</label>
+                <input type="date" class="form-control" 
+                       @bind="FilterDoDatum" 
+                       @bind:format="yyyy-MM-dd" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label fw-bold">Radni nalog:</label>
+                <input type="text" class="form-control" 
+                       @bind="FilterRadniNalog" 
+                       placeholder="Unesite broj naloga..." />
+            </div>
+            <div class="col-md-3 mb-3 d-flex align-items-end">
+                <div class="d-grid gap-2 w-100">
+                    <button class="btn btn-primary" @onclick="OnUcitajPodatke">
+                        <i class="bi bi-search me-2"></i>Primeni filtere
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="OnResetujFiltere">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Resetuj
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public DateTime? FilterOdDatum { get; set; }
+
+    [Parameter]
+    public DateTime? FilterDoDatum { get; set; }
+
+    [Parameter]
+    public string FilterRadniNalog { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<DateTime?> FilterOdDatumChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<DateTime?> FilterDoDatumChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<string> FilterRadniNalogChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnUcitajPodatke { get; set; }
+
+    [Parameter]
+    public EventCallback OnResetujFiltere { get; set; }
+}

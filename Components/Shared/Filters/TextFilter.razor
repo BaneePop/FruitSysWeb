@@ -1,0 +1,21 @@
+<div class="col-md-@Size mb-3">
+    <label class="form-label fw-bold">@Label</label>
+    <input type="text" class="form-control" 
+           placeholder="@Placeholder"
+           @bind="TextValue"
+           @oninput="HandleTextInput" />
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "Pretraga";
+    [Parameter] public string Placeholder { get; set; } = "Unesite tekst...";
+    [Parameter] public string? TextValue { get; set; }
+    [Parameter] public EventCallback<string> TextValueChanged { get; set; }
+    [Parameter] public int Size { get; set; } = 2;
+
+    private async Task HandleTextInput(ChangeEventArgs e)
+    {
+        TextValue = e.Value?.ToString();
+        await TextValueChanged.InvokeAsync(TextValue);
+    }
+}

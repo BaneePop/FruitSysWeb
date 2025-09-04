@@ -1,0 +1,18 @@
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Shared
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <div class="container mt-5">
+                <h1>Stranica nije pronađena</h1>
+                <p>Tražena stranica ne postoji.</p>
+                <a href="/" class="btn btn-primary">Nazad na početnu</a>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>

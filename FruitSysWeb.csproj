@@ -1,0 +1,22 @@
+
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Use only one MySQL connector, not both -->
+    <PackageReference Include="MySqlConnector" Version="2.3.7" />
+    <!-- Remove MySql.Data if you have it -->
+    
+    <PackageReference Include="Dapper" Version="2.1.28" />
+    <PackageReference Include="ClosedXML" Version="0.102.2" />
+    <PackageReference Include="QuestPDF" Version="2025.7.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.0" />
+
+  </ItemGroup>
+
+</Project>

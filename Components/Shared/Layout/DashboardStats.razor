@@ -1,0 +1,60 @@
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stats-card" style="background: @GetGradient(0)">
+            <div class="stats-number">@Value1.ToString("N0") RSD</div>
+            <div class="stats-label">@Label1</div>
+            <i class="bi @Icon1 fs-1"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card" style="background: @GetGradient(1)">
+            <div class="stats-number">@Value2.ToString("N0")</div>
+            <div class="stats-label">@Label2</div>
+            <i class="bi @Icon2 fs-1"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card" style="background: @GetGradient(2)">
+            <div class="stats-number">@Value3.ToString("N0")</div>
+            <div class="stats-label">@Label3</div>
+            <i class="bi @Icon3 fs-1"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card" style="background: @GetGradient(3)">
+            <div class="stats-number">@Value4.ToString("N0")</div>
+            <div class="stats-label">@Label4</div>
+            <i class="bi @Icon4 fs-1"></i>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public decimal Value1 { get; set; }
+    [Parameter] public decimal Value2 { get; set; }
+    [Parameter] public decimal Value3 { get; set; }
+    [Parameter] public decimal Value4 { get; set; }
+    
+    [Parameter] public string Label1 { get; set; } = "Ukupno Saldo";
+    [Parameter] public string Label2 { get; set; } = "Vrednost Lager";
+    [Parameter] public string Label3 { get; set; } = "Proizvodnja";
+    [Parameter] public string Label4 { get; set; } = "Aktivni Nalozi";
+    
+    [Parameter] public string Icon1 { get; set; } = "bi-cash-coin";
+    [Parameter] public string Icon2 { get; set; } = "bi-box-seam";
+    [Parameter] public string Icon3 { get; set; } = "bi-gear";
+    [Parameter] public string Icon4 { get; set; } = "bi-clipboard-check";
+
+    private string GetGradient(int index)
+    {
+        var gradients = new[]
+        {
+            "linear-gradient(135deg, #0f5132 0%, #198754 100%)",
+            "linear-gradient(135deg, #155d27 0%, #20c997 100%)",
+            "linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%)",
+            "linear-gradient(135deg, #6f42c1 0%, #d63384 100%)"
+        };
+        
+        return gradients[index % gradients.Length];
+    }
+}

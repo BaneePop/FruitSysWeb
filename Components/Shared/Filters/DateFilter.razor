@@ -1,0 +1,28 @@
+<div class="col-md-@Size mb-3">
+    <label class="form-label fw-bold">@Label</label>
+    <input type="date" class="form-control" 
+           @bind="SelectedDate" 
+           @bind:format="yyyy-MM-dd"
+           @onchange="HandleDateChange" />
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "Datum";
+    [Parameter] public DateTime? SelectedDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> SelectedDateChanged { get; set; }
+    [Parameter] public int Size { get; set; } = 2;
+
+    private async Task HandleDateChange(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            SelectedDate = date;
+            await SelectedDateChanged.InvokeAsync(date);
+        }
+        else
+        {
+            SelectedDate = null;
+            await SelectedDateChanged.InvokeAsync(null);
+        }
+    }
+}
