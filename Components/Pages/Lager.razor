@@ -1,0 +1,351 @@
+<!-- Lager.razor - AŽURIRANA VERZIJA sa ispravnim tipovima -->
+@page "/lager"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Interfaces
+@inject IMagacinLagerService LagerService
+@inject IExportService ExportService
+@inject IJSRuntime JSRuntime
+
+<!-- ... postojeći stilovi ... -->
+
+<div class="container-fluid">
+    <!-- Filter Section - AŽURIRANI SA ISPRAVNIM TIPOVIMA -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-funnel me-2"></i>Filteri pretrage
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Tip artikla:</label>
+                            <select class="form-select" @bind="filterRequest.ArtikalTip">
+                                <option value="">Svi tipovi</option>
+                                @* Zakomentovano dok se ne implementira ArtikalTipHelper
+                                @foreach (var tip in ArtikalTipHelper.GetAllTypes())
+                                {
+                                    <option value="@tip.Value">@tip.Text</option>
+                                } *@
+                                <option value="1">Sirovina</option>
+                                <option value="2">Ambalaza</option>
+                                <option value="3">Potrosni materijal</option>
+                                <option value="4">Gotova roba</option>
+                                <option value="5">Oprema</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Min količina:</label>
+                            <input type="number" class="form-control" @bind="filterRequest.MinimalnaKolicinaLager" placeholder="10" step="1" min="0" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Max količina:</label>
+                            <input type="number" class="form-control" @bind="filterRequest.MaxKolicina" placeholder="" step="0.01" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Pakovanje:</label>
+                            <input type="text" class="form-control" @bind="filterRequest.Pakovanje" placeholder="Unesite pakovanje..." />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Lot:</label>
+                            <input type="text" class="form-control" @bind="filterRequest.Lot" placeholder="Lot broj..." />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Brzi filteri:</label>
+                            <div class="btn-group-vertical d-grid gap-1">
+                                <button class="btn @(filterRequest.SamoGotoveRobe == true ? "btn-success" : "btn-outline-success") btn-sm" 
+                                        @onclick="() => ToggleFilter(nameof(filterRequest.SamoGotoveRobe))">
+                                    <i class="bi bi-box-seam me-1"></i>Gotove robe
+                                </button>
+                                <button class="btn @(filterRequest.SamoSirovine == true ? "btn-primary" : "btn-outline-primary") btn-sm" 
+                                        @onclick="() => ToggleFilter(nameof(filterRequest.SamoSirovine))">
+                                    <i class="bi bi-gear me-1"></i>Sirovine
+                                </button>
+                                <button class="btn @(filterRequest.SamoAmbalaže == true ? "btn-warning" : "btn-outline-warning") btn-sm" 
+                                        @onclick="() => ToggleFilter(nameof(filterRequest.SamoAmbalaže))">
+                                    <i class="bi bi-box me-1"></i>Ambalaze
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DODANO: Rok važenja filteri -->
+                    <div class="row">
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Rok važenja od:</label>
+                            <input type="date" class="form-control" @bind="filterRequest.RokVazenjaOd" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Rok važenja do:</label>
+                            <input type="date" class="form-control" @bind="filterRequest.RokVazenjaDo" />
+                        </div>
+
+                        <div class="col-md-8 mb-3 d-flex align-items-end">
+                            <div class="d-flex gap-2 w-100">
+                                <button class="btn btn-info" @onclick="UcitajPodatke">
+                                    <i class="bi bi-search me-2"></i>Filtriraj
+                                </button>
+                                <button class="btn btn-outline-secondary" @onclick="ResetujFiltere">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                                </button>
+                                <button class="btn btn-success" @onclick="ExportToExcel" disabled="@(lagerStanje?.Count == 0)">
+                                    <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                                </button>
+                                <button class="btn btn-danger" @onclick="ExportToPdf" disabled="@(lagerStanje?.Count == 0)">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (filterRequest.ImaAktivneFiltre())
+                    {
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <div class="alert alert-info small">
+                                    <strong>Aktivni filteri:</strong> @filterRequest.GetAktivneFiltereOpis()
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ... ostatak komponente ostaje isti ... -->
+
+    <!-- Lager Stanje Table sa AŽURIRANIM badge-ovima -->
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Artikal ID</th>
+                        <th>Tip</th>
+                        <th>Artikal</th>
+                        <th class="text-end">Količina</th>
+                        <th>Pakovanje</th>
+                        <th>JM</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (lagerStanje != null)
+                    {
+                        @foreach (var item in lagerStanje)
+                        {
+                            var stockClass = GetStockClass(item.Kolicina, filterRequest.MinimalnaKolicinaLager ?? 10);
+                            var stockStatus = GetStockStatus(item.Kolicina, filterRequest.MinimalnaKolicinaLager ?? 10);
+                            
+                            <tr class="@stockClass">
+                                <td>@item.ArtikalID</td>
+                                <td>
+                                    @{
+                                        var tipInt = GetArtikalTipAsInt(item.ArtikalTip);
+                                        var tipBadgeClass = GetBadgeClass(tipInt);
+                                        var tipNaziv = GetDisplayName(tipInt);
+                                    }
+                                    <span class="badge @tipBadgeClass artikal-tip-badge">@tipNaziv</span>
+                                </td>
+                                <td>
+                                    <strong>@item.Artikal</strong>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold">@item.Kolicina.ToString("N2")</span>
+                                </td>
+                                <td>@item.Pakovanje</td>
+                                <td>@item.JM</td>
+                                <td>@stockStatus</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+                <tfoot class="table-secondary">
+                    <tr>
+                        <th colspan="3" class="text-end">UKUPNO:</th>
+                        <th class="text-end text-info">@(lagerStanje?.Sum(x => x.Kolicina).ToString("N2") ?? "0.00")</th>
+                        <th colspan="3"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<MagacinLagerModel>? lagerStanje;
+    private List<RadniNalogLagerModel>? radniNalozi;
+    private FilterRequest filterRequest = new FilterRequest();
+    private decimal ukupnaVrednostLager = 0;
+    private int artikliIspodMinimuma = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        filterRequest.MinimalnaKolicinaLager = 10;
+        await UcitajPodatke();
+    }
+
+    private async Task UcitajPodatke()
+    {
+        try
+        {
+            lagerStanje = await LagerService.UcitajLagerStanjeSaFilterima(filterRequest);
+            radniNalozi = await LagerService.UcitajRadneNalogeLager();
+            ukupnaVrednostLager = await LagerService.UcitajUkupnuVrednostLager();
+            
+            if (lagerStanje != null)
+            {
+                var minKol = filterRequest.MinimalnaKolicinaLager ?? 10;
+                artikliIspodMinimuma = lagerStanje.Count(x => x.Kolicina < minKol);
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju lager podataka: {ex.Message}");
+            lagerStanje = new List<MagacinLagerModel>();
+            radniNalozi = new List<RadniNalogLagerModel>();
+        }
+    }
+
+    // AŽURIRANE helper metode
+    private void ToggleFilter(string filterName)
+    {
+        // Reset all quick filters first
+        filterRequest.SamoGotoveRobe = null;
+        filterRequest.SamoSirovine = null;
+        filterRequest.SamoAmbalaže = null;
+        filterRequest.ArtikalTip = "";
+
+        // Set the selected filter
+        switch (filterName)
+        {
+            case nameof(filterRequest.SamoGotoveRobe):
+                filterRequest.SamoGotoveRobe = true;
+                filterRequest.ArtikalTip = "4";
+                break;
+            case nameof(filterRequest.SamoSirovine):
+                filterRequest.SamoSirovine = true;
+                filterRequest.ArtikalTip = "1";
+                break;
+            case nameof(filterRequest.SamoAmbalaže):
+                filterRequest.SamoAmbalaže = true;
+                filterRequest.ArtikalTip = "2";
+                break;
+        }
+    }
+
+    private async Task ResetujFiltere()
+    {
+        filterRequest = new FilterRequest
+        {
+            MinimalnaKolicinaLager = 10
+        };
+        await UcitajPodatke();
+    }
+
+    private string GetStockClass(decimal kolicina, decimal minimum)
+    {
+        if (kolicina < minimum) return "low-stock";
+        if (kolicina < minimum * 2) return "medium-stock";
+        return "high-stock";
+    }
+
+    private string GetStockStatus(decimal kolicina, decimal minimum)
+    {
+        if (kolicina < minimum) 
+            return $"⚠️ Ispod minimuma";
+        if (kolicina < minimum * 2) 
+            return "⚡ Ograničeno";
+        return "✅ Dostupno";
+    }
+
+    // DODATO: Helper za konverziju ArtikalTip
+    private int GetArtikalTipAsInt(string? artikalTip)
+    {
+        if (int.TryParse(artikalTip, out int tip))
+        {
+            return tip;
+        }
+        return 0; // default
+    }
+
+    // Helper metode za tip artikla
+    private string GetBadgeClass(int tip)
+    {
+        return tip switch
+        {
+            1 => "bg-primary",
+            2 => "bg-warning text-dark",
+            3 => "bg-secondary",
+            4 => "bg-success",
+            5 => "bg-danger",
+            _ => "bg-light text-dark"
+        };
+    }
+
+    private string GetDisplayName(int tip)
+    {
+        return tip switch
+        {
+            1 => "Sirovina",
+            2 => "Ambalaza",
+            3 => "Potrosni mat.",
+            4 => "Gotova roba",
+            5 => "Oprema",
+            _ => $"Tip {tip}"
+        };
+    }
+
+    // Export metode
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            if (lagerStanje != null && lagerStanje.Any())
+            {
+                var excelData = ExportService.ExportToExcel(lagerStanje);
+                var fileName = $"lager_stanje_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u Excel: {ex.Message}");
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        try
+        {
+            if (lagerStanje != null && lagerStanje.Any())
+            {
+                var pdfData = ExportService.ExportToPdf(lagerStanje);
+                var fileName = $"lager_stanje_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+                await DownloadFile(pdfData, fileName, "application/pdf");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u PDF: {ex.Message}");
+        }
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
+    }
+}

@@ -1,221 +1,473 @@
-using Dapper;
-using MySqlConnector;
+using FruitSysWeb.Models;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Models.Requests;
-using FruitSysWeb.Models;
-using Microsoft.Extensions.Configuration;
+using System.Text;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService
 {
     public class ProizvodnjaService : IProizvodnjaService
     {
-        private readonly string _connectionString;
+        private readonly DatabaseService _databaseService;
 
-        public ProizvodnjaService(IConfiguration configuration)
+        public ProizvodnjaService(DatabaseService databaseService)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string not found.");
+            _databaseService = databaseService;
         }
 
-        public async Task<List<ProizvodnjaModel>> UcitajIzvestajProizvodnje(FilterRequest filter)
+        public async Task<List<ProizvodnjaModel>> UcitajIzvestajProizvodnje(FilterRequest filterRequest)
         {
-            using var connection = new MySqlConnection(_connectionString);
-
-            var query = @"
-                SELECT 
-                    vpp.RadniNalogID,
-                    vpp.RadniNalog,
-                    vpp.Artikal,
-                    vpp.Komitent,
-                    vpp.ArtikalPrvaKlasifikacija AS Klasifikacija,
-                    vpp.Kolicina,
-                    rn.DatumPocetka AS Datum,
-                    vpp.RpArtikalTip AS TipArtikla
-                FROM vPreradaPregled vpp
-                LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
-                WHERE 1=1";
-
-            var parameters = new DynamicParameters();
-
-            if (filter.OdDatum.HasValue)
+            try
             {
-                query += " AND rn.DatumIsporuke >= @OdDatum";
-                parameters.Add("OdDatum", filter.OdDatum.Value);
-            }
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT 
+                        rn.DatumPocetka as Datum,
+                        vpp.RadniNalog,
+                        vpp.Artikal,
+                        vpp.Kolicina,
+                        vpp.Komitent,
+                        vpp.ArtikalPrvaKlasifikacija as Klasifikacija,
+                        vpp.RpArtikalTip as TipArtikla,
+                        vpp.RadniNalogID,
+                        vpp.ArtikalID,
+                        vpp.KomitentID
+                    FROM vPreradaPregled vpp
+                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+                    WHERE 1=1
+                ");
 
-            if (filter.DoDatum.HasValue)
-            {
-                query += " AND rn.DatumIsporuke <= @DoDatum";
-                parameters.Add("DoDatum", filter.DoDatum.Value);
-            }
+                var parameters = new Dictionary<string, object>();
 
-            if (!string.IsNullOrEmpty(filter.RadniNalog))
-            {
-                query += " AND vpp.RadniNalog LIKE @RadniNalog";
-                parameters.Add("RadniNalog", $"%{filter.RadniNalog}%");
-            }
-
-            if (filter.KomitentId.HasValue)
-            {
-                query += " AND EXISTS (SELECT 1 FROM Komitent k WHERE k.ID = @KomitentId)";
-                parameters.Add("KomitentId", filter.KomitentId.Value);
-            }
-
-            if (!string.IsNullOrEmpty(filter.KomitentTip))
-            {
-                query += " AND EXISTS (SELECT 1 FROM Komitent k WHERE ";
-                switch (filter.KomitentTip)
+                // Datum filteri
+                if (filterRequest.OdDatum.HasValue)
                 {
-                    case "Kupac": query += "k.Tip = 1"; break;
-                    case "Dobavljac": query += "k.Tip = 2"; break;
-                    case "Proizvodjac": query += "k.Tip = 3"; break;
-                    case "Otkupljivac": query += "k.Tip = 4"; break;
+                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
                 }
-                query += ")";
-            }
 
-            query += " ORDER BY rn.DatumIsporuke DESC, vpp.RadniNalog";
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
 
-            try
-            {
-                var result = await connection.QueryAsync<ProizvodnjaModel>(query, parameters);
-                return result.AsList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Greška pri učitavanju podataka proizvodnje: {ex.Message}");
-                return new List<ProizvodnjaModel>();
-            }
-        }
+                // Radni nalog filter
+                if (!string.IsNullOrWhiteSpace(filterRequest.RadniNalog))
+                {
+                    sql.Append(" AND vpp.RadniNalog LIKE @RadniNalog");
+                    parameters.Add("@RadniNalog", $"%{filterRequest.RadniNalog}%");
+                }
 
-        public async Task<List<ProizvodnjaModel>> GetProizvodnjaAsync(FilterRequest filter)
-        {
-            return await Task.Run(() =>
-            {
-                // CPU-intensive synchronous code
-                var result = new List<ProizvodnjaModel>();
-                // ... your logic here
-                return result;
-            });
-        }
+                // Komitent filter
+                if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
+                {
+                    sql.Append(" AND vpp.KomitentID = @KomitentId");
+                    parameters.Add("@KomitentId", filterRequest.KomitentId.Value);
+                }
 
-        public async Task<decimal> UcitajUkupnuProizvodnju(FilterRequest filter)
-        {
-            using var connection = new MySqlConnection(_connectionString);
+                // Artikal filter
+                if (filterRequest.ArtikalId.HasValue && filterRequest.ArtikalId > 0)
+                {
+                    sql.Append(" AND vpp.ArtikalID = @ArtikalId");
+                    parameters.Add("@ArtikalId", filterRequest.ArtikalId.Value);
+                }
 
-            var query = @"
-                SELECT SUM(vpp.Kolicina)
-                FROM vPreradaPregled vpp
-                LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
-                WHERE 1=1";
+                // Tip artikla filter
+                if (filterRequest.TipArtikla.HasValue)
+                {
+                    sql.Append(" AND vpp.RpArtikalTip = @TipArtikla");
+                    parameters.Add("@TipArtikla", filterRequest.TipArtikla.Value);
+                }
 
-            var parameters = new DynamicParameters();
+                // Količina filteri
+                if (filterRequest.MinKolicina.HasValue)
+                {
+                    sql.Append(" AND vpp.Kolicina >= @MinKolicina");
+                    parameters.Add("@MinKolicina", filterRequest.MinKolicina.Value);
+                }
 
-            if (filter.OdDatum.HasValue)
-            {
-                query += " AND rn.DatumIsporuke >= @OdDatum";
-                parameters.Add("OdDatum", filter.OdDatum.Value);
-            }
+                if (filterRequest.MaxKolicina.HasValue)
+                {
+                    sql.Append(" AND vpp.Kolicina <= @MaxKolicina");
+                    parameters.Add("@MaxKolicina", filterRequest.MaxKolicina.Value);
+                }
 
-            if (filter.DoDatum.HasValue)
-            {
-                query += " AND rn.DatumIsporuke <= @DoDatum";
-                parameters.Add("DoDatum", filter.DoDatum.Value);
-            }
+                // Multiple artikal IDs filter
+                if (filterRequest.ArtikalIds != null && filterRequest.ArtikalIds.Any())
+                {
+                    var artikalIdsList = string.Join(",", filterRequest.ArtikalIds);
+                    sql.Append($" AND vpp.ArtikalID IN ({artikalIdsList})");
+                }
 
-            try
-            {
-                var result = await connection.ExecuteScalarAsync<decimal?>(query, parameters);
-                return result ?? 0;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Greška pri učitavanju ukupne proizvodnje: {ex.Message}");
-                return 0;
-            }
-        }
+                // Multiple komitent IDs filter
+                if (filterRequest.KomitentIds != null && filterRequest.KomitentIds.Any())
+                {
+                    var komitentIdsList = string.Join(",", filterRequest.KomitentIds);
+                    sql.Append($" AND vpp.KomitentID IN ({komitentIdsList})");
+                }
 
-        public async Task<int> UcitajBrojAktivnihNaloga(FilterRequest filter)
-        {
-            using var connection = new MySqlConnection(_connectionString);
+                sql.Append(" ORDER BY rn.DatumPocetka DESC, vpp.RadniNalog");
 
-            var query = @"
-                    SELECT COUNT(*) 
-                    FROM RadniNalog 
-                    WHERE (Status = 'Aktivan' OR Status = 'U toku')
-                    AND (@OdDatum IS NULL OR DatumPocetka >= @OdDatum)
-                    AND (@DoDatum IS NULL OR DatumPocetka <= @DoDatum)";
-
-            var parameters = new
-            {
-                OdDatum = filter.OdDatum,
-                DoDatum = filter.DoDatum
-            };
-
-            try
-            {
-                var result = await connection.ExecuteScalarAsync<int?>(query, parameters);
-                return result ?? 0;
+                var rezultat = await _databaseService.QueryAsync<ProizvodnjaModel>(sql.ToString(), parameters);
+                return rezultat.ToList();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju broja aktivnih naloga: {ex.Message}");
-                return 0;
+                Console.WriteLine($"Greška u UcitajIzvestajProizvodnje: {ex.Message}");
+                throw;
             }
         }
 
-        public async Task<Dictionary<string, decimal>> UcitajProizvodnjuPoArtiklima(FilterRequest filter)
+        public async Task<Dictionary<string, decimal>> UcitajProizvodnjuPoArtiklima(FilterRequest filterRequest)
         {
-            using var connection = new MySqlConnection(_connectionString);
-
-            var query = @"
-                SELECT 
-                    vpp.Artikal,
-                    SUM(vpp.Kolicina) as UkupnaKolicina
-                FROM vPreradaPregled vpp
-                LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
-                WHERE 1=1";
-
-            var parameters = new DynamicParameters();
-
-            if (filter.OdDatum.HasValue)
-            {
-                query += " AND rn.DatumIsporuke >= @OdDatum";
-                parameters.Add("OdDatum", filter.OdDatum.Value);
-            }
-
-            if (filter.DoDatum.HasValue)
-            {
-                query += " AND rn.DatumIsporuke <= @DoDatum";
-                parameters.Add("DoDatum", filter.DoDatum.Value);
-            }
-
-            query += " GROUP BY vpp.Artikal ORDER BY UkupnaKolicina DESC LIMIT 10";
-
             try
             {
-                var result = await connection.QueryAsync<(string Artikal, decimal UkupnaKolicina)>(query, parameters);
-                return result.ToDictionary(x => x.Artikal, x => x.UkupnaKolicina);
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT 
+                        vpp.Artikal,
+                        SUM(vpp.Kolicina) as UkupnaKolicina
+                    FROM vPreradaPregled vpp
+                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+                    WHERE 1=1
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                // Datum filteri
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                sql.Append(@"
+                    GROUP BY vpp.Artikal, vpp.ArtikalID
+                    ORDER BY UkupnaKolicina DESC
+                ");
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Artikal ?? "Nepoznato",
+                    x => (decimal)x.UkupnaKolicina
+                );
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju proizvodnje po artiklima: {ex.Message}");
+                Console.WriteLine($"Greška u UcitajProizvodnjuPoArtiklima: {ex.Message}");
                 return new Dictionary<string, decimal>();
             }
         }
 
-        // Implementacija ostalih metoda iz IIzvestajService
-        public Task<List<FinansijeModel>> UcitajFinansijskiIzvestaj(FilterRequest filter)
+        public async Task<List<ProizvodnjaModel>> UcitajSveRadneNaloge()
         {
-            // Ovo će biti implementirano u FinansijeService
-            return Task.FromResult(new List<FinansijeModel>());
+            try
+            {
+                var filterRequest = new FilterRequest
+                {
+                    OdDatum = DateTime.Now.AddYears(-1),
+                    DoDatum = DateTime.Now
+                };
+
+                return await UcitajIzvestajProizvodnje(filterRequest);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajSveRadneNaloge: {ex.Message}");
+                return new List<ProizvodnjaModel>();
+            }
         }
 
-        public async Task<decimal> UcitajUkupnoSaldo(FilterRequest filter)
+        public async Task<decimal> UcitajUkupnuProizvodnju(FilterRequest filterRequest)
         {
-            // Privremena implementacija - vrati 0 dok ne dodate pravu logiku
-            return await Task.FromResult(0m);
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT COALESCE(SUM(vpp.Kolicina), 0) as UkupnaKolicina
+                    FROM vPreradaPregled vpp
+                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+                    WHERE 1=1
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                // Datum filteri
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql.ToString(), parameters);
+                return rezultat;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajUkupnuProizvodnju: {ex.Message}");
+                return 0;
+            }
         }
 
+        public async Task<int> UcitajBrojAktivnihNaloga(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT COUNT(DISTINCT rn.ID) as BrojNaloga
+                    FROM RadniNalog rn
+                    WHERE rn.Aktivno = 1 AND rn.DokumentStatus IN (1, 2)
+                ";
+
+                var rezultat = await _databaseService.ExecuteScalarAsync<int>(sql);
+                return rezultat;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajBrojAktivnihNaloga: {ex.Message}");
+                return 0;
+            }
+        }
+
+        public async Task<List<ProizvodnjaModel>> UcitajRadneNalogePoDatumu(DateTime odDatum, DateTime doDatum)
+        {
+            var filterRequest = new FilterRequest
+            {
+                OdDatum = odDatum,
+                DoDatum = doDatum
+            };
+
+            return await UcitajIzvestajProizvodnje(filterRequest);
+        }
+
+        public async Task<List<ProizvodnjaModel>> UcitajRadneNalogePoKomitentu(long komitentId)
+        {
+            var filterRequest = new FilterRequest
+            {
+                KomitentId = komitentId
+            };
+
+            return await UcitajIzvestajProizvodnje(filterRequest);
+        }
+
+        public async Task<List<ProizvodnjaModel>> UcitajRadneNalogePoArtiklu(long artikalId)
+        {
+            var filterRequest = new FilterRequest
+            {
+                ArtikalId = artikalId
+            };
+
+            return await UcitajIzvestajProizvodnje(filterRequest);
+        }
+
+        public async Task<List<ProizvodnjaModel>> UcitajRadneNalogePoTipu(int tipArtikla)
+        {
+            var filterRequest = new FilterRequest
+            {
+                TipArtikla = tipArtikla
+            };
+
+            return await UcitajIzvestajProizvodnje(filterRequest);
+        }
+
+        public async Task<Dictionary<string, decimal>> UcitajProizvodnjuPoKomitentima(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT 
+                        vpp.Komitent,
+                        SUM(vpp.Kolicina) as UkupnaKolicina
+                    FROM vPreradaPregled vpp
+                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+                    WHERE 1=1
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                // Datum filteri
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                sql.Append(@"
+                    GROUP BY vpp.Komitent, vpp.KomitentID
+                    ORDER BY UkupnaKolicina DESC
+                ");
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Komitent ?? "Nepoznato",
+                    x => (decimal)x.UkupnaKolicina
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajProizvodnjuPoKomitentima: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
+        }
+
+        public async Task<Dictionary<string, decimal>> UcitajProizvodnjuPoMesecima(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        DATE_FORMAT(rn.DatumPocetka, '%Y-%m') as Mesec,
+                        SUM(vpp.Kolicina) as UkupnaKolicina
+                    FROM vPreradaPregled vpp
+                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+                    WHERE rn.DatumPocetka >= CURDATE() - INTERVAL 12 MONTH
+                    GROUP BY DATE_FORMAT(rn.DatumPocetka, '%Y-%m')
+                    ORDER BY Mesec
+                ";
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Mesec ?? "Nepoznato",
+                    x => (decimal)x.UkupnaKolicina
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajProizvodnjuPoMesecima: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
+        }
+
+        public async Task<Dictionary<int, decimal>> UcitajProizvodnjuPoTipovima(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT 
+                        vpp.RpArtikalTip as TipArtikla,
+                        SUM(vpp.Kolicina) as UkupnaKolicina
+                    FROM vPreradaPregled vpp
+                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+                    WHERE 1=1
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                // Datum filteri
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                sql.Append(@"
+                    GROUP BY vpp.RpArtikalTip
+                    ORDER BY UkupnaKolicina DESC
+                ");
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
+                
+                return rezultat.ToDictionary(
+                    x => (int)x.TipArtikla,
+                    x => (decimal)x.UkupnaKolicina
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajProizvodnjuPoTipovima: {ex.Message}");
+                return new Dictionary<int, decimal>();
+            }
+        }
+
+        public async Task<List<ProizvodnjaModel>> UcitajNajproduktivnijeNaloge(FilterRequest filterRequest, int brojNaloga = 10)
+        {
+            try
+            {
+                var podaci = await UcitajIzvestajProizvodnje(filterRequest);
+                
+                return podaci
+                    .OrderByDescending(p => p.Kolicina)
+                    .Take(brojNaloga)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajNajproduktivnijeNaloge: {ex.Message}");
+                return new List<ProizvodnjaModel>();
+            }
+        }
+
+        public async Task<List<PreradaPregledModel>> UcitajPreraduPregled(FilterRequest filterRequest)
+        {
+            try
+            {
+                var podaci = await UcitajIzvestajProizvodnje(filterRequest);
+                
+                // Konvertuj u prerada pregled format
+                return podaci.Select(pm => new PreradaPregledModel
+                {
+                    Datum = pm.Datum,
+                    RadniNalog = pm.RadniNalog,
+                    Artikal = pm.Artikal,
+                    KolicinaGotovProizvod = pm.TipArtikla == 2 ? pm.Kolicina : 0,
+                    KolicinaSirovina = pm.TipArtikla != 2 ? pm.Kolicina : 0,
+                    Komitent = pm.Komitent
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajPreraduPregled: {ex.Message}");
+                return new List<PreradaPregledModel>();
+            }
+        }
+
+        public async Task<Dictionary<string, decimal>> UcitajAnalizuPreradePoArtiklima(FilterRequest filterRequest)
+        {
+            try
+            {
+                var preradaPodaci = await UcitajPreraduPregled(filterRequest);
+                
+                return preradaPodaci
+                    .GroupBy(p => p.Artikal)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Sum(p => (p.KolicinaGotovProizvod ?? 0) + (p.KolicinaSirovina ?? 0))
+                    );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajAnalizuPreradePoArtiklima: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
+        }
     }
 }

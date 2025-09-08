@@ -1,17 +1,7 @@
 @page "/finansije"
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
-@using FruitSysWeb.Components
-@* @using FruitSysWeb.Components.Shared.Charts *@
-@using FruitSysWeb.Components.Shared.Tables
-@using FruitSysWeb.Components.Shared.Layout
-@using FruitSysWeb.Components.Shared.Filters
-
-@* 
-@using ChartJs.Blazor.BarChart
-@using ChartJs.Blazor.Common
-@using ChartJs.Blazor.Util *@
-
+@using FruitSysWeb.Models
 @inject IFinansijeService FinansijeService
 @inject IExportService ExportService
 @inject IJSRuntime JSRuntime
@@ -27,6 +17,18 @@
         padding-bottom: 0.5rem;
         margin-bottom: 1.5rem;
         font-weight: 600;
+    }
+    
+    .positive-saldo { color: #198754; font-weight: bold; }
+    .negative-saldo { color: #dc3545; font-weight: bold; }
+    .neutral-saldo { color: #6c757d; }
+    
+    .dashboard-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
     }
 </style>
 
@@ -45,7 +47,7 @@
                     <i class="bi bi-database me-1"></i>@(podaci?.Count ?? 0) stavki
                 </span>
                 <span class="badge @saldoBadgeClass ms-2 fs-6">
-                    Saldo: @UkupnoSaldo.ToString("N2")
+                    Saldo: @UkupnoSaldo.ToString("N2") RSD
                 </span>
             </div>
         </div>
@@ -64,34 +66,24 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <DateFilter Label="Od datuma" 
-                                    SelectedDate="@filterRequest.OdDatum" 
-                                    SelectedDateChanged="@(value => { filterRequest.OdDatum = value; })"
-                                    Size="2" />
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Od datuma:</label>
+                            <input type="date" class="form-control" value="@OdDatumValue" @onchange="OnOdDatumChanged" />
+                        </div>
 
-                        <DateFilter Label="Do datuma" 
-                                    SelectedDate="@filterRequest.DoDatum" 
-                                    SelectedDateChanged="@(value => { filterRequest.DoDatum = value; })"
-                                    Size="2" />
-
-                        <KomitentFilter Label="Komitent"
-                                        SelectedKomitentId="@filterRequest.KomitentId" 
-                                        SelectedKomitentIdChanged="@(value => { filterRequest.KomitentId = value; })"
-                                        Size="2" />
-
-                        <ArtikalFilter Label="Artikal"
-                                       SelectedArtikalId="@filterRequest.ArtikalId" 
-                                       SelectedArtikalIdChanged="@(value => { filterRequest.ArtikalId = value; })"
-                                       Size="2" />
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Do datuma:</label>
+                            <input type="date" class="form-control" value="@DoDatumValue" @onchange="OnDoDatumChanged" />
+                        </div>
 
                         <div class="col-md-2 mb-3">
                             <label class="form-label fw-bold">Tip komitenta:</label>
                             <select class="form-select" @bind="filterRequest.KomitentTip">
                                 <option value="">Svi tipovi</option>
-                                <option value="Kupac">Kupac</option>
-                                <option value="Dobavljac">Dobavljač</option>
-                                <option value="Proizvodjac">Proizvođač</option>
-                                <option value="Otkupljivac">Otkupljivač</option>
+                                <option value="kupac">Kupac</option>
+                                <option value="dobavljac">Dobavljač</option>
+                                <option value="proizvodjac">Proizvođač</option>
+                                <option value="otkupljivac">Otkupljivač</option>
                             </select>
                         </div>
 
@@ -99,53 +91,145 @@
                             <label class="form-label fw-bold">Tip artikla:</label>
                             <select class="form-select" @bind="filterRequest.ArtikalTip">
                                 <option value="">Svi tipovi</option>
-                                <option value="1">Ambalaza</option>
-                                <option value="2">Repromaterijal</option>
-                                <option value="3">Gotov Proizvod</option>
-                                <option value="4">Oprema</option>
+                                <option value="1">Sirovina</option>
+                                <option value="2">Ambalaza</option>
+                                <option value="3">Potrosni materijal</option>
+                                <option value="4">Gotova roba</option>
+                                <option value="5">Oprema</option>
                             </select>
                         </div>
 
-                        <div class="col-md-12 mb-3 d-flex align-items-end">
-                            <div class="d-grid gap-2 w-100">
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Min saldo:</label>
+                            <input type="number" class="form-control" @bind="filterRequest.MinSaldo" placeholder="0.00" step="0.01" />
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Max saldo:</label>
+                            <input type="number" class="form-control" @bind="filterRequest.MaxSaldo" placeholder="0.00" step="0.01" />
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <div class="d-flex gap-2">
                                 <button class="btn btn-primary" @onclick="UcitajPodatke">
                                     <i class="bi bi-search me-2"></i>Primeni filtere
                                 </button>
                                 <button class="btn btn-outline-secondary" @onclick="ResetujFiltere">
                                     <i class="bi bi-arrow-clockwise me-2"></i>Resetuj
                                 </button>
+                                <button class="btn btn-success" @onclick="ExportToExcel" disabled="@(podaci?.Count == 0)">
+                                    <i class="bi bi-file-earmark-excel me-2"></i>Excel
+                                </button>
+                                <button class="btn btn-danger" @onclick="ExportToPdf" disabled="@(podaci?.Count == 0)">
+                                    <i class="bi bi-file-earmark-pdf me-2"></i>PDF
+                                </button>
                             </div>
                         </div>
                     </div>
+                    
+                    @if (filterRequest.ImaAktivneFiltre())
+                    {
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <div class="alert alert-info small">
+                                    <strong>Aktivni filteri:</strong> @filterRequest.GetAktivneFiltereOpis()
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Export Buttons -->
-    <ExportButtons HasData="@(podaci?.Count > 0)"
-                   OnExportExcel="ExportToExcel"
-                   OnExportPdf="ExportToPdf" />
-
-    <!-- Charts Section -->
+    <!-- Statistics Cards -->
     <div class="row mb-4 financial-section">
-        <div class="col-md-6">
+        <div class="col-md-3">
             <div class="dashboard-card">
-                <h5 class="section-title">
-                    <i class="bi bi-currency-exchange me-2"></i>Top Kupci
-                </h5>
-                @* <BarChart Config="@kupciChartConfig" Height="250" /> *@
+                <h6 class="text-muted">Ukupno Saldo</h6>
+                <h4 class="@GetSaldoClass(UkupnoSaldo)">@UkupnoSaldo.ToString("N2") RSD</h4>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-3">
             <div class="dashboard-card">
-                <h5 class="section-title">
-                    <i class="bi bi-truck me-2"></i>Top Dobavljači
-                </h5>
-                @* <BarChart Config="@dobavljaciChartConfig" Height="250" /> *@
+                <h6 class="text-muted">Ukupno Potražuje</h6>
+                <h4 class="positive-saldo">@UkupnoPotrazuje.ToString("N2") RSD</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <h6 class="text-muted">Ukupno Duguje</h6>
+                <h4 class="negative-saldo">@UkupnoDuguje.ToString("N2") RSD</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <h6 class="text-muted">Broj Stavki</h6>
+                <h4 class="text-primary">@(podaci?.Count ?? 0)</h4>
             </div>
         </div>
     </div>
+
+    <!-- Charts Section -->
+    @if (topKupci?.Any() == true || topDobavljaci?.Any() == true)
+    {
+        <div class="row mb-4 financial-section">
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h5 class="section-title">
+                        <i class="bi bi-currency-exchange me-2"></i>Top 5 Kupaca
+                    </h5>
+                    @if (topKupci?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tbody>
+                                    @foreach (var kupac in topKupci.Take(5))
+                                    {
+                                        <tr>
+                                            <td>@kupac.Key</td>
+                                            <td class="text-end fw-bold @GetSaldoClass(kupac.Value)">@kupac.Value.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Nema podataka o kupcima</p>
+                    }
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h5 class="section-title">
+                        <i class="bi bi-truck me-2"></i>Top 5 Dobavljača
+                    </h5>
+                    @if (topDobavljaci?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tbody>
+                                    @foreach (var dobavljac in topDobavljaci.Take(5))
+                                    {
+                                        <tr>
+                                            <td>@dobavljac.Key</td>
+                                            <td class="text-end fw-bold @GetSaldoClass(dobavljac.Value)">@dobavljac.Value.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Nema podataka o dobavljačima</p>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- Results Section -->
     @if (podaci == null)
@@ -178,20 +262,68 @@
                     <div class="card-header bg-light">
                         <h5 class="card-title mb-0">
                             <i class="bi bi-list-check me-2"></i>
-                            Finansijski podaci
+                            Finansijski podaci - Detaljni prikaz
                             <span class="badge bg-primary ms-2">@podaci.Count stavki</span>
                         </h5>
                     </div>
                     <div class="card-body p-0">
-@*                         <DataTable Data="@podaci.Cast<object>().ToList()" *@
-                                   Columns="@tableColumns"
-                                   TotalValue="@podaci.Sum(x => x.Saldo)"
-                                   ShowFooter="true" />
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Datum</th>
+                                        <th>Komitent</th>
+                                        <th>Tip</th>
+                                        <th>Dokument</th>
+                                        <th>Artikal</th>
+                                        <th class="text-end">Količina</th>
+                                        <th class="text-end">Potražuje</th>
+                                        <th class="text-end">Duguje</th>
+                                        <th class="text-end">Saldo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in podaci)
+                                    {
+                                        <tr>
+                                            <td>@item.Datum?.ToString("dd.MM.yyyy")</td>
+                                            <td>@item.Komitent</td>
+                                            <td>
+                                                @if (item.Kupac) { <span class="badge bg-success">Kupac</span> }
+                                                @if (item.Dobavljac) { <span class="badge bg-warning">Dobavljač</span> }
+                                                @if (item.Proizvodjac) { <span class="badge bg-info">Proizvođač</span> }
+                                                @if (item.Otkupljivac) { <span class="badge bg-secondary">Otkupljivač</span> }
+                                            </td>
+                                            <td>@item.Dokument</td>
+                                            <td>@item.Artikal</td>
+                                            <td class="text-end">@item.Kolicina.ToString("N2")</td>
+                                            <td class="text-end positive-saldo">@item.Potrazuje.ToString("N2")</td>
+                                            <td class="text-end negative-saldo">@item.Duguje.ToString("N2")</td>
+                                            <td class="text-end @GetSaldoClass(item.Saldo)">@item.Saldo.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-secondary">
+                                    <tr>
+                                        <th colspan="6" class="text-end">UKUPNO:</th>
+                                        <th class="text-end positive-saldo">@podaci.Sum(x => x.Potrazuje).ToString("N2")</th>
+                                        <th class="text-end negative-saldo">@podaci.Sum(x => x.Duguje).ToString("N2")</th>
+                                        <th class="text-end @GetSaldoClass(podaci.Sum(x => x.Saldo))">@podaci.Sum(x => x.Saldo).ToString("N2")</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
                     <div class="card-footer bg-light">
-                        Poslednje ažuriranje: @DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") |
-                        Prikaz: <strong>@podaci.Count stavki</strong> |
-                        Ukupno saldo: <strong class="@GetSaldoClass(UkupnoSaldo)">@UkupnoSaldo.ToString("N2")</strong>
+                        <div class="row">
+                            <div class="col-md-6">
+                                Poslednje ažuriranje: @DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")
+                            </div>
+                            <div class="col-md-6 text-end">
+                                Prikaz: <strong>@podaci.Count stavki</strong> |
+                                Ukupno saldo: <strong class="@GetSaldoClass(UkupnoSaldo)">@UkupnoSaldo.ToString("N2") RSD</strong>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -203,18 +335,17 @@
     private List<FinansijeModel> podaci = new List<FinansijeModel>();
     private FilterRequest filterRequest = new FilterRequest();
     private decimal ukupnoSaldo = 0;
+    private decimal ukupnoPotrazuje = 0;
+    private decimal ukupnoDuguje = 0;
+    private Dictionary<string, decimal>? topKupci;
+    private Dictionary<string, decimal>? topDobavljaci;
 
-    // Chart configurations
-   @*  private BarConfig kupciChartConfig;
-    private BarConfig dobavljaciChartConfig; *@
-
-    // Table columns
-    private List<string> tableColumns = new List<string> 
-    { 
-        "Datum", "Komitent", "Dokument", "Artikal", "Količina", "Potražuje", "Duguje", "Saldo" 
-    };
+    private string OdDatumValue => filterRequest.OdDatum?.ToString("yyyy-MM-dd") ?? "";
+    private string DoDatumValue => filterRequest.DoDatum?.ToString("yyyy-MM-dd") ?? "";
 
     private decimal UkupnoSaldo => ukupnoSaldo;
+    private decimal UkupnoPotrazuje => ukupnoPotrazuje;
+    private decimal UkupnoDuguje => ukupnoDuguje;
     private string saldoBadgeClass => UkupnoSaldo > 0 ? "bg-success" : UkupnoSaldo < 0 ? "bg-danger" : "bg-secondary";
 
     protected override async Task OnInitializedAsync()
@@ -224,48 +355,49 @@
         filterRequest.DoDatum = DateTime.Now;
         
         await UcitajPodatke();
-        await KreirajChartove();
+    }
+
+    private void OnOdDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            filterRequest.OdDatum = date;
+        }
+    }
+
+    private void OnDoDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            filterRequest.DoDatum = date;
+        }
     }
 
     private async Task UcitajPodatke()
     {
         try
         {
+            // Učitaj osnovne podatke
             podaci = await FinansijeService.UcitajFinansijskiIzvestaj(filterRequest);
             ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filterRequest);
+
+            // Izračunaj ukupne vrednosti iz učitanih podataka
+            ukupnoPotrazuje = podaci.Sum(x => x.Potrazuje);
+            ukupnoDuguje = podaci.Sum(x => x.Duguje);
+
+            // Učitaj top kupce i dobavljače
+            topKupci = await FinansijeService.UcitajTopKupce(filterRequest);
+            topDobavljaci = await FinansijeService.UcitajTopDobavljace(filterRequest);
+
+            StateHasChanged();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Greška pri učitavanju podataka: {ex.Message}");
             podaci = new List<FinansijeModel>();
             ukupnoSaldo = 0;
-        }
-    }
-
-    private async Task KreirajChartove()
-    {
-        try
-        {
-            var topKupci = await FinansijeService.UcitajTopKupce(filterRequest);
-            var topDobavljaci = await FinansijeService.UcitajTopDobavljace(filterRequest);
-@* 
-            kupciChartConfig = ChartHelper.CreateBarChart(
-                topKupci.Keys.ToArray(),
-                topKupci.Values.ToArray(),
-                "Saldo (RSD)",
-                "rgba(40, 167, 69, 0.8)"
-            ); *@
-
-           @*  dobavljaciChartConfig = ChartHelper.CreateBarChart(
-                topDobavljaci.Keys.ToArray(),
-                topDobavljaci.Values.ToArray(),
-                "Saldo (RSD)", 
-                "rgba(220, 53, 69, 0.8)"
-            ); *@
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška pri kreiranju chartova: {ex.Message}");
+            ukupnoPotrazuje = 0;
+            ukupnoDuguje = 0;
         }
     }
 
@@ -284,7 +416,6 @@
         };
         
         await UcitajPodatke();
-        await KreirajChartove();
     }
 
     private async Task ExportToExcel()

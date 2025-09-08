@@ -1,9 +1,6 @@
 <div class="col-md-@Size mb-3">
     <label class="form-label fw-bold">@Label</label>
-    <input type="text" class="form-control" 
-           placeholder="@Placeholder"
-           @bind="TextValue"
-           @oninput="HandleTextInput" />
+    <input type="text" class="form-control" placeholder="@Placeholder" value="@TextValue" @oninput="OnTextChanged" />
 </div>
 
 @code {
@@ -13,9 +10,9 @@
     [Parameter] public EventCallback<string> TextValueChanged { get; set; }
     [Parameter] public int Size { get; set; } = 2;
 
-    private async Task HandleTextInput(ChangeEventArgs e)
+    private async Task OnTextChanged(ChangeEventArgs e)
     {
-        TextValue = e.Value?.ToString();
-        await TextValueChanged.InvokeAsync(TextValue);
+        var value = e.Value?.ToString();
+        await TextValueChanged.InvokeAsync(value);
     }
 }

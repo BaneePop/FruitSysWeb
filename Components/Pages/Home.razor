@@ -110,8 +110,8 @@
             <div class="quick-action-icon">
                 <i class="bi bi-clipboard-data"></i>
             </div>
-            <div class="quick-action-title">Izveštaji</div>
-            <div class="quick-action-desc">Detaljni poslovni izveštaji</div>
+            <div class="quick-action-title">Izveštaje</div>
+            <div class="quick-action-desc">Detaljni poslovni izveštaje</div>
         </div>
     </div>
 
@@ -365,30 +365,6 @@
         }
     }
 
-    @* private async Task UcitajLagerStanje()
-    {
-        try
-        {
-            var sirovine = await LagerService.UcitajStanjeSirovina();
-            var ukupnoSirovine = sirovine.Values.Sum();
-            
-            var ambalaza = await LagerService.UcitajStanjeAmbalaze();
-            var ukupnoAmbalaza = ambalaza.Values.Sum();
-            
-            var gotovProizvod = await LagerService.UcitajStanjeGotovihProizvoda();
-            var ukupnoGotovProizvod = gotovProizvod.Values.Sum();
-
-            var labels = new[] { "Sirovine", "Ambalaza", "Gotov Proizvod" };
-            var values = new[] { ukupnoSirovine, ukupnoAmbalaza, ukupnoGotovProizvod };
-            var colors = new[] { "#28a745", "#20c997", "#0dcaf0" }; 
-            lagerChartConfig = ChartHelper.CreatePieChart(labels, values, colors);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška pri učitavanju stanja lagera: {ex.Message}");
-        }
-    } *@
-
     private void NavigateToFinansije()
     {
         NavigationManager.NavigateTo("/finansije");
@@ -401,14 +377,11 @@
 
     private void NavigateToLager()
     {
-        // Dodati kada kreirate Lager stranicu
         NavigationManager.NavigateTo("/lager");
     }
 
     private void NavigateToIzvjestaji()
     {
-        // Dodati kada kreirate Izvještaje stranicu
         NavigationManager.NavigateTo("/izvjestaji");
     }
-    @inject NavigationManager NavigationManager
 }

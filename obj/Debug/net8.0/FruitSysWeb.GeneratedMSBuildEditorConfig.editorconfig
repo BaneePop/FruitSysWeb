@@ -38,28 +38,16 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9JenZqZXN0YWppLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/nikola/FruitSysWeb/Components/Pages/Lager.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9MYWdlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/nikola/FruitSysWeb/Components/Pages/Proizvodnja.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Qcm9penZvZG5qYS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/nikola/FruitSysWeb/Components/Pages/_Imports.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9fSW1wb3J0cy5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/PreradaPregledModelComponent.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QcmVyYWRhUHJlZ2xlZE1vZGVsQ29tcG9uZW50LnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/ProizvodnjaModelComponent.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Qcm9penZvZG5qYU1vZGVsQ29tcG9uZW50LnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
 [/Users/nikola/FruitSysWeb/Components/Shared/Filters/ArtikalFilter.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvRmlsdGVycy9BcnRpa2FsRmlsdGVyLnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Filters/BaseFilter.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvRmlsdGVycy9CYXNlRmlsdGVyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/nikola/FruitSysWeb/Components/Shared/Filters/DateFilter.razor]
@@ -84,6 +72,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/Users/nikola/FruitSysWeb/Components/Shared/Tables/ExportButtons.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvVGFibGVzL0V4cG9ydEJ1dHRvbnMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/nikola/FruitSysWeb/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9fSW1wb3J0cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/nikola/FruitSysWeb/Pages/App.razor]

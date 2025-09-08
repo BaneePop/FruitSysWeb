@@ -11,19 +11,19 @@
             <div class="col-md-3 mb-3">
                 <label class="form-label fw-bold">Od datuma:</label>
                 <input type="date" class="form-control" 
-                       @bind="FilterOdDatum" 
-                       @bind:format="yyyy-MM-dd" />
+                       @="FilterOdDatum" 
+                       @:format="yyyy-MM-dd" />
             </div>
             <div class="col-md-3 mb-3">
                 <label class="form-label fw-bold">Do datuma:</label>
                 <input type="date" class="form-control" 
-                       @bind="FilterDoDatum" 
-                       @bind:format="yyyy-MM-dd" />
+                       @="FilterDoDatum" 
+                       @:format="yyyy-MM-dd" />
             </div>
             <div class="col-md-3 mb-3">
                 <label class="form-label fw-bold">Radni nalog:</label>
                 <input type="text" class="form-control" 
-                       @bind="FilterRadniNalog" 
+                       @="FilterRadniNalog" 
                        placeholder="Unesite broj naloga..." />
             </div>
             <div class="col-md-3 mb-3 d-flex align-items-end">

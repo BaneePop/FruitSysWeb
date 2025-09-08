@@ -1,68 +1,10 @@
-@* @using FruitSysWeb.Models
-@using FruitSysWeb.Services
-@inject ArtikalService ArtikalService
-
-
-
-<div class="col-md-@Size mb-3">
-    <label class="form-label fw-bold">@Label</label>
-    <select class="form-select" @bind="SelectedArtikalId" @onchange="HandleArtikalChange">
-        <option value="">@DefaultText</option>
-        @foreach (var artikal in artikli)
-        {
-            <option value="@artikal">@artikal.Naziv</option>
-        }
-    </select>
-</div>
-
-
-
-@code {
-    private List<Artikal> artikli = new();
-
-    [Parameter] public string Label { get; set; } = "Artikal";
-    [Parameter] public string DefaultText { get; set; } = "Svi artikli";
-    [Parameter] public long? SelectedArtikalId { get; set; }
-    [Parameter] public EventCallback<long?> SelectedArtikalIdChanged { get; set; }
-    [Parameter] public int Size { get; set; } = 2;
-    [Parameter] public string ArtikalTip { get; set; }
-
-    public ArtikalFilter(string artikalTip)
-    {
-        ArtikalTip = artikalTip;
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        artikli = await ArtikalService.UcitajSveArtikle();
-        
-        if (!string.IsNullOrEmpty(ArtikalTip))
-        {
-            artikli = artikli.Where(a => a.Tip.ToString() == ArtikalTip).ToList();
-        }
-    }
-
-    private async Task HandleArtikalChange(ChangeEventArgs e)
-    {
-        if (long.TryParse(e.Value?.ToString(), out long id))
-        {
-            SelectedArtikalId = id;
-        }
-        else
-        {
-            SelectedArtikalId = null;
-        }
-        await SelectedArtikalIdChanged.InvokeAsync(SelectedArtikalId);
-    }
-} *@
-
 @using FruitSysWeb.Models
 @using FruitSysWeb.Services
 @inject ArtikalService ArtikalService
 
 <div class="col-md-@Size mb-3">
     <label class="form-label fw-bold">@Label</label>
-    <select class="form-select" @bind="SelectedArtikalId" @onchange="HandleArtikalChange">
+    <select class="form-select" value="@SelectedValue" @onchange="OnSelectionChanged">
         <option value="">@DefaultText</option>
         @foreach (var artikal in artikli)
         {
@@ -79,34 +21,31 @@
     [Parameter] public long? SelectedArtikalId { get; set; }
     [Parameter] public EventCallback<long?> SelectedArtikalIdChanged { get; set; }
     [Parameter] public int Size { get; set; } = 2;
-    [Parameter] public string? ArtikalTip { get; set; }
 
-    // Parameterless constructor is required for Blazor components
-    public ArtikalFilter()
-    {
-        ArtikalTip = artikalTip;
-    }
+    private string SelectedValue => SelectedArtikalId?.ToString() ?? "";
 
     protected override async Task OnInitializedAsync()
     {
-        artikli = await ArtikalService.UcitajSveArtikle();
-        
-        if (!string.IsNullOrEmpty(ArtikalTip))
+        try
         {
-            artikli = artikli.Where(a => a.Tip.ToString() == ArtikalTip).ToList();
+            artikli = await ArtikalService.UcitajSveArtikle();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju artikala: {ex.Message}");
+            artikli = new List<Artikal>();
         }
     }
 
-    private async Task HandleArtikalChange(ChangeEventArgs e)
+    private async Task OnSelectionChanged(ChangeEventArgs e)
     {
-        if (long.TryParse(e.Value?.ToString(), out long id))
+        if (string.IsNullOrEmpty(e.Value?.ToString()))
         {
-            SelectedArtikalId = id;
+            await SelectedArtikalIdChanged.InvokeAsync(null);
         }
-        else
+        else if (long.TryParse(e.Value.ToString(), out var id))
         {
-            SelectedArtikalId = null;
+            await SelectedArtikalIdChanged.InvokeAsync(id);
         }
-        await SelectedArtikalIdChanged.InvokeAsync(SelectedArtikalId);
     }
 }

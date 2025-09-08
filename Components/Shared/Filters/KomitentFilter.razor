@@ -1,14 +1,14 @@
-@using FruitSysWeb.Models  <!-- DODAJTE OVO -->
+@using FruitSysWeb.Models
 @using FruitSysWeb.Services
 @inject KomitentService KomitentService
 
 <div class="col-md-@Size mb-3">
     <label class="form-label fw-bold">@Label</label>
-    <select class="form-select" @bind="SelectedKomitentId" @onchange="HandleKomitentChange">
+    <select class="form-select" value="@SelectedValue" @onchange="OnSelectionChanged">
         <option value="">@DefaultText</option>
         @foreach (var komitent in komitenti)
         {
-            <option value="@komitent.Id">@komitent.Naziv</option>  <!-- Id umesto ID -->
+            <option value="@komitent.Id">@komitent.Naziv</option>
         }
     </select>
 </div>
@@ -21,30 +21,31 @@
     [Parameter] public long? SelectedKomitentId { get; set; }
     [Parameter] public EventCallback<long?> SelectedKomitentIdChanged { get; set; }
     [Parameter] public int Size { get; set; } = 2;
-    [Parameter] public string? KomitentTip { get; set; }
+
+    private string SelectedValue => SelectedKomitentId?.ToString() ?? "";
 
     protected override async Task OnInitializedAsync()
     {
-        komitenti = await KomitentService.UcitajSveKomitente();
-        
-        if (!string.IsNullOrEmpty(KomitentTip))
+        try
         {
-            // Uklonite ovaj deo koji koristi 'Tip' property koji ne postoji
-            // ili dodajte Tip property u Komitent model
-            komitenti = komitenti.ToList(); // Privremeno uklonite filter
+            komitenti = await KomitentService.UcitajSveKomitente();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju komitenata: {ex.Message}");
+            komitenti = new List<Komitent>();
         }
     }
 
-    private async Task HandleKomitentChange(ChangeEventArgs e)
+    private async Task OnSelectionChanged(ChangeEventArgs e)
     {
-        if (long.TryParse(e.Value?.ToString(), out long id))
+        if (string.IsNullOrEmpty(e.Value?.ToString()))
         {
-            SelectedKomitentId = id;
+            await SelectedKomitentIdChanged.InvokeAsync(null);
         }
-        else
+        else if (long.TryParse(e.Value.ToString(), out var id))
         {
-            SelectedKomitentId = null;
+            await SelectedKomitentIdChanged.InvokeAsync(id);
         }
-        await SelectedKomitentIdChanged.InvokeAsync(SelectedKomitentId);
     }
 }

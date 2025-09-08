@@ -25,6 +25,41 @@ namespace FruitSysWeb.Models
         [Display(Name = "Tip Artikla")]
         public int TipArtikla { get; set; }
         
-        public int RadniNalogID { get; set; }
+        [Display(Name = "Radni Nalog ID")]
+        public long RadniNalogID { get; set; }  // Promenjeno sa int na long
+        
+        // Dodajte dodatne properties za kompletnost
+        [Display(Name = "Artikal ID")]
+        public long? ArtikalID { get; set; }
+        
+        [Display(Name = "Komitent ID")]
+        public long? KomitentID { get; set; }
+        
+        [Display(Name = "Status")]
+        public string? Status { get; set; }
+        
+        [Display(Name = "Broj Pakovanja")]
+        public int? BrojPakovanja { get; set; }
+        
+        [Display(Name = "Lot Naloga")]
+        public string? LotNaloga { get; set; }
+        
+        [Display(Name = "Opis")]
+        public string? Opis { get; set; }
+        
+        [Display(Name = "Datum Isporuke")]
+        public DateTime? DatumIsporuke { get; set; }
+        
+        [Display(Name = "Jedinica Mere")]
+        public string? JedinicaMere { get; set; }
+        
+        // Calculated properties
+        [Display(Name = "Dani do Isporuke")]
+        public int? DaniDoIsporuke => DatumIsporuke.HasValue ? 
+            (int)(DatumIsporuke.Value - DateTime.Now).TotalDays : null;
+        
+        [Display(Name = "Status Naloga")]
+        public string StatusNaloga => DatumIsporuke.HasValue && DatumIsporuke < DateTime.Now ? 
+            "Zakasnio" : "U toku";
     }
 }

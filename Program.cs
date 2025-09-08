@@ -6,49 +6,44 @@ using MySqlConnector;
 using Microsoft.Extensions.Configuration;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Implementations.IzvestajService;
-using FruitSysWeb.Services.Implementations.ExportService;
-
-
-
+using FruitSysWeb.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
-builder.Services.AddScoped<IFinansijeService, FinansijeService>();
-builder.Services.AddScoped<IProizvodnjaService, ProizvodnjaService>();
-builder.Services.AddScoped<IExportService, ExcelExportService>();
-
-
-
-// Dodavanje servisa
+// Dodavanje osnovnih servisa
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-
-
-builder.Services.AddScoped<IzvestajService>();
-builder.Services.AddScoped<ExportService>();
-
-
-// REGISTRACIJA SERVISA
+// CORE SERVIS
 builder.Services.AddScoped<DatabaseService>();
-builder.Services.AddScoped<IzvestajService>();
+
+// GLAVNI BIZNIS SERVISI - SAMO JEDAN EXPORT SERVIS
+builder.Services.AddScoped<IExportService, SimpleExportService>();
+
+// GLAVNI BIZNIS SERVISI - INTERFACE I IMPLEMENTACIJA  
+builder.Services.AddScoped<IFinansijeService, FinansijeService>();
+builder.Services.AddScoped<IMagacinLagerService, MagacinLagerService>();
+builder.Services.AddScoped<IProizvodnjaService, ProizvodnjaService>();
+builder.Services.AddScoped<IExportService, SimpleExportService>();
+
+
+// POMOĆNI SERVISI (bez interface-a)
 builder.Services.AddScoped<ArtikalService>();
 builder.Services.AddScoped<KomitentService>();
-builder.Services.AddScoped<ExportService>();
+builder.Services.AddScoped<SimpleExportService>();
 
 
-// Konfiguracija baze podataka - samo connection string
+// UKLONITE OVE DUPLIKATE:
+// builder.Services.AddScoped<ExportService>(); // ❌ DUPLIKAT
+// builder.Services.AddScoped<IzvestajService>(); // ❌ MOŽDA NIJE POTREBAN
+
+// MySQL konekcija
 builder.Services.AddTransient<MySqlConnection>(_ =>
     new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
-    
 
 var app = builder.Build();
 
-// Ostali kod ostaje isti...
-
-// Konfiguracija middleware-a
+// Middleware konfiguracija
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();

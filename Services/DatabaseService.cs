@@ -51,5 +51,21 @@ namespace FruitSysWeb.Services
             await connection.OpenAsync();
             return await connection.ExecuteAsync(sql, parameters);
         }
+
+        // DODAJTE OVU METODU - ISPRAVLJENA VERZIJA
+        public async Task<T> ExecuteScalarAsync<T>(string sql, object? parameters = null)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+            {
+                throw new InvalidOperationException("Connection string is not configured.");
+            }
+
+            using var connection = new MySqlConnection(_connectionString);
+            await connection.OpenAsync();
+            
+            // Koristimo default vrednost za tip T ako je rezultat null
+            var result = await connection.ExecuteScalarAsync<T?>(sql, parameters);
+            return result ?? default(T)!;
+        }
     }
 }

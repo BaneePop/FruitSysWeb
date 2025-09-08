@@ -1,6 +1,10 @@
 {
   "Files": [
     {
+      "Id": "/Users/nikola/.nuget/packages/chartjs.blazor.fork/2.0.2/contentFiles/any/netstandard2.1/wwwroot/ChartJsBlazorInterop.js",
+      "PackagePath": "staticwebassets/ChartJsBlazorInterop.js"
+    },
+    {
       "Id": "/Users/nikola/FruitSysWeb/obj/Debug/net8.0/scopedcss/projectbundle/FruitSysWeb.bundle.scp.css",
       "PackagePath": "staticwebassets/FruitSysWeb.bundle.scp.css"
     },
@@ -23,6 +27,10 @@
     {
       "Id": "/Users/nikola/FruitSysWeb/wwwroot/index.html",
       "PackagePath": "staticwebassets/index.html"
+    },
+    {
+      "Id": "/Users/nikola/FruitSysWeb/wwwroot/js/download.js",
+      "PackagePath": "staticwebassets/js/download.js"
     },
     {
       "Id": "obj/Debug/net8.0/staticwebassets/msbuild.FruitSysWeb.Microsoft.AspNetCore.StaticWebAssets.props",

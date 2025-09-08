@@ -1,0 +1,54 @@
+using ClosedXML.Excel;
+using FruitSysWeb.Services.Interfaces;
+namespace FruitSysWeb.Services.Implementations
+
+{
+    public class SimpleExportService : IExportService
+    {
+        public byte[] ExportToExcel<T>(List<T> data)
+        {
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Podaci");
+
+            if (!data.Any())
+            {
+                worksheet.Cell(1, 1).Value = "Nema podataka za export";
+                using var emptyStream = new MemoryStream();
+                workbook.SaveAs(emptyStream);
+                return emptyStream.ToArray();
+            }
+
+            var properties = typeof(T).GetProperties();
+            
+            // Header
+            for (int i = 0; i < properties.Length; i++)
+            {
+                worksheet.Cell(1, i + 1).Value = properties[i].Name;
+                worksheet.Cell(1, i + 1).Style.Font.Bold = true;
+            }
+
+            // Data
+            for (int row = 0; row < data.Count; row++)
+            {
+                for (int col = 0; col < properties.Length; col++)
+                {
+                    var value = properties[col].GetValue(data[row]);
+                    worksheet.Cell(row + 2, col + 1).Value = value?.ToString() ?? "";
+                }
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return stream.ToArray();
+        }
+
+        public byte[] ExportToPdf<T>(List<T> data)
+        {
+            // Privremeno vraćamo prazan byte array dok ne rešimo PDF
+            // Možete dodati QuestPDF implementaciju naknadno
+            return new byte[0];
+        }
+    }
+}

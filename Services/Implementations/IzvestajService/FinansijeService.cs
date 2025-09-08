@@ -1,192 +1,499 @@
-using Dapper;
-using MySqlConnector;
+using FruitSysWeb.Models;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Models.Requests;
-using FruitSysWeb.Models;
-using Microsoft.Extensions.Configuration;
+using System.Text;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService
 {
     public class FinansijeService : IFinansijeService
     {
-        private readonly string _connectionString;
+        private readonly DatabaseService _databaseService;
 
-        public FinansijeService(IConfiguration configuration)
+        public FinansijeService(DatabaseService databaseService)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string not found.");
+            _databaseService = databaseService;
         }
 
-        public async Task<List<FinansijeModel>> UcitajFinansijskiIzvestaj(FilterRequest filter)
+        public async Task<List<FinansijeModel>> UcitajFinansijskiIzvestaj(FilterRequest filterRequest)
         {
-            using var connection = new MySqlConnection(_connectionString);
-
-            var query = @"
-                SELECT 
-                    fm.ID, fm.KomitentID, fm.Komitent, fm.Otkupljivac, fm.Proizvodjac,
-                    fm.Dobavljac, fm.Kupac, fm.DokumentID, fm.Datum, fm.Dokument,
-                    fm.DokumentTip, fm.DokumentStatus, fm.ArtikalID, fm.Artikal,
-                    fm.ArtikalPrvaKlasifikacijaID, fm.Kolicina, fm.Potrazuje,
-                    fm.Duguje, fm.Saldo, fm.Roba, fm.Provizija, fm.Prevoz,
-                    fm.Marza, fm.PCenaPrijem, fm.PCenaUkupno, fm.Uplata,
-                    fm.PorezIznos, fm.PorezIznos2, fm.UplataPdv, fm.NetoIznosOtkup,
-                    k.FizickoLice, a.Tip AS ArtikalTip, a.JedinicaMereID, a.OtkupniArtikal
-                FROM vPrometFinansijev9 fm
-                LEFT JOIN Komitent k ON fm.KomitentID = k.ID
-                LEFT JOIN Artikal a ON fm.ArtikalID = a.ID
-                WHERE 1=1";
-
-            var parameters = new DynamicParameters();
-
-            if (filter.OdDatum.HasValue)
+            try
             {
-                query += " AND fm.Datum >= @OdDatum";
-                parameters.Add("OdDatum", filter.OdDatum.Value);
-            }
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT 
+                        fm.ID,
+                        fm.KomitentID,
+                        fm.Komitent,
+                        fm.Otkupljivac,
+                        fm.Proizvodjac,
+                        fm.Dobavljac,
+                        fm.Kupac,
+                        fm.DokumentID,
+                        fm.Datum,
+                        fm.Dokument,
+                        fm.DokumentTip,
+                        fm.DokumentStatus,
+                        fm.ArtikalID,
+                        fm.Artikal,
+                        fm.ArtikalPrvaKlasifikacijaID,
+                        fm.Kolicina,
+                        fm.Potrazuje,
+                        fm.Duguje,
+                        fm.Saldo,
+                        fm.Roba,
+                        fm.Provizija,
+                        fm.Prevoz,
+                        fm.Marza,
+                        fm.PCenaPrijem,
+                        fm.PCenaUkupno,
+                        fm.Uplata,
+                        fm.PorezIznos,
+                        fm.PorezIznos2,
+                        fm.UplataPdv,
+                        fm.NetoIznosOtkup,
+                        -- Dodatni podaci
+                        0 as FizickoLice,
+                        0 as ArtikalTip,
+                        0 as JedinicaMereID,
+                        0 as OtkupniArtikal
+                    FROM vPrometFinansijev9 fm
+                    WHERE 1=1
+                ");
 
-            if (filter.DoDatum.HasValue)
-            {
-                query += " AND fm.Datum <= @DoDatum";
-                parameters.Add("DoDatum", filter.DoDatum.Value);
-            }
+                var parameters = new Dictionary<string, object>();
 
-            if (filter.KomitentId.HasValue)
-            {
-                query += " AND fm.KomitentID = @KomitentId";
-                parameters.Add("KomitentId", filter.KomitentId.Value);
-            }
-
-            if (!string.IsNullOrEmpty(filter.KomitentTip))
-            {
-                switch (filter.KomitentTip)
+                // Datum filteri
+                if (filterRequest.OdDatum.HasValue)
                 {
-                    case "Kupac": query += " AND fm.Kupac = true"; break;
-                    case "Dobavljac": query += " AND fm.Dobavljac = true"; break;
-                    case "Proizvodjac": query += " AND fm.Proizvodjac = true"; break;
-                    case "Otkupljivac": query += " AND fm.Otkupljivac = true"; break;
+                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
                 }
-            }
 
-            if (filter.ArtikalId.HasValue)
-            {
-                query += " AND fm.ArtikalID = @ArtikalId";
-                parameters.Add("ArtikalId", filter.ArtikalId.Value);
-            }
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
 
-            if (!string.IsNullOrEmpty(filter.ArtikalTip))
-            {
-                query += " AND a.Tip = @ArtikalTip";
-                parameters.Add("ArtikalTip", filter.ArtikalTip);
-            }
+                // Komitent filter
+                if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
+                {
+                    sql.Append(" AND fm.KomitentID = @KomitentId");
+                    parameters.Add("@KomitentId", filterRequest.KomitentId.Value);
+                }
 
-            query += " ORDER BY fm.Datum DESC, fm.Dokument";
+                // Artikal filter
+                if (filterRequest.ArtikalId.HasValue && filterRequest.ArtikalId > 0)
+                {
+                    sql.Append(" AND fm.ArtikalID = @ArtikalId");
+                    parameters.Add("@ArtikalId", filterRequest.ArtikalId.Value);
+                }
 
-            try
-            {
-                var result = await connection.QueryAsync<FinansijeModel>(query, parameters);
-                return result.AsList();
+                // POPRAVLJENO: Komitent tip filter - koristimo boolean kolone
+                if (!string.IsNullOrEmpty(filterRequest.KomitentTip))
+                {
+                    switch (filterRequest.KomitentTip.ToLower())
+                    {
+                        case "kupac":
+                            sql.Append(" AND fm.Kupac = 1");
+                            break;
+                        case "dobavljac":
+                            sql.Append(" AND fm.Dobavljac = 1");
+                            break;
+                        case "proizvodjac":
+                            sql.Append(" AND fm.Proizvodjac = 1");
+                            break;
+                        case "otkupljivac":
+                            sql.Append(" AND fm.Otkupljivac = 1");
+                            break;
+                    }
+                }
+
+                // POPRAVLJENO: Artikal tip filter - dodano
+                if (!string.IsNullOrEmpty(filterRequest.ArtikalTip))
+                {
+                    if (int.TryParse(filterRequest.ArtikalTip, out int artikalTipInt))
+                    {
+                        // Ovde treba join sa Artikli tabelom da dobijemo tip
+                        sql.Append(" AND EXISTS (SELECT 1 FROM Artikli a WHERE a.ID = fm.ArtikalID AND a.Tip = @ArtikalTip)");
+                        parameters.Add("@ArtikalTip", artikalTipInt);
+                    }
+                }
+
+                // Dokument tip filter
+                if (!string.IsNullOrEmpty(filterRequest.DokumentTip))
+                {
+                    sql.Append(" AND fm.DokumentTip = @DokumentTip");
+                    parameters.Add("@DokumentTip", filterRequest.DokumentTip);
+                }
+
+                // Saldo filteri
+                if (filterRequest.MinSaldo.HasValue)
+                {
+                    sql.Append(" AND fm.Saldo >= @MinSaldo");
+                    parameters.Add("@MinSaldo", filterRequest.MinSaldo.Value);
+                }
+
+                if (filterRequest.MaxSaldo.HasValue)
+                {
+                    sql.Append(" AND fm.Saldo <= @MaxSaldo");
+                    parameters.Add("@MaxSaldo", filterRequest.MaxSaldo.Value);
+                }
+
+                sql.Append(" ORDER BY fm.Datum DESC, fm.Dokument");
+
+                var rezultat = await _databaseService.QueryAsync<FinansijeModel>(sql.ToString(), parameters);
+                return rezultat.ToList();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju finansijskih podataka: {ex.Message}");
-                return new List<FinansijeModel>();
+                Console.WriteLine($"Greška u UcitajFinansijskiIzvestaj: {ex.Message}");
+                throw;
             }
         }
 
-        public async Task<decimal> UcitajUkupnoSaldo(FilterRequest filter)
+        public async Task<decimal> UcitajUkupnoSaldo(FilterRequest filterRequest)
         {
-            using var connection = new MySqlConnection(_connectionString);
-
-            var query = @"
-                SELECT SUM(fm.Saldo - fm.Uplata) AS UkupnoNetoSaldo
-                FROM vPrometFinansijev9 fm
-                WHERE 1=1";
-
-            var parameters = new DynamicParameters();
-
-            if (filter.OdDatum.HasValue)
-            {
-                query += " AND fm.Datum >= @OdDatum";
-                parameters.Add("OdDatum", filter.OdDatum.Value);
-            }
-
-            if (filter.DoDatum.HasValue)
-            {
-                query += " AND fm.Datum <= @DoDatum";
-                parameters.Add("DoDatum", filter.DoDatum.Value);
-            }
-
             try
             {
-                var result = await connection.ExecuteScalarAsync<decimal?>(query, parameters);
-                return result ?? 0;
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT COALESCE(SUM(fm.Saldo), 0) as UkupnoSaldo
+                    FROM vPrometFinansijev9 fm
+                    WHERE 1=1
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                // Datum filteri
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                // Komitent tip filter
+                if (!string.IsNullOrEmpty(filterRequest.KomitentTip))
+                {
+                    switch (filterRequest.KomitentTip.ToLower())
+                    {
+                        case "kupac":
+                            sql.Append(" AND fm.Kupac = 1");
+                            break;
+                        case "dobavljac":
+                            sql.Append(" AND fm.Dobavljac = 1");
+                            break;
+                        case "proizvodjac":
+                            sql.Append(" AND fm.Proizvodjac = 1");
+                            break;
+                        case "otkupljivac":
+                            sql.Append(" AND fm.Otkupljivac = 1");
+                            break;
+                    }
+                }
+
+                var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql.ToString(), parameters);
+                return rezultat;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju ukupnog salda: {ex.Message}");
+                Console.WriteLine($"Greška u UcitajUkupnoSaldo: {ex.Message}");
                 return 0;
             }
         }
 
-        public async Task<Dictionary<string, decimal>> UcitajTopKupce(FilterRequest filter)
+        public async Task<Dictionary<string, decimal>> UcitajTopKupce(FilterRequest filterRequest)
         {
-            using var connection = new MySqlConnection(_connectionString);
-
-            var query = @"
-                SELECT Komitent, SUM(Saldo) as UkupnoSaldo
-                FROM vPrometFinansijev9 
-                WHERE Kupac = true
-                AND (@OdDatum IS NULL OR Datum >= @OdDatum)
-                AND (@DoDatum IS NULL OR Datum <= @DoDatum)
-                GROUP BY Komitent 
-                ORDER BY UkupnoSaldo DESC 
-                LIMIT 10";
-
-            var parameters = new
+            try
             {
-                OdDatum = filter.OdDatum,
-                DoDatum = filter.DoDatum
-            };
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT 
+                        fm.Komitent,
+                        SUM(fm.Saldo) as UkupnoSaldo
+                    FROM vPrometFinansijev9 fm
+                    WHERE fm.Kupac = 1
+                ");
 
-            var result = await connection.QueryAsync<(string Komitent, decimal UkupnoSaldo)>(query, parameters);
-            return result.ToDictionary(x => x.Komitent, x => x.UkupnoSaldo);
-        }
+                var parameters = new Dictionary<string, object>();
 
-        public async Task<Dictionary<string, decimal>> UcitajTopDobavljace(FilterRequest filter)
-        {
-            using var connection = new MySqlConnection(_connectionString);
+                // Datum filteri
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
 
-            var query = @"
-                SELECT Komitent, SUM(Saldo) as UkupnoSaldo
-                FROM vPrometFinansijev9 
-                WHERE Dobavljac = true
-                AND (@OdDatum IS NULL OR Datum >= @OdDatum)
-                AND (@DoDatum IS NULL OR Datum <= @DoDatum)
-                GROUP BY Komitent 
-                ORDER BY UkupnoSaldo DESC 
-                LIMIT 10";
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
 
-            var parameters = new
+                sql.Append(@"
+                    GROUP BY fm.Komitent, fm.KomitentID
+                    ORDER BY UkupnoSaldo DESC
+                    LIMIT 5
+                ");
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Komitent ?? "Nepoznato",
+                    x => (decimal)x.UkupnoSaldo
+                );
+            }
+            catch (Exception ex)
             {
-                OdDatum = filter.OdDatum,
-                DoDatum = filter.DoDatum
-            };
-
-            var result = await connection.QueryAsync<(string Komitent, decimal UkupnoSaldo)>(query, parameters);
-            return result.ToDictionary(x => x.Komitent, x => x.UkupnoSaldo);
+                Console.WriteLine($"Greška u UcitajTopKupce: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
         }
 
-        // Ostale metode iz IIzvestajService interfejsa
-        public Task<List<ProizvodnjaModel>> UcitajIzvestajProizvodnje(FilterRequest filter)
+        public async Task<Dictionary<string, decimal>> UcitajTopDobavljace(FilterRequest filterRequest)
         {
-            // Ovo će biti implementirano u ProizvodnjaService
-            return Task.FromResult(new List<ProizvodnjaModel>());
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT 
+                        fm.Komitent,
+                        SUM(fm.Saldo) as UkupnoSaldo
+                    FROM vPrometFinansijev9 fm
+                    WHERE fm.Dobavljac = 1
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                // Datum filteri
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                sql.Append(@"
+                    GROUP BY fm.Komitent, fm.KomitentID
+                    ORDER BY UkupnoSaldo DESC
+                    LIMIT 5
+                ");
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Komitent ?? "Nepoznato",
+                    x => (decimal)x.UkupnoSaldo
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajTopDobavljace: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
         }
 
-        public Task<Dictionary<string, decimal>> UcitajRashodePoKategorijama(FilterRequest filter)
+        // DODATO: Implementacija metoda iz interfejsa koje su nedostajale
+        public async Task<List<FinansijeModel>> UcitajSaldoPoKomitentima(FilterRequest filterRequest)
         {
-            // Implementacija po potrebi
-            return Task.FromResult(new Dictionary<string, decimal>());
+            return await UcitajFinansijskiIzvestaj(filterRequest);
+        }
+
+        public async Task<List<FinansijeModel>> UcitajPrometePoArtiklima(FilterRequest filterRequest)
+        {
+            return await UcitajFinansijskiIzvestaj(filterRequest);
+        }
+
+        public async Task<decimal> UcitajUkupanPromet(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT COALESCE(SUM(ABS(fm.Potrazuje) + ABS(fm.Duguje)), 0) as UkupanPromet
+                    FROM vPrometFinansijev9 fm
+                    WHERE 1=1
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql.ToString(), parameters);
+                return rezultat;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajUkupanPromet: {ex.Message}");
+                return 0;
+            }
+        }
+
+        public async Task<decimal> UcitajUkupnuZaradu(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT COALESCE(SUM(fm.Marza), 0) as UkupnaZarada
+                    FROM vPrometFinansijev9 fm
+                    WHERE 1=1
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql.ToString(), parameters);
+                return rezultat;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajUkupnuZaradu: {ex.Message}");
+                return 0;
+            }
+        }
+
+        // POSTOJEĆE METODE koje su izostavlje iz interfejsa ali su implementirane
+        public async Task<List<FinansijeModel>> UcitajFinansijePoKomitentu(long komitentId, FilterRequest filterRequest)
+        {
+            filterRequest.KomitentId = komitentId;
+            return await UcitajFinansijskiIzvestaj(filterRequest);
+        }
+
+        public async Task<List<FinansijeModel>> UcitajFinansijePoArtiklu(long artikalId, FilterRequest filterRequest)
+        {
+            filterRequest.ArtikalId = artikalId;
+            return await UcitajFinansijskiIzvestaj(filterRequest);
+        }
+
+        public async Task<decimal> UcitajUkupnuZaduzenju(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT COALESCE(SUM(fm.Duguje), 0) as UkupnoDuguje
+                    FROM vPrometFinansijev9 fm
+                    WHERE 1=1
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql.ToString(), parameters);
+                return rezultat;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajUkupnuZaduzenju: {ex.Message}");
+                return 0;
+            }
+        }
+
+        public async Task<decimal> UcitajUkupnoPotrazenost(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT COALESCE(SUM(fm.Potrazuje), 0) as UkupnoPotrazuje
+                    FROM vPrometFinansijev9 fm
+                    WHERE 1=1
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql.ToString(), parameters);
+                return rezultat;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajUkupnoPotrazenost: {ex.Message}");
+                return 0;
+            }
+        }
+
+        public async Task<Dictionary<string, decimal>> UcitajSaldoPoMesecima(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        DATE_FORMAT(fm.Datum, '%Y-%m') as Mesec,
+                        SUM(fm.Saldo) as UkupnoSaldo
+                    FROM vPrometFinansijev9 fm
+                    WHERE fm.Datum >= CURDATE() - INTERVAL 12 MONTH
+                    GROUP BY DATE_FORMAT(fm.Datum, '%Y-%m')
+                    ORDER BY Mesec
+                ";
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Mesec ?? "Nepoznato",
+                    x => (decimal)x.UkupnoSaldo
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajSaldoPoMesecima: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
         }
     }
 }

@@ -16,3 +16,18 @@ body {
 .btn {
     border-radius: 0.375rem;
 }
+.positive-saldo { color: #198754; font-weight: bold; }
+.negative-saldo { color: #dc3545; font-weight: bold; }
+.neutral-saldo { color: #6c757d; }
+
+.dashboard-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.low-stock { background-color: #fff3cd; }
+.medium-stock { background-color: #d1ecf1; }
+.high-stock { background-color: #d4edda; }
