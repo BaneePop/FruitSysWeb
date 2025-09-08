@@ -5,6 +5,7 @@
 @using FruitSysWeb.Components.Shared.Layout
 @inject IFinansijeService FinansijeService
 @inject IProizvodnjaService ProizvodnjaService
+@inject IMagacinLagerService LagerService
 @inject IExportService exportService
 
 
@@ -276,6 +277,7 @@
             ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filter);
             ukupnaProizvodnja = await ProizvodnjaService.UcitajUkupnuProizvodnju(filter);
             brojAktivnihNaloga = await ProizvodnjaService.UcitajBrojAktivnihNaloga(filter);
+            ukupnaVrednostLager = await LagerService.UcitajUkupnuVrednostLager(); // DODATO
         }
         catch (Exception ex)
         {

@@ -3,9 +3,13 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.table th {
-    background-color: #f8f9fa;
-    border-top: 2px solid #dee2e6;
+.table-dark th {
+    color: #ffffff !important;
+    background-color: #212529 !important;
+    border-color: #32383e !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    opacity: 1 !important;
 }
 
 .card {
@@ -31,3 +35,35 @@ body {
 .low-stock { background-color: #fff3cd; }
 .medium-stock { background-color: #d1ecf1; }
 .high-stock { background-color: #d4edda; }
+
+.table-primary thead th {
+    color: #ffffff !important;
+    background-color: #0d6efd !important;
+    border-color: #0a58ca !important;
+}
+
+.table-success thead th {
+    color: #ffffff !important;
+    background-color: #198754 !important;
+    border-color: #146c43 !important;
+}
+
+/* Forcing visibility for all table headers */
+table thead tr th {
+    color: #ffffff !important;
+    text-decoration: none !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    text-transform: none !important;
+    line-height: 1.5 !important;
+    letter-spacing: normal !important;
+    word-spacing: normal !important;
+    text-align: inherit !important;
+    white-space: nowrap !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: table-cell !important;
+}

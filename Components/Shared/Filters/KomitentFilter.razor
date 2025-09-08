@@ -1,6 +1,13 @@
 @using FruitSysWeb.Models
 @using FruitSysWeb.Services
-@inject KomitentService KomitentService
+@using FruitSysWeb.Services.Implementations
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Components.Shared
+@using FruitSysWeb.Components
+
+@inject ArtikalService ArtikalService
+
+@inject IKomitentService KomitentService
 
 <div class="col-md-@Size mb-3">
     <label class="form-label fw-bold">@Label</label>

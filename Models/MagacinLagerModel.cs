@@ -4,17 +4,18 @@ namespace FruitSysWeb.Models
 {
     public class MagacinLagerModel
     {
-        [Display(Name = "Lager ID")]
-        public long MagacinLagerID { get; set; }
-        
         [Display(Name = "Artikal ID")]
         public long ArtikalID { get; set; }
         
-        [Display(Name = "Tip Artikla")]
+        [Display(Name = "Tip artikla")]
         public string? ArtikalTip { get; set; }
         
+        // DODATO: Tip kao string property jer view vraća string
+        [Display(Name = "Tip")]
+        public string? Tip { get; set; }
+        
         [Display(Name = "Artikal")]
-        public string? Artikal { get; set; }
+        public string Artikal { get; set; } = string.Empty;
         
         [Display(Name = "Količina")]
         public decimal Kolicina { get; set; }
@@ -22,70 +23,51 @@ namespace FruitSysWeb.Models
         [Display(Name = "Pakovanje")]
         public string? Pakovanje { get; set; }
         
-        [Display(Name = "Jedinica Mere")]
+        [Display(Name = "Jedinica mere")]
         public string? JM { get; set; }
-
-        // Dodatna polja iz vwMagacinLager view-a
-        [Display(Name = "Broj Pakovanja")]
-        public int BrojPakovanja { get; set; }
         
-        [Display(Name = "Tip Pakovanja")]
-        public int PakovanjeTip { get; set; }
-        
-        [Display(Name = "Rok Važenja")]
-        public DateTime? RokVazenja { get; set; }
-        
+        // DODATO: Dodatna polja iz view-a ako postoje
         [Display(Name = "Lot")]
         public string? Lot { get; set; }
         
-        [Display(Name = "Radni Nalog")]
-        public string? RadniNalog { get; set; }
+        [Display(Name = "Rok važenja")]
+        public DateTime? RokVazenja { get; set; }
         
-        [Display(Name = "Artikal Instanca ID")]
-        public long ArtikalInstancaID { get; set; }
+        [Display(Name = "Cena")]
+        public decimal? Cena { get; set; }
         
-        [Display(Name = "Pakovanje ID")]
-        public long PakovanjeID { get; set; }
+        [Display(Name = "Vrednost")]
+        public decimal Vrednost => Kolicina * (Cena ?? 0);
         
-        [Display(Name = "Ambalaza Tip")]
-        public int AmbalazaTip { get; set; }
+        [Display(Name = "Status")]
+        public string Status => GetStatusOpis();
+        
+        [Display(Name = "Tip naziv")]
+        public string TipNaziv => GetTipNaziv();
 
-        // Computed properties
-        [Display(Name = "Status Zalihe")]
-        public string StatusZalihe => Kolicina switch
+        private string GetStatusOpis()
         {
-            < 10 => "Kritično",
-            < 50 => "Nisko",
-            < 100 => "Umjereno",
-            _ => "Dovoljno"
-        };
+            if (Kolicina <= 0) return "Nema na stanju";
+            if (Kolicina < 10) return "Ispod minimuma";
+            if (Kolicina < 20) return "Ograničeno";
+            return "Dostupno";
+        }
 
-        [Display(Name = "Dani Do Isteka")]
-        public int? DaniDoIsteka => RokVazenja.HasValue && RokVazenja != DateTime.Parse("2099-12-31")
-            ? (int)(RokVazenja.Value - DateTime.Now).TotalDays
-            : null;
-
-        [Display(Name = "Istice Rok")]
-        public bool IsticePoskoro => DaniDoIsteka.HasValue && DaniDoIsteka < 30;
-
-        // Helper metode
-        public int GetArtikalTipAsInt()
+        private string GetTipNaziv()
         {
-            if (int.TryParse(ArtikalTip, out int tip))
+            if (int.TryParse(Tip ?? ArtikalTip, out int tipInt))
             {
-                return tip;
+                return tipInt switch
+                {
+                    1 => "Sirovina",
+                    2 => "Ambalaza", 
+                    3 => "Potrosni materijal",
+                    4 => "Gotova roba",
+                    5 => "Oprema",
+                    _ => $"Tip {tipInt}"
+                };
             }
-            return 0;
-        }
-
-        public string GetBadgeClass()
-        {
-            return ArtikalTipHelper.GetBadgeClass(GetArtikalTipAsInt());
-        }
-
-        public string GetTipNaziv()
-        {
-            return ArtikalTipHelper.GetDisplayName(GetArtikalTipAsInt());
+            return "Nepoznato";
         }
     }
 }

@@ -4,6 +4,8 @@
 @using FruitSysWeb.Models
 @inject IProizvodnjaService ProizvodnjaService
 @inject IExportService ExportService
+@inject IKomitentService KomitentService
+@inject IArtikalKlasifikacijaService ArtikalKlasifikacijaService
 @inject IJSRuntime JSRuntime
 
 <style>
@@ -85,22 +87,42 @@
                         </div>
                         <div class="col-md-2">
                             <label class="form-label fw-bold">Radni nalog:</label>
-                            <input type="text" class="form-control" value="@RadniNalogValue" @oninput="OnRadniNalogChanged" placeholder="Unesite broj naloga..." />
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold">Tip artikla:</label>
-                            <select class="form-select" @bind="filterRequest.TipArtikla">
-                                <option value="">Svi tipovi</option>
-                                <option value="1">Sirovina</option>
-                                <option value="2">Ambalaza</option>
-                                <option value="3">Potrosni materijal</option>
-                                <option value="4">Gotova roba</option>
-                                <option value="5">Oprema</option>
+                            <select class="form-select" @bind="filterRequest.RadniNalog">
+                                <option value="">Svi radni nalozi</option>
+                                @if (radniNaloziLista != null)
+                                {
+                                    @foreach (var nalog in radniNaloziLista)
+                                    {
+                                        <option value="@nalog">@nalog</option>
+                                    }
+                                }
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label fw-bold">Min količina:</label>
-                            <input type="number" class="form-control" @bind="filterRequest.MinKolicina" placeholder="0.00" step="0.01" />
+                            <label class="form-label fw-bold">Komitent:</label>
+                            <select class="form-select" @bind="filterRequest.KomitentId">
+                                <option value="">Svi komitenti</option>
+                                @if (komitentiLista != null)
+                                {
+                                    @foreach (var komitent in komitentiLista)
+                                    {
+                                        <option value="@komitent.Id">@komitent.Naziv</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">Vrsta Artikla:</label>
+                            <select class="form-select" @bind="filterRequest.ArtikalKlasifikacijaId">
+                                <option value="">Sve vrste</option>
+                                @if (artikalKlasifikacijeLista != null)
+                                {
+                                    @foreach (var klasifikacija in artikalKlasifikacijeLista)
+                                    {
+                                        <option value="@klasifikacija.Id">@klasifikacija.Naziv</option>
+                                    }
+                                }
+                            </select>
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                             <div class="d-grid gap-2 w-100">
@@ -318,7 +340,7 @@
                                         <td>@nalog.RadniNalog</td>
                                         <td>@nalog.Artikal</td>
                                         <td>@nalog.Komitent</td>
-                                        <td class="text-end fw-bold text-success">@nalog.Kolicina.ToString("N2")</td>
+                                        <td class="text-end fw-bold text-success">@nalog.GotovProizvod.ToString("N2")</td>
                                     </tr>
                                 }
                             </tbody>
@@ -364,10 +386,11 @@
                                         <th>Datum</th>
                                         <th>Radni Nalog</th>
                                         <th>Artikal</th>
-                                        <th>Tip</th>
-                                        <th class="text-end">Količina</th>
+                                        <!-- NOVE KOLONE prema zahtevima -->
+                                        <th class="text-end">Količina Roba</th>
+                                        <th class="text-end">Količina Ambalaza</th>
+                                        <th class="text-end">Gotov Proizvod</th>
                                         <th>Komitent</th>
-                                        <th>Klasifikacija</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -378,39 +401,25 @@
                                             <td>
                                                 <span class="badge bg-info">@item.RadniNalog</span>
                                             </td>
-                                            <td>@item.Artikal</td>
                                             <td>
-                                                @{
-                                                    var tipClass = item.TipArtikla switch {
-                                                        1 => "bg-primary",
-                                                        2 => "bg-warning text-dark",
-                                                        3 => "bg-secondary", 
-                                                        4 => "bg-success",
-                                                        5 => "bg-danger",
-                                                        _ => "bg-light text-dark"
-                                                    };
-                                                    var tipNaziv = item.TipArtikla switch {
-                                                        1 => "Sirovina",
-                                                        2 => "Ambalaza",
-                                                        3 => "Potrosni mat.",
-                                                        4 => "Gotova roba",
-                                                        5 => "Oprema",
-                                                        _ => $"Tip {item.TipArtikla}"
-                                                    };
-                                                }
-                                                <span class="badge @tipClass">@tipNaziv</span>
-                                            </td>
-                                            <td class="text-end fw-bold">@item.Kolicina.ToString("N2")</td>
+                                @item.Artikal
+                                <span class="badge bg-secondary ms-1">@item.TipArtikla</span>
+                            </td>
+                                            <!-- NOVE KOLONE prema zahtevima -->
+                                            <td class="text-end fw-bold">@item.KolicinaRoba.ToString("N2")</td>
+                                            <td class="text-end fw-bold text-warning">@item.KolicinaAmbalaza.ToString("N2")</td>
+                                            <td class="text-end fw-bold text-success">@item.GotovProizvod.ToString("N2")</td>
                                             <td>@item.Komitent</td>
-                                            <td>@item.Klasifikacija</td>
                                         </tr>
                                     }
                                 </tbody>
                                 <tfoot class="table-secondary">
                                     <tr>
-                                        <th colspan="4" class="text-end">UKUPNO:</th>
-                                        <th class="text-end text-success">@podaci.Sum(x => x.Kolicina).ToString("N2")</th>
-                                        <th colspan="2"></th>
+                                        <th colspan="3" class="text-end">UKUPNO:</th>
+                                        <th class="text-end text-primary">@podaci.Sum(x => x.KolicinaRoba).ToString("N2")</th>
+                                        <th class="text-end text-warning">@podaci.Sum(x => x.KolicinaAmbalaza).ToString("N2")</th>
+                                        <th class="text-end text-success">@podaci.Sum(x => x.GotovProizvod).ToString("N2")</th>
+                                        <th></th>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -436,6 +445,11 @@
     private List<ProizvodnjaModel> podaci = new List<ProizvodnjaModel>();
     private FilterRequest filterRequest = new FilterRequest();
     
+    // DODATO: Liste za padajuće menije
+    private List<Komitent>? komitentiLista;
+    private List<string>? radniNaloziLista;
+    private List<ArtikalKlasifikacija>? artikalKlasifikacijeLista;
+    
     // DODATNI IZVEŠTAJ - statistike
     private decimal ukupnaProizvodnja = 0;
     private int brojAktivnihNaloga = 0;
@@ -447,7 +461,6 @@
 
     private string OdDatumValue => filterRequest.OdDatum?.ToString("yyyy-MM-dd") ?? "";
     private string DoDatumValue => filterRequest.DoDatum?.ToString("yyyy-MM-dd") ?? "";
-    private string RadniNalogValue => filterRequest.RadniNalog ?? "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -455,6 +468,8 @@
         filterRequest.OdDatum = pocetakMeseca;
         filterRequest.DoDatum = DateTime.Now;
         
+        // DODATO: Učitaj liste za padajuće menije
+        await UcitajListeZaFiltriranje();
         await UcitajPodatke();
     }
 
@@ -474,9 +489,34 @@
         }
     }
 
-    private void OnRadniNalogChanged(ChangeEventArgs e)
+    // DODATO: Metoda za učitavanje lista za padajuće menije
+    private async Task UcitajListeZaFiltriranje()
     {
-        filterRequest.RadniNalog = e.Value?.ToString();
+        try
+        {
+            Console.WriteLine("Učitavam liste za filtriranje...");
+            
+            // Učitaj komitente koji imaju radne naloge (NOVO)
+            komitentiLista = await KomitentService.UcitajKomitenteKojiImajuRadneNaloge();
+            Console.WriteLine($"Učitano {komitentiLista?.Count ?? 0} komitenata koji imaju radne naloge");
+            
+            // Učitaj radne naloge na osnovu trenutnih filtera
+            radniNaloziLista = await ProizvodnjaService.UcitajListuRadnihNaloga(filterRequest);
+            Console.WriteLine($"Učitano {radniNaloziLista?.Count ?? 0} radnih naloga");
+            
+            // NOVO: Učitaj klasifikacije (bez klasa)
+            artikalKlasifikacijeLista = await ArtikalKlasifikacijaService.UcitajSveKlasifikacije();
+            Console.WriteLine($"Učitano {artikalKlasifikacijeLista?.Count ?? 0} klasifikacija");
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju lista: {ex.Message}");
+            komitentiLista = new List<Komitent>();
+            radniNaloziLista = new List<string>();
+            artikalKlasifikacijeLista = new List<ArtikalKlasifikacija>();
+        }
     }
 
     private async Task UcitajPodatke()
@@ -486,8 +526,15 @@
             // Osnovni podaci
             podaci = await ProizvodnjaService.UcitajIzvestajProizvodnje(filterRequest);
             
-            // DODATNI IZVEŠTAJ - statistike
-            ukupnaProizvodnja = await ProizvodnjaService.UcitajUkupnuProizvodnju(filterRequest);
+            // ISPRAVKA: Ukupna proizvodnja = suma novih kolona
+            if (podaci != null && podaci.Any())
+            {
+                ukupnaProizvodnja = podaci.Sum(x => x.KolicinaRoba + x.KolicinaAmbalaza + x.GotovProizvod);
+            }
+            else
+            {
+                ukupnaProizvodnja = 0;
+            }
             brojAktivnihNaloga = await ProizvodnjaService.UcitajBrojAktivnihNaloga(filterRequest);
             
             // Izračunaj prosečnu dnevnu proizvodnju
@@ -528,6 +575,8 @@
             DoDatum = DateTime.Now
         };
         
+        // DODATO: Ponovo učitaj liste nakon resetovanja filtera
+        await UcitajListeZaFiltriranje();
         await UcitajPodatke();
     }
 

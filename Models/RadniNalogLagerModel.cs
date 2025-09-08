@@ -4,7 +4,7 @@ namespace FruitSysWeb.Models
 {
     public class RadniNalogLagerModel
     {
-        [Display(Name = "Broj Naloga")]
+        [Display(Name = "Broj naloga")]
         public string BrojNaloga { get; set; } = string.Empty;
         
         [Display(Name = "Komitent")]
@@ -22,39 +22,38 @@ namespace FruitSysWeb.Models
         [Display(Name = "Pakovanje")]
         public string? Pakovanje { get; set; }
         
-        [Display(Name = "Broj Pakovanja")]
-        public int BrojPakovanja { get; set; }
+        [Display(Name = "Broj pakovanja")]
+        public int? BrojPakovanja { get; set; }
         
-        [Display(Name = "Potrebna Količina")]
+        [Display(Name = "Potrebna količina")]
         public decimal PotrebnaKolicina { get; set; }
         
-        [Display(Name = "Status Dokumenta")]
+        [Display(Name = "Dokument status")]
         public int DokumentStatus { get; set; }
+        
+        // DODATO: Dodatna polja
+        [Display(Name = "Datum kreiranja")]
+        public DateTime? DatumKreiranja { get; set; }
+        
+        [Display(Name = "Status naziv")]
+        public string StatusNaziv => GetStatusNaziv();
+        
+        [Display(Name = "Procenat izvršenja")]
+        public decimal ProcenatIzvrsenja => PotrebnaKolicina > 0 ? (Kolicina / PotrebnaKolicina * 100) : 0;
+        
+        [Display(Name = "Ostalo")]
+        public decimal Ostalo => Math.Max(0, PotrebnaKolicina - Kolicina);
 
-        // Computed properties
-        [Display(Name = "Nedostajuća Količina")]
-        public decimal NedostajucaKolicina => Math.Max(0, PotrebnaKolicina - Kolicina);
-        
-        [Display(Name = "Je Otvoren")]
-        public bool JeOtvoren => DokumentStatus == 2; // 2 = Otvoren prema dokumentu
-        
-        [Display(Name = "Status")]
-        public string Status => DokumentStatus switch
+        private string GetStatusNaziv()
         {
-            2 => "Otvoren",
-            3 => "Zaključen", 
-            _ => "Nepoznato"
-        };
-
-        [Display(Name = "Procenat Završenosti")]
-        public decimal ProcenatZavrsenosti => PotrebnaKolicina > 0 
-            ? Math.Min(100, (Kolicina / PotrebnaKolicina) * 100) 
-            : 0;
-
-        [Display(Name = "Je Kompletiran")]
-        public bool JeKompletiran => Kolicina >= PotrebnaKolicina;
-
-        [Display(Name = "Status Boja")]
-        public string StatusBoja => JeKompletiran ? "success" : NedostajucaKolicina > 0 ? "warning" : "info";
+            return DokumentStatus switch
+            {
+                1 => "Kreiran",
+                2 => "Otvoren", // Prema dokumentu
+                3 => "Zaključen", // Prema dokumentu
+                4 => "Odustano",
+                _ => "Nepoznato"
+            };
+        }
     }
 }

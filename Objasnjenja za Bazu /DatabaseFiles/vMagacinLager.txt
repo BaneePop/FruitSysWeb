@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:x="urn:schemas-microsoft-com:office:excel"
+xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+xmlns:html="http://www.w3.org/TR/REC-html40">
+<Worksheet ss:Name="Table1">
+	<Table>
+		<Column ss:Index="1" ss:AutoFitWidth="0" ss:Width="110"/>
+		<Row>
+			<Cell><Data ss:Type="String">COLUMN_NAME</Data></Cell>
+		</Row>
+
+		<Row>
+			<Cell><Data ss:Type="String">MagacinLagerID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Artikal</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">JM</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Kolicina</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">BrojPakovanja</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Pakovanje</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">PakovanjeTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">RokVazenja</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Lot</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">RadniNalog</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalInstancaID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">PakovanjeID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">AmbalazaTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">MagacinLagerID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Artikal</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">JM</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Kolicina</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">BrojPakovanja</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Pakovanje</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">PakovanjeTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">RokVazenja</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Lot</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">RadniNalog</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalInstancaID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">PakovanjeID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">AmbalazaTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">MagacinLagerID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Artikal</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">JM</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Kolicina</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">BrojPakovanja</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Pakovanje</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">PakovanjeTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">RokVazenja</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Lot</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">RadniNalog</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalInstancaID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">PakovanjeID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">AmbalazaTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">MagacinLagerID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Artikal</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">JM</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Kolicina</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">BrojPakovanja</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Pakovanje</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">PakovanjeTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">RokVazenja</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">Lot</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">RadniNalog</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalInstancaID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">ArtikalTip</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">PakovanjeID</Data></Cell>
+		</Row>
+		<Row>
+			<Cell><Data ss:Type="String">AmbalazaTip</Data></Cell>
+		</Row>	</Table>
+</Worksheet>
+</Workbook>

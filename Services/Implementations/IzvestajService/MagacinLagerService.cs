@@ -18,24 +18,26 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             _databaseService = databaseService;
         }
 
-        // POPRAVLJENO: Dodato filtriranje minimalne količine i null vrednosti
+        // ISPRAVKA: Automatski ne učitava ništa sa manje od 10kg ili 10kom
         public async Task<List<MagacinLagerModel>> UcitajLagerStanje()
         {
             try
             {
                 var sql = @"
                     SELECT 
-                        ArtikalID,
-                        ArtikalTip,
-                        Artikal,
-                        Kolicina,
-                        Pakovanje,
-                        JM
-                    FROM vwMagacinLager
-                    WHERE Kolicina >= 10 
-                      AND Kolicina IS NOT NULL
-                      AND Artikal IS NOT NULL
-                    ORDER BY Artikal
+                        ml.ArtikalID,
+                        a.Tip as ArtikalTip,
+                        ml.Artikal,
+                        ml.Kolicina,
+                        ml.Pakovanje,
+                        ml.JM
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    WHERE (ml.Kolicina >= 10 OR LOWER(ml.JM) LIKE '%kg%' AND ml.Kolicina >= 10)
+                      AND ml.Kolicina IS NOT NULL
+                      AND ml.Artikal IS NOT NULL
+                      AND a.Aktivno = 1
+                    ORDER BY ml.Artikal
                 ";
                 
                 var rezultat = await _databaseService.QueryAsync<MagacinLagerModel>(sql);
@@ -48,7 +50,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
         }
 
-        // DODANO: Novo filtriranje sa FilterRequest parametrima
+        // ISPRAVKA: Filtriranje prema dokumentu - uklonjen rok važenja i min/max količina
         public async Task<List<MagacinLagerModel>> UcitajLagerStanjeSaFilterima(FilterRequest filterRequest)
         {
             try
@@ -57,77 +59,67 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 sql.Append(@"
                     SELECT 
                         ml.ArtikalID,
-                        ml.ArtikalTip,
+                        COALESCE(a.Tip, ml.ArtikalTip) as Tip,
                         ml.Artikal,
                         ml.Kolicina,
                         ml.Pakovanje,
                         ml.JM
                     FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
                     WHERE ml.Kolicina IS NOT NULL
                       AND ml.Artikal IS NOT NULL
+                      AND (ml.Kolicina >= 10 OR LOWER(ml.JM) LIKE '%kg%' AND ml.Kolicina >= 10)
+                      AND a.Aktivno = 1
                 ");
 
                 var parameters = new Dictionary<string, object>();
 
-                // Osnovno filtriranje minimalne količine
-                var minKolicina = filterRequest.MinimalnaKolicinaLager ?? 10;
-                sql.Append(" AND ml.Kolicina >= @MinKolicina");
-                parameters.Add("@MinKolicina", minKolicina);
+                // POUZE POTREBNI FILTERI prema dokumentu
 
                 // Filtriranje po tipu artikla
-                if (!string.IsNullOrEmpty(filterRequest.ArtikalTip))
+                if (!string.IsNullOrEmpty(filterRequest.Tip))
                 {
-                    if (int.TryParse(filterRequest.ArtikalTip, out int tipInt))
+                    if (int.TryParse(filterRequest.Tip, out int tipInt))
                     {
-                        sql.Append(" AND ml.ArtikalTip = @ArtikalTip");
-                        parameters.Add("@ArtikalTip", tipInt.ToString());
+                        sql.Append(" AND a.Tip = @Tip");
+                        parameters.Add("@Tip", tipInt);
                     }
                 }
 
-                // Filtriranje po specifičnom artiklu
+                // Filtriranje po pakovanju - PODRŽAN PADAJUĆI MENI
+                if (!string.IsNullOrEmpty(filterRequest.Pakovanje))
+                {
+                    sql.Append(" AND ml.Pakovanje = @Pakovanje");
+                    parameters.Add("@Pakovanje", filterRequest.Pakovanje);
+                }
+
+                // Filtriranje po konkretnom artiklu
                 if (filterRequest.ArtikalId.HasValue && filterRequest.ArtikalId > 0)
                 {
                     sql.Append(" AND ml.ArtikalID = @ArtikalId");
                     parameters.Add("@ArtikalId", filterRequest.ArtikalId.Value);
                 }
 
-                // Filtriranje samo gotovih roba (tip 4 prema dokumentu)
+                // Filtriranje samo gotovih roba (tip 4)
                 if (filterRequest.SamoGotoveRobe == true)
                 {
-                    sql.Append(" AND ml.ArtikalTip = '4'");
+                    sql.Append(" AND a.Tip = 4");
                 }
 
                 // Filtriranje samo sirovina (tip 1)
                 if (filterRequest.SamoSirovine == true)
                 {
-                    sql.Append(" AND ml.ArtikalTip = '1'");
+                    sql.Append(" AND a.Tip = 1");
                 }
 
                 // Filtriranje samo ambalaze (tip 2)
                 if (filterRequest.SamoAmbalaže == true)
                 {
-                    sql.Append(" AND ml.ArtikalTip = '2'");
+                    sql.Append(" AND a.Tip = 2");
                 }
 
-                // Filtriranje po pakovanju
-                if (!string.IsNullOrEmpty(filterRequest.Pakovanje))
-                {
-                    sql.Append(" AND ml.Pakovanje LIKE @Pakovanje");
-                    parameters.Add("@Pakovanje", $"%{filterRequest.Pakovanje}%");
-                }
-
-                // Dodatno filtriranje količine
-                if (filterRequest.MinKolicina.HasValue)
-                {
-                    sql.Append(" AND ml.Kolicina >= @MinKolicinaCustom");
-                    parameters.Add("@MinKolicinaCustom", filterRequest.MinKolicina.Value);
-                }
-
-                if (filterRequest.MaxKolicina.HasValue)
-                {
-                    sql.Append(" AND ml.Kolicina <= @MaxKolicina");
-                    parameters.Add("@MaxKolicina", filterRequest.MaxKolicina.Value);
-                }
+                // UKLONJENI: Rok važenja filteri prema dokumentu
+                // UKLONJENI: Min/Max količina filteri prema dokumentu
 
                 sql.Append(" ORDER BY ml.Artikal");
 
@@ -141,40 +133,62 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
         }
 
-        // Overload za string filter
-        public async Task<List<MagacinLagerModel>> UcitajLagerStanjeSaFilterima(string filter)
+        // DODATO: Metoda za dobijanje liste pakovanja za padajući meni
+        public async Task<List<string>> UcitajListuPakovanja()
         {
             try
             {
                 var sql = @"
-                    SELECT 
-                        ArtikalID,
-                        ArtikalTip,
-                        Artikal,
-                        Kolicina,
-                        Pakovanje,
-                        JM
-                    FROM vwMagacinLager
-                    WHERE Kolicina >= 10 
-                      AND Kolicina IS NOT NULL
-                      AND Artikal IS NOT NULL";
-
-                if (!string.IsNullOrEmpty(filter))
-                {
-                    sql += @" AND (Artikal LIKE @Filter OR Pakovanje LIKE @Filter)";
-                }
-
-                sql += " ORDER BY Artikal";
+                    SELECT DISTINCT ml.Pakovanje
+                    FROM vwMagacinLager ml
+                    WHERE ml.Pakovanje IS NOT NULL 
+                      AND ml.Pakovanje != ''
+                      AND ml.Kolicina >= 10
+                    ORDER BY ml.Pakovanje
+                ";
                 
-                var rezultat = await _databaseService.QueryAsync<MagacinLagerModel>(sql, new { Filter = $"%{filter}%" });
+                var rezultat = await _databaseService.QueryAsync<string>(sql);
                 return rezultat.ToList();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju lager stanja sa filterom: {ex.Message}");
-                return new List<MagacinLagerModel>();
+                Console.WriteLine($"Greška pri učitavanju liste pakovanja: {ex.Message}");
+                return new List<string>();
             }
         }
+
+        // DODATO: LAGER PROIZVODNJE iz vwRadniNalogLager - prema dokumentu 
+        public async Task<List<RadniNalogLagerModel>> UcitajLagerProizvodnje()
+        {
+        try
+        {
+        var sql = @"
+        SELECT 
+        rnl.RadniNalogLager as BrojNaloga,
+        GROUP_CONCAT(DISTINCT rnl.Artikal SEPARATOR ', ') as Artikal,
+        SUM(rnl.Kolicina) as Kolicina,
+        SUM(rn.Kolicina) as PotrebnaKolicina,
+        GROUP_CONCAT(DISTINCT rnl.Pakovanje SEPARATOR ', ') as Pakovanje,
+        MAX(rn.DokumentStatus) as DokumentStatus
+        FROM vwRadniNalogLager rnl
+        LEFT JOIN RadniNalog rn ON rnl.RadniNalogLager = rn.Sifra
+        WHERE rnl.Kolicina IS NOT NULL
+          AND rnl.Kolicina > 0
+        GROUP BY rnl.RadniNalogLager
+        ORDER BY rnl.RadniNalogLager
+        ";
+        
+        var rezultat = await _databaseService.QueryAsync<RadniNalogLagerModel>(sql);
+        return rezultat.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju lager proizvodnje: {ex.Message}");
+            return new List<RadniNalogLagerModel>();
+        }
+        }
+
+        // POSTOJEĆE METODE - MODIFIKOVANE
 
         public async Task<List<RadniNalogLagerModel>> UcitajRadneNalogeLager()
         {
@@ -182,18 +196,19 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             {
                 var sql = @"
                     SELECT 
-                        rwl.RadniNalogLager as BrojNaloga,
+                        rnl.RadniNalogLager as BrojNaloga,
                         'STALNI RN' as Komitent,
-                        rwl.ArtikalID,
-                        rwl.Artikal,
-                        rwl.Kolicina,
-                        rwl.Pakovanje,
-                        rwl.BrojPakovanja,
-                        rwl.Kolicina as PotrebnaKolicina,
+                        rnl.ArtikalID,
+                        rnl.Artikal,
+                        rnl.Kolicina,
+                        rnl.Pakovanje,
+                        rnl.BrojPakovanja,
+                        rnl.Kolicina as PotrebnaKolicina,
                         2 as DokumentStatus
-                    FROM vwRadniNalogLager rwl
-                    WHERE rwl.Kolicina IS NOT NULL
-                    ORDER BY rwl.RadniNalogLager
+                    FROM vwRadniNalogLager rnl
+                    WHERE rnl.Kolicina IS NOT NULL
+                      AND rnl.Kolicina > 0
+                    ORDER BY rnl.RadniNalogLager
                 ";
                 
                 var rezultat = await _databaseService.QueryAsync<RadniNalogLagerModel>(sql);
@@ -212,17 +227,19 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             {
                 var sql = @"
                     SELECT 
-                        ArtikalID,
-                        ArtikalTip,
-                        Artikal,
-                        Kolicina,
-                        Pakovanje,
-                        JM
-                    FROM vwMagacinLager
-                    WHERE ArtikalID = @ArtikalId
-                      AND Kolicina >= 10
-                      AND Kolicina IS NOT NULL
-                    ORDER BY Artikal
+                        ml.ArtikalID,
+                        a.Tip as ArtikalTip,
+                        ml.Artikal,
+                        ml.Kolicina,
+                        ml.Pakovanje,
+                        ml.JM
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    WHERE ml.ArtikalID = @ArtikalId
+                      AND (ml.Kolicina >= 10 OR LOWER(ml.JM) LIKE '%kg%' AND ml.Kolicina >= 10)
+                      AND ml.Kolicina IS NOT NULL
+                      AND a.Aktivno = 1
+                    ORDER BY ml.Artikal
                 ";
                 
                 var rezultat = await _databaseService.QueryAsync<MagacinLagerModel>(sql, new { ArtikalId = artikalId });
@@ -241,27 +258,28 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             return await UcitajLagerStanjePoArtiklu((long)artikalId);
         }
 
-        // POPRAVLJENO: Dodato filtriranje za gotove robe
         public async Task<List<MagacinLagerModel>> UcitajLagerStanjePoTipu(int artikalTip)
         {
             try
             {
                 var sql = @"
                     SELECT 
-                        ArtikalID,
-                        ArtikalTip,
-                        Artikal,
-                        Kolicina,
-                        Pakovanje,
-                        JM
-                    FROM vwMagacinLager
-                    WHERE ArtikalTip = @ArtikalTip
-                      AND Kolicina >= 10
-                      AND Kolicina IS NOT NULL
-                    ORDER BY Artikal
+                        ml.ArtikalID,
+                        a.Tip as ArtikalTip,
+                        ml.Artikal,
+                        ml.Kolicina,
+                        ml.Pakovanje,
+                        ml.JM
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    WHERE a.Tip = @ArtikalTip
+                      AND (ml.Kolicina >= 10 OR LOWER(ml.JM) LIKE '%kg%' AND ml.Kolicina >= 10)
+                      AND ml.Kolicina IS NOT NULL
+                      AND a.Aktivno = 1
+                    ORDER BY ml.Artikal
                 ";
                 
-                var rezultat = await _databaseService.QueryAsync<MagacinLagerModel>(sql, new { ArtikalTip = artikalTip.ToString() });
+                var rezultat = await _databaseService.QueryAsync<MagacinLagerModel>(sql, new { ArtikalTip = artikalTip });
                 return rezultat.ToList();
             }
             catch (Exception ex)
@@ -271,19 +289,17 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
         }
 
-        // DODANO: Specifična metoda za gotove robe (tip 4)
+        // DODANO: Specifične metode za tipove (prema dokumentu)
         public async Task<List<MagacinLagerModel>> UcitajGotoveRobe()
         {
-            return await UcitajLagerStanjePoTipu(4); // 4 = Gotova roba prema dokumentu
+            return await UcitajLagerStanjePoTipu(4); // 4 = Gotova roba
         }
 
-        // DODANO: Metoda za sirovine (tip 1)
         public async Task<List<MagacinLagerModel>> UcitajSirovine()
         {
             return await UcitajLagerStanjePoTipu(1); // 1 = Sirovina
         }
 
-        // DODANO: Metoda za ambalaze (tip 2)
         public async Task<List<MagacinLagerModel>> UcitajAmbalaze()
         {
             return await UcitajLagerStanjePoTipu(2); // 2 = Ambalaza
@@ -296,7 +312,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 var sql = @"
                     SELECT COALESCE(SUM(ml.Kolicina), 0) as UkupnaKolicina
                     FROM vwMagacinLager ml
-                    WHERE ml.Kolicina > 0 
+                    WHERE ml.Kolicina >= 10 
                       AND ml.Kolicina IS NOT NULL
                 ";
                 
@@ -310,23 +326,61 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
         }
 
+        // OSTALE METODE bez izmena...
+        public async Task<List<MagacinLagerModel>> UcitajLagerStanjeSaFilterima(string filter)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        ml.ArtikalID,
+                        a.Tip as ArtikalTip,
+                        ml.Artikal,
+                        ml.Kolicina,
+                        ml.Pakovanje,
+                        ml.JM
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    WHERE (ml.Kolicina >= 10 OR LOWER(ml.JM) LIKE '%kg%' AND ml.Kolicina >= 10)
+                      AND ml.Kolicina IS NOT NULL
+                      AND ml.Artikal IS NOT NULL";
+
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    sql += @" AND (ml.Artikal LIKE @Filter OR ml.Pakovanje LIKE @Filter)";
+                }
+
+                sql += " ORDER BY ml.Artikal";
+                
+                var rezultat = await _databaseService.QueryAsync<MagacinLagerModel>(sql, new { Filter = $"%{filter}%" });
+                return rezultat.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri učitavanju lager stanja sa filterom: {ex.Message}");
+                return new List<MagacinLagerModel>();
+            }
+        }
+
         public async Task<List<MagacinLagerModel>> UcitajLagerStanjePoLotu(string lot)
         {
             try
             {
                 var sql = @"
                     SELECT 
-                        ArtikalID,
-                        ArtikalTip,
-                        Artikal,
-                        Kolicina,
-                        Pakovanje,
-                        JM
-                    FROM vwMagacinLager
-                    WHERE Lot LIKE @Lot
-                      AND Kolicina >= 10
-                      AND Kolicina IS NOT NULL
-                    ORDER BY Artikal
+                        ml.ArtikalID,
+                        a.Tip as ArtikalTip,
+                        ml.Artikal,
+                        ml.Kolicina,
+                        ml.Pakovanje,
+                        ml.JM
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    WHERE ml.Lot LIKE @Lot
+                      AND (ml.Kolicina >= 10 OR LOWER(ml.JM) LIKE '%kg%' AND ml.Kolicina >= 10)
+                      AND ml.Kolicina IS NOT NULL
+                      AND a.Aktivno = 1
+                    ORDER BY ml.Artikal
                 ";
                 
                 var rezultat = await _databaseService.QueryAsync<MagacinLagerModel>(sql, new { Lot = $"%{lot}%" });
@@ -339,41 +393,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
         }
 
-        public async Task<List<MagacinLagerModel>> UcitajLagerStanjePoRokuVazenja(DateTime rokVazenja)
-        {
-            try
-            {
-                var sql = @"
-                    SELECT 
-                        ArtikalID,
-                        ArtikalTip,
-                        Artikal,
-                        Kolicina,
-                        Pakovanje,
-                        JM
-                    FROM vwMagacinLager
-                    WHERE DATE(RokVazenja) <= @RokVazenja
-                      AND RokVazenja != '2099-12-31 00:00:00'
-                      AND Kolicina >= 10
-                      AND Kolicina IS NOT NULL
-                    ORDER BY RokVazenja ASC, Artikal
-                ";
-                
-                var rezultat = await _databaseService.QueryAsync<MagacinLagerModel>(sql, new { RokVazenja = rokVazenja.Date });
-                return rezultat.ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Greška pri učitavanju lager stanja po roku važenja: {ex.Message}");
-                return new List<MagacinLagerModel>();
-            }
-        }
-
-        // Overload bez parametara - vraća artikle koji ističu u narednih 30 dana
-        public async Task<List<MagacinLagerModel>> UcitajLagerStanjePoRokuVazenja()
-        {
-            return await UcitajLagerStanjePoRokuVazenja(DateTime.Now.AddDays(30));
-        }
+        // UKLONJENE metode za rok važenja - prema dokumentu se ne koriste
 
         public async Task<List<RadniNalogLagerModel>> UcitajOtvoreneRadneNaloge()
         {
@@ -381,19 +401,19 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             {
                 var sql = @"
                     SELECT 
-                        rwl.RadniNalogLager as BrojNaloga,
+                        rnl.RadniNalogLager as BrojNaloga,
                         'STALNI RN' as Komitent,
-                        rwl.ArtikalID,
-                        rwl.Artikal,
-                        rwl.Kolicina,
-                        rwl.Pakovanje,
-                        rwl.BrojPakovanja,
-                        rwl.Kolicina as PotrebnaKolicina,
+                        rnl.ArtikalID,
+                        rnl.Artikal,
+                        rnl.Kolicina,
+                        rnl.Pakovanje,
+                        rnl.BrojPakovanja,
+                        rnl.Kolicina as PotrebnaKolicina,
                         2 as DokumentStatus
-                    FROM vwRadniNalogLager rwl
-                    WHERE rwl.Kolicina > 0
-                      AND rwl.Kolicina IS NOT NULL
-                    ORDER BY rwl.RadniNalogLager
+                    FROM vwRadniNalogLager rnl
+                    WHERE rnl.Kolicina > 0
+                      AND rnl.Kolicina IS NOT NULL
+                    ORDER BY rnl.RadniNalogLager
                 ";
                 
                 var rezultat = await _databaseService.QueryAsync<RadniNalogLagerModel>(sql);
@@ -412,18 +432,18 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             {
                 var sql = @"
                     SELECT 
-                        rwl.RadniNalogLager as BrojNaloga,
+                        rnl.RadniNalogLager as BrojNaloga,
                         'STALNI RN' as Komitent,
-                        rwl.ArtikalID,
-                        rwl.Artikal,
-                        rwl.Kolicina,
-                        rwl.Pakovanje,
-                        rwl.BrojPakovanja,
-                        rwl.Kolicina as PotrebnaKolicina,
+                        rnl.ArtikalID,
+                        rnl.Artikal,
+                        rnl.Kolicina,
+                        rnl.Pakovanje,
+                        rnl.BrojPakovanja,
+                        rnl.Kolicina as PotrebnaKolicina,
                         @Status as DokumentStatus
-                    FROM vwRadniNalogLager rwl
-                    WHERE rwl.Kolicina IS NOT NULL
-                    ORDER BY rwl.RadniNalogLager
+                    FROM vwRadniNalogLager rnl
+                    WHERE rnl.Kolicina IS NOT NULL
+                    ORDER BY rnl.RadniNalogLager
                 ";
                 
                 var rezultat = await _databaseService.QueryAsync<RadniNalogLagerModel>(sql, new { Status = status });
@@ -436,23 +456,24 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
         }
 
-        // DODANO: Metoda za analizu lagera - artikli ispod minimuma
         public async Task<List<MagacinLagerModel>> UcitajArtikleIspodMinimuma(decimal minKolicina = 10)
         {
             try
             {
                 var sql = @"
                     SELECT 
-                        ArtikalID,
-                        ArtikalTip,
-                        Artikal,
-                        Kolicina,
-                        Pakovanje,
-                        JM
-                    FROM vwMagacinLager
-                    WHERE Kolicina < @MinKolicina
-                      AND Kolicina IS NOT NULL
-                    ORDER BY Kolicina ASC, Artikal
+                        ml.ArtikalID,
+                        a.Tip as ArtikalTip,
+                        ml.Artikal,
+                        ml.Kolicina,
+                        ml.Pakovanje,
+                        ml.JM
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    WHERE ml.Kolicina < @MinKolicina
+                      AND ml.Kolicina IS NOT NULL
+                      AND a.Aktivno = 1
+                    ORDER BY ml.Kolicina ASC, ml.Artikal
                 ";
                 
                 var rezultat = await _databaseService.QueryAsync<MagacinLagerModel>(sql, new { MinKolicina = minKolicina });
@@ -465,28 +486,28 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
         }
 
-        // Overload bez parametara - koristi default minimum 10
         public async Task<List<MagacinLagerModel>> UcitajArtikleIspodMinimuma()
         {
             return await UcitajArtikleIspodMinimuma(10);
         }
 
-        // DODANO: Statistike lagera
         public async Task<Dictionary<string, decimal>> UcitajStatistikeLagera()
         {
             try
             {
                 var sql = @"
                     SELECT 
-                        ArtikalTip,
+                        a.Tip as ArtikalTip,
                         COUNT(*) as BrojArtikala,
-                        SUM(Kolicina) as UkupnaKolicina,
-                        AVG(Kolicina) as ProsecnaKolicina
-                    FROM vwMagacinLager
-                    WHERE Kolicina IS NOT NULL
-                      AND Kolicina >= 10
-                    GROUP BY ArtikalTip
-                    ORDER BY ArtikalTip
+                        SUM(ml.Kolicina) as UkupnaKolicina,
+                        AVG(ml.Kolicina) as ProsecnaKolicina
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    WHERE ml.Kolicina IS NOT NULL
+                      AND ml.Kolicina >= 10
+                      AND a.Aktivno = 1
+                    GROUP BY a.Tip
+                    ORDER BY a.Tip
                 ";
                 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql);

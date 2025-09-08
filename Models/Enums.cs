@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FruitSysWeb.Models
 {
-    public enum ArtikalTip
+    public enum Tip
     {
         [Display(Name = "Sirovina")]
         Sirovina = 1,
@@ -47,11 +47,11 @@ namespace FruitSysWeb.Models
         Otkupljivac = 4
     }
 
-    public static class ArtikalTipHelper
+    public static class TipHelper
     {
-        public static string GetDisplayName(int tipId)
+        public static string GetDisplayName(int Tip)
         {
-            return tipId switch
+            return Tip switch
             {
                 1 => "Sirovina",
                 2 => "Ambalaza", 
@@ -59,13 +59,13 @@ namespace FruitSysWeb.Models
                 4 => "Gotova roba",
                 5 => "Oprema",
                 7 => "Ostali tip",
-                _ => $"Tip {tipId}"
+                _ => $"Tip {Tip}"
             };
         }
 
-        public static string GetBadgeClass(int tipId)
+        public static string GetBadgeClass(int Tip)
         {
-            return tipId switch
+            return Tip switch
             {
                 1 => "bg-primary",           // Sirovina - plava
                 2 => "bg-warning text-dark", // Ambalaza - žuta
@@ -90,16 +90,16 @@ namespace FruitSysWeb.Models
             };
         }
 
-        public static ArtikalTip? GetEnumValue(int tipId)
+        public static Tip? GetEnumValue(int tip)
         {
-            return tipId switch
+            return tip switch
             {
-                1 => ArtikalTip.Sirovina,
-                2 => ArtikalTip.Ambalaza,
-                3 => ArtikalTip.PotrosniMaterijal,
-                4 => ArtikalTip.GotovaRoba,
-                5 => ArtikalTip.Oprema,
-                7 => ArtikalTip.OstaliTip,
+                1 => Tip.Sirovina,
+                2 => Tip.Ambalaza,
+                3 => Tip.PotrosniMaterijal,
+                4 => Tip.GotovaRoba,
+                5 => Tip.Oprema,
+                7 => Tip.OstaliTip,
                 _ => null
             };
         }

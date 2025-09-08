@@ -60,7 +60,7 @@ namespace FruitSysWeb.Models
         public bool FizickoLice { get; set; }
 
         // Dodatni podaci iz artikal tabele  
-        public int ArtikalTip { get; set; }
+        public bool Tip { get; set; }
         public int? JedinicaMereID { get; set; }
         public bool OtkupniArtikal { get; set; }
 

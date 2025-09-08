@@ -37,20 +37,20 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         fm.Artikal,
                         fm.ArtikalPrvaKlasifikacijaID,
                         fm.Kolicina,
-                        fm.Potrazuje,
-                        fm.Duguje,
-                        fm.Saldo,
-                        fm.Roba,
-                        fm.Provizija,
-                        fm.Prevoz,
-                        fm.Marza,
-                        fm.PCenaPrijem,
-                        fm.PCenaUkupno,
-                        fm.Uplata,
-                        fm.PorezIznos,
-                        fm.PorezIznos2,
-                        fm.UplataPdv,
-                        fm.NetoIznosOtkup,
+                        COALESCE(fm.Potrazuje, 0) as Potrazuje,
+                        COALESCE(fm.Duguje, 0) as Duguje,
+                        COALESCE(fm.Saldo, 0) as Saldo,
+                        COALESCE(fm.Roba, 0) as Roba,
+                        COALESCE(fm.Provizija, 0) as Provizija,
+                        COALESCE(fm.Prevoz, 0) as Prevoz,
+                        COALESCE(fm.Marza, 0) as Marza,
+                        COALESCE(fm.PCenaPrijem, 0) as PCenaPrijem,
+                        COALESCE(fm.PCenaUkupno, 0) as PCenaUkupno,
+                        COALESCE(fm.Uplata, 0) as Uplata,
+                        COALESCE(fm.PorezIznos, 0) as PorezIznos,
+                        COALESCE(fm.PorezIznos2, 0) as PorezIznos2,
+                        COALESCE(fm.UplataPdv, 0) as UplataPdv,
+                        COALESCE(fm.NetoIznosOtkup, 0) as NetoIznosOtkup,
                         -- Dodatni podaci
                         0 as FizickoLice,
                         0 as ArtikalTip,
@@ -110,13 +110,13 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 }
 
                 // POPRAVLJENO: Artikal tip filter - dodano
-                if (!string.IsNullOrEmpty(filterRequest.ArtikalTip))
+                if (!string.IsNullOrEmpty(filterRequest.Tip))
                 {
-                    if (int.TryParse(filterRequest.ArtikalTip, out int artikalTipInt))
+                    if (int.TryParse(filterRequest.Tip, out int TipInt))
                     {
-                        // Ovde treba join sa Artikli tabelom da dobijemo tip
-                        sql.Append(" AND EXISTS (SELECT 1 FROM Artikli a WHERE a.ID = fm.ArtikalID AND a.Tip = @ArtikalTip)");
-                        parameters.Add("@ArtikalTip", artikalTipInt);
+                        // Ovde treba join sa Artikal tabelom da dobijemo tip
+                        sql.Append(" AND EXISTS (SELECT 1 FROM Artikal a WHERE a.ID = fm.ArtikalID AND a.Tip = @ArtikalTip)");
+                        parameters.Add("@ArtikalTip", TipInt);
                     }
                 }
 
@@ -176,6 +176,30 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 {
                     sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
                     parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                // Komitent filter
+                if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
+                {
+                    sql.Append(" AND fm.KomitentID = @KomitentId");
+                    parameters.Add("@KomitentId", filterRequest.KomitentId.Value);
+                }
+
+                // Artikal filter
+                if (filterRequest.ArtikalId.HasValue && filterRequest.ArtikalId > 0)
+                {
+                    sql.Append(" AND fm.ArtikalID = @ArtikalId");
+                    parameters.Add("@ArtikalId", filterRequest.ArtikalId.Value);
+                }
+
+                // Artikal tip filter
+                if (!string.IsNullOrEmpty(filterRequest.Tip))
+                {
+                    if (int.TryParse(filterRequest.Tip, out int tipInt))
+                    {
+                        sql.Append(" AND EXISTS (SELECT 1 FROM Artikal a WHERE a.ID = fm.ArtikalID AND a.Tip = @ArtikalTip)");
+                        parameters.Add("@ArtikalTip", tipInt);
+                    }
                 }
 
                 // Komitent tip filter
