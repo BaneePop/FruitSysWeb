@@ -56,7 +56,7 @@
                 </div>
                 <div class="col-md-6 text-end">
                     <span class="badge bg-light text-dark fs-6">
-                        <i class="bi bi-list-ul me-1"></i>@(podaci?.Count ?? 0) naloga
+                        <i class="bi bi-list-ul me-1"></i>@brojUnikatanihNaloga naloga
                     </span>
                     <span class="badge bg-warning text-dark ms-2 fs-6">
                         Ukupno: @ukupnaProizvodnja.ToString("N2") kg
@@ -165,7 +165,7 @@
         <div class="col-md-3">
             <div class="metric-card bg-info text-white">
                 <h6>Broj radnih naloga</h6>
-                <h3>@(podaci?.Count ?? 0)</h3>
+                <h3>@brojUnikatanihNaloga</h3>
                 <small>ukupno naloga</small>
             </div>
         </div>
@@ -453,6 +453,7 @@
     // DODATNI IZVEŠTAJ - statistike
     private decimal ukupnaProizvodnja = 0;
     private int brojAktivnihNaloga = 0;
+    private int brojUnikatanihNaloga = 0; // DODATO: Broj unikatnih radnih naloga
     private decimal prosecnaDnevnaProizvodnja = 0;
     private Dictionary<string, decimal>? proizvodnjaPoArtiklima;
     private Dictionary<string, decimal>? proizvodnjaPoKomitentima;
@@ -530,10 +531,13 @@
             if (podaci != null && podaci.Any())
             {
                 ukupnaProizvodnja = podaci.Sum(x => x.KolicinaRoba + x.KolicinaAmbalaza + x.GotovProizvod);
+                // DODATO: Broji unikatne radne naloge
+                brojUnikatanihNaloga = podaci.Select(x => x.RadniNalog).Distinct().Count();
             }
             else
             {
                 ukupnaProizvodnja = 0;
+                brojUnikatanihNaloga = 0;
             }
             brojAktivnihNaloga = await ProizvodnjaService.UcitajBrojAktivnihNaloga(filterRequest);
             
@@ -562,6 +566,7 @@
             podaci = new List<ProizvodnjaModel>();
             ukupnaProizvodnja = 0;
             brojAktivnihNaloga = 0;
+            brojUnikatanihNaloga = 0;
             prosecnaDnevnaProizvodnja = 0;
         }
     }

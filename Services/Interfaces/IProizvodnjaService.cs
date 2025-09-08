@@ -13,6 +13,11 @@ namespace FruitSysWeb.Services.Interfaces
         // DODATO - nova metoda prema dokumentu
         Task<List<string>> UcitajListuRadnihNaloga(FilterRequest filterRequest);
 
+        // DASHBOARD - nove metode za dashboard
+        Task<decimal> UcitajGotoveProizvodePoslednjihDana(int dana);
+        Task<Dictionary<string, decimal>> UcitajTopKupcePoKilogramima(FilterRequest filterRequest);
+        Task<Dictionary<string, decimal>> UcitajTopDobavljacePoKilogramima(FilterRequest filterRequest);
+
         // Analitičke metode
         Task<Dictionary<string, decimal>> UcitajProizvodnjuPoArtiklima(FilterRequest filterRequest);
         Task<Dictionary<string, decimal>> UcitajProizvodnjuPoKomitentima(FilterRequest filterRequest);

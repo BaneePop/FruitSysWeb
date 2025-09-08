@@ -224,7 +224,7 @@ namespace FruitSysWeb.Services.Models.Requests
             return tip ?? "Nepoznato";
         }
 
-        // METODA: Reset filtera
+        /* // METODA: Reset filtera
         public void ResetFilters()
         {
             OdDatum = null;
@@ -258,7 +258,7 @@ namespace FruitSysWeb.Services.Models.Requests
             ArtikalKlasifikacijaId = null;
             VrstaArtikla = null;
         }
-
+ */
         // METODA: Kopiraj filtere
         public FilterRequest Clone()
         {

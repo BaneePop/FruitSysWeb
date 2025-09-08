@@ -1,0 +1,306 @@
+@using ChartJs.Blazor.BarChart
+@using ChartJs.Blazor.PieChart
+@using ChartJs.Blazor.LineChart
+
+<div class="chart-wrapper @CssClass" style="@StyleAttribute">
+    <div class="chart-header" @onclick="ToggleCollapse">
+        <div class="chart-title-section">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <i class="@Icon me-2"></i>
+            }
+            <h5 class="chart-title">@Title</h5>
+            @if (ShowCollapseButton)
+            {
+                <button class="btn btn-sm btn-link chart-collapse-btn" type="button">
+                    <i class="bi bi-chevron-@(isCollapsed ? "down" : "up")"></i>
+                </button>
+            }
+        </div>
+        
+        <div class="chart-actions">
+            @if (ShowRefreshButton)
+            {
+                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="OnRefreshClicked" @onclick:stopPropagation="true" disabled="@IsLoading">
+                    @if (IsLoading)
+                    {
+                        <i class="bi bi-hourglass-split rotating"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-arrow-clockwise"></i>
+                    }
+                </button>
+            }
+            
+            @if (ShowExportButton)
+            {
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-download"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" @onclick="ExportPng" @onclick:preventDefault="true">
+                            <i class="bi bi-file-image"></i> Export as PNG
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" @onclick="ExportPdf" @onclick:preventDefault="true">
+                            <i class="bi bi-file-pdf"></i> Export as PDF
+                        </a></li>
+                    </ul>
+                </div>
+            }
+            
+            @ChildContent
+        </div>
+    </div>
+    
+    <div class="chart-content @(isCollapsed ? "collapsed" : "")">
+        @if (IsLoading)
+        {
+            <div class="chart-loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">@LoadingText</p>
+            </div>
+        }
+        else if (HasError)
+        {
+            <div class="chart-error">
+                <i class="bi bi-exclamation-triangle text-warning display-6"></i>
+                <p class="mt-2 text-muted">@ErrorMessage</p>
+                @if (ShowRefreshButton)
+                {
+                    <button class="btn btn-sm btn-outline-primary" @onclick="OnRefreshClicked">
+                        <i class="bi bi-arrow-clockwise"></i> Try Again
+                    </button>
+                }
+            </div>
+        }
+        else if (BarConfig != null)
+        {
+            <div class="chart-container">
+                <BarChart Config="@BarConfig" Width="@Width" Height="@Height" />
+                @if (ShowDataSummary && BarConfig != null)
+                {
+                    <div class="chart-summary">
+                        <small class="text-muted">
+                            Items: @BarConfig.Data.Labels.Count | 
+                            Total: @BarConfig.GetTotalValue().ToString("N1")
+                            @if (!string.IsNullOrEmpty(Unit)) { <text> @Unit</text> }
+                        </small>
+                    </div>
+                }
+            </div>
+        }
+        else if (PieConfig != null)
+        {
+            <div class="chart-container">
+                <PieChart Config="@PieConfig" Width="@Width" Height="@Height" />
+                @if (ShowDataSummary && PieConfig != null)
+                {
+                    <div class="chart-summary">
+                        <small class="text-muted">
+                            Items: @PieConfig.Data.Labels.Count | 
+                            Total: @PieConfig.GetTotalValue().ToString("N1")
+                            @if (!string.IsNullOrEmpty(Unit)) { <text> @Unit</text> }
+                        </small>
+                    </div>
+                }
+            </div>
+        }
+        else if (LineConfig != null)
+        {
+            <div class="chart-container">
+                <LineChart Config="@LineConfig" Width="@Width" Height="@Height" />
+            </div>
+        }
+        else
+        {
+            <div class="chart-placeholder">
+                <i class="bi bi-@(PlaceholderIcon ?? "bar-chart") display-4 text-muted"></i>
+                <p class="mt-2 text-muted">@(PlaceholderText ?? "No data available")</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? StyleAttribute { get; set; }
+    
+    [Parameter] public BarConfig? BarConfig { get; set; }
+    [Parameter] public PieConfig? PieConfig { get; set; }
+    [Parameter] public LineConfig? LineConfig { get; set; }
+    
+    [Parameter] public int Width { get; set; } = 400;
+    [Parameter] public int Height { get; set; } = 250;
+    [Parameter] public string? Unit { get; set; }
+    
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public string LoadingText { get; set; } = "Loading chart data...";
+    [Parameter] public string ErrorMessage { get; set; } = "Failed to load chart data";
+    
+    [Parameter] public bool ShowRefreshButton { get; set; } = true;
+    [Parameter] public bool ShowExportButton { get; set; } = false;
+    [Parameter] public bool ShowCollapseButton { get; set; } = false;
+    [Parameter] public bool ShowDataSummary { get; set; } = true;
+    
+    [Parameter] public string? PlaceholderIcon { get; set; }
+    [Parameter] public string? PlaceholderText { get; set; }
+    
+    [Parameter] public EventCallback OnRefresh { get; set; }
+    [Parameter] public EventCallback<string> OnExport { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    private bool isCollapsed = false;
+    
+    private async Task OnRefreshClicked()
+    {
+        if (OnRefresh.HasDelegate)
+        {
+            await OnRefresh.InvokeAsync();
+        }
+    }
+    
+    private async Task ExportChart(string format)
+    {
+        if (OnExport.HasDelegate)
+        {
+            await OnExport.InvokeAsync(format);
+        }
+    }
+    
+    private async Task ExportPng()
+    {
+        await ExportChart("png");
+    }
+    
+    private async Task ExportPdf()
+    {
+        await ExportChart("pdf");
+    }
+    
+    private void ToggleCollapse()
+    {
+        if (ShowCollapseButton)
+        {
+            isCollapsed = !isCollapsed;
+            StateHasChanged();
+        }
+    }
+}
+
+<style>
+    .chart-wrapper {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .chart-wrapper:hover {
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+        cursor: pointer;
+    }
+
+    .chart-title-section {
+        display: flex;
+        align-items: center;
+        flex-grow: 1;
+    }
+
+    .chart-title {
+        margin: 0;
+        font-weight: 600;
+        color: #0f5132;
+        font-size: 1.1rem;
+    }
+
+    .chart-collapse-btn {
+        padding: 0.25rem 0.5rem;
+        margin-left: 0.5rem;
+        color: #6c757d;
+    }
+
+    .chart-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .chart-content {
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .chart-content.collapsed {
+        max-height: 0;
+        padding: 0 1.5rem;
+    }
+
+    .chart-container {
+        position: relative;
+        width: 100%;
+    }
+
+    .chart-loading,
+    .chart-error,
+    .chart-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        text-align: center;
+    }
+
+    .chart-summary {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f3f4;
+        text-align: center;
+    }
+
+    .rotating {
+        animation: rotateAnim 1s linear infinite;
+    }
+
+    @@keyframes rotateAnim {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 768px) {
+        .chart-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .chart-actions {
+            align-self: stretch;
+            justify-content: flex-end;
+        }
+
+        .chart-content {
+            padding: 1rem;
+        }
+    }
+</style>

@@ -1,13 +1,13 @@
-﻿@page "/"
+@page "/"
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
-@* @using FruitSysWeb.Components.Shared.Charts *@
+@using FruitSysWeb.Components.Shared.Charts
 @using FruitSysWeb.Components.Shared.Layout
 @inject IFinansijeService FinansijeService
 @inject IProizvodnjaService ProizvodnjaService
 @inject IMagacinLagerService LagerService
 @inject IExportService exportService
-
+@inject NavigationManager NavigationManager
 
 <style>
     .dashboard-grid {
@@ -25,6 +25,7 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         transition: all 0.3s ease;
         border-left: 4px solid #198754;
+        cursor: pointer;
     }
     
     .quick-action:hover {
@@ -49,24 +50,18 @@
         font-size: 0.9rem;
     }
     
-    .section-header {
-        display: flex;
-        justify-content: between;
-        align-items: center;
+    .dashboard-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         margin-bottom: 1.5rem;
     }
-    
-    .refresh-btn {
-        border: none;
-        background: #f8f9fa;
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .refresh-btn:hover {
-        background: #e9ecef;
+
+    .section-title {
+        margin-bottom: 0;
+        font-weight: 600;
+        color: #0f5132;
     }
 </style>
 
@@ -123,7 +118,7 @@
                     Value4="@brojAktivnihNaloga"
                     Label1="Ukupno Saldo"
                     Label2="Vrednost Lager"
-                    Label3="Proizvodnja (kg)"
+                    Label3="Gotov proizvod (7 dana)"
                     Label4="Aktivni Nalozi"
                     Icon1="bi-cash-coin"
                     Icon2="bi-box-seam"
@@ -131,66 +126,7 @@
                     Icon4="bi-clipboard-check" />
 
     <!-- Charts Section -->
-    <div class="row mb-4">
-        <!-- Top Kupci -->
-        <div class="col-md-6">
-            <div class="dashboard-card">
-                <div class="section-header">
-                    <h5 class="section-title">
-                        <i class="bi bi-currency-exchange me-2"></i>Top 5 Kupaca
-                    </h5>
-                    <button class="refresh-btn" @onclick="UcitajTopKupce" title="Osveži podatke">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
-                </div>
-               @*  <BarChart Config="@kupciChartConfig" Height="250" /> *@
-            </div>
-        </div>
-
-        <!-- Top Dobavljaci -->
-        <div class="col-md-6">
-            <div class="dashboard-card">
-                <div class="section-header">
-                    <h5 class="section-title">
-                        <i class="bi bi-truck me-2"></i>Top 5 Dobavljača
-                    </h5>
-                    <button class="refresh-btn" @onclick="UcitajTopDobavljace" title="Osveži podatke">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
-                </div>
-               @*  <BarChart Config="@dobavljaciChartConfig" Height="250" /> *@
-            </div>
-        </div>
-    </div>
-
-    <div class="row mb-4">
-        <!-- Proizvodnja po artiklima -->
-        <div class="col-md-6">
-            <div class="dashboard-card">
-                <div class="section-header">
-                    <h5 class="section-title">
-                        <i class="bi bi-bar-chart me-2"></i>Proizvodnja po Artiklima
-                    </h5>
-                    <button class="refresh-btn" @onclick="UcitajProizvodnjuPoArtiklima" title="Osveži podatke">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
-                </div>
-                @* <BarChart Config="@proizvodnjaChartConfig" Height="250" /> *@
-            </div>
-        </div>
-
-        <!-- Lager stanje -->
-        <div class="col-md-6">
-            <div class="dashboard-card">
-                <div class="section-header">
-                    <h5 class="section-title">
-                        <i class="bi bi-pie-chart me-2"></i>Struktura Lager-a
-                    </h5>
-                        <i class="bi bi-arrow-clockwise"></i>
-                </div>
-            </div>
-        </div>
-    </div>
+    <SimpleDashboardCharts />
 
     <!-- Recent Activity -->
     <div class="row">
@@ -254,116 +190,30 @@
     private decimal ukupnaProizvodnja = 0;
     private int brojAktivnihNaloga = 0;
 
-    // Chart configurations
-
-    
-    @inject NavigationManager NavigationManager
     protected override async Task OnInitializedAsync()
     {
         await UcitajStatistike();
-        await UcitajSveChartove();
     }
 
     private async Task UcitajStatistike()
     {
         try
         {
-            var filter = new FilterRequest
+            // Filter za ukupno saldo (zadnji mesec)
+            var filterMesec = new FilterRequest
             {
                 OdDatum = DateTime.Now.AddMonths(-1),
                 DoDatum = DateTime.Now
             };
 
-            ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filter);
-            ukupnaProizvodnja = await ProizvodnjaService.UcitajUkupnuProizvodnju(filter);
-            brojAktivnihNaloga = await ProizvodnjaService.UcitajBrojAktivnihNaloga(filter);
-            ukupnaVrednostLager = await LagerService.UcitajUkupnuVrednostLager(); // DODATO
+            ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filterMesec);
+            ukupnaProizvodnja = await ProizvodnjaService.UcitajGotoveProizvodePoslednjihDana(7);
+            brojAktivnihNaloga = await ProizvodnjaService.UcitajBrojAktivnihNaloga(filterMesec);
+            ukupnaVrednostLager = await LagerService.UcitajUkupnuVrednostLager();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Greška pri učitavanju statistika: {ex.Message}");
-        }
-    }
-
-    private async Task UcitajSveChartove()
-    {
-        await UcitajTopKupce();
-        await UcitajTopDobavljace();
-        await UcitajProizvodnjuPoArtiklima();
-    }
-
-    private async Task UcitajTopKupce()
-    {
-        try
-        {
-            var filter = new FilterRequest
-            {
-                OdDatum = DateTime.Now.AddMonths(-1),
-                DoDatum = DateTime.Now
-            };
-
-            var topKupci = await FinansijeService.UcitajTopKupce(filter);
-            
-           @*  kupciChartConfig = ChartHelper.CreateBarChart(
-                topKupci.Keys.Take(5).ToArray(),
-                topKupci.Values.Take(5).ToArray(),
-                "Saldo (RSD)",
-                "rgba(40, 167, 69, 0.8)"
-            ); *@
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška pri učitavanju top kupaca: {ex.Message}");
-        }
-    }
-
-    private async Task UcitajTopDobavljace()
-    {
-        try
-        {
-            var filter = new FilterRequest
-            {
-                OdDatum = DateTime.Now.AddMonths(-1),
-                DoDatum = DateTime.Now
-            };
-
-            var topDobavljaci = await FinansijeService.UcitajTopDobavljace(filter);
-            
-           @*  dobavljaciChartConfig = ChartHelper.CreateBarChart(
-                topDobavljaci.Keys.Take(5).ToArray(),
-                topDobavljaci.Values.Take(5).ToArray(),
-                "Saldo (RSD)",
-                "rgba(220, 53, 69, 0.8)" *@
-            @* ); *@
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška pri učitavanju top dobavljača: {ex.Message}");
-        }
-    }
-
-    private async Task UcitajProizvodnjuPoArtiklima()
-    {
-        try
-        {
-            var filter = new FilterRequest
-            {
-                OdDatum = DateTime.Now.AddMonths(-1),
-                DoDatum = DateTime.Now
-            };
-
-            var proizvodnjaPoArtiklima = await ProizvodnjaService.UcitajProizvodnjuPoArtiklima(filter);
-           @*  
-            proizvodnjaChartConfig = ChartHelper.CreateBarChart(
-                proizvodnjaPoArtiklima.Keys.Take(5).ToArray(),
-                proizvodnjaPoArtiklima.Values.Take(5).ToArray(),
-                "Količina (kg)",
-                "rgba(13, 110, 253, 0.8)"
-            ); *@
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška pri učitavanju proizvodnje po artiklima: {ex.Message}");
         }
     }
 

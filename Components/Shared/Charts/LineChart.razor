@@ -1,0 +1,31 @@
+@using ChartJs.Blazor.LineChart
+@using ChartJs.Blazor.Interop
+@inject IJSRuntime JSRuntime
+
+<div class="chart-container">
+    <Chart Config="Config" Width="@Width" Height="@Height" />
+</div>
+
+@code {
+    [Parameter] public LineConfig Config { get; set; } = null!;
+    [Parameter] public int Width { get; set; } = 400;
+    [Parameter] public int Height { get; set; } = 200;
+
+    protected override void OnParametersSet()
+    {
+        if (Config?.Options != null)
+        {
+            // Ensure responsive behavior
+            Config.Options.Responsive = true;
+            Config.Options.MaintainAspectRatio = false;
+        }
+    }
+}
+
+<style>
+    .chart-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+</style>

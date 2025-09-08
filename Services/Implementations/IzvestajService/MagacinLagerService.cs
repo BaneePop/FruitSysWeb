@@ -160,32 +160,32 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         // DODATO: LAGER PROIZVODNJE iz vwRadniNalogLager - prema dokumentu 
         public async Task<List<RadniNalogLagerModel>> UcitajLagerProizvodnje()
         {
-        try
-        {
-        var sql = @"
-        SELECT 
-        rnl.RadniNalogLager as BrojNaloga,
-        GROUP_CONCAT(DISTINCT rnl.Artikal SEPARATOR ', ') as Artikal,
-        SUM(rnl.Kolicina) as Kolicina,
-        SUM(rn.Kolicina) as PotrebnaKolicina,
-        GROUP_CONCAT(DISTINCT rnl.Pakovanje SEPARATOR ', ') as Pakovanje,
-        MAX(rn.DokumentStatus) as DokumentStatus
-        FROM vwRadniNalogLager rnl
-        LEFT JOIN RadniNalog rn ON rnl.RadniNalogLager = rn.Sifra
-        WHERE rnl.Kolicina IS NOT NULL
-          AND rnl.Kolicina > 0
-        GROUP BY rnl.RadniNalogLager
-        ORDER BY rnl.RadniNalogLager
-        ";
-        
-        var rezultat = await _databaseService.QueryAsync<RadniNalogLagerModel>(sql);
-        return rezultat.ToList();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška pri učitavanju lager proizvodnje: {ex.Message}");
-            return new List<RadniNalogLagerModel>();
-        }
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        rnl.RadniNalogLager as BrojNaloga,
+                        GROUP_CONCAT(DISTINCT rnl.Artikal SEPARATOR ', ') as Artikal,
+                        SUM(rnl.Kolicina) as Kolicina,
+                        SUM(rn.Kolicina) as PotrebnaKolicina,
+                        GROUP_CONCAT(DISTINCT rnl.Pakovanje SEPARATOR ', ') as Pakovanje,
+                        MAX(rn.DokumentStatus) as DokumentStatus
+                    FROM vwRadniNalogLager rnl
+                    LEFT JOIN RadniNalog rn ON rnl.RadniNalogLager = rn.Sifra
+                    WHERE rnl.Kolicina IS NOT NULL
+                      AND rnl.Kolicina > 0
+                    GROUP BY rnl.RadniNalogLager
+                    ORDER BY rnl.RadniNalogLager
+                ";
+                
+                var rezultat = await _databaseService.QueryAsync<RadniNalogLagerModel>(sql);
+                return rezultat.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri učitavanju lager proizvodnje: {ex.Message}");
+                return new List<RadniNalogLagerModel>();
+            }
         }
 
         // POSTOJEĆE METODE - MODIFIKOVANE
@@ -520,6 +520,106 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             catch (Exception ex)
             {
                 Console.WriteLine($"Greška pri učitavanju statistika lagera: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
+        }
+
+        // DASHBOARD - nove metode za strukturu lagera
+        public async Task<Dictionary<string, decimal>> UcitajStrukturuSirovina()
+        {
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        ml.Artikal,
+                        SUM(ml.Kolicina) as UkupnaKolicina
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    WHERE a.Tip = 1  -- SIROVINE
+                      AND ml.Kolicina >= 10
+                      AND ml.Kolicina IS NOT NULL
+                      AND a.Aktivno = 1
+                    GROUP BY ml.Artikal, ml.ArtikalID
+                    ORDER BY UkupnaKolicina DESC
+                    LIMIT 10
+                ";
+                
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Artikal ?? "Nepoznato",
+                    x => (decimal)x.UkupnaKolicina
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri učitavanju strukture sirovina: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
+        }
+
+        public async Task<Dictionary<string, decimal>> UcitajStrukturuGotovihProizvoda()
+        {
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        ml.Artikal,
+                        SUM(ml.Kolicina) as UkupnaKolicina
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    WHERE a.Tip = 4  -- GOTOVI PROIZVODI
+                      AND ml.Kolicina >= 10
+                      AND ml.Kolicina IS NOT NULL
+                      AND a.Aktivno = 1
+                    GROUP BY ml.Artikal, ml.ArtikalID
+                    ORDER BY UkupnaKolicina DESC
+                    LIMIT 10
+                ";
+                
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Artikal ?? "Nepoznato",
+                    x => (decimal)x.UkupnaKolicina
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri učitavanju strukture gotovih proizvoda: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
+        }
+
+        public async Task<Dictionary<string, decimal>> UcitajStrukturuAmbalaze()
+        {
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        ml.Artikal,
+                        SUM(ml.Kolicina) as UkupnaKolicina
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    WHERE a.Tip = 2  -- AMBALAŽA
+                      AND ml.Kolicina >= 10
+                      AND ml.Kolicina IS NOT NULL
+                      AND a.Aktivno = 1
+                    GROUP BY ml.Artikal, ml.ArtikalID
+                    ORDER BY UkupnaKolicina DESC
+                    LIMIT 10
+                ";
+                
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Artikal ?? "Nepoznato",
+                    x => (decimal)x.UkupnaKolicina
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri učitavanju strukture ambalaže: {ex.Message}");
                 return new Dictionary<string, decimal>();
             }
         }

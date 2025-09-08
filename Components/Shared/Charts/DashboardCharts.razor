@@ -1,0 +1,493 @@
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Utils.Charts
+@inject IProizvodnjaService ProizvodnjaService
+@inject IMagacinLagerService LagerService
+
+<div class="dashboard-charts">
+    <!-- Top section charts -->
+    <div class="row mb-4">
+        <!-- Top Kupci -->
+        <div class="col-md-6">
+            <ResponsiveChart Title="Top 5 Kupaca"
+                           Icon="bi-currency-exchange"
+                           BarConfig="@kupciConfig"
+                           IsLoading="@LoadingKupci"
+                           HasError="@(kupciConfig == null && !LoadingKupci && KupciData != null)"
+                           Unit="kg"
+                           Height="250"
+                           OnRefresh="RefreshKupci"
+                           ShowExportButton="true"
+                           LoadingText="Učitavanje kupaca..."
+                           ErrorMessage="Greška pri učitavanju podataka o kupcima" />
+        </div>
+
+        <!-- Top Dobavljaci -->
+        <div class="col-md-6">
+            <ResponsiveChart Title="Top 5 Dobavljača"
+                           Icon="bi-truck"
+                           BarConfig="@dobavljaciConfig"
+                           IsLoading="@LoadingDobavljaci"
+                           HasError="@(dobavljaciConfig == null && !LoadingDobavljaci && DobavljaciData != null)"
+                           Unit="kg"
+                           Height="250"
+                           OnRefresh="RefreshDobavljaci"
+                           ShowExportButton="true"
+                           LoadingText="Učitavanje dobavljača..."
+                           ErrorMessage="Greška pri učitavanju podataka o dobavljačima" />
+        </div>
+    </div>
+
+    <!-- Proizvodnja chart -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <ResponsiveChart Title="Proizvodnja po Artiklima"
+                           Icon="bi-bar-chart"
+                           BarConfig="@proizvodnjaConfig"
+                           IsLoading="@LoadingProizvodnja"
+                           HasError="@(proizvodnjaConfig == null && !LoadingProizvodnja && ProizvodnjaData != null)"
+                           Unit="kg"
+                           Height="280"
+                           OnRefresh="RefreshProizvodnja"
+                           ShowExportButton="true"
+                           ShowCollapseButton="true"
+                           LoadingText="Učitavanje proizvodnje..."
+                           ErrorMessage="Greška pri učitavanju podataka o proizvodnji" />
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="col-md-4">
+            <div class="quick-stats-card">
+                <h5><i class="bi bi-graph-up me-2"></i>Brzi pregled</h5>
+                
+                <div class="stat-item">
+                    <div class="stat-label">Ukupno kupaca</div>
+                    <div class="stat-value">@(KupciData?.Count ?? 0)</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">Ukupno dobavljača</div>
+                    <div class="stat-value">@(DobavljaciData?.Count ?? 0)</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">Artikli u proizvodnji</div>
+                    <div class="stat-value">@(ProizvodnjaData?.Count ?? 0)</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">Ukupna proizvodnja</div>
+                    <div class="stat-value">@((ProizvodnjaData?.Values.Sum() ?? 0).ToString("N1")) kg</div>
+                </div>
+                
+                <div class="stat-item mt-3 pt-3 border-top">
+                    <div class="stat-label">Poslednje ažuriranje</div>
+                    <div class="stat-value small">@lastUpdateTime.ToString("dd.MM.yyyy HH:mm")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Struktura Lagera - 3 Pie Charts -->
+    <div class="row mb-4">
+        <!-- Struktura Sirovina -->
+        <div class="col-md-4">
+            <ResponsiveChart Title="Sirovine"
+                           Icon="bi-pie-chart"
+                           PieConfig="@sirovineConfig"
+                           IsLoading="@LoadingSirovine"
+                           HasError="@(sirovineConfig == null && !LoadingSirovine && SirovineData != null)"
+                           Unit="kg"
+                           Height="200"
+                           OnRefresh="RefreshSirovine"
+                           ShowCollapseButton="true"
+                           PlaceholderIcon="pie-chart"
+                           PlaceholderText="Nema podataka o sirovinama"
+                           LoadingText="Učitavanje sirovina..." />
+        </div>
+
+        <!-- Struktura Gotovih proizvoda -->
+        <div class="col-md-4">
+            <ResponsiveChart Title="Gotovi proizvodi"
+                           Icon="bi-pie-chart"
+                           PieConfig="@gotoviConfig"
+                           IsLoading="@LoadingGotovi"
+                           HasError="@(gotoviConfig == null && !LoadingGotovi && GotoviData != null)"
+                           Unit="kg"
+                           Height="200"
+                           OnRefresh="RefreshGotovi"
+                           ShowCollapseButton="true"
+                           PlaceholderIcon="pie-chart"
+                           PlaceholderText="Nema podataka o gotovim proizvodima"
+                           LoadingText="Učitavanje gotovih proizvoda..." />
+        </div>
+
+        <!-- Struktura Ambalaze -->
+        <div class="col-md-4">
+            <ResponsiveChart Title="Ambalaža"
+                           Icon="bi-pie-chart"
+                           PieConfig="@ambalazeConfig"
+                           IsLoading="@LoadingAmbalaza"
+                           HasError="@(ambalazeConfig == null && !LoadingAmbalaza && AmbalazeData != null)"
+                           Unit="kg"
+                           Height="200"
+                           OnRefresh="RefreshAmbalaza"
+                           ShowCollapseButton="true"
+                           PlaceholderIcon="pie-chart"
+                           PlaceholderText="Nema podataka o ambalaži"
+                           LoadingText="Učitavanje ambalaže..." />
+        </div>
+    </div>
+
+    <!-- Refresh All Button -->
+    <div class="row">
+        <div class="col-12 text-center">
+            <button class="btn btn-primary btn-lg" @onclick="LoadAllCharts" disabled="@IsAnyLoading">
+                @if (IsAnyLoading)
+                {
+                    <i class="bi bi-hourglass-split rotating me-2"></i>
+                }
+                else
+                {
+                    <i class="bi bi-arrow-clockwise me-2"></i>
+                }
+                Osveži sve grafike
+            </button>
+            <small class="d-block text-muted mt-2">
+                Poslednje ažuriranje: @lastUpdateTime.ToString("dd.MM.yyyy HH:mm:ss")
+            </small>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Data properties
+    public Dictionary<string, decimal>? KupciData { get; private set; }
+    public Dictionary<string, decimal>? DobavljaciData { get; private set; }
+    public Dictionary<string, decimal>? ProizvodnjaData { get; private set; }
+    public Dictionary<string, decimal>? SirovineData { get; private set; }
+    public Dictionary<string, decimal>? GotoviData { get; private set; }
+    public Dictionary<string, decimal>? AmbalazeData { get; private set; }
+
+    // Chart configurations
+    private BarConfig? kupciConfig;
+    private BarConfig? dobavljaciConfig;
+    private BarConfig? proizvodnjaConfig;
+    private PieConfig? sirovineConfig;
+    private PieConfig? gotoviConfig;
+    private PieConfig? ambalazeConfig;
+
+    // Loading states
+    public bool LoadingKupci { get; private set; }
+    public bool LoadingDobavljaci { get; private set; }
+    public bool LoadingProizvodnja { get; private set; }
+    public bool LoadingSirovine { get; private set; }
+    public bool LoadingGotovi { get; private set; }
+    public bool LoadingAmbalaza { get; private set; }
+
+    private DateTime lastUpdateTime = DateTime.Now;
+
+    public bool IsAnyLoading => LoadingKupci || LoadingDobavljaci || LoadingProizvodnja || 
+                               LoadingSirovine || LoadingGotovi || LoadingAmbalaza;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllCharts();
+    }
+
+    public async Task LoadAllCharts()
+    {
+        var tasks = new List<Task>
+        {
+            RefreshKupci(),
+            RefreshDobavljaci(),
+            RefreshProizvodnja(),
+            RefreshSirovine(),
+            RefreshGotovi(),
+            RefreshAmbalaza()
+        };
+
+        await Task.WhenAll(tasks);
+        lastUpdateTime = DateTime.Now;
+        StateHasChanged();
+    }
+
+    private async Task RefreshKupci()
+    {
+        if (LoadingKupci) return;
+
+        LoadingKupci = true;
+        StateHasChanged();
+
+        try
+        {
+            var filter = CreateDefaultFilter();
+            KupciData = await ProizvodnjaService.UcitajTopKupcePoKilogramima(filter);
+
+            if (KupciData?.Any() == true)
+            {
+                kupciConfig = ChartHelper.CreateCustomBarChart(
+                    KupciData,
+                    "Količina (kg)",
+                    "rgba(40, 167, 69, 0.8)",
+                    5
+                );
+            }
+            else
+            {
+                kupciConfig = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju top kupaca: {ex.Message}");
+            KupciData = null;
+            kupciConfig = null;
+        }
+        finally
+        {
+            LoadingKupci = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshDobavljaci()
+    {
+        if (LoadingDobavljaci) return;
+
+        LoadingDobavljaci = true;
+        StateHasChanged();
+
+        try
+        {
+            var filter = CreateDefaultFilter();
+            DobavljaciData = await ProizvodnjaService.UcitajTopDobavljacePoKilogramima(filter);
+
+            if (DobavljaciData?.Any() == true)
+            {
+                dobavljaciConfig = ChartHelper.CreateCustomBarChart(
+                    DobavljaciData,
+                    "Količina (kg)",
+                    "rgba(220, 53, 69, 0.8)",
+                    5
+                );
+            }
+            else
+            {
+                dobavljaciConfig = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju top dobavljača: {ex.Message}");
+            DobavljaciData = null;
+            dobavljaciConfig = null;
+        }
+        finally
+        {
+            LoadingDobavljaci = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshProizvodnja()
+    {
+        if (LoadingProizvodnja) return;
+
+        LoadingProizvodnja = true;
+        StateHasChanged();
+
+        try
+        {
+            var filter = CreateDefaultFilter();
+            ProizvodnjaData = await ProizvodnjaService.UcitajProizvodnjuPoArtiklima(filter);
+
+            if (ProizvodnjaData?.Any() == true)
+            {
+                proizvodnjaConfig = ChartHelper.CreateCustomBarChart(
+                    ProizvodnjaData,
+                    "Količina (kg)",
+                    "rgba(13, 110, 253, 0.8)",
+                    8
+                );
+            }
+            else
+            {
+                proizvodnjaConfig = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju proizvodnje po artiklima: {ex.Message}");
+            ProizvodnjaData = null;
+            proizvodnjaConfig = null;
+        }
+        finally
+        {
+            LoadingProizvodnja = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshSirovine()
+    {
+        if (LoadingSirovine) return;
+
+        LoadingSirovine = true;
+        StateHasChanged();
+
+        try
+        {
+            SirovineData = await LagerService.UcitajStrukturuSirovina();
+
+            if (SirovineData?.Any() == true)
+            {
+                sirovineConfig = ChartHelper.CreateCustomPieChart(
+                    SirovineData,
+                    "",
+                    5
+                );
+            }
+            else
+            {
+                sirovineConfig = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju strukture sirovina: {ex.Message}");
+            SirovineData = null;
+            sirovineConfig = null;
+        }
+        finally
+        {
+            LoadingSirovine = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshGotovi()
+    {
+        if (LoadingGotovi) return;
+
+        LoadingGotovi = true;
+        StateHasChanged();
+
+        try
+        {
+            GotoviData = await LagerService.UcitajStrukturuGotovihProizvoda();
+
+            if (GotoviData?.Any() == true)
+            {
+                gotoviConfig = ChartHelper.CreateCustomPieChart(
+                    GotoviData,
+                    "",
+                    5
+                );
+            }
+            else
+            {
+                gotoviConfig = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju strukture gotovih proizvoda: {ex.Message}");
+            GotoviData = null;
+            gotoviConfig = null;
+        }
+        finally
+        {
+            LoadingGotovi = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshAmbalaza()
+    {
+        if (LoadingAmbalaza) return;
+
+        LoadingAmbalaza = true;
+        StateHasChanged();
+
+        try
+        {
+            AmbalazeData = await LagerService.UcitajStrukturuAmbalaze();
+
+            if (AmbalazeData?.Any() == true)
+            {
+                ambalazeConfig = ChartHelper.CreateCustomPieChart(
+                    AmbalazeData,
+                    "",
+                    5
+                );
+            }
+            else
+            {
+                ambalazeConfig = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju strukture ambalaže: {ex.Message}");
+            AmbalazeData = null;
+            ambalazeConfig = null;
+        }
+        finally
+        {
+            LoadingAmbalaza = false;
+            StateHasChanged();
+        }
+    }
+
+    private FilterRequest CreateDefaultFilter()
+    {
+        return new FilterRequest
+        {
+            OdDatum = DateTime.Now.AddMonths(-1),
+            DoDatum = DateTime.Now
+        };
+    }
+}
+
+<style>
+    .quick-stats-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        height: fit-content;
+    }
+
+    .quick-stats-card h5 {
+        color: #0f5132;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .stat-value {
+        font-weight: 600;
+        color: #0f5132;
+    }
+
+    .rotating {
+        animation: rotateAnim 1s linear infinite;
+    }
+
+    @@keyframes rotateAnim {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>

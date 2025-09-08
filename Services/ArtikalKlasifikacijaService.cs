@@ -31,6 +31,7 @@ namespace FruitSysWeb.Services
                            Naziv LIKE '%Jagoda%' OR Naziv = 'Malina' OR Naziv = 'Kupina' OR 
                            Naziv = 'Sljiva' OR Naziv = 'Visnja' OR Naziv = 'Borovnica' OR 
                            Naziv = 'Kajsija' OR Naziv = 'Jagoda')
+                      AND Naziv NOT LIKE '%Klasa%' AND Naziv NOT LIKE '%klasa%' 
                       AND Naziv NOT LIKE '%Klase%' AND Naziv NOT LIKE '%klase%'
                     ORDER BY 
                         CASE 

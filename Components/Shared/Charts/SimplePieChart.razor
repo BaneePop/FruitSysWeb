@@ -1,0 +1,110 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div class="simple-chart-container">
+    <canvas id="@CanvasId" width="@Width" height="@Height"></canvas>
+</div>
+
+@code {
+    [Parameter] public string CanvasId { get; set; } = Guid.NewGuid().ToString();
+    [Parameter] public int Width { get; set; } = 300;
+    [Parameter] public int Height { get; set; } = 200;
+    [Parameter] public Dictionary<string, decimal>? Data { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+
+    private readonly string[] pieColors = new[]
+    {
+        "rgba(255, 99, 132, 0.8)",
+        "rgba(54, 162, 235, 0.8)",
+        "rgba(255, 205, 86, 0.8)",
+        "rgba(75, 192, 192, 0.8)",
+        "rgba(153, 102, 255, 0.8)",
+        "rgba(255, 159, 64, 0.8)",
+        "rgba(199, 199, 199, 0.8)",
+        "rgba(83, 102, 255, 0.8)"
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Data?.Any() == true)
+        {
+            await CreateChart();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Data?.Any() == true)
+        {
+            await CreateChart();
+        }
+    }
+
+    private async Task CreateChart()
+    {
+        try
+        {
+            var labels = Data?.Keys.ToArray() ?? Array.Empty<string>();
+            var values = Data?.Values.ToArray() ?? Array.Empty<decimal>();
+            var colors = pieColors.Take(labels.Length).ToArray();
+
+            var config = new
+            {
+                type = "pie",
+                data = new
+                {
+                    labels = labels,
+                    datasets = new[]
+                    {
+                        new
+                        {
+                            data = values,
+                            backgroundColor = colors,
+                            borderColor = colors.Select(c => c.Replace("0.8", "1")).ToArray(),
+                            borderWidth = 1
+                        }
+                    }
+                },
+                options = new
+                {
+                    responsive = true,
+                    maintainAspectRatio = false,
+                    plugins = new
+                    {
+                        legend = new
+                        {
+                            position = "right"
+                        }
+                    }
+                }
+            };
+
+            await JSRuntime.InvokeVoidAsync("ChartJsInterop.updateChart", CanvasId, config);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating pie chart: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("ChartJsInterop.destroyChart", CanvasId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error disposing pie chart: {ex.Message}");
+        }
+    }
+}
+
+<style>
+    .simple-chart-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+</style>

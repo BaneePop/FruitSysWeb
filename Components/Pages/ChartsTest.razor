@@ -1,0 +1,31 @@
+@page "/charts-test"
+@using FruitSysWeb.Components.Shared.Charts
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="financial-header text-white py-4 mb-4">
+        <div class="container-fluid">
+            <h1 class="h2 mb-1">
+                <i class="bi bi-bar-chart me-2"></i>Charts Test
+            </h1>
+            <p class="mb-0">Test svih tipova grafika u FruitSysWeb sistemu</p>
+        </div>
+    </div>
+
+    <!-- Main Chart Showcase -->
+    <ChartShowcase />
+
+    <!-- Dashboard Charts Preview -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3>Dashboard Charts Preview</h3>
+            <p class="text-muted">Ovo su chartovi koji se koriste na glavnoj Dashboard stranici</p>
+        </div>
+    </div>
+    
+    <DashboardCharts />
+</div>
+
+@code {
+    // Prazna logika - sve se dešava u komponentama
+}

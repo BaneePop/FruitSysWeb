@@ -463,5 +463,129 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             // implementacija ista kao postojeća
             return Task.FromResult(new Dictionary<string, decimal>());
         }
+
+        // DASHBOARD - nove metode za dashboard
+        public async Task<decimal> UcitajGotoveProizvodePoslednjihDana(int dana)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT COALESCE(SUM(vpp.Kolicina), 0) as UkupnaKolicina
+                    FROM vPreradaPregled vpp
+                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+                    WHERE vpp.RpArtikalTip = 4  -- SAMO GOTOVI PROIZVODI
+                      AND DATE(rn.DatumPocetka) >= DATE_SUB(CURDATE(), INTERVAL @Dana DAY)
+                      AND EXISTS (SELECT 1 FROM Artikal a WHERE a.ID = vpp.ArtikalID AND a.Aktivno = 1)
+                ";
+
+                var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql, new { Dana = dana });
+                return rezultat;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajGotoveProizvodePoslednjihDana: {ex.Message}");
+                return 0;
+            }
+        }
+
+        public async Task<Dictionary<string, decimal>> UcitajTopKupcePoKilogramima(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT 
+                        COALESCE(vpp.Komitent, 'Nepoznato') as Komitent,
+                        SUM(vpp.Kolicina) as UkupnaKolicina
+                    FROM vPreradaPregled vpp
+                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+                    WHERE vpp.RpArtikalTip = 4  -- SAMO GOTOVI PROIZVODI
+                      AND EXISTS (SELECT 1 FROM Artikal a WHERE a.ID = vpp.ArtikalID AND a.Aktivno = 1)
+                      AND EXISTS (SELECT 1 FROM Komitent k WHERE k.Id = vpp.KomitentID AND k.JeKupac = 1)
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                sql.Append(@"
+                    GROUP BY vpp.Komitent, vpp.KomitentID
+                    ORDER BY UkupnaKolicina DESC
+                    LIMIT 5
+                ");
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Komitent ?? "Nepoznato",
+                    x => (decimal)x.UkupnaKolicina
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajTopKupcePoKilogramima: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
+        }
+
+        public async Task<Dictionary<string, decimal>> UcitajTopDobavljacePoKilogramima(FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
+                    SELECT 
+                        COALESCE(vpp.Komitent, 'Nepoznato') as Komitent,
+                        SUM(vpp.Kolicina) as UkupnaKolicina
+                    FROM vPreradaPregled vpp
+                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+                    WHERE vpp.RpArtikalTip = 1  -- SIROVINE (dobavljači uglavnom isporučuju sirovine)
+                      AND EXISTS (SELECT 1 FROM Artikal a WHERE a.ID = vpp.ArtikalID AND a.Aktivno = 1)
+                      AND EXISTS (SELECT 1 FROM Komitent k WHERE k.Id = vpp.KomitentID AND k.JeDobavljac = 1)
+                ");
+
+                var parameters = new Dictionary<string, object>();
+
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
+                sql.Append(@"
+                    GROUP BY vpp.Komitent, vpp.KomitentID
+                    ORDER BY UkupnaKolicina DESC
+                    LIMIT 5
+                ");
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
+                
+                return rezultat.ToDictionary(
+                    x => (string)x.Komitent ?? "Nepoznato",
+                    x => (decimal)x.UkupnaKolicina
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajTopDobavljacePoKilogramima: {ex.Message}");
+                return new Dictionary<string, decimal>();
+            }
+        }
     }
 }

@@ -1,6 +1,5 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Models.Requests;
-
 namespace FruitSysWeb.Services.Interfaces
 {
     public interface IMagacinLagerService
@@ -24,6 +23,11 @@ namespace FruitSysWeb.Services.Interfaces
         Task<List<MagacinLagerModel>> UcitajArtikleIspodMinimuma(decimal minKolicina = 10);
         Task<List<MagacinLagerModel>> UcitajArtikleIspodMinimuma();
         Task<Dictionary<string, decimal>> UcitajStatistikeLagera();
+        
+        // DASHBOARD - nove metode za strukturu lagera
+        Task<Dictionary<string, decimal>> UcitajStrukturuSirovina();
+        Task<Dictionary<string, decimal>> UcitajStrukturuGotovihProizvoda();
+        Task<Dictionary<string, decimal>> UcitajStrukturuAmbalaze();
         
         // Ostale metode
         Task<List<MagacinLagerModel>> UcitajLagerStanjePoLotu(string lot);

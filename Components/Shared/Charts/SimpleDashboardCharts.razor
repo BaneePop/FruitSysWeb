@@ -1,0 +1,166 @@
+            Console.WriteLine($"Greška pri učitavanju strukture sirovina: {ex.Message}");
+            SirovineData = null;
+        }
+        finally
+        {
+            LoadingSirovine = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshGotovi()
+    {
+        if (LoadingGotovi) return;
+
+        LoadingGotovi = true;
+        StateHasChanged();
+
+        try
+        {
+            GotoviData = await LagerService.UcitajStrukturuGotovihProizvoda();
+            
+            // Take only top 5
+            if (GotoviData?.Count > 5)
+            {
+                GotoviData = GotoviData.Take(5).ToDictionary(x => x.Key, x => x.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju strukture gotovih proizvoda: {ex.Message}");
+            GotoviData = null;
+        }
+        finally
+        {
+            LoadingGotovi = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshAmbalaza()
+    {
+        if (LoadingAmbalaza) return;
+
+        LoadingAmbalaza = true;
+        StateHasChanged();
+
+        try
+        {
+            AmbalazeData = await LagerService.UcitajStrukturuAmbalaze();
+            
+            // Take only top 5
+            if (AmbalazeData?.Count > 5)
+            {
+                AmbalazeData = AmbalazeData.Take(5).ToDictionary(x => x.Key, x => x.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju strukture ambalaže: {ex.Message}");
+            AmbalazeData = null;
+        }
+        finally
+        {
+            LoadingAmbalaza = false;
+            StateHasChanged();
+        }
+    }
+
+    private FilterRequest CreateDefaultFilter()
+    {
+        return new FilterRequest
+        {
+            OdDatum = DateTime.Now.AddMonths(-1),
+            DoDatum = DateTime.Now
+        };
+    }
+}
+
+<style>
+    .simple-chart-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        height: fit-content;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .chart-header h5 {
+        margin: 0;
+        color: #0f5132;
+        font-weight: 600;
+    }
+
+    .chart-body {
+        min-height: 200px;
+    }
+
+    .loading-placeholder,
+    .no-data-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        text-align: center;
+        color: #6c757d;
+    }
+
+    .loading-placeholder .spinner-border {
+        margin-bottom: 1rem;
+    }
+
+    .no-data-placeholder i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .quick-stats-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        height: fit-content;
+    }
+
+    .quick-stats-card h5 {
+        color: #0f5132;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .stat-value {
+        font-weight: 600;
+        color: #0f5132;
+    }
+
+    .rotating {
+        animation: rotateAnim 1s linear infinite;
+    }
+
+    @@keyframes rotateAnim {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
