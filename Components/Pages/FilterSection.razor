@@ -1,3 +1,18 @@
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Components.Shared.Filters
+@using FruitSysWeb.Components.Shared.Layout
+@using FruitSysWeb.Components.Shared.Charts
+
+
+@inject IFinansijeService FinansijeService
+@inject IProizvodnjaService ProizvodnjaService
+@inject IExportService ExportService
+@inject IJSRuntime JSRuntime
+
+
+
+
 @namespace FruitSysWeb.Components.Pages
 
 <div class="card border-primary">

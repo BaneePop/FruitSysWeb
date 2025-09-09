@@ -1,163 +1,18 @@
+@page "/dashboard/charts" 
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
 @using FruitSysWeb.Utils.Charts
 @inject IProizvodnjaService ProizvodnjaService
 @inject IMagacinLagerService LagerService
+@inject IJSRuntime JSRuntime
+@inject IDashboardService DashboardService
 
-<div class="dashboard-charts">
-    <!-- Top section charts -->
-    <div class="row mb-4">
-        <!-- Top Kupci -->
-        <div class="col-md-6">
-            <ResponsiveChart Title="Top 5 Kupaca"
-                           Icon="bi-currency-exchange"
-                           BarConfig="@kupciConfig"
-                           IsLoading="@LoadingKupci"
-                           HasError="@(kupciConfig == null && !LoadingKupci && KupciData != null)"
-                           Unit="kg"
-                           Height="250"
-                           OnRefresh="RefreshKupci"
-                           ShowExportButton="true"
-                           LoadingText="Učitavanje kupaca..."
-                           ErrorMessage="Greška pri učitavanju podataka o kupcima" />
-        </div>
+<h3>Dashboard Charts</h3>
 
-        <!-- Top Dobavljaci -->
-        <div class="col-md-6">
-            <ResponsiveChart Title="Top 5 Dobavljača"
-                           Icon="bi-truck"
-                           BarConfig="@dobavljaciConfig"
-                           IsLoading="@LoadingDobavljaci"
-                           HasError="@(dobavljaciConfig == null && !LoadingDobavljaci && DobavljaciData != null)"
-                           Unit="kg"
-                           Height="250"
-                           OnRefresh="RefreshDobavljaci"
-                           ShowExportButton="true"
-                           LoadingText="Učitavanje dobavljača..."
-                           ErrorMessage="Greška pri učitavanju podataka o dobavljačima" />
-        </div>
-    </div>
-
-    <!-- Proizvodnja chart -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <ResponsiveChart Title="Proizvodnja po Artiklima"
-                           Icon="bi-bar-chart"
-                           BarConfig="@proizvodnjaConfig"
-                           IsLoading="@LoadingProizvodnja"
-                           HasError="@(proizvodnjaConfig == null && !LoadingProizvodnja && ProizvodnjaData != null)"
-                           Unit="kg"
-                           Height="280"
-                           OnRefresh="RefreshProizvodnja"
-                           ShowExportButton="true"
-                           ShowCollapseButton="true"
-                           LoadingText="Učitavanje proizvodnje..."
-                           ErrorMessage="Greška pri učitavanju podataka o proizvodnji" />
-        </div>
-
-        <!-- Quick Stats -->
-        <div class="col-md-4">
-            <div class="quick-stats-card">
-                <h5><i class="bi bi-graph-up me-2"></i>Brzi pregled</h5>
-                
-                <div class="stat-item">
-                    <div class="stat-label">Ukupno kupaca</div>
-                    <div class="stat-value">@(KupciData?.Count ?? 0)</div>
-                </div>
-                
-                <div class="stat-item">
-                    <div class="stat-label">Ukupno dobavljača</div>
-                    <div class="stat-value">@(DobavljaciData?.Count ?? 0)</div>
-                </div>
-                
-                <div class="stat-item">
-                    <div class="stat-label">Artikli u proizvodnji</div>
-                    <div class="stat-value">@(ProizvodnjaData?.Count ?? 0)</div>
-                </div>
-                
-                <div class="stat-item">
-                    <div class="stat-label">Ukupna proizvodnja</div>
-                    <div class="stat-value">@((ProizvodnjaData?.Values.Sum() ?? 0).ToString("N1")) kg</div>
-                </div>
-                
-                <div class="stat-item mt-3 pt-3 border-top">
-                    <div class="stat-label">Poslednje ažuriranje</div>
-                    <div class="stat-value small">@lastUpdateTime.ToString("dd.MM.yyyy HH:mm")</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Struktura Lagera - 3 Pie Charts -->
-    <div class="row mb-4">
-        <!-- Struktura Sirovina -->
-        <div class="col-md-4">
-            <ResponsiveChart Title="Sirovine"
-                           Icon="bi-pie-chart"
-                           PieConfig="@sirovineConfig"
-                           IsLoading="@LoadingSirovine"
-                           HasError="@(sirovineConfig == null && !LoadingSirovine && SirovineData != null)"
-                           Unit="kg"
-                           Height="200"
-                           OnRefresh="RefreshSirovine"
-                           ShowCollapseButton="true"
-                           PlaceholderIcon="pie-chart"
-                           PlaceholderText="Nema podataka o sirovinama"
-                           LoadingText="Učitavanje sirovina..." />
-        </div>
-
-        <!-- Struktura Gotovih proizvoda -->
-        <div class="col-md-4">
-            <ResponsiveChart Title="Gotovi proizvodi"
-                           Icon="bi-pie-chart"
-                           PieConfig="@gotoviConfig"
-                           IsLoading="@LoadingGotovi"
-                           HasError="@(gotoviConfig == null && !LoadingGotovi && GotoviData != null)"
-                           Unit="kg"
-                           Height="200"
-                           OnRefresh="RefreshGotovi"
-                           ShowCollapseButton="true"
-                           PlaceholderIcon="pie-chart"
-                           PlaceholderText="Nema podataka o gotovim proizvodima"
-                           LoadingText="Učitavanje gotovih proizvoda..." />
-        </div>
-
-        <!-- Struktura Ambalaze -->
-        <div class="col-md-4">
-            <ResponsiveChart Title="Ambalaža"
-                           Icon="bi-pie-chart"
-                           PieConfig="@ambalazeConfig"
-                           IsLoading="@LoadingAmbalaza"
-                           HasError="@(ambalazeConfig == null && !LoadingAmbalaza && AmbalazeData != null)"
-                           Unit="kg"
-                           Height="200"
-                           OnRefresh="RefreshAmbalaza"
-                           ShowCollapseButton="true"
-                           PlaceholderIcon="pie-chart"
-                           PlaceholderText="Nema podataka o ambalaži"
-                           LoadingText="Učitavanje ambalaže..." />
-        </div>
-    </div>
-
-    <!-- Refresh All Button -->
-    <div class="row">
-        <div class="col-12 text-center">
-            <button class="btn btn-primary btn-lg" @onclick="LoadAllCharts" disabled="@IsAnyLoading">
-                @if (IsAnyLoading)
-                {
-                    <i class="bi bi-hourglass-split rotating me-2"></i>
-                }
-                else
-                {
-                    <i class="bi bi-arrow-clockwise me-2"></i>
-                }
-                Osveži sve grafike
-            </button>
-            <small class="d-block text-muted mt-2">
-                Poslednje ažuriranje: @lastUpdateTime.ToString("dd.MM.yyyy HH:mm:ss")
-            </small>
-        </div>
-    </div>
+<div class="chart-container">
+    <CurrentChart Title="Monthly Sales" DataLoader="@(service => service.GetMonthlySalesAsync())" />
+    <CurrentChart Title="Revenue Trend" DataLoader="@(service => service.GetRevenueTrendAsync())" />
+    <CurrentChart Title="Customer Growth" DataLoader="@(service => service.GetCustomerGrowthAsync())" />
 </div>
 
 @code {
@@ -486,6 +341,7 @@
         animation: rotateAnim 1s linear infinite;
     }
 
+   @*  /* ESCAPE @ znakove za keyframes */ *@
     @@keyframes rotateAnim {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }

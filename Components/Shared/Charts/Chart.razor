@@ -1,0 +1,54 @@
+@using FruitSysWeb.Utils.Charts
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+@if (Config != null)
+{
+    <div id="@canvasId" style="width: @(Width)px; height: @(Height)px;">
+        <canvas width="@Width" height="@Height"></canvas>
+    </div>
+}
+
+@code {
+    [Parameter] public object? Config { get; set; }
+    [Parameter] public int Width { get; set; } = 400;
+    [Parameter] public int Height { get; set; } = 300;
+
+    private string canvasId = $"chart_{Guid.NewGuid():N}";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Config != null)
+        {
+            await InitializeChart();
+        }
+    }
+
+    private async Task InitializeChart()
+    {
+        try
+        {
+            // Basic chart initialization placeholder
+            // Za sada koristimo placeholder, kasnije možete dodati pravu Chart.js integraciju
+            await JSRuntime.InvokeVoidAsync("console.log", $"Chart initialized for {canvasId}");
+            
+            // Placeholder za chart rendering
+            await JSRuntime.InvokeVoidAsync("eval", $@"
+                console.log('Chart config:', {System.Text.Json.JsonSerializer.Serialize(Config)});
+                // Ovde bi se pozvala prava Chart.js biblioteka
+            ");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing chart: {ex.Message}");
+        }
+    }
+
+    public async Task UpdateChart()
+    {
+        if (Config != null)
+        {
+            await InitializeChart();
+        }
+    }
+}

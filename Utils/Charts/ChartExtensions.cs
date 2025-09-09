@@ -1,9 +1,3 @@
-using ChartJs.Blazor.BarChart;
-using ChartJs.Blazor.PieChart;
-using ChartJs.Blazor.Common;
-using FruitSysWeb.Components.Shared.Charts;
-
-
 namespace FruitSysWeb.Utils.Charts
 {
     public static class ChartExtensions
@@ -13,7 +7,7 @@ namespace FruitSysWeb.Utils.Charts
         /// </summary>
         public static void UpdateData(this BarConfig config, Dictionary<string, decimal> newData, int maxItems = 5)
         {
-            if (config?.Data?.Datasets == null || !config.Data.Datasets.Any()) 
+            if (config?.Data?.Datasets == null || !config.Data.Datasets.Any())
                 return;
 
             var (labels, values) = ChartHelper.ConvertDictionaryToArrays(newData, maxItems);
@@ -21,7 +15,7 @@ namespace FruitSysWeb.Utils.Charts
 
             // Clear existing data
             config.Data.Labels.Clear();
-            var dataset = config.Data.Datasets.First() as BarDataset<decimal>;
+            var dataset = config.Data.Datasets.FirstOrDefault() as BarDataset;
             dataset?.Clear();
 
             // Add new data using for loop
@@ -29,7 +23,7 @@ namespace FruitSysWeb.Utils.Charts
             {
                 config.Data.Labels.Add(label);
             }
-            
+
             if (dataset != null)
             {
                 foreach (var value in values)
@@ -44,7 +38,7 @@ namespace FruitSysWeb.Utils.Charts
         /// </summary>
         public static void UpdateData(this PieConfig config, Dictionary<string, decimal> newData, int maxItems = 8)
         {
-            if (config?.Data?.Datasets == null || !config.Data.Datasets.Any()) 
+            if (config?.Data?.Datasets == null || !config.Data.Datasets.Any())
                 return;
 
             var (labels, values) = ChartHelper.ConvertDictionaryToArrays(newData, maxItems);
@@ -52,7 +46,7 @@ namespace FruitSysWeb.Utils.Charts
 
             // Clear existing data
             config.Data.Labels.Clear();
-            var dataset = config.Data.Datasets.First() as PieDataset<decimal>;
+            var dataset = config.Data.Datasets.FirstOrDefault() as PieDataset;
             dataset?.Clear();
 
             // Add new data using for loop
@@ -60,7 +54,7 @@ namespace FruitSysWeb.Utils.Charts
             {
                 config.Data.Labels.Add(label);
             }
-            
+
             if (dataset != null)
             {
                 foreach (var value in values)
@@ -75,8 +69,8 @@ namespace FruitSysWeb.Utils.Charts
         /// </summary>
         public static bool HasData(this BarConfig config)
         {
-            return config?.Data?.Datasets?.Any() == true && 
-                   config.Data.Datasets.First() is BarDataset<decimal> dataset && 
+            return config?.Data?.Datasets?.Any() == true &&
+                   config.Data.Datasets.FirstOrDefault() is BarDataset dataset &&
                    dataset.Data.Any();
         }
 
@@ -85,8 +79,8 @@ namespace FruitSysWeb.Utils.Charts
         /// </summary>
         public static bool HasData(this PieConfig config)
         {
-            return config?.Data?.Datasets?.Any() == true && 
-                   config.Data.Datasets.First() is PieDataset<decimal> dataset && 
+            return config?.Data?.Datasets?.Any() == true &&
+                   config.Data.Datasets.FirstOrDefault() is PieDataset dataset &&
                    dataset.Data.Any();
         }
 
@@ -96,8 +90,8 @@ namespace FruitSysWeb.Utils.Charts
         public static decimal GetTotalValue(this BarConfig config)
         {
             if (!config.HasData()) return 0;
-            
-            var dataset = config.Data.Datasets.First() as BarDataset<decimal>;
+
+            var dataset = config.Data.Datasets.FirstOrDefault() as BarDataset;
             return dataset?.Data.Sum() ?? 0;
         }
 
@@ -107,8 +101,8 @@ namespace FruitSysWeb.Utils.Charts
         public static decimal GetTotalValue(this PieConfig config)
         {
             if (!config.HasData()) return 0;
-            
-            var dataset = config.Data.Datasets.First() as PieDataset<decimal>;
+
+            var dataset = config.Data.Datasets.FirstOrDefault() as PieDataset;
             return dataset?.Data.Sum() ?? 0;
         }
     }

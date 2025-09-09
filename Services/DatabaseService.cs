@@ -52,7 +52,7 @@ namespace FruitSysWeb.Services
             return await connection.ExecuteAsync(sql, parameters);
         }
 
-        // DODAJTE OVU METODU - ISPRAVLJENA VERZIJA
+        // DODANA METODA - ExecuteScalarAsync
         public async Task<T> ExecuteScalarAsync<T>(string sql, object? parameters = null)
         {
             if (string.IsNullOrEmpty(_connectionString))
@@ -63,7 +63,7 @@ namespace FruitSysWeb.Services
             using var connection = new MySqlConnection(_connectionString);
             await connection.OpenAsync();
             
-            // Koristimo default vrednost za tip T ako je rezultat null
+            // Koristimo ExecuteScalarAsync sa Dapper
             var result = await connection.ExecuteScalarAsync<T?>(sql, parameters);
             return result ?? default(T)!;
         }

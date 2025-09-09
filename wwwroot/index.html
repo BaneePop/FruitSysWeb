@@ -1,22 +1,98 @@
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-<script>
-    function downloadFile(base64Data, fileName, mimeType) {
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-</script>
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FruitSysWeb</title>
+    <base href="/" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link href="css/site.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+</head>
+
+<body>
+    <div id="app">Loading...</div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Blazor Scripts -->
+    <script src="_framework/blazor.server.js"></script>
+    
+    <!-- Chart.js Integration -->
+    <script src="js/charts.js"></script>
+    
+    <script>
+        function downloadFile(base64Data, fileName, mimeType) {
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Chart.js Interop for Blazor
+        window.ChartJsInterop = {
+            chartInstances: {},
+            
+            updateChart: function (canvasId, config) {
+                try {
+                    if (this.chartInstances[canvasId]) {
+                        this.chartInstances[canvasId].destroy();
+                    }
+
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas) {
+                        console.error('Canvas element not found:', canvasId);
+                        return;
+                    }
+
+                    const ctx = canvas.getContext('2d');
+                    this.chartInstances[canvasId] = new Chart(ctx, config);
+                    
+                    console.log('Chart updated successfully:', canvasId);
+                } catch (error) {
+                    console.error('Error updating chart:', error);
+                }
+            },
+            
+            destroyChart: function (canvasId) {
+                try {
+                    if (this.chartInstances[canvasId]) {
+                        this.chartInstances[canvasId].destroy();
+                        delete this.chartInstances[canvasId];
+                        console.log('Chart destroyed successfully:', canvasId);
+                    }
+                } catch (error) {
+                    console.error('Error destroying chart:', error);
+                }
+            }
+        };
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', function() {
+            Object.keys(window.ChartJsInterop.chartInstances).forEach(canvasId => {
+                window.ChartJsInterop.destroyChart(canvasId);
+            });
+        });
+    </script>
+</body>
+
+</html>

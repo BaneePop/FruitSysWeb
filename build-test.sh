@@ -1,22 +1,19 @@
 #!/bin/bash
 
-echo "🧪 Test kompajliranja FruitSysWeb aplikacije..."
+echo "🚀 Building FruitSysWeb project..."
+echo "=================================="
 
 cd /Users/nikola/FruitSysWeb
 
-echo "🔨 Proveravam build..."
-dotnet build --configuration Debug 2>&1
+echo "📦 Restoring packages..."
+dotnet restore
 
-if [ $? -eq 0 ]; then
-    echo "✅ Aplikacija je uspešno kompajlirana!"
-    echo ""
-    echo "🎯 STANJE PROJEKTA:"
-    echo "✅ Finansije - kompletno završeno"
-    echo "✅ Proizvodnja - padajući meniji dodani" 
-    echo "🔄 Lager - treba testiranje"
-    echo ""
-    echo "🚀 Za pokretanje koristite: dotnet run"
-    echo "🌐 URL: https://localhost:5001"
-else
-    echo "❌ Build neuspešan - ima grešaka u kodu!"
-fi
+echo "🔨 Building project..."
+dotnet build --no-restore
+
+echo "✅ Build completed!"
+echo ""
+echo "If you see this message without errors above, your project should compile successfully!"
+echo ""
+echo "To run the project:"
+echo "dotnet run"

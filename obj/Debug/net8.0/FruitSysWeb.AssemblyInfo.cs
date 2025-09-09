@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FruitSysWeb")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+603b822834564257cbb74c5556b681136840a9c8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6d2259786a4139dd35fed36ad516539ab93721a5")]
 [assembly: System.Reflection.AssemblyProductAttribute("FruitSysWeb")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FruitSysWeb")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

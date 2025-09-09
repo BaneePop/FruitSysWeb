@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "dgSpecHash": "aDCArdVeyOs=",
+  "dgSpecHash": "hsG2d0cO4IM=",
   "success": true,
   "projectFilePath": "/Users/nikola/FruitSysWeb/FruitSysWeb.csproj",
   "expectedPackageFiles": [
-    "/Users/nikola/.nuget/packages/chartjs.blazor.fork/2.0.2/chartjs.blazor.fork.2.0.2.nupkg.sha512",
     "/Users/nikola/.nuget/packages/closedxml/0.102.2/closedxml.0.102.2.nupkg.sha512",
     "/Users/nikola/.nuget/packages/dapper/2.1.28/dapper.2.1.28.nupkg.sha512",
     "/Users/nikola/.nuget/packages/documentformat.openxml/2.16.0/documentformat.openxml.2.16.0.nupkg.sha512",
@@ -16,7 +15,6 @@
     "/Users/nikola/.nuget/packages/microsoft.aspnetcore.components.forms/8.0.0/microsoft.aspnetcore.components.forms.8.0.0.nupkg.sha512",
     "/Users/nikola/.nuget/packages/microsoft.aspnetcore.components.web/8.0.0/microsoft.aspnetcore.components.web.8.0.0.nupkg.sha512",
     "/Users/nikola/.nuget/packages/microsoft.aspnetcore.metadata/8.0.0/microsoft.aspnetcore.metadata.8.0.0.nupkg.sha512",
-    "/Users/nikola/.nuget/packages/microsoft.csharp/4.7.0/microsoft.csharp.4.7.0.nupkg.sha512",
     "/Users/nikola/.nuget/packages/microsoft.extensions.dependencyinjection/8.0.0/microsoft.extensions.dependencyinjection.8.0.0.nupkg.sha512",
     "/Users/nikola/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
     "/Users/nikola/.nuget/packages/microsoft.extensions.logging.abstractions/8.0.0/microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
@@ -28,7 +26,6 @@
     "/Users/nikola/.nuget/packages/microsoft.win32.primitives/4.3.0/microsoft.win32.primitives.4.3.0.nupkg.sha512",
     "/Users/nikola/.nuget/packages/mysqlconnector/2.3.7/mysqlconnector.2.3.7.nupkg.sha512",
     "/Users/nikola/.nuget/packages/netstandard.library/1.6.1/netstandard.library.1.6.1.nupkg.sha512",
-    "/Users/nikola/.nuget/packages/newtonsoft.json/12.0.3/newtonsoft.json.12.0.3.nupkg.sha512",
     "/Users/nikola/.nuget/packages/questpdf/2025.7.1/questpdf.2025.7.1.nupkg.sha512",
     "/Users/nikola/.nuget/packages/runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl/4.3.2/runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
     "/Users/nikola/.nuget/packages/runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl/4.3.2/runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",

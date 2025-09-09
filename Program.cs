@@ -24,12 +24,8 @@ builder.Services.AddScoped<IArtikalService, ArtikalService>();
 // DODANO: Registracija ArtikalKlasifikacijaService
 builder.Services.AddScoped<IArtikalKlasifikacijaService, ArtikalKlasifikacijaService>();
 
-// ALTERNATIVNO: Ako koristiš različit ExportService
-// builder.Services.AddScoped<IExportService, ExportService>();
-
-// DODANO: Dodatni servisi ako postoje
-// builder.Services.AddScoped<IRadniNalogService, RadniNalogService>();
-// builder.Services.AddScoped<ILagerProizvodnjeService, LagerProizvodnjeService>();
+// ISPRAVLJENA registracija DashboardService - bez HttpClient
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // DODANO: Konfigurisanje baze podataka ako koristiš EF Core
 // builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -52,7 +48,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// DODANO: HTTP Client za vanjske servise
+// DODANO: HTTP Client za vanjske servise (ali NE za DashboardService)
 builder.Services.AddHttpClient();
 
 // DODANO: Memory cache
@@ -94,13 +90,6 @@ app.MapRazorPages();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
-// DODANO: Kreiranje baze ako ne postoji
-// using (var scope = app.Services.CreateScope())
-// {
-//     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-//     context.Database.EnsureCreated();
-// }
-
 // DODANO: Test servisa na startup (opciono)
 using (var scope = app.Services.CreateScope())
 {
@@ -115,6 +104,9 @@ using (var scope = app.Services.CreateScope())
             var pdfTest = simpleExportService.TestPdfGeneration();
             Console.WriteLine($"PDF generation test: {(pdfTest ? "PASSED" : "FAILED")}");
         }
+        
+        var dashboardService = scope.ServiceProvider.GetRequiredService<IDashboardService>();
+        Console.WriteLine("Dashboard service registered successfully");
     }
     catch (Exception ex)
     {

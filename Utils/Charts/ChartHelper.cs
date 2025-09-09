@@ -1,11 +1,3 @@
-using ChartJs.Blazor.BarChart;
-using ChartJs.Blazor.Common;
-using ChartJs.Blazor.PieChart;
-using ChartJs.Blazor.LineChart;
-using ChartJs.Blazor.Common.Axes;
-using ChartJs.Blazor.Common.Axes.Ticks;
-using ChartJs.Blazor.Common.Enums;
-
 namespace FruitSysWeb.Utils.Charts
 {
     public static class ChartHelper
@@ -27,67 +19,56 @@ namespace FruitSysWeb.Utils.Charts
 
         private static readonly string[] BorderColors = new[]
         {
-            "rgba(40, 167, 69, 1)",   
-            "rgba(220, 53, 69, 1)",   
-            "rgba(13, 110, 253, 1)",  
-            "rgba(255, 193, 7, 1)",   
-            "rgba(108, 117, 125, 1)", 
-            "rgba(23, 162, 184, 1)",  
-            "rgba(220, 53, 69, 1)",   
-            "rgba(111, 66, 193, 1)",  
-            "rgba(255, 108, 0, 1)",   
-            "rgba(32, 201, 151, 1)"   
+            "rgba(40, 167, 69, 1)",
+            "rgba(220, 53, 69, 1)",
+            "rgba(13, 110, 253, 1)",
+            "rgba(255, 193, 7, 1)",
+            "rgba(108, 117, 125, 1)",
+            "rgba(23, 162, 184, 1)",
+            "rgba(220, 53, 69, 1)",
+            "rgba(111, 66, 193, 1)",
+            "rgba(255, 108, 0, 1)",
+            "rgba(32, 201, 151, 1)"
         };
 
         /// <summary>
         /// Creates a bar chart configuration
         /// </summary>
-        public static BarConfig CreateBarChart(string[] labels, decimal[] data, string label, string? color = null)
+        public static BarConfig CreateCustomBarChart(Dictionary<string, decimal> data, string title, string? color = null, int maxItems = 5)
         {
+            var (labels, values) = ConvertDictionaryToArrays(data, maxItems);
+            var truncatedLabels = TruncateLabels(labels, 15);
+
             var config = new BarConfig
             {
                 Options = new BarOptions
                 {
                     Responsive = true,
                     MaintainAspectRatio = false,
-                    Legend = new Legend
+                    Legend = new { display = false },
+                    Scales = new
                     {
-                        Display = false
-                    },
-                    Scales = new BarScales
-                    {
-                        YAxes = new List<CartesianAxis>
-                        {
-                            new LinearCartesianAxis
-                            {
-                                Ticks = new LinearCartesianTicks
-                                {
-                                    BeginAtZero = true
-                                }
-                            }
-                        }
+                        y = new { beginAtZero = true }
                     }
                 }
             };
 
-            var dataset = new BarDataset<decimal>
+            // Add labels
+            foreach (var label in truncatedLabels)
             {
-                Label = label,
+                config.Data.Labels.Add(label);
+            }
+
+            // Add dataset
+            var dataset = new BarDataset
+            {
+                Label = title,
+                Data = values,
                 BackgroundColor = color ?? DefaultColors[0],
                 BorderColor = color?.Replace("0.8", "1") ?? BorderColors[0],
                 BorderWidth = 1
             };
 
-            foreach (var value in data)
-            {
-                dataset.Add(value);
-            }
-
-            // Use for loop instead of AddRange
-            foreach (var labelItem in labels)
-            {
-                config.Data.Labels.Add(labelItem);
-            }
             config.Data.Datasets.Add(dataset);
 
             return config;
@@ -96,47 +77,45 @@ namespace FruitSysWeb.Utils.Charts
         /// <summary>
         /// Creates a pie chart configuration
         /// </summary>
-        public static PieConfig CreatePieChart(string[] labels, decimal[] data, string? title = null)
+        public static PieConfig CreateCustomPieChart(Dictionary<string, decimal> data, string? title = null, int maxItems = 8)
         {
+            var (labels, values) = ConvertDictionaryToArrays(data, maxItems);
+            var truncatedLabels = TruncateLabels(labels, 12);
+
             var config = new PieConfig
             {
                 Options = new PieOptions
                 {
                     Responsive = true,
                     MaintainAspectRatio = false,
-                    Legend = new Legend
+                    Title = new
                     {
-                        Position = Position.Right
+                        display = !string.IsNullOrEmpty(title),
+                        text = title
+                    },
+                    Legend = new
+                    {
+                        display = true,
+                        position = "right"
                     }
                 }
             };
 
-            if (!string.IsNullOrEmpty(title))
+            // Add labels
+            foreach (var label in truncatedLabels)
             {
-                config.Options.Title = new OptionsTitle
-                {
-                    Display = true,
-                    Text = title
-                };
+                config.Data.Labels.Add(label);
             }
 
-            var dataset = new PieDataset<decimal>
+            // Add dataset
+            var dataset = new PieDataset
             {
+                Data = values,
                 BackgroundColor = DefaultColors.Take(labels.Length).ToArray(),
                 BorderColor = BorderColors.Take(labels.Length).ToArray(),
                 BorderWidth = 1
             };
 
-            foreach (var value in data)
-            {
-                dataset.Add(value);
-            }
-
-            // Use for loop instead of AddRange
-            foreach (var labelItem in labels)
-            {
-                config.Data.Labels.Add(labelItem);
-            }
             config.Data.Datasets.Add(dataset);
 
             return config;
@@ -145,53 +124,43 @@ namespace FruitSysWeb.Utils.Charts
         /// <summary>
         /// Creates a line chart configuration
         /// </summary>
-        public static LineConfig CreateLineChart(string[] labels, decimal[] data, string label, string? color = null)
+        public static LineConfig CreateCustomLineChart(Dictionary<string, decimal> data, string title, string? color = null, int maxItems = 10)
         {
+            var (labels, values) = ConvertDictionaryToArrays(data, maxItems);
+            var truncatedLabels = TruncateLabels(labels, 15);
+
             var config = new LineConfig
             {
                 Options = new LineOptions
                 {
                     Responsive = true,
                     MaintainAspectRatio = false,
-                    Legend = new Legend
+                    Legend = new { display = false },
+                    Scales = new
                     {
-                        Display = false
-                    },
-                    Scales = new Scales
-                    {
-                        YAxes = new List<CartesianAxis>
-                        {
-                            new LinearCartesianAxis
-                            {
-                                Ticks = new LinearCartesianTicks
-                                {
-                                    BeginAtZero = true
-                                }
-                            }
-                        }
+                        y = new { beginAtZero = true }
                     }
                 }
             };
 
-            var dataset = new LineDataset<decimal>
+            // Add labels
+            foreach (var label in truncatedLabels)
             {
-                Label = label,
-                BackgroundColor = (color ?? DefaultColors[2]).Replace("0.8", "0.2"),
+                config.Data.Labels.Add(label);
+            }
+
+            // Add dataset
+            var dataset = new LineDataset
+            {
+                Label = title,
+                Data = values.Select(v => (double)v).ToArray(),
+                BackgroundColor = "transparent",
                 BorderColor = color?.Replace("0.8", "1") ?? BorderColors[2],
-                BorderWidth = 2
-                // Removing Fill property to avoid compilation errors
+                BorderWidth = 2,
+                Fill = false,
+                LineTension = 0.1
             };
 
-            foreach (var value in data)
-            {
-                dataset.Add(value);
-            }
-
-            // Use for loop instead of AddRange
-            foreach (var labelItem in labels)
-            {
-                config.Data.Labels.Add(labelItem);
-            }
             config.Data.Datasets.Add(dataset);
 
             return config;
@@ -205,7 +174,7 @@ namespace FruitSysWeb.Utils.Charts
             var items = data.Take(maxItems).ToArray();
             var labels = items.Select(x => x.Key).ToArray();
             var values = items.Select(x => x.Value).ToArray();
-            
+
             return (labels, values);
         }
 
@@ -214,7 +183,7 @@ namespace FruitSysWeb.Utils.Charts
         /// </summary>
         public static string[] TruncateLabels(string[] labels, int maxLength = 20)
         {
-            return labels.Select(label => 
+            return labels.Select(label =>
                 label.Length > maxLength ? label.Substring(0, maxLength) + "..." : label
             ).ToArray();
         }
@@ -232,25 +201,19 @@ namespace FruitSysWeb.Utils.Charts
         }
 
         /// <summary>
-        /// Creates chart with custom colors
+        /// Gets total value from dictionary data
         /// </summary>
-        public static BarConfig CreateCustomBarChart(Dictionary<string, decimal> data, string title, string? color = null, int maxItems = 5)
+        public static decimal GetTotalValue(Dictionary<string, decimal> data)
         {
-            var (labels, values) = ConvertDictionaryToArrays(data, maxItems);
-            var truncatedLabels = TruncateLabels(labels, 15);
-            
-            return CreateBarChart(truncatedLabels, values, title, color);
+            return data?.Values.Sum() ?? 0;
         }
 
         /// <summary>
-        /// Creates pie chart from dictionary
+        /// Gets count of items in dictionary data
         /// </summary>
-        public static PieConfig CreateCustomPieChart(Dictionary<string, decimal> data, string? title = null, int maxItems = 8)
+        public static int GetItemCount(Dictionary<string, decimal> data)
         {
-            var (labels, values) = ConvertDictionaryToArrays(data, maxItems);
-            var truncatedLabels = TruncateLabels(labels, 12);
-            
-            return CreatePieChart(truncatedLabels, values, title);
+            return data?.Count ?? 0;
         }
     }
 }

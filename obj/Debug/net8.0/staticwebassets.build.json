@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "1bM44y8daZbwCK6RHgAiXHY7WlPyjZln6wIChyjg8eA=",
+  "Hash": "h8J8GT7FMl2d8yS4vIdb+IwWkA1S3UcNLAb/1zleR8s=",
   "Source": "FruitSysWeb",
   "BasePath": "_content/FruitSysWeb",
   "Mode": "Default",
@@ -16,44 +16,6 @@
     }
   ],
   "Assets": [
-    {
-      "Identity": "/Users/nikola/.nuget/packages/chartjs.blazor.fork/2.0.2/contentFiles/any/netstandard2.1/wwwroot/ChartJsBlazorInterop.js",
-      "SourceId": "FruitSysWeb",
-      "SourceType": "Discovered",
-      "ContentRoot": "/Users/nikola/FruitSysWeb/wwwroot/",
-      "BasePath": "_content/FruitSysWeb",
-      "RelativePath": "ChartJsBlazorInterop.js",
-      "AssetKind": "All",
-      "AssetMode": "All",
-      "AssetRole": "Primary",
-      "AssetMergeBehavior": "PreferTarget",
-      "AssetMergeSource": "",
-      "RelatedAsset": "",
-      "AssetTraitName": "",
-      "AssetTraitValue": "",
-      "CopyToOutputDirectory": "Never",
-      "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "/Users/nikola/.nuget/packages/chartjs.blazor.fork/2.0.2/contentFiles/any/netstandard2.1/wwwroot/ChartJsBlazorInterop.js"
-    },
-    {
-      "Identity": "/Users/nikola/.nuget/packages/chartjs.blazor.fork/2.0.2/staticwebassets/ChartJsBlazorInterop.js",
-      "SourceId": "ChartJs.Blazor.Fork",
-      "SourceType": "Package",
-      "ContentRoot": "/Users/nikola/.nuget/packages/chartjs.blazor.fork/2.0.2/staticwebassets/",
-      "BasePath": "_content/ChartJs.Blazor.Fork",
-      "RelativePath": "ChartJsBlazorInterop.js",
-      "AssetKind": "All",
-      "AssetMode": "All",
-      "AssetRole": "Primary",
-      "AssetMergeBehavior": "",
-      "AssetMergeSource": "",
-      "RelatedAsset": "",
-      "AssetTraitName": "",
-      "AssetTraitValue": "",
-      "CopyToOutputDirectory": "Never",
-      "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "/Users/nikola/.nuget/packages/chartjs.blazor.fork/2.0.2/staticwebassets/ChartJsBlazorInterop.js"
-    },
     {
       "Identity": "/Users/nikola/FruitSysWeb/obj/Debug/net8.0/scopedcss/bundle/FruitSysWeb.styles.css",
       "SourceId": "FruitSysWeb",
@@ -186,6 +148,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/index.html"
+    },
+    {
+      "Identity": "/Users/nikola/FruitSysWeb/wwwroot/js/charts.js",
+      "SourceId": "FruitSysWeb",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/nikola/FruitSysWeb/wwwroot/",
+      "BasePath": "_content/FruitSysWeb",
+      "RelativePath": "js/charts.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/js/charts.js"
     },
     {
       "Identity": "/Users/nikola/FruitSysWeb/wwwroot/js/download.js",

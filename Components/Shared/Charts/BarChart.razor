@@ -1,27 +1,157 @@
-@using ChartJs.Blazor.BarChart
-@using ChartJs.Blazor.Interop
-@using FruitSysWeb.Components.Shared.Charts
-
-
-
+@using Microsoft.JSInterop
+@using FruitSysWeb.Utils.Charts
 @inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
 <div class="chart-container">
-    <Chart Config="Config" Width="@Width" Height="@Height" />
+    <canvas id="@CanvasId" width="@Width" height="@Height"></canvas>
 </div>
 
 @code {
-    [Parameter] public BarConfig Config { get; set; } = null!;
+    [Parameter] public string CanvasId { get; set; } = Guid.NewGuid().ToString();
     [Parameter] public int Width { get; set; } = 400;
     [Parameter] public int Height { get; set; } = 200;
+    [Parameter] public Dictionary<string, decimal>? Data { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string[] Colors { get; set; } = new[] { "rgba(54, 162, 235, 0.8)" };
+    [Parameter] public string ChartType { get; set; } = "bar";
 
-    protected override void OnParametersSet()
+    private bool _isRendered = false;
+    private bool _isDisposed = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (Config?.Options != null)
+        if (firstRender)
         {
-            // Ensure responsive behavior
-            Config.Options.Responsive = true;
-            Config.Options.MaintainAspectRatio = false;
+            _isRendered = true;
+            if (Data?.Any() == true)
+            {
+                await CreateChart();
+            }
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_isRendered && Data?.Any() == true && !_isDisposed)
+        {
+            await CreateChart();
+        }
+    }
+
+    private async Task CreateChart()
+    {
+        if (!_isRendered || _isDisposed) return;
+        
+        try
+        {
+            var labels = Data?.Keys.ToArray() ?? Array.Empty<string>();
+            var values = Data?.Values.ToArray() ?? Array.Empty<decimal>();
+
+            if (!labels.Any()) return;
+
+            var config = new
+            {
+                type = ChartType,
+                data = new
+                {
+                    labels = labels,
+                    datasets = new[]
+                    {
+                        new
+                        {
+                            label = Title,
+                            data = values,
+                            backgroundColor = Colors,
+                            borderColor = Colors.Select(c => c.Replace("0.8", "1")).ToArray(),
+                            borderWidth = 1
+                        }
+                    }
+                },
+                options = new
+                {
+                    responsive = true,
+                    maintainAspectRatio = false,
+                    plugins = new
+                    {
+                        title = new
+                        {
+                            display = !string.IsNullOrEmpty(Title),
+                            text = Title
+                        },
+                        legend = new
+                        {
+                            display = true
+                        }
+                    },
+                    scales = new
+                    {
+                        y = new
+                        {
+                            beginAtZero = true
+                        }
+                    }
+                }
+            };
+
+            await JSRuntime.InvokeVoidAsync("ChartJsInterop.updateChart", CanvasId, config);
+        }
+        catch (JSDisconnectedException)
+        {
+            // Circuit is disconnected - normal when closing tab/refresh
+        }
+        catch (ObjectDisposedException)
+        {
+            // Component is disposed - normal during navigation
+        }
+        catch (InvalidOperationException ex) when (
+            ex.Message.Contains("statically rendered") || 
+            ex.Message.Contains("circuit has disconnected") ||
+            ex.Message.Contains("being disposed"))
+        {
+            // Silent fail for prerendering and disconnect errors
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating chart: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_isDisposed) return;
+        
+        _isDisposed = true;
+        
+        if (_isRendered)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("ChartJsInterop.destroyChart", CanvasId);
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit disconnected - normal behavior
+            }
+            catch (ObjectDisposedException)
+            {
+                // Component disposed - normal behavior
+            }
+            catch (InvalidOperationException ex) when (
+                ex.Message.Contains("circuit has disconnected") || 
+                ex.Message.Contains("statically rendered") ||
+                ex.Message.Contains("being disposed"))
+            {
+                // Silent fail for disconnect/dispose errors
+            }
+            catch (TaskCanceledException)
+            {
+                // Task cancelled - normal during dispose
+            }
+            catch
+            {
+                // Ignore all other errors during disposal
+            }
         }
     }
 }

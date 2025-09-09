@@ -1,4 +1,17 @@
 @page "/charts-test"
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Components.Shared.Filters
+@using FruitSysWeb.Components.Shared.Layout
+
+
+@inject IFinansijeService FinansijeService
+@inject IProizvodnjaService ProizvodnjaService
+@inject IExportService ExportService
+@inject IJSRuntime JSRuntime
+
+
+
 @using FruitSysWeb.Components.Shared.Charts
 
 <div class="container-fluid">

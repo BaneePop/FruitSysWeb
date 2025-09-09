@@ -1,67 +1,288 @@
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Utils.Charts
+@inject IProizvodnjaService ProizvodnjaService
+@inject IMagacinLagerService LagerService
+@inject IJSRuntime JSRuntime
+
+<div class="row">
+    <!-- Top kupci chart -->
+    <div class="col-lg-6 col-md-12">
+        <div class="simple-chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-people me-2"></i>Top kupci (po kg)</h5>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshKupci" disabled="@LoadingKupci">
+                    @if (LoadingKupci)
+                    {
+                        <i class="bi bi-hourglass-split rotating"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-arrow-clockwise"></i>
+                    }
+                </button>
+            </div>
+            <div class="chart-body">
+                @if (LoadingKupci)
+                {
+                    <div class="loading-placeholder">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <span>Učitavanje podataka...</span>
+                    </div>
+                }
+                else if (KupciData?.Any() == true)
+                {
+                    <SimpleBarChart Data="@KupciData" 
+                                   Title="Kupci po količini" 
+                                   Color="rgba(40, 167, 69, 0.8)" 
+                                   Height="250" />
+                }
+                else
+                {
+                    <div class="no-data-placeholder">
+                        <i class="bi bi-bar-chart"></i>
+                        <span>Nema podataka</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Sirovine structure -->
+    <div class="col-lg-6 col-md-12">
+        <div class="simple-chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-box me-2"></i>Struktura sirovina</h5>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshSirovine" disabled="@LoadingSirovine">
+                    @if (LoadingSirovine)
+                    {
+                        <i class="bi bi-hourglass-split rotating"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-arrow-clockwise"></i>
+                    }
+                </button>
+            </div>
+            <div class="chart-body">
+                @if (LoadingSirovine)
+                {
+                    <div class="loading-placeholder">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <span>Učitavanje podataka...</span>
+                    </div>
+                }
+                else if (SirovineData?.Any() == true)
+                {
+                    <SimplePieChart Data="@SirovineData" 
+                                   Title="Sirovine u lageru" 
+                                   Height="250" />
+                }
+                else
+                {
+                    <div class="no-data-placeholder">
+                        <i class="bi bi-pie-chart"></i>
+                        <span>Nema podataka</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Proizvodnja chart -->
+    <div class="col-lg-8 col-md-12">
+        <div class="simple-chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-gear me-2"></i>Proizvodnja po artiklima</h5>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshProizvodnja" disabled="@LoadingProizvodnja">
+                    @if (LoadingProizvodnja)
+                    {
+                        <i class="bi bi-hourglass-split rotating"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-arrow-clockwise"></i>
+                    }
+                </button>
+            </div>
+            <div class="chart-body">
+                @if (LoadingProizvodnja)
+                {
+                    <div class="loading-placeholder">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <span>Učitavanje podataka...</span>
+                    </div>
+                }
+                else if (ProizvodnjaData?.Any() == true)
+                {
+                    <SimpleBarChart Data="@ProizvodnjaData" 
+                                   Title="Proizvodnja po artiklima" 
+                                   Color="rgba(13, 110, 253, 0.8)" 
+                                   Height="250" />
+                }
+                else
+                {
+                    <div class="no-data-placeholder">
+                        <i class="bi bi-bar-chart"></i>
+                        <span>Nema podataka</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="col-lg-4 col-md-12">
+        <div class="quick-stats-card">
+            <h5><i class="bi bi-speedometer2 me-2"></i>Brzi pregled</h5>
+            
+            <div class="stat-item">
+                <span class="stat-label">Ukupno sirovina:</span>
+                <span class="stat-value">@GetTotalValue(SirovineData).ToString("N1") kg</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">Vrsta sirovina:</span>
+                <span class="stat-value">@GetItemCount(SirovineData)</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">Top kupac:</span>
+                <span class="stat-value">@GetTopItem(KupciData)</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">Vodeći proizvod:</span>
+                <span class="stat-value">@GetTopItem(ProizvodnjaData)</span>
+            </div>
+
+            <div class="stat-item">
+                <span class="stat-label">Poslednje ažuriranje:</span>
+                <span class="stat-value text-muted">@lastUpdateTime.ToString("HH:mm")</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Data properties
+    public Dictionary<string, decimal>? KupciData { get; private set; }
+    public Dictionary<string, decimal>? ProizvodnjaData { get; private set; }
+    public Dictionary<string, decimal>? SirovineData { get; private set; }
+
+    // Loading states
+    public bool LoadingKupci { get; private set; }
+    public bool LoadingProizvodnja { get; private set; }
+    public bool LoadingSirovine { get; private set; }
+
+    private DateTime lastUpdateTime = DateTime.Now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllCharts();
+    }
+
+    public async Task LoadAllCharts()
+    {
+        var tasks = new List<Task>
+        {
+            RefreshKupci(),
+            RefreshProizvodnja(),
+            RefreshSirovine()
+        };
+
+        await Task.WhenAll(tasks);
+        lastUpdateTime = DateTime.Now;
+        StateHasChanged();
+    }
+
+    private async Task RefreshKupci()
+    {
+        if (LoadingKupci) return;
+
+        LoadingKupci = true;
+        StateHasChanged();
+
+        try
+        {
+            var filter = CreateDefaultFilter();
+            KupciData = await ProizvodnjaService.UcitajTopKupcePoKilogramima(filter);
+            
+            // Take only top 5
+            if (KupciData?.Count > 5)
+            {
+                KupciData = KupciData.Take(5).ToDictionary(x => x.Key, x => x.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju top kupaca: {ex.Message}");
+            KupciData = null;
+        }
+        finally
+        {
+            LoadingKupci = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshProizvodnja()
+    {
+        if (LoadingProizvodnja) return;
+
+        LoadingProizvodnja = true;
+        StateHasChanged();
+
+        try
+        {
+            var filter = CreateDefaultFilter();
+            ProizvodnjaData = await ProizvodnjaService.UcitajProizvodnjuPoArtiklima(filter);
+            
+            // Take only top 8
+            if (ProizvodnjaData?.Count > 8)
+            {
+                ProizvodnjaData = ProizvodnjaData.Take(8).ToDictionary(x => x.Key, x => x.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju proizvodnje po artiklima: {ex.Message}");
+            ProizvodnjaData = null;
+        }
+        finally
+        {
+            LoadingProizvodnja = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshSirovine()
+    {
+        if (LoadingSirovine) return;
+
+        LoadingSirovine = true;
+        StateHasChanged();
+
+        try
+        {
+            SirovineData = await LagerService.UcitajStrukturuSirovina();
+            
+            // Take only top 5
+            if (SirovineData?.Count > 5)
+            {
+                SirovineData = SirovineData.Take(5).ToDictionary(x => x.Key, x => x.Value);
+            }
+        }
+        catch (Exception ex)
+        {
             Console.WriteLine($"Greška pri učitavanju strukture sirovina: {ex.Message}");
             SirovineData = null;
         }
         finally
         {
             LoadingSirovine = false;
-            StateHasChanged();
-        }
-    }
-
-    private async Task RefreshGotovi()
-    {
-        if (LoadingGotovi) return;
-
-        LoadingGotovi = true;
-        StateHasChanged();
-
-        try
-        {
-            GotoviData = await LagerService.UcitajStrukturuGotovihProizvoda();
-            
-            // Take only top 5
-            if (GotoviData?.Count > 5)
-            {
-                GotoviData = GotoviData.Take(5).ToDictionary(x => x.Key, x => x.Value);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška pri učitavanju strukture gotovih proizvoda: {ex.Message}");
-            GotoviData = null;
-        }
-        finally
-        {
-            LoadingGotovi = false;
-            StateHasChanged();
-        }
-    }
-
-    private async Task RefreshAmbalaza()
-    {
-        if (LoadingAmbalaza) return;
-
-        LoadingAmbalaza = true;
-        StateHasChanged();
-
-        try
-        {
-            AmbalazeData = await LagerService.UcitajStrukturuAmbalaze();
-            
-            // Take only top 5
-            if (AmbalazeData?.Count > 5)
-            {
-                AmbalazeData = AmbalazeData.Take(5).ToDictionary(x => x.Key, x => x.Value);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška pri učitavanju strukture ambalaže: {ex.Message}");
-            AmbalazeData = null;
-        }
-        finally
-        {
-            LoadingAmbalaza = false;
             StateHasChanged();
         }
     }
@@ -73,6 +294,25 @@
             OdDatum = DateTime.Now.AddMonths(-1),
             DoDatum = DateTime.Now
         };
+    }
+
+    // Helper methods for stats
+    private decimal GetTotalValue(Dictionary<string, decimal>? data)
+    {
+        return data?.Values.Sum() ?? 0;
+    }
+
+    private int GetItemCount(Dictionary<string, decimal>? data)
+    {
+        return data?.Count ?? 0;
+    }
+
+    private string GetTopItem(Dictionary<string, decimal>? data)
+    {
+        if (data?.Any() != true) return "N/A";
+        
+        var top = data.OrderByDescending(x => x.Value).First();
+        return $"{top.Key} ({top.Value:N1})";
     }
 }
 
