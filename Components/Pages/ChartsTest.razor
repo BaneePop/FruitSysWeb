@@ -1,44 +1,327 @@
 @page "/charts-test"
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components
+@using FruitSysWeb.Components.Charts
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
-@using FruitSysWeb.Components.Shared.Filters
-@using FruitSysWeb.Components.Shared.Layout
+@using ApexCharts
+nteractiveServer.rendermode;
 
+@inject ILogger<DashboardCharts> Logger
 
 @inject IFinansijeService FinansijeService
 @inject IProizvodnjaService ProizvodnjaService
-@inject IExportService ExportService
-@inject IJSRuntime JSRuntime
+@inject IMagacinLagerService MagacinLagerService
+@inject IExportService exportService
+@inject NavigationManager NavigationManager
 
-
-
-@using FruitSysWeb.Components.Shared.Charts
 
 <div class="container-fluid">
-    <!-- Header -->
-    <div class="financial-header text-white py-4 mb-4">
-        <div class="container-fluid">
-            <h1 class="h2 mb-1">
-                <i class="bi bi-bar-chart me-2"></i>Charts Test
-            </h1>
-            <p class="mb-0">Test svih tipova grafika u FruitSysWeb sistemu</p>
-        </div>
-    </div>
-
-    <!-- Main Chart Showcase -->
-    <ChartShowcase />
-
-    <!-- Dashboard Charts Preview -->
-    <div class="row mt-5">
+    <div class="row mb-4">
         <div class="col-12">
-            <h3>Dashboard Charts Preview</h3>
-            <p class="text-muted">Ovo su chartovi koji se koriste na glavnoj Dashboard stranici</p>
+            <h2>
+                <i class="bi bi-graph-up"></i>
+                Charts Test Stranica
+            </h2>
+            <p class="text-muted">Testiranje ApexCharts.NET komponenti</p>
+            <hr />
         </div>
     </div>
-    
-    <DashboardCharts />
+
+    <!-- Test Controls -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Test Kontrole</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <button class="btn btn-primary me-2" @onclick="RefreshAllData">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                Refresh Real Data
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-secondary me-2" @onclick="LoadMockData">
+                                <i class="bi bi-play"></i>
+                                Load Mock Data
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" @bind="AutoRefresh" id="autoRefresh">
+                                <label class="form-check-label" for="autoRefresh">
+                                    Auto Refresh (10s)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Charts -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart 
+                Title="Test Bar Chart"
+                Icon="bi bi-bar-chart"
+                SeriesName="Test Data"
+                Unit="kg"
+                Color="#28a745"
+                Data="@testBarData"
+                IsLoading="@isLoadingTest"
+                HasError="@hasErrorTest"
+                OnRefresh="@RefreshTestData" />
+        </div>
+        <div class="col-lg-6 mb-3">
+            <ApexPieChart 
+                Title="Test Pie Chart"
+                Icon="bi bi-pie-chart"
+                SeriesName="Test Categories"
+                Unit="kom"
+                Data="@testPieData"
+                IsLoading="@isLoadingTest"
+                HasError="@hasErrorTest"
+                OnRefresh="@RefreshTestData" />
+        </div>
+    </div>
+
+    <!-- Real Data Charts -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4>Real Data Charts</h4>
+            <hr />
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart 
+                Title="Top Kupci (Real Data)"
+                Icon="bi bi-people"
+                SeriesName="Količina"
+                Unit="kg"
+                Color="#007bff"
+                Data="@topKupciData"
+                IsLoading="@isLoadingKupci"
+                HasError="@hasErrorKupci"
+                OnRefresh="@RefreshKupciData" />
+        </div>
+        <div class="col-lg-6 mb-3">
+            <ApexPieChart 
+                Title="Sirovine (Real Data)"
+                Icon="bi bi-basket"
+                SeriesName="Količina"
+                Unit="kg"
+                Data="@sirovineData"
+                IsLoading="@isLoadingSirovine"
+                HasError="@hasErrorSirovine"
+                OnRefresh="@RefreshSirovineData" />
+        </div>
+    </div>
+
+    <!-- Debug Info -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Debug Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Test Data Status:</strong>
+                            <ul>
+                                <li>Bar Chart Items: @(testBarData?.Count ?? 0)</li>
+                                <li>Pie Chart Items: @(testPieData?.Count ?? 0)</li>
+                                <li>Loading: @isLoadingTest</li>
+                                <li>Has Error: @hasErrorTest</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Real Data Status:</strong>
+                            <ul>
+                                <li>Kupci Items: @(topKupciData?.Count ?? 0)</li>
+                                <li>Sirovine Items: @(sirovineData?.Count ?? 0)</li>
+                                <li>Auto Refresh: @AutoRefresh</li>
+                                <li>Last Refresh: @lastRefresh.ToString("HH:mm:ss")</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @code {
-    // Prazna logika - sve se dešava u komponentama
+    // Test data
+    private List<ChartDataPoint>? testBarData;
+    private List<ChartDataPoint>? testPieData;
+    private bool isLoadingTest = false;
+    private bool hasErrorTest = false;
+  // Chart Data
+    private List<ChartDataPoint>? TopKupciData;
+    private List<ChartDataPoint>? TopDobavljaciData;
+    private List<ChartDataPoint>? ProizvodnjaData;
+    private List<ChartDataPoint>? SirovineData;
+    private List<ChartDataPoint>? GotoviProizvodiData;
+    private List<ChartDataPoint>? AmbalazeData;
+
+    // Real data
+    private List<ChartDataPoint>? topKupciData;
+    private List<ChartDataPoint>? sirovineData;
+    private bool isLoadingKupci = false;
+    private bool hasErrorKupci = false;
+    private bool isLoadingSirovine = false;
+    private bool hasErrorSirovine = false;
+
+    // Auto refresh
+    private bool AutoRefresh = false;
+    private DateTime lastRefresh = DateTime.Now;
+    private Timer? refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        LoadMockData();
+        await RefreshAllData();
+        
+        // Setup auto refresh timer
+        refreshTimer = new Timer(async _ =>
+        {
+            if (AutoRefresh)
+            {
+                await InvokeAsync(async () =>
+                {
+                    await RefreshAllData();
+                    StateHasChanged();
+                });
+            }
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+    }
+
+    private void LoadMockData()
+    {
+        testBarData = ChartDataHelper.GetMockData("Product", 6);
+        testPieData = ChartDataHelper.GetMockData("Category", 4);
+        StateHasChanged();
+    }
+
+    private async Task RefreshTestData()
+    {
+        isLoadingTest = true;
+        hasErrorTest = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(1000); // Simulate loading
+            testBarData = ChartDataHelper.GetMockData("Refreshed", 5);
+            testPieData = ChartDataHelper.GetMockData("Updated", 3);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing test data");
+            hasErrorTest = true;
+            TopKupciData = ChartDataHelper.GetMockData("Kupac", 5);
+        }
+        finally
+        {
+            isLoadingTest = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshAllData()
+    {
+        lastRefresh = DateTime.Now;
+        var tasks = new List<Task>
+        {
+            RefreshKupciData(),
+            RefreshSirovineData()
+        };
+
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task RefreshKupciData()
+    {
+        isLoadingKupci = true;
+        hasErrorKupci = false;
+        StateHasChanged();
+
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddMonths(-1),
+                DoDatum = DateTime.Now
+            };
+
+            var data = await ProizvodnjaService.UcitajTopKupcePoKilogramima(filter);
+            topKupciData = ChartDataHelper.FromDictionary(data, 5);
+            topKupciData = ChartDataHelper.TruncateLabels(topKupciData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading kupci data");
+            hasErrorKupci = true;
+            topKupciData = ChartDataHelper.GetMockData("Kupac", 5);
+        }
+        finally
+        {
+            isLoadingKupci = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshSirovineData()
+    {
+        isLoadingSirovine = true;
+        hasErrorSirovine = false;
+        StateHasChanged();
+
+        try
+        {
+            var data = await MagacinLagerService.UcitajStrukturuSirovina();
+            sirovineData = ChartDataHelper.FromDictionary(data, 5);
+            sirovineData = ChartDataHelper.TruncateLabels(sirovineData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading sirovine data");
+            hasErrorSirovine = true;
+            sirovineData = ChartDataHelper.GetMockData("Sirovina", 5);
+        }
+        finally
+        {
+            isLoadingSirovine = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
+    }
 }
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .btn {
+        margin-bottom: 0.5rem;
+    }
+</style>

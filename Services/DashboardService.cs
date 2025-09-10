@@ -1,10 +1,3 @@
-using Dapper;
-using MySqlConnector;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using FruitSysWeb.Utils.Charts;
 using FruitSysWeb.Services.Models.Requests;
 using FruitSysWeb.Models;
 

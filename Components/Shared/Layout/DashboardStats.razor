@@ -1,30 +1,72 @@
+@using Microsoft.AspNetCore.Components.Web
+@using ApexCharts
+@using FruitSysWeb.Components.Charts
+
+
+
+<!-- Dashboard Statistics Cards -->
 <div class="row mb-4">
-    <div class="col-md-3">
-        <div class="stats-card" style="background: @GetGradient(0)">
-            <div class="stats-number">@Value1.ToString("N0") RSD</div>
-            <div class="stats-label">@Label1</div>
-            <i class="bi @Icon1 fs-1"></i>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">@Value1.ToString("N0")</h4>
+                        <p class="mb-0">@Label1</p>
+                    </div>
+                    <div class="icon-container">
+                        <i class="@Icon1" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stats-card" style="background: @GetGradient(1)">
-            <div class="stats-number">@Value2.ToString("N0")</div>
-            <div class="stats-label">@Label2</div>
-            <i class="bi @Icon2 fs-1"></i>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">@Value2.ToString("N0")</h4>
+                        <p class="mb-0">@Label2</p>
+                    </div>
+                    <div class="icon-container">
+                        <i class="@Icon2" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stats-card" style="background: @GetGradient(2)">
-            <div class="stats-number">@Value3.ToString("N0")</div>
-            <div class="stats-label">@Label3</div>
-            <i class="bi @Icon3 fs-1"></i>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-warning text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">@Value3.ToString("N0")</h4>
+                        <p class="mb-0">@Label3</p>
+                    </div>
+                    <div class="icon-container">
+                        <i class="@Icon3" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stats-card" style="background: @GetGradient(3)">
-            <div class="stats-number">@Value4.ToString("N0")</div>
-            <div class="stats-label">@Label4</div>
-            <i class="bi @Icon4 fs-1"></i>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">@Value4.ToString("N0")</h4>
+                        <p class="mb-0">@Label4</p>
+                    </div>
+                    <div class="icon-container">
+                        <i class="@Icon4" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -35,26 +77,46 @@
     [Parameter] public decimal Value3 { get; set; }
     [Parameter] public decimal Value4 { get; set; }
     
-    [Parameter] public string Label1 { get; set; } = "Ukupno Saldo";
-    [Parameter] public string Label2 { get; set; } = "Vrednost Lager";
-    [Parameter] public string Label3 { get; set; } = "Proizvodnja";
-    [Parameter] public string Label4 { get; set; } = "Aktivni Nalozi";
+    [Parameter] public string Label1 { get; set; } = "Statistika 1";
+    [Parameter] public string Label2 { get; set; } = "Statistika 2";
+    [Parameter] public string Label3 { get; set; } = "Statistika 3";
+    [Parameter] public string Label4 { get; set; } = "Statistika 4";
     
-    [Parameter] public string Icon1 { get; set; } = "bi-cash-coin";
-    [Parameter] public string Icon2 { get; set; } = "bi-box-seam";
-    [Parameter] public string Icon3 { get; set; } = "bi-gear";
-    [Parameter] public string Icon4 { get; set; } = "bi-clipboard-check";
-
-    private string GetGradient(int index)
-    {
-        var gradients = new[]
-        {
-            "linear-gradient(135deg, #0f5132 0%, #198754 100%)",
-            "linear-gradient(135deg, #155d27 0%, #20c997 100%)",
-            "linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%)",
-            "linear-gradient(135deg, #6f42c1 0%, #d63384 100%)"
-        };
-        
-        return gradients[index % gradients.Length];
-    }
+    [Parameter] public string Icon1 { get; set; } = "bi-graph-up";
+    [Parameter] public string Icon2 { get; set; } = "bi-currency-dollar";
+    [Parameter] public string Icon3 { get; set; } = "bi-box";
+    [Parameter] public string Icon4 { get; set; } = "bi-people";
 }
+
+<style>
+    .icon-container {
+        opacity: 0.7;
+    }
+    
+    .card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    .bg-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3) !important;
+    }
+    
+    .bg-success {
+        background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+    }
+    
+    .bg-warning {
+        background: linear-gradient(135deg, #ffc107, #e0a800) !important;
+    }
+    
+    .bg-info {
+        background: linear-gradient(135deg, #17a2b8, #117a8b) !important;
+    }
+</style>

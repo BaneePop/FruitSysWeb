@@ -1,5 +1,6 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Models.Requests;
+
 namespace FruitSysWeb.Services.Interfaces
 {
     public interface IMagacinLagerService

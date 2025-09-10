@@ -1,4 +1,7 @@
 @page "/finansije"
+@using Microsoft.AspNetCore.Components.Web
+@using ApexCharts
+@using FruitSysWeb.Components.Charts
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
 @using FruitSysWeb.Models
@@ -7,7 +10,6 @@
 @inject IKomitentService KomitentService
 @inject IArtikalService ArtikalService
 @inject IJSRuntime JSRuntime
-
 <!-- Isti CSS stilovi -->
 
 <!-- Header sa saldo na vrhu -->

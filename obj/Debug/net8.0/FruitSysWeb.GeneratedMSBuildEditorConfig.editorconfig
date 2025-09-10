@@ -18,8 +18,16 @@ build_property.GenerateRazorMetadataSourceChecksumAttributes =
 build_property.MSBuildProjectDirectory = /Users/nikola/FruitSysWeb
 build_property._RazorSourceGeneratorDebug = 
 
-[/Users/nikola/FruitSysWeb/Components/Pages/Charts.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9DaGFydHMucmF6b3I=
+[/Users/nikola/FruitSysWeb/Components/Charts/ApexBarChart.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9DaGFydHMvQXBleEJhckNoYXJ0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/nikola/FruitSysWeb/Components/Charts/ApexPieChart.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9DaGFydHMvQXBleFBpZUNoYXJ0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/nikola/FruitSysWeb/Components/Charts/DashboardCharts.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9DaGFydHMvRGFzaGJvYXJkQ2hhcnRzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/nikola/FruitSysWeb/Components/Pages/ChartsTest.razor]
@@ -42,6 +50,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Ib21lLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/nikola/FruitSysWeb/Components/Pages/Home_TEST.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Ib21lX1RFU1QucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/nikola/FruitSysWeb/Components/Pages/Izvjestaji.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9JenZqZXN0YWppLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
@@ -52,54 +64,6 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/Users/nikola/FruitSysWeb/Components/Pages/Proizvodnja.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Qcm9penZvZG5qYS5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/BarChart.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL0JhckNoYXJ0LnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/Chart.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL0NoYXJ0LnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/ChartErrorBoundary.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL0NoYXJ0RXJyb3JCb3VuZGFyeS5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/ChartShowcase.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL0NoYXJ0U2hvd2Nhc2UucmF6b3I=
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/CurrentChart.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL0N1cnJlbnRDaGFydC5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/DashboardCharts.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL0Rhc2hib2FyZENoYXJ0cy5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/LineChart.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL0xpbmVDaGFydC5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/PieChart.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL1BpZUNoYXJ0LnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/ResponsiveChart.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL1Jlc3BvbnNpdmVDaGFydC5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/SimpleBarChart.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL1NpbXBsZUJhckNoYXJ0LnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/SimpleDashboardCharts.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL1NpbXBsZURhc2hib2FyZENoYXJ0cy5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Components/Shared/Charts/SimplePieChart.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQ2hhcnRzL1NpbXBsZVBpZUNoYXJ0LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/nikola/FruitSysWeb/Components/Shared/Filters/ArtikalFilter.razor]
@@ -136,10 +100,6 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/Users/nikola/FruitSysWeb/Pages/App.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQXBwLnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
-[/Users/nikola/FruitSysWeb/Shared/MainLayout.razor]
-build_metadata.AdditionalFiles.TargetPath = U2hhcmVkL01haW5MYXlvdXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/nikola/FruitSysWeb/Shared/NavMenu.razor]

@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using FruitSysWeb.Utils.Charts;
+
 using FruitSysWeb.Services.Models.Requests;
 using FruitSysWeb.Models;
 

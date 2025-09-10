@@ -1,11 +1,13 @@
-@page "/"
+@page "/test"
+
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
-
+@using ApexCharts
+@using FruitSysWeb.Components.Charts
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
-@using FruitSysWeb.Components.Charts
 @using FruitSysWeb.Components.Shared.Layout
+
 @inject IFinansijeService FinansijeService
 @inject IProizvodnjaService ProizvodnjaService
 @inject IMagacinLagerService LagerService
@@ -72,7 +74,7 @@
 <div class="financial-header text-white py-4 mb-4">
     <div class="container-fluid">
         <h1 class="h2 mb-1">
-            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+            <i class="bi bi-speedometer2 me-2"></i>Dashboard TEST - BEZ CHARTS
         </h1>
         <p class="mb-0">Pregled ključnih poslovnih pokazatelja</p>
     </div>
@@ -81,7 +83,7 @@
 <div class="container-fluid">
     <!-- Quick Actions -->
     <div class="dashboard-grid">
-        <div class="quick-action" @onclick="NavigateToFinansije">
+        <div class="quick-action" @onclick="@(() => NavigateToFinansije())">
             <div class="quick-action-icon">
                 <i class="bi bi-cash-coin"></i>
             </div>
@@ -89,7 +91,7 @@
             <div class="quick-action-desc">Pregled prihoda, rashoda i salda</div>
         </div>
 
-        <div class="quick-action" @onclick="NavigateToProizvodnja">
+        <div class="quick-action" @onclick="@(() => NavigateToProizvodnja())">
             <div class="quick-action-icon">
                 <i class="bi bi-gear"></i>
             </div>
@@ -97,7 +99,7 @@
             <div class="quick-action-desc">Radni nalozi i analiza prerade</div>
         </div>
 
-        <div class="quick-action" @onclick="NavigateToLager">
+        <div class="quick-action" @onclick="@(() => NavigateToLager())">
             <div class="quick-action-icon">
                 <i class="bi bi-boxes"></i>
             </div>
@@ -105,7 +107,7 @@
             <div class="quick-action-desc">Stanje sirovina i gotovih proizvoda</div>
         </div>
 
-        <div class="quick-action" @onclick="NavigateToIzvjestaji">
+        <div class="quick-action" @onclick="@(() => NavigateToIzvjestaji())">
             <div class="quick-action-icon">
                 <i class="bi bi-clipboard-data"></i>
             </div>
@@ -128,8 +130,18 @@
                     Icon3="bi-gear"
                     Icon4="bi-clipboard-check" />
 
-    <!-- Charts Section -->
-    <DashboardCharts />
+    <!-- Charts Section - ZAKOMENTARISANO ZA TEST -->
+    @* <DashboardCharts /> *@
+
+    <div class="alert alert-warning">
+        <h5><i class="bi bi-exclamation-triangle me-2"></i>TEST STRANICA</h5>
+        <p>DashboardCharts komponenta je privremeno isključena da testiramo da li je ona uzrok click greške.</p>
+        <ul>
+            <li>Idemo na <strong>/test</strong> umesto <strong>/</strong></li>
+            <li>click metode su promenene u lambda funkcije: <code>(() => NavigateToFinansije())</code></li>
+            <li>Ako ova stranica radi bez greške, onda je problem u DashboardCharts ili ApexCharts komponentama</li>
+        </ul>
+    </div>
 
     <!-- Recent Activity -->
     <div class="row">

@@ -1,0 +1,222 @@
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components.Web
+@using ApexCharts
+@using FruitSysWeb.Components.Charts
+
+
+<style>
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="@Icon"></i>
+            @Title
+        </h6>
+        @if (ShowRefreshButton)
+        {
+            <button class="btn btn-sm btn-outline-primary" @onclick="RefreshChart" disabled="@IsLoading">
+                <i class="bi bi-arrow-clockwise @(IsLoading ? "spin" : "")"></i>
+            </button>
+        }
+    </div>
+    <div class="card-body">
+        @if (IsLoading)
+        {
+            <div class="text-center p-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Učitavam podatke...</p>
+            </div>
+        }
+        else if (HasError)
+        {
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+                Greška pri učitavanju podataka.
+                <button class="btn btn-sm btn-outline-danger ms-2" @onclick="RefreshChart">
+                    Pokušaj ponovo
+                </button>
+            </div>
+        }
+        else if (Data == null || !Data.Any())
+        {
+            <div class="text-center p-4 text-muted">
+                <i class="bi bi-pie-chart" style="font-size: 2rem;"></i>
+                <p class="mt-2">Nema podataka za prikaz</p>
+            </div>
+        }
+        else
+        {
+            @* Pokušaj ApexChart prvo *@
+            @if (HasError || ForceTableView)
+            {
+                @* FALLBACK: Jednostavna tabela umesto chart *@
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>@SeriesName</th>
+                                <th class="text-end">Vrednost (@Unit)</th>
+                                <th class="text-end">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Data.Take(5))
+                            {
+                                <tr>
+                                    <td>@item.Label</td>
+                                    <td class="text-end">@item.Value.ToString("N2")</td>
+                                    <td class="text-end">@((item.Value / Data.Sum(x => x.Value) * 100).ToString("F1"))%</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                @try
+                {
+                    <ApexChart TItem="ChartDataPoint" 
+                               Title="@ChartTitle"
+                               Height="@Height"
+                               Options="@ChartOptions">
+                        <ApexPointSeries TItem="ChartDataPoint"
+                                         Items="@Data"
+                                         Name="@SeriesName"
+                                         SeriesType="SeriesType.Pie"
+                                         XValue="@(e => e.Label)"
+                                         YValue="@(e => e.Value)" />
+                    </ApexChart>
+                }
+                catch
+                {
+                    @* Ako chart failed, prikaži tabelu *@
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Chart rendering neuspešno. Prikazujem tabelu:
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>@SeriesName</th>
+                                    <th class="text-end">Vrednost (@Unit)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Data.Take(5))
+                                {
+                                    <tr>
+                                        <td>@item.Label</td>
+                                        <td class="text-end">@item.Value.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+            
+            @if (ShowSummary && Data.Any())
+            {
+                <div class="mt-3 pt-3 border-top">
+                    <small class="text-muted">
+                        <strong>Ukupno:</strong> @Data.Sum(x => x.Value).ToString("N2") @Unit
+                        | <strong>Kategorije:</strong> @Data.Count()
+                    </small>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Pie Chart";
+    [Parameter] public string ChartTitle { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "bi bi-pie-chart";
+    [Parameter] public string SeriesName { get; set; } = "Vrednost";
+    [Parameter] public string Unit { get; set; } = "";
+    [Parameter] public int Height { get; set; } = 350;
+    [Parameter] public bool ShowRefreshButton { get; set; } = true;
+    [Parameter] public bool ShowSummary { get; set; } = true;
+    [Parameter] public bool IsLoading { get; set; } = false;
+    [Parameter] public bool HasError { get; set; } = false;
+    [Parameter] public List<ChartDataPoint>? Data { get; set; }
+    [Parameter] public EventCallback OnRefresh { get; set; }
+    [Parameter] public List<string>? Colors { get; set; }
+    [Parameter] public bool ForceTableView { get; set; } = false;
+
+    private List<string> DefaultColors => new List<string>
+    {
+        "#28a745", "#dc3545", "#007bff", "#ffc107", "#6f42c1",
+        "#20c997", "#fd7e14", "#e83e8c", "#6c757d", "#17a2b8"
+    };
+
+    private ApexChartOptions<ChartDataPoint> ChartOptions => new()
+    {
+        Chart = new Chart
+        {
+            Type = ChartType.Pie,
+            Height = Height,
+            Toolbar = new Toolbar { Show = false }
+        },
+        Colors = Colors ?? DefaultColors,
+        Labels = Data?.Select(x => x.Label).ToList() ?? new List<string>(),
+        DataLabels = new DataLabels
+        {
+            Enabled = true,
+            Formatter = "function(val) { return Math.round(val) + '%' }"
+        },
+        Legend = new Legend
+        {
+            Position = LegendPosition.Bottom,
+            HorizontalAlign = Align.Center
+        },
+        Responsive = new List<Responsive<ChartDataPoint>>
+        {
+            new Responsive<ChartDataPoint>
+            {
+                Breakpoint = 480,
+                Options = new ApexChartOptions<ChartDataPoint>
+                {
+                    Chart = new Chart
+                    {
+                        Width = 300
+                    },
+                    Legend = new Legend
+                    {
+                        Position = LegendPosition.Bottom
+                    }
+                }
+            }
+        },
+        Tooltip = new Tooltip
+        {
+            Y = new TooltipY
+            {
+                Formatter = $"function(val) {{ return val.toLocaleString() + ' {Unit}' }}"
+            }
+        }
+    };
+
+    private async Task RefreshChart()
+    {
+        if (OnRefresh.HasDelegate)
+        {
+            await OnRefresh.InvokeAsync();
+        }
+    }
+}
+
+

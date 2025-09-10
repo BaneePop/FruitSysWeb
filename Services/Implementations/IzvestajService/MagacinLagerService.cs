@@ -1,10 +1,6 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Models.Requests;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using FruitSysWeb.Services.Interfaces;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService

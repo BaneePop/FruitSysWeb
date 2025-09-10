@@ -1,0 +1,510 @@
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components.Web
+@using ApexCharts
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services
+@using FruitSysWeb.Services.Models.Requests
+
+@inject IProizvodnjaService ProizvodnjaService
+@inject IMagacinLagerService MagacinLagerService
+@inject ILogger<DashboardCharts> Logger
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4>
+                <i class="bi bi-graph-up"></i>
+                Dashboard Analitika
+            </h4>
+            <button class="btn btn-primary" @onclick="RefreshAllCharts" disabled="@IsRefreshingAll">
+                <i class="bi bi-arrow-clockwise @(IsRefreshingAll ? "spin" : "")"></i>
+                @(IsRefreshingAll ? "Osvežavam..." : "Osveži sve")
+            </button>
+        </div>
+        <hr />
+    </div>
+</div>
+
+<!-- Top 5 Kupaca i Dobavljača Sirovina -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+        <ApexBarChart 
+            Title="Top 5 Kupaca"
+            Icon="bi bi-people"
+            SeriesName="Količina"
+            Unit="kg"
+            Color="#28a745"
+            Data="@TopKupciData"
+            IsLoading="@IsLoadingKupci"
+            HasError="@HasErrorKupci"
+            OnRefresh="@RefreshKupci" />
+    </div>
+    <div class="col-lg-6 mb-3">
+        <ApexBarChart 
+            Title="Top 5 Dobavljača Sirovina"
+            Icon="bi bi-truck"
+            SeriesName="Količina"
+            Unit="kg"
+            Color="#dc3545"
+            Data="@TopDobavljaciData"
+            IsLoading="@IsLoadingDobavljaci"
+            HasError="@HasErrorDobavljaci"
+            OnRefresh="@RefreshDobavljaci" />
+    </div>
+</div>
+
+<!-- Proizvodnja po Artiklima (od 01.06.2025) -->
+<div class="row mb-4">
+    <div class="col-12">
+        <ApexBarChart 
+            Title="Proizvodnja po Artiklima (od 01.06.2025)"
+            Icon="bi bi-box-seam"
+            SeriesName="Količina"
+            Unit="kg"
+            Color="#007bff"
+            Height="400"
+            Data="@ProizvodnjaData"
+            IsLoading="@IsLoadingProizvodnja"
+            HasError="@HasErrorProizvodnja"
+            OnRefresh="@RefreshProizvodnja" />
+    </div>
+</div>
+
+<!-- Struktura Lagera - 4 Charts -->
+<div class="row mb-4">
+    <div class="col-lg-3 mb-3">
+        <ApexBarChart 
+            Title="Struktura Sirovina"
+            Icon="bi bi-basket"
+            SeriesName="Količina"
+            Unit="kg"
+            Color="#28a745"
+            Data="@SirovineData"
+            IsLoading="@IsLoadingSirovine"
+            HasError="@HasErrorSirovine"
+            OnRefresh="@RefreshSirovine" />
+    </div>
+    <div class="col-lg-3 mb-3">
+        <ApexBarChart 
+            Title="Struktura Gotovih Proizvoda"
+            Icon="bi bi-box2"
+            SeriesName="Količina"
+            Unit="kg"
+            Color="#007bff"
+            Data="@GotoviProizvodiData"
+            IsLoading="@IsLoadingGotovi"
+            HasError="@HasErrorGotovi"
+            OnRefresh="@RefreshGotovi" />
+    </div>
+    <div class="col-lg-3 mb-3">
+        <ApexBarChart 
+            Title="Struktura Kutija/Džakova"
+            Icon="bi bi-box"
+            SeriesName="Količina"
+            Unit="kom"
+            Color="#fd7e14"
+            Data="@KutijeData"
+            IsLoading="@IsLoadingKutije"
+            HasError="@HasErrorKutije"
+            OnRefresh="@RefreshKutije" />
+    </div>
+    <div class="col-lg-3 mb-3">
+        <ApexBarChart 
+            Title="Struktura Kesa"
+            Icon="bi bi-bag"
+            SeriesName="Količina"
+            Unit="kom"
+            Color="#6f42c1"
+            Data="@KesaData"
+            IsLoading="@IsLoadingKesa"
+            HasError="@HasErrorKesa"
+            OnRefresh="@RefreshKesa" />
+    </div>
+</div>
+
+<!-- Brza Statistika (od 01.01.2025) -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-speedometer2"></i>
+                    Brza Statistika (od 01.01.2025)
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            <strong class="text-success">@(UkupnoKupciKg.ToString("N0"))</strong>
+                            <small class="d-block text-muted">Ukupno kupci (kg)</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            <strong class="text-danger">@(TopDobavljaciData?.Sum(x => x.Value).ToString("N0") ?? "0")</strong>
+                            <small class="d-block text-muted">Ukupno dobavljači (kg)</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            <strong class="text-primary">@(UkupnoProizvodnjaKg.ToString("N0"))</strong>
+                            <small class="d-block text-muted">Ukupno proizvodnja (kg)</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            <strong class="text-info">@(SirovineData?.Sum(x => x.Value).ToString("N0") ?? "0")</strong>
+                            <small class="d-block text-muted">Sirovine (kg)</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            <strong class="text-warning">@(GotoviProizvodiData?.Sum(x => x.Value).ToString("N0") ?? "0")</strong>
+                            <small class="d-block text-muted">Gotovi proizvodi (kg)</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            <strong class="text-secondary">@((KutijeData?.Sum(x => x.Value) ?? 0) + (KesaData?.Sum(x => x.Value) ?? 0)).ToString("N0")</strong>
+                            <small class="d-block text-muted">Ambalaža (kom)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Chart Data
+    private List<ChartDataPoint>? TopKupciData;
+    private List<ChartDataPoint>? TopDobavljaciData;
+    private List<ChartDataPoint>? ProizvodnjaData;
+    private List<ChartDataPoint>? SirovineData;
+    private List<ChartDataPoint>? GotoviProizvodiData;
+    private List<ChartDataPoint>? KutijeData;
+    private List<ChartDataPoint>? KesaData;
+    
+    // Statistike za Brzu Statistiku
+    private decimal UkupnoKupciKg = 0;
+    private decimal UkupnoProizvodnjaKg = 0;
+
+    // Loading States
+    private bool IsLoadingKupci = false;
+    private bool IsLoadingDobavljaci = false;
+    private bool IsLoadingProizvodnja = false;
+    private bool IsLoadingSirovine = false;
+    private bool IsLoadingGotovi = false;
+    private bool IsLoadingKutije = false;
+    private bool IsLoadingKesa = false;
+    private bool IsRefreshingAll = false;
+
+    // Error States
+    private bool HasErrorKupci = false;
+    private bool HasErrorDobavljaci = false;
+    private bool HasErrorProizvodnja = false;
+    private bool HasErrorSirovine = false;
+    private bool HasErrorGotovi = false;
+    private bool HasErrorKutije = false;
+    private bool HasErrorKesa = false;
+
+    // Datumski filteri
+    private FilterRequest StatistikaFilter => new FilterRequest
+    {
+        OdDatum = new DateTime(2025, 1, 1),  // Od 01.01.2025
+        DoDatum = DateTime.Now
+    };
+    
+    private FilterRequest ProizvodnjaFilter => new FilterRequest
+    {
+        OdDatum = new DateTime(2025, 6, 1),  // Od 01.06.2025
+        DoDatum = DateTime.Now
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAllCharts();
+    }
+
+    private async Task RefreshAllCharts()
+    {
+        IsRefreshingAll = true;
+        StateHasChanged();
+
+        try
+        {
+            var tasks = new List<Task>
+            {
+                RefreshKupci(),
+                RefreshDobavljaci(),
+                RefreshProizvodnja(),
+                RefreshSirovine(),
+                RefreshGotovi(),
+                RefreshKutije(),
+                RefreshKesa(),
+                RefreshStatistike()
+            };
+
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing all charts");
+        }
+        finally
+        {
+            IsRefreshingAll = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshKupci()
+    {
+        if (IsLoadingKupci) return;
+        
+        IsLoadingKupci = true;
+        HasErrorKupci = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(100);
+            var data = await ProizvodnjaService.UcitajTopKupcePoKilogramima(StatistikaFilter);
+            TopKupciData = ChartDataHelper.FromDictionary(data, 5);
+            TopKupciData = ChartDataHelper.TruncateLabels(TopKupciData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading top kupci data");
+            HasErrorKupci = true;
+            TopKupciData = ChartDataHelper.GetMockData("Kupac", 5);
+        }
+        finally
+        {
+            IsLoadingKupci = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshDobavljaci()
+    {
+        if (IsLoadingDobavljaci) return;
+        
+        IsLoadingDobavljaci = true;
+        HasErrorDobavljaci = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(150);
+            var data = await ProizvodnjaService.UcitajTopDobavljacePoKilogramima(StatistikaFilter);
+            TopDobavljaciData = ChartDataHelper.FromDictionary(data, 5);
+            TopDobavljaciData = ChartDataHelper.TruncateLabels(TopDobavljaciData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading top dobavljaci data");
+            HasErrorDobavljaci = true;
+            TopDobavljaciData = ChartDataHelper.GetMockData("Dobavljač", 5);
+        }
+        finally
+        {
+            IsLoadingDobavljaci = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshProizvodnja()
+    {
+        if (IsLoadingProizvodnja) return;
+        
+        IsLoadingProizvodnja = true;
+        HasErrorProizvodnja = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(200);
+            var data = await ProizvodnjaService.UcitajProizvodnjuPoArtiklima(ProizvodnjaFilter);
+            ProizvodnjaData = ChartDataHelper.FromDictionary(data, 8);
+            ProizvodnjaData = ChartDataHelper.TruncateLabels(ProizvodnjaData, 20);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading proizvodnja data");
+            HasErrorProizvodnja = true;
+            ProizvodnjaData = ChartDataHelper.GetMockData("Proizvod", 8);
+        }
+        finally
+        {
+            IsLoadingProizvodnja = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshSirovine()
+    {
+        if (IsLoadingSirovine) return;
+        
+        IsLoadingSirovine = true;
+        HasErrorSirovine = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(250);
+            var data = await MagacinLagerService.UcitajStrukturuSirovina();
+            SirovineData = ChartDataHelper.FromDictionary(data, 10); // Sve sirovine
+            SirovineData = ChartDataHelper.TruncateLabels(SirovineData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading sirovine data");
+            HasErrorSirovine = true;
+            SirovineData = ChartDataHelper.GetMockData("Sirovina", 5);
+        }
+        finally
+        {
+            IsLoadingSirovine = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshGotovi()
+    {
+        if (IsLoadingGotovi) return;
+        
+        IsLoadingGotovi = true;
+        HasErrorGotovi = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(300);
+            var data = await MagacinLagerService.UcitajStrukturuGotovihProizvoda();
+            GotoviProizvodiData = ChartDataHelper.FromDictionary(data, 10); // Svi gotovi proizvodi
+            GotoviProizvodiData = ChartDataHelper.TruncateLabels(GotoviProizvodiData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading gotovi proizvodi data");
+            HasErrorGotovi = true;
+            GotoviProizvodiData = ChartDataHelper.GetMockData("Proizvod", 5);
+        }
+        finally
+        {
+            IsLoadingGotovi = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshKutije()
+    {
+        if (IsLoadingKutije) return;
+        
+        IsLoadingKutije = true;
+        HasErrorKutije = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(350);
+            var data = await MagacinLagerService.UcitajStrukturuKutija();
+            KutijeData = ChartDataHelper.FromDictionary(data, 10);
+            KutijeData = ChartDataHelper.TruncateLabels(KutijeData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading kutije data");
+            HasErrorKutije = true;
+            KutijeData = ChartDataHelper.GetMockData("Kutija", 5);
+        }
+        finally
+        {
+            IsLoadingKutije = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshKesa()
+    {
+        if (IsLoadingKesa) return;
+        
+        IsLoadingKesa = true;
+        HasErrorKesa = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(400);
+            var data = await MagacinLagerService.UcitajStrukturuKesa();
+            KesaData = ChartDataHelper.FromDictionary(data, 10);
+            KesaData = ChartDataHelper.TruncateLabels(KesaData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading kesa data");
+            HasErrorKesa = true;
+            KesaData = ChartDataHelper.GetMockData("Kesa", 5);
+        }
+        finally
+        {
+            IsLoadingKesa = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshStatistike()
+    {
+        try
+        {
+            // Ukupno kupci iz radnih naloga (gotovi proizvodi)
+            UkupnoKupciKg = await ProizvodnjaService.UcitajUkupnuProizvodnju(StatistikaFilter);
+            
+            // Ukupno proizvodnja iz radnih naloga (gotovi proizvodi)  
+            UkupnoProizvodnjaKg = await ProizvodnjaService.UcitajGotoveProizvodePoslednjihDana(365); // Cela godina
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading statistike");
+        }
+    }
+}
+
+<style>
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .stat-item {
+        padding: 1rem 0;
+        border-right: 1px solid #dee2e6;
+    }
+
+    .stat-item:last-child {
+        border-right: none;
+    }
+
+    @media (max-width: 768px) {
+        .stat-item {
+            border-right: none;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+    }
+</style>

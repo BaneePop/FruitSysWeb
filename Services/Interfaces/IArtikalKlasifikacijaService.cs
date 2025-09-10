@@ -1,3 +1,4 @@
+
 using FruitSysWeb.Models;
 
 namespace FruitSysWeb.Services.Interfaces

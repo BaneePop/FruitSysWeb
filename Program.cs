@@ -3,6 +3,7 @@ using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Implementations.IzvestajService;
 using FruitSysWeb.Services.Implementations.ExportService;
 using FruitSysWeb.Models;
+using ApexCharts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,14 +11,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
+// DODANO: ApexCharts.NET servisi - možda nije potrebno u .NET 8 sa @rendermode
+// builder.Services.AddApexCharts();
+
 // POSTOJEĆI servisi
 builder.Services.AddScoped<DatabaseService>();
 
 // AŽURIRANE registracije postojećih servisa
-builder.Services.AddScoped<IProizvodnjaService,ProizvodnjaService>();
-builder.Services.AddScoped<IFinansijeService,FinansijeService>();
-builder.Services.AddScoped<IMagacinLagerService,MagacinLagerService>();
-builder.Services.AddScoped<IExportService,SimpleExportService>();
+builder.Services.AddScoped<IProizvodnjaService, FruitSysWeb.Services.Implementations.IzvestajService.ProizvodnjaService>();
+builder.Services.AddScoped<IFinansijeService, FruitSysWeb.Services.Implementations.IzvestajService.FinansijeService>();
+builder.Services.AddScoped<IMagacinLagerService, FruitSysWeb.Services.Implementations.IzvestajService.MagacinLagerService>();
+builder.Services.AddScoped<IExportService, FruitSysWeb.Services.Implementations.ExportService.SimpleExportService>();
 builder.Services.AddScoped<IKomitentService, KomitentService>();
 builder.Services.AddScoped<IArtikalService, ArtikalService>();
 
@@ -36,7 +40,13 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
-
+builder.Services.AddRazorComponents().AddInteractiveServerComponents()
+    .AddCircuitOptions(options => {
+        options.DetailedErrors = true;
+        options.DisconnectedCircuitMaxRetained = 100;
+        options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(3);
+        options.JSInteropDefaultCallTimeout = TimeSpan.FromMinutes(1);
+    });
 // DODANO: CORS ako je potreban
 builder.Services.AddCors(options =>
 {
@@ -99,7 +109,7 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine("Database service registered successfully");
         
         var exportService = scope.ServiceProvider.GetRequiredService<IExportService>();
-        if (exportService is SimpleExportService simpleExportService)
+        if (exportService is FruitSysWeb.Services.Implementations.ExportService.SimpleExportService simpleExportService)
         {
             var pdfTest = simpleExportService.TestPdfGeneration();
             Console.WriteLine($"PDF generation test: {(pdfTest ? "PASSED" : "FAILED")}");

@@ -1,3 +1,7 @@
+@using Microsoft.AspNetCore.Components.Web
+@using ApexCharts
+@using FruitSysWeb.Components.Charts
+
 <div class="d-flex justify-content-end gap-2 mb-4">
     <button class="btn btn-success" @onclick="OnExportExcelClick" disabled="@(!HasData)">
         <i class="bi bi-file-earmark-excel me-2"></i>Preuzmi Excel
