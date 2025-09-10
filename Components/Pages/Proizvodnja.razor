@@ -580,6 +580,100 @@
 
     private async Task ResetujFiltere()
     {
+        var (odDatum, doDatum) = SystemConstants.GetDefaultDateRange();
+        filterRequest = new FilterRequest
+        {
+            OdDatum = odDatum,
+            DoDatum = doDatum
+        };
+        
+        await UcitajListeZaFiltriranje();
+        await UcitajPodatke();
+    }
+
+    // REFAKTORISANE EXPORT METODE sa TypeMapping
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            var excelData = ExportService.ExportToExcel(podaci);
+            var fileName = TypeMapping.GenerateExportFileName("proizvodnja_export", SystemConstants.Export.EXCEL_EXTENSION);
+            await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u Excel: {ex.Message}");
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        try
+        {
+            var pdfData = ExportService.ExportToPdf(podaci);
+            var fileName = TypeMapping.GenerateExportFileName("proizvodnja_export", SystemConstants.Export.PDF_EXTENSION);
+            await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u PDF: {ex.Message}");
+        }
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
+    }
+}Mapping
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            var excelData = ExportService.ExportToExcel(podaci);
+            var fileName = TypeMapping.GenerateExportFileName("proizvodnja_export", SystemConstants.Export.EXCEL_EXTENSION);
+            await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u Excel: {ex.Message}");
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        try
+        {
+            var pdfData = ExportService.ExportToPdf(podaci);
+            var fileName = TypeMapping.GenerateExportFileName("proizvodnja_export", SystemConstants.Export.PDF_EXTENSION);
+            await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u PDF: {ex.Message}");
+        }
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
+    }
+}Request, 10);
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju podataka: {ex.Message}");
+            podaci = new List<ProizvodnjaModel>();
+            ukupnaProizvodnja = 0;
+            brojAktivnihNaloga = 0;
+            brojUnikatanihNaloga = 0;
+            prosecnaDnevnaProizvodnja = 0;
+        }
+    }
+
+    private async Task ResetujFiltere()
+    {
         var pocetakMeseca = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
         filterRequest = new FilterRequest
         {

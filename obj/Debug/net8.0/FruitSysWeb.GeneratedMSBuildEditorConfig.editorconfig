@@ -62,8 +62,16 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9MYWdlci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/nikola/FruitSysWeb/Components/Pages/Proizvodnja-REFACTORED.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Qcm9penZvZG5qYS1SRUZBQ1RPUkVELnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/nikola/FruitSysWeb/Components/Pages/Proizvodnja.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Qcm9penZvZG5qYS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/nikola/FruitSysWeb/Components/Pages/TestMapping.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9UZXN0TWFwcGluZy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/nikola/FruitSysWeb/Components/Shared/Filters/ArtikalFilter.razor]

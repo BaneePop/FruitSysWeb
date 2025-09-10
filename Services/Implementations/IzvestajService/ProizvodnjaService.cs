@@ -24,25 +24,29 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     rn.DatumPocetka as Datum,
                     rn.Sifra as RadniNalog,
                     vpp.Artikal,
-                    CAST(CASE a.Tip
-                        WHEN 1 THEN 'Sirovina'
-                        WHEN 2 THEN 'Ambalaza'
-                        WHEN 3 THEN 'Potrošni materijal'
-                        WHEN 4 THEN 'Gotova roba'
-                        WHEN 5 THEN 'Oprema'
-                        WHEN 7 THEN 'Klase'
-                        ELSE CONCAT('Tip ', a.Tip)
+                    CAST(CASE a.MagacinID
+                        WHEN 2 THEN 'Sveza Roba'
+                        WHEN 3 THEN 'Sirovine'
+                        WHEN 4 THEN 'Ambalaza'
+                        WHEN 5 THEN 'PoluProizvodi'
+                        WHEN 6 THEN 'Gotov Proizvod'
+                        WHEN 8 THEN 'Usl. Mlečni'
+                        WHEN 9 THEN 'Repromaterijal'
+                        WHEN 10 THEN 'Đubriva'
+                        WHEN 11 THEN 'Usl. Voće'
+                        WHEN 12 THEN 'Usl. Meso'
+                        ELSE CONCAT('MagacinID ', a.MagacinID)
                     END AS CHAR(50)) as TipArtikla,
                     CASE 
-                        WHEN a.Tip NOT IN (2, 4) THEN vpp.Kolicina 
+                        WHEN a.MagacinID NOT IN (4, 6) THEN vpp.Kolicina 
                         ELSE 0 
                     END as KolicinaRoba,
                     CASE 
-                        WHEN a.Tip = 2 THEN vpp.Kolicina 
+                        WHEN a.MagacinID = 4 THEN vpp.Kolicina 
                         ELSE 0 
                     END as KolicinaAmbalaza,
                     CASE 
-                        WHEN a.Tip = 4 THEN vpp.Kolicina 
+                        WHEN a.MagacinID = 6 THEN vpp.Kolicina 
                         ELSE 0 
                     END as GotovProizvod,
                     vpp.Kolicina,
@@ -52,7 +56,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     rn.DokumentStatus,
                     vpp.ArtikalID,
                     vpp.ArtikalPrvaKlasifikacijaID,
-                    a.Tip as Tip
+                    a.MagacinID as Tip
                 FROM RadniNalog rn
                 LEFT JOIN vPreradaPregled vpp ON rn.ID = vpp.RadniNalogID
                 LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID

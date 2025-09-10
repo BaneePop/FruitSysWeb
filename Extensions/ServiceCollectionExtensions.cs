@@ -5,6 +5,7 @@ using FruitSysWeb.Services;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Implementations.IzvestajService;
 using FruitSysWeb.Services.Implementations.ExportService;
+using FruitSysWeb.Services.Core; // DODATO: Core services
 using Microsoft.AspNetCore.Components;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Blazor_ApexCharts;
@@ -18,6 +19,9 @@ namespace FruitSysWeb.Extensions
             // Database
             services.AddScoped<DatabaseService>();
 
+            // NOVO: Core services - centralizovani mapiranje i helpers
+            services.AddScoped<ITypeMappingService, TypeMappingService>();
+
             // Core services
             services.AddScoped<IProizvodnjaService, ProizvodnjaService>();
             services.AddScoped<IFinansijeService, FinansijeService>();
@@ -26,7 +30,6 @@ namespace FruitSysWeb.Extensions
             services.AddScoped<IArtikalService, ArtikalService>();
             services.AddScoped<IArtikalKlasifikacijaService, ArtikalKlasifikacijaService>();
             services.AddScoped<IExportService, SimpleExportService>();
-
 
             return services;
         }
