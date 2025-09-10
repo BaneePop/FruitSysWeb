@@ -5,9 +5,51 @@
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services
 @using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Models
+
 
 @inject IProizvodnjaService ProizvodnjaService
 @inject IMagacinLagerService MagacinLagerService
+@inject IDashboardService DashboardService
+@inject IArtikalService ArtikalService
+
+
+
+
+<style>
+    .spin {
+        animation: spin 1s linear infinite;
+        }
+
+        keyframes spin {
+            from { transform: rotate(0deg); }
+         to { transform: rotate(360deg); }
+        }
+
+    .stat-item {
+        padding: 1rem 0;
+        border-right: 1px solid #dee2e6;
+    }
+
+    .stat-item:last-child {
+        border-right: none;
+    }
+
+    media (max-width: 768px) {
+        .stat-item {
+            border-right: none;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+    }
+</style>
+
 @inject ILogger<DashboardCharts> Logger
 
 <div class="row mb-4">
@@ -38,6 +80,7 @@
             Data="@TopKupciData"
             IsLoading="@IsLoadingKupci"
             HasError="@HasErrorKupci"
+            ShowSummary="false"
             OnRefresh="@RefreshKupci" />
     </div>
     <div class="col-lg-6 mb-3">
@@ -50,6 +93,7 @@
             Data="@TopDobavljaciData"
             IsLoading="@IsLoadingDobavljaci"
             HasError="@HasErrorDobavljaci"
+            ShowSummary="false"
             OnRefresh="@RefreshDobavljaci" />
     </div>
 </div>
@@ -67,6 +111,7 @@
             Data="@ProizvodnjaData"
             IsLoading="@IsLoadingProizvodnja"
             HasError="@HasErrorProizvodnja"
+            ShowSummary="false"
             OnRefresh="@RefreshProizvodnja" />
     </div>
 </div>
@@ -83,6 +128,7 @@
             Data="@SirovineData"
             IsLoading="@IsLoadingSirovine"
             HasError="@HasErrorSirovine"
+            ShowSummary="false"
             OnRefresh="@RefreshSirovine" />
     </div>
     <div class="col-lg-3 mb-3">
@@ -95,6 +141,7 @@
             Data="@GotoviProizvodiData"
             IsLoading="@IsLoadingGotovi"
             HasError="@HasErrorGotovi"
+            ShowSummary="false"
             OnRefresh="@RefreshGotovi" />
     </div>
     <div class="col-lg-3 mb-3">
@@ -107,6 +154,7 @@
             Data="@KutijeData"
             IsLoading="@IsLoadingKutije"
             HasError="@HasErrorKutije"
+            ShowSummary="false"
             OnRefresh="@RefreshKutije" />
     </div>
     <div class="col-lg-3 mb-3">
@@ -119,6 +167,7 @@
             Data="@KesaData"
             IsLoading="@IsLoadingKesa"
             HasError="@HasErrorKesa"
+            ShowSummary="false"
             OnRefresh="@RefreshKesa" />
     </div>
 </div>
@@ -460,11 +509,12 @@
     {
         try
         {
-            // Ukupno kupci iz radnih naloga (gotovi proizvodi)
-            UkupnoKupciKg = await ProizvodnjaService.UcitajUkupnuProizvodnju(StatistikaFilter);
+            // Ukupno kupci kg - suma iz Top 5 Kupaca
+            var topKupciData = await ProizvodnjaService.UcitajTopKupcePoKilogramima(StatistikaFilter);
+            UkupnoKupciKg = topKupciData?.Sum(x => x.Value) ?? 0;
             
-            // Ukupno proizvodnja iz radnih naloga (gotovi proizvodi)  
-            UkupnoProizvodnjaKg = await ProizvodnjaService.UcitajGotoveProizvodePoslednjihDana(365); // Cela godina
+            // Ukupno proizvodnja kg - ukupna proizvodnja gotovih proizvoda
+            UkupnoProizvodnjaKg = await ProizvodnjaService.UcitajUkupnuProizvodnju(StatistikaFilter);
             
             StateHasChanged();
         }
@@ -474,37 +524,3 @@
         }
     }
 }
-
-<style>
-    .spin {
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-
-    .stat-item {
-        padding: 1rem 0;
-        border-right: 1px solid #dee2e6;
-    }
-
-    .stat-item:last-child {
-        border-right: none;
-    }
-
-    @media (max-width: 768px) {
-        .stat-item {
-            border-right: none;
-            border-bottom: 1px solid #dee2e6;
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.5rem;
-        }
-        
-        .stat-item:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-        }
-    }
-</style>

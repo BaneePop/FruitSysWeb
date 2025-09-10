@@ -165,19 +165,6 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 var parameters = new Dictionary<string, object>();
 
-                // Datum filteri
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
-
                 // Komitent filter
                 if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
                 {
@@ -239,30 +226,37 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 var sql = new StringBuilder();
                 sql.Append(@"
                     SELECT 
-                        fm.Komitent,
-                        SUM(fm.Saldo) as UkupnoSaldo
-                    FROM vPrometFinansijev9 fm
-                    WHERE fm.Kupac = 1
+                        k.Naziv as Komitent,
+                        SUM(ABS(COALESCE(o.Kolicina, 0))) as UkupnaKolicina
+                    FROM Otpremnica o
+                    LEFT JOIN Komitent k ON o.KomitentID = k.ID
+                    LEFT JOIN Artikal a ON o.ArtikalID = a.ID
+                    WHERE o.Aktivno = 1
+                      AND k.Aktivno = 1
+                      AND a.Aktivno = 1
+                      AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
+                      AND o.DokumentStatus IN (2, 3)  -- OTVORENO ILI ZATVORENO
                 ");
 
                 var parameters = new Dictionary<string, object>();
 
-                // Datum filteri
+                // Datum filteri za Otpremnicu
                 if (filterRequest.OdDatum.HasValue)
                 {
-                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
+                    sql.Append(" AND DATE(o.Datum) >= @OdDatum");
                     parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
                 }
 
                 if (filterRequest.DoDatum.HasValue)
                 {
-                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
+                    sql.Append(" AND DATE(o.Datum) <= @DoDatum");
                     parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
                 }
 
                 sql.Append(@"
-                    GROUP BY fm.Komitent, fm.KomitentID
-                    ORDER BY UkupnoSaldo DESC
+                    GROUP BY k.ID, k.Naziv
+                    HAVING UkupnaKolicina > 0
+                    ORDER BY UkupnaKolicina DESC
                     LIMIT 5
                 ");
 
@@ -270,7 +264,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 
                 return rezultat.ToDictionary(
                     x => (string)x.Komitent ?? "Nepoznato",
-                    x => (decimal)x.UkupnoSaldo
+                    x => (decimal)x.UkupnaKolicina
                 );
             }
             catch (Exception ex)
@@ -287,10 +281,16 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 var sql = new StringBuilder();
                 sql.Append(@"
                     SELECT 
-                        fm.Komitent,
-                        SUM(fm.Saldo) as UkupnoSaldo
-                    FROM vPrometFinansijev9 fm
-                    WHERE fm.Dobavljac = 1
+                        k.Naziv as Komitent,
+                        SUM(ABS(COALESCE(p.Kolicina, 0))) as UkupnaKolicina
+                    FROM Prijemnica p
+                    LEFT JOIN Komitent k ON p.KomitentID = k.ID
+                    LEFT JOIN Artikal a ON p.ArtikalID = a.ID
+                    WHERE p.Aktivno = 1
+                      AND k.Aktivno = 1
+                      AND a.Aktivno = 1
+                      AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
+                      AND p.DokumentStatus IN (2, 3)  -- OTVORENO ILI ZATVORENO
                 ");
 
                 var parameters = new Dictionary<string, object>();
@@ -308,9 +308,23 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
                 }
 
+                // Datum filteri za Prijemnicu
+                if (filterRequest.OdDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(p.Datum) >= @OdDatum");
+                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
+                }
+
+                if (filterRequest.DoDatum.HasValue)
+                {
+                    sql.Append(" AND DATE(p.Datum) <= @DoDatum");
+                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+                }
+
                 sql.Append(@"
-                    GROUP BY fm.Komitent, fm.KomitentID
-                    ORDER BY UkupnoSaldo DESC
+                    GROUP BY k.ID, k.Naziv
+                    HAVING UkupnaKolicina > 0
+                    ORDER BY UkupnaKolicina DESC
                     LIMIT 5
                 ");
 
@@ -318,7 +332,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 
                 return rezultat.ToDictionary(
                     x => (string)x.Komitent ?? "Nepoznato",
-                    x => (decimal)x.UkupnoSaldo
+                    x => (decimal)x.UkupnaKolicina
                 );
             }
             catch (Exception ex)

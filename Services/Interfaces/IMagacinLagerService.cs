@@ -28,7 +28,8 @@ namespace FruitSysWeb.Services.Interfaces
         // DASHBOARD - nove metode za strukturu lagera
         Task<Dictionary<string, decimal>> UcitajStrukturuSirovina();
         Task<Dictionary<string, decimal>> UcitajStrukturuGotovihProizvoda();
-        Task<Dictionary<string, decimal>> UcitajStrukturuAmbalaze();
+        Task<Dictionary<string, decimal>> UcitajStrukturuKutija();
+        Task<Dictionary<string, decimal>> UcitajStrukturuKesa();
         
         // Ostale metode
         Task<List<MagacinLagerModel>> UcitajLagerStanjePoLotu(string lot);

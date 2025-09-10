@@ -101,12 +101,16 @@
                                     <label class="form-label fw-bold">Tip artikla:</label>
                                     <select class="form-select" @bind="filterRequest.Tip">
                                         <option value="">Svi tipovi</option>
-                                        <option value="1">Sirovina</option>
-                                        <option value="2">Ambalaza</option>
-                                        <option value="3">Potrošni materijal</option>
-                                        <option value="4">Gotova roba</option>
-                                        <option value="5">Oprema</option>
-                                        <option value="7">Klase</option>
+                                        <option value="2">Sveza Roba</option>
+                                        <option value="3">Sirovine</option>
+                                        <option value="4">Ambalaza</option>
+                                        <option value="5">PoluProizvodi</option>
+                                        <option value="6">Gotov Proizvod</option>
+                                        <option value="8">Usluzni Lager Mlecni Proizvodi</option>
+                                        <option value="9">Repromaterijal</option>
+                                        <option value="10">Djubriva</option>
+                                        <option value="11">Usluzni Lager Voce I Povrce</option>
+                                        <option value="12">Usluzni Lager Meso</option>
                                     </select>
                                 </div>
 
@@ -194,24 +198,24 @@
                 <div class="col-md-3">
                     <div class="card bg-success text-white">
                         <div class="card-body text-center">
-                            <h5>Ukupna količina</h5>
-                            <h3>@(lagerStanje?.Sum(x => x.Kolicina).ToString("N2") ?? "0.00")</h3>
+                            <h5>Roba u kg</h5>
+                            <h3>@(GetRobaUKilogramima().ToString("N0"))</h3>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card bg-warning text-dark">
                         <div class="card-body text-center">
-                            <h5>Ispod minimuma</h5>
-                            <h3>@artikliIspodMinimuma</h3>
+                            <h5>Uslužni lager (8,11,12)</h5>
+                            <h3>@(GetUsluzniLager().ToString("N0"))</h3>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card bg-info text-white">
                         <div class="card-body text-center">
-                            <h5>Dostupno</h5>
-                            <h3>@(lagerStanje?.Count(x => x.Kolicina >= 10) ?? 0)</h3>
+                            <h5>PoluProizvodi (5)</h5>
+                            <h3>@(GetPoluproizvodi().ToString("N0"))</h3>
                         </div>
                     </div>
                 </div>
@@ -309,7 +313,7 @@
                         <div class="card-header bg-light">
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-gear me-2"></i>
-                                Lager Proizvodnje (vwRadniNalogLager)
+                                Lager Proizvodnje
                                 <span class="badge bg-info ms-2">@(lagerProizvodnje?.Count ?? 0) naloga</span>
                             </h5>
                         </div>
@@ -339,7 +343,7 @@
                                                 <th>Pakovanje</th>
                                                 <th class="text-end">Količina</th>
                                                 <th class="text-end">Potrebna Količina</th>
-                                                <th>Status</th>
+                                                <th class="text-end">Fali do završetka</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -353,12 +357,12 @@
                                                     <td>@item.Pakovanje</td>
                                                     <td class="text-end fw-bold">@item.Kolicina.ToString("N2")</td>
                                                     <td class="text-end text-muted">@item.PotrebnaKolicina.ToString("N2")</td>
-                                                    <td>
+                                                    <td class="text-end">
                                                         @{
-                                                            var statusBadge = item.DokumentStatus == 2 ? "bg-success" : "bg-secondary";
-                                                            var statusText = item.DokumentStatus == 2 ? "Otvoren" : item.DokumentStatus == 3 ? "Zaključen" : "Nepoznato";
+                                                            var faliDoZavrsetka = item.PotrebnaKolicina - item.Kolicina;
+                                                            var badgeClass = faliDoZavrsetka > 0 ? "bg-warning" : "bg-success";
                                                         }
-                                                        <span class="badge @statusBadge">@statusText</span>
+                                                        <span class="badge @badgeClass">@faliDoZavrsetka.ToString("N2")</span>
                                                     </td>
                                                 </tr>
                                             }
@@ -368,7 +372,7 @@
                                                 <th colspan="3" class="text-end">UKUPNO:</th>
                                                 <th class="text-end text-info">@lagerProizvodnje.Sum(x => x.Kolicina).ToString("N2")</th>
                                                 <th class="text-end text-muted">@lagerProizvodnje.Sum(x => x.PotrebnaKolicina).ToString("N2")</th>
-                                                <th></th>
+                                                <th class="text-end text-warning">@lagerProizvodnje.Sum(x => x.PotrebnaKolicina - x.Kolicina).ToString("N2")</th>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -388,7 +392,6 @@
     private List<string>? pakovanjeLista; // DODATO za padajući meni
     private FilterRequest filterRequest = new FilterRequest();
     private decimal ukupnaVrednostLager = 0;
-    private int artikliIspodMinimuma = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -417,11 +420,6 @@
             lagerStanje = await LagerService.UcitajLagerStanjeSaFilterima(filterRequest);
             ukupnaVrednostLager = await LagerService.UcitajUkupnuVrednostLager();
             
-            if (lagerStanje != null)
-            {
-                artikliIspodMinimuma = lagerStanje.Count(x => x.Kolicina < 10);
-            }
-
             StateHasChanged();
         }
         catch (Exception ex)
@@ -459,15 +457,15 @@
         {
             case nameof(filterRequest.SamoGotoveRobe):
                 filterRequest.SamoGotoveRobe = true;
-                filterRequest.Tip = "4";
+                filterRequest.Tip = "6";  // MagacinID 6 = Gotovi proizvodi
                 break;
             case nameof(filterRequest.SamoSirovine):
                 filterRequest.SamoSirovine = true;
-                filterRequest.Tip = "1";
+                filterRequest.Tip = "3";  // MagacinID 3 = Sirovine
                 break;
             case nameof(filterRequest.SamoAmbalaže):
                 filterRequest.SamoAmbalaže = true;
-                filterRequest.Tip = "2";
+                filterRequest.Tip = "4";  // MagacinID 4 = Ambalaza
                 break;
         }
     }
@@ -503,32 +501,73 @@
         return 0;
     }
 
-    private string GetBadgeClass(int tip)
+    private string GetBadgeClass(int magacinId)
     {
-        return tip switch
+        return magacinId switch
         {
-            1 => "bg-primary",
-            2 => "bg-warning text-dark",
-            3 => "bg-secondary",
-            4 => "bg-success",
-            5 => "bg-danger",
-            7 => "bg-info",
+            2 => "bg-success",           // Sveza Roba
+            3 => "bg-primary",           // Sirovine
+            4 => "bg-warning text-dark",  // Ambalaza
+            5 => "bg-secondary",         // PoluProizvodi
+            6 => "bg-danger",            // Gotov Proizvod
+            7 => "bg-dark text-white",   // Kalo i Rastur (ne treba prikazivati)
+            8 => "bg-info",              // Usluzni Lager Mlecni Proizvodi
+            9 => "bg-light text-dark",   // Repromaterijal
+            10 => "bg-success text-white", // Djubriva
+            11 => "bg-warning",          // Usluzni Lager Voce I Povrce
+            12 => "bg-danger text-white", // Usluzni Lager Meso
             _ => "bg-light text-dark"
         };
     }
 
-    private string GetDisplayName(int tip)
+    private string GetDisplayName(int magacinId)
     {
-        return tip switch
+        return magacinId switch
         {
-            1 => "Sirovina",
-            2 => "Ambalaza",
-            3 => "Potrošni mat.",
-            4 => "Gotova roba",
-            5 => "Oprema",
-            7 => "Klase",
-            _ => $"Tip {tip}"
+            2 => "Sveza Roba",
+            3 => "Sirovine",
+            4 => "Ambalaza",
+            5 => "PoluProizvodi",
+            6 => "Gotov Proizvod",
+            7 => "Kalo i Rastur",
+            8 => "Usl. Mlecni",
+            9 => "Repromaterijal",
+            10 => "Djubriva",
+            11 => "Usl. Voce",
+            12 => "Usl. Meso",
+            _ => $"MagacinID {magacinId}"
         };
+    }
+
+    // NOVE FUNKCIJE za statistike
+    private decimal GetRobaUKilogramima()
+    {
+        if (lagerStanje == null) return 0;
+        
+        return lagerStanje
+            .Where(x => x.JM != null && x.JM.ToLower().Contains("kg") && GetArtikalTipAsInt(x.Tip) != 7)
+            .Sum(x => x.Kolicina);
+    }
+
+    private decimal GetUsluzniLager()
+    {
+        if (lagerStanje == null) return 0;
+        
+        return lagerStanje
+            .Where(x => {
+                var magacinId = GetArtikalTipAsInt(x.Tip);
+                return magacinId == 8 || magacinId == 11 || magacinId == 12; // Usluzni lageri
+            })
+            .Sum(x => x.Kolicina);
+    }
+
+    private decimal GetPoluproizvodi()
+    {
+        if (lagerStanje == null) return 0;
+        
+        return lagerStanje
+            .Where(x => GetArtikalTipAsInt(x.Tip) == 5) // PoluProizvodi
+            .Sum(x => x.Kolicina);
     }
 
     // Export metode

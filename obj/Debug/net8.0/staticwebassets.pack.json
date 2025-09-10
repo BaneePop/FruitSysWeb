@@ -1,0 +1,45 @@
+{
+  "Files": [
+    {
+      "Id": "/Users/nikola/FruitSysWeb/obj/Debug/net8.0/scopedcss/projectbundle/FruitSysWeb.bundle.scp.css",
+      "PackagePath": "staticwebassets/FruitSysWeb.bundle.scp.css"
+    },
+    {
+      "Id": "/Users/nikola/FruitSysWeb/wwwroot/bootstrap/bootstrap.min.css.map",
+      "PackagePath": "staticwebassets/bootstrap/bootstrap.min.css.map"
+    },
+    {
+      "Id": "/Users/nikola/FruitSysWeb/wwwroot/css/app.css",
+      "PackagePath": "staticwebassets/css/app.css"
+    },
+    {
+      "Id": "/Users/nikola/FruitSysWeb/wwwroot/css/site.css",
+      "PackagePath": "staticwebassets/css/site.css"
+    },
+    {
+      "Id": "/Users/nikola/FruitSysWeb/wwwroot/favicon.png",
+      "PackagePath": "staticwebassets/favicon.png"
+    },
+    {
+      "Id": "/Users/nikola/FruitSysWeb/wwwroot/index.html",
+      "PackagePath": "staticwebassets/index.html"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.FruitSysWeb.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.build.FruitSysWeb.props",
+      "PackagePath": "build\\FruitSysWeb.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildMultiTargeting.FruitSysWeb.props",
+      "PackagePath": "buildMultiTargeting\\FruitSysWeb.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.FruitSysWeb.props",
+      "PackagePath": "buildTransitive\\FruitSysWeb.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

@@ -131,60 +131,7 @@
     <!-- Charts Section -->
     <DashboardCharts />
 
-    <!-- Recent Activity -->
-    <div class="row">
-        <div class="col-12">
-            <div class="dashboard-card">
-                <h5 class="section-title">
-                    <i class="bi bi-clock-history me-2"></i>Poslednja aktivnost
-                </h5>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-header-dark">
-                            <tr>
-                                <th>Vreme</th>
-                                <th>Akcija</th>
-                                <th>Detalji</th>
-                                <th>Korisnik</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>@DateTime.Now.AddMinutes(-5).ToString("HH:mm")</td>
-                                <td><span class="badge bg-success">Proizvodnja</span></td>
-                                <td>Završen radni nalog #PR-2024-001</td>
-                                <td>admin</td>
-                            </tr>
-                            <tr>
-                                <td>@DateTime.Now.AddMinutes(-15).ToString("HH:mm")</td>
-                                <td><span class="badge bg-primary">Finansije</span></td>
-                                <td>Kreiran novi račun #F-2024-056</td>
-                                <td>admin</td>
-                            </tr>
-                            <tr>
-                                <td>@DateTime.Now.AddMinutes(-30).ToString("HH:mm")</td>
-                                <td><span class="badge bg-info">Lager</span></td>
-                                <td>Primljena nova pošiljka sirovina</td>
-                                <td>lager@example.com</td>
-                            </tr>
-                            <tr>
-                                <td>@DateTime.Now.AddHours(-1).ToString("HH:mm")</td>
-                                <td><span class="badge bg-warning">Izvještaj</span></td>
-                                <td>Generisan mesečni finansijski izvještaj</td>
-                                <td>admin</td>
-                            </tr>
-                            <tr>
-                                <td>@DateTime.Now.AddHours(-2).ToString("HH:mm")</td>
-                                <td><span class="badge bg-secondary">Sistem</span></td>
-                                <td>Automatska backup procedura</td>
-                                <td>system</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+
 </div>
 
 @code {

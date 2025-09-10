@@ -282,12 +282,17 @@
                             @foreach (var tip in proizvodnjaPoTipovima)
                             {
                                 var tipNaziv = tip.Key switch {
-                                    1 => "Sirovina",
-                                    2 => "Ambalaza", 
-                                    3 => "Potrosni materijal",
-                                    4 => "Gotova roba",
-                                    5 => "Oprema",
-                                    _ => $"Tip {tip.Key}"
+                                    2 => "Sveza Roba",
+                                    3 => "Sirovine", 
+                                    4 => "Ambalaza",
+                                    5 => "PoluProizvodi",
+                                    6 => "Gotov Proizvod",
+                                    8 => "Usl. Mlečni",
+                                    9 => "Repromaterijal",
+                                    10 => "Đubriva",
+                                    11 => "Usl. Voće",
+                                    12 => "Usl. Meso",
+                                    _ => $"MagacinID {tip.Key}"
                                 };
                                 var procenat = ukupnaProizvodnja > 0 ? (tip.Value / ukupnaProizvodnja * 100) : 0;
                                 

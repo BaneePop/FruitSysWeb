@@ -70,12 +70,12 @@
                                  YValue="@(e => e.Value)" />
             </ApexChart>
             
-            @if (ShowSummary && Data.Any())
+            @if (ShowSummary && "Data".Any())
             {
                 <div class="mt-3 pt-3 border-top">
                     <small class="text-muted">
-                        <strong>Ukupno:</strong> @Data.Sum(x => x.Value).ToString("N2") @Unit
-                        | <strong>Prosek:</strong> @Data.Average(x => x.Value).ToString("N2") @Unit
+                        <strong>Ukupno:</strong> Data.Sum(x => x.Value).ToString("N2") @Unit
+                        | <strong>Prosek:</strong> Data.Average(x => x.Value).ToString("N2") @Unit
                     </small>
                 </div>
             }
