@@ -3,6 +3,7 @@ using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Implementations.IzvestajService;
 using FruitSysWeb.Services.Implementations.ExportService;
 using FruitSysWeb.Models;
+using FruitSysWeb.Extensions; // DODATO: Extension methods
 using ApexCharts;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,19 +15,10 @@ builder.Services.AddServerSideBlazor();
 // DODANO: ApexCharts.NET servisi - možda nije potrebno u .NET 8 sa @rendermode
 // builder.Services.AddApexCharts();
 
-// POSTOJEĆI servisi
-builder.Services.AddScoped<DatabaseService>();
+// REFACTORED: Koristimo extension metodu za sve FruitSys servise
+builder.Services.AddFruitSysServices();
 
-// AŽURIRANE registracije postojećih servisa
-builder.Services.AddScoped<IProizvodnjaService, FruitSysWeb.Services.Implementations.IzvestajService.ProizvodnjaService>();
-builder.Services.AddScoped<IFinansijeService, FruitSysWeb.Services.Implementations.IzvestajService.FinansijeService>();
-builder.Services.AddScoped<IMagacinLagerService, FruitSysWeb.Services.Implementations.IzvestajService.MagacinLagerService>();
-builder.Services.AddScoped<IExportService, FruitSysWeb.Services.Implementations.ExportService.SimpleExportService>();
-builder.Services.AddScoped<IKomitentService, KomitentService>();
-builder.Services.AddScoped<IArtikalService, ArtikalService>();
-
-// DODANO: Registracija ArtikalKlasifikacijaService
-builder.Services.AddScoped<IArtikalKlasifikacijaService, ArtikalKlasifikacijaService>();
+// OSTALI servisi ostaju isti
 
 // ISPRAVLJENA registracija DashboardService - bez HttpClient
 builder.Services.AddScoped<IDashboardService, DashboardService>();

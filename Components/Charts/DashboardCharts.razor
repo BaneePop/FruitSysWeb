@@ -6,25 +6,22 @@
 @using FruitSysWeb.Services
 @using FruitSysWeb.Services.Models.Requests
 @using FruitSysWeb.Models
-
+@using FruitSysWeb.Services.Core
 
 @inject IProizvodnjaService ProizvodnjaService
 @inject IMagacinLagerService MagacinLagerService
-@inject IDashboardService DashboardService
-@inject IArtikalService ArtikalService
-
-
-
+@inject ITypeMappingService TypeMapping
+@inject ILogger<DashboardCharts> Logger
 
 <style>
     .spin {
         animation: spin 1s linear infinite;
-        }
+    }
 
-        keyframes spin {
-            from { transform: rotate(0deg); }
-         to { transform: rotate(360deg); }
-        }
+    .keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
 
     .stat-item {
         padding: 1rem 0;
@@ -35,7 +32,7 @@
         border-right: none;
     }
 
-    media (max-width: 768px) {
+    .media (max-width: 768px) {
         .stat-item {
             border-right: none;
             border-bottom: 1px solid #dee2e6;
@@ -49,8 +46,6 @@
         }
     }
 </style>
-
-@inject ILogger<DashboardCharts> Logger
 
 <div class="row mb-4">
     <div class="col-12">
@@ -186,37 +181,31 @@
                 <div class="row text-center">
                     <div class="col-md-2">
                         <div class="stat-item">
-                            <strong class="text-success">@(UkupnoKupciKg.ToString("N0"))</strong>
+                            <strong class="text-success">@TypeMapping.FormatDecimal(UkupnoKupciKg)</strong>
                             <small class="d-block text-muted">Ukupno kupci (kg)</small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="stat-item">
-                            <strong class="text-danger">@(TopDobavljaciData?.Sum(x => x.Value).ToString("N0") ?? "0")</strong>
+                            <strong class="text-danger">@TypeMapping.FormatDecimal(UkupnoDobavljaciKg)</strong>
                             <small class="d-block text-muted">Ukupno dobavljači (kg)</small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="stat-item">
-                            <strong class="text-primary">@(UkupnoProizvodnjaKg.ToString("N0"))</strong>
+                            <strong class="text-primary">@TypeMapping.FormatDecimal(UkupnoProizvodnjaKg)</strong>
                             <small class="d-block text-muted">Ukupno proizvodnja (kg)</small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="stat-item">
-                            <strong class="text-info">@(SirovineData?.Sum(x => x.Value).ToString("N0") ?? "0")</strong>
+                            <strong class="text-info">@TypeMapping.FormatDecimal(UkupnoSirovineKg)</strong>
                             <small class="d-block text-muted">Sirovine (kg)</small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="stat-item">
-                            <strong class="text-warning">@(GotoviProizvodiData?.Sum(x => x.Value).ToString("N0") ?? "0")</strong>
-                            <small class="d-block text-muted">Gotovi proizvodi (kg)</small>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="stat-item">
-                            <strong class="text-secondary">@((KutijeData?.Sum(x => x.Value) ?? 0) + (KesaData?.Sum(x => x.Value) ?? 0)).ToString("N0")</strong>
+                            <strong class="text-secondary">@TypeMapping.FormatDecimal(UkupnoAmbalazeKom)</strong>
                             <small class="d-block text-muted">Ambalaža (kom)</small>
                         </div>
                     </div>
@@ -238,7 +227,10 @@
     
     // Statistike za Brzu Statistiku
     private decimal UkupnoKupciKg = 0;
+    private decimal UkupnoDobavljaciKg = 0;
     private decimal UkupnoProizvodnjaKg = 0;
+    private decimal UkupnoSirovineKg = 0;
+    private decimal UkupnoAmbalazeKom = 0;
 
     // Loading States
     private bool IsLoadingKupci = false;
@@ -292,11 +284,11 @@
                 RefreshSirovine(),
                 RefreshGotovi(),
                 RefreshKutije(),
-                RefreshKesa(),
-                RefreshStatistike()
+                RefreshKesa()
             };
 
             await Task.WhenAll(tasks);
+            await RefreshStatistike();  // Izvršiti na kraju kada su svi podaci učitani
         }
         catch (Exception ex)
         {
@@ -405,7 +397,7 @@
         {
             await Task.Delay(250);
             var data = await MagacinLagerService.UcitajStrukturuSirovina();
-            SirovineData = ChartDataHelper.FromDictionary(data, 10); // Sve sirovine
+            SirovineData = ChartDataHelper.FromDictionary(data, 5); // LIMIT 5 za čitljivost
             SirovineData = ChartDataHelper.TruncateLabels(SirovineData, 15);
         }
         catch (Exception ex)
@@ -433,7 +425,7 @@
         {
             await Task.Delay(300);
             var data = await MagacinLagerService.UcitajStrukturuGotovihProizvoda();
-            GotoviProizvodiData = ChartDataHelper.FromDictionary(data, 10); // Svi gotovi proizvodi
+            GotoviProizvodiData = ChartDataHelper.FromDictionary(data, 5); // LIMIT 5 za čitljivost
             GotoviProizvodiData = ChartDataHelper.TruncateLabels(GotoviProizvodiData, 15);
         }
         catch (Exception ex)
@@ -461,7 +453,7 @@
         {
             await Task.Delay(350);
             var data = await MagacinLagerService.UcitajStrukturuKutija();
-            KutijeData = ChartDataHelper.FromDictionary(data, 10);
+            KutijeData = ChartDataHelper.FromDictionary(data, 5); // LIMIT 5 za čitljivost
             KutijeData = ChartDataHelper.TruncateLabels(KutijeData, 15);
         }
         catch (Exception ex)
@@ -489,7 +481,7 @@
         {
             await Task.Delay(400);
             var data = await MagacinLagerService.UcitajStrukturuKesa();
-            KesaData = ChartDataHelper.FromDictionary(data, 10);
+            KesaData = ChartDataHelper.FromDictionary(data, 5); // LIMIT 5 za čitljivost
             KesaData = ChartDataHelper.TruncateLabels(KesaData, 15);
         }
         catch (Exception ex)
@@ -509,12 +501,23 @@
     {
         try
         {
-            // Ukupno kupci kg - suma iz Top 5 Kupaca
-            var topKupciData = await ProizvodnjaService.UcitajTopKupcePoKilogramima(StatistikaFilter);
-            UkupnoKupciKg = topKupciData?.Sum(x => x.Value) ?? 0;
+            // ✅ ISPRAVKA: Prave ukupne vrednosti
             
-            // Ukupno proizvodnja kg - ukupna proizvodnja gotovih proizvoda
+            // 1. Ukupno kupci kg - UKUPNA PRODAJA (ne samo top 5)
+            var ukupnaProdaja = await ProizvodnjaService.UcitajUkupnuProizvodnju(StatistikaFilter);
+            UkupnoKupciKg = ukupnaProdaja;
+            
+            // 2. Ukupno dobavljači kg - iz chart podataka
+            UkupnoDobavljaciKg = TopDobavljaciData?.Sum(x => x.Value) ?? 0;
+            
+            // 3. Ukupno proizvodnja kg - ukupna proizvodnja
             UkupnoProizvodnjaKg = await ProizvodnjaService.UcitajUkupnuProizvodnju(StatistikaFilter);
+            
+            // 4. Sirovine kg - suma iz chart podataka
+            UkupnoSirovineKg = SirovineData?.Sum(x => x.Value) ?? 0;
+            
+            // 5. Ambalaža kom - UKUPNO kutije + kese (NE gotovi proizvodi)
+            UkupnoAmbalazeKom = (KutijeData?.Sum(x => x.Value) ?? 0) + (KesaData?.Sum(x => x.Value) ?? 0);
             
             StateHasChanged();
         }

@@ -43,6 +43,19 @@ namespace FruitSysWeb.Constants
             public const string CSV_MIME_TYPE = "text/csv";
         }
 
+        // KOMITENT TIPOVI - centralizovano
+        public static readonly Dictionary<string, string> KomitentTipovi = new()
+        {
+            { "kupac", "Kupac" },
+            { "dobavljac", "Dobavljač" },
+            { "proizvodjac", "Proizvođač" },
+            { "otkupljivac", "Otkupljivač" }
+        };
+
+        // SHORTHAND PROPERTIES za često korišćene konstante
+        public static string ExcelMimeType => Export.EXCEL_MIME_TYPE;
+        public static string PdfMimeType => Export.PDF_MIME_TYPE;
+
         // UI KONSTANTE
         public static class UI
         {
@@ -216,7 +229,7 @@ namespace FruitSysWeb.Constants
         /// <summary>
         /// Kreira default datumski opseg (poslednji mesec)
         /// </summary>
-        public static (DateTime OdDatum, DateTime DoDatum) GetDefaultDateRange()
+        public static (DateTime startDate, DateTime endDate) GetDefaultDateRange()
         {
             var today = DateTime.Today;
             var fromDate = today.AddDays(-Business.DEFAULT_DATE_RANGE_DAYS);

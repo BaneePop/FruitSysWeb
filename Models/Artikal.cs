@@ -6,21 +6,24 @@ namespace FruitSysWeb.Models
     {
         [Display(Name = "ID")]
         public long Id { get; set; }
-        
+
         [Display(Name = "Naziv")]
         public string Naziv { get; set; } = string.Empty;
-        
+
         [Display(Name = "Tip")]
         public int Tip { get; set; }
-        
+
         [Display(Name = "Tip naziv")]
         public string TipNaziv => GetTipNaziv(Tip);
-        
+
         [Display(Name = "Jedinica mere ID")]
         public int? JedinicaMereID { get; set; }
-        
+
         [Display(Name = "Datum kreiranja")]
         public DateTime? Kreirano { get; set; }
+
+        [Display(Name = "Tip naziv")]
+        public string AmbalazaTip => GetAmbalazaTip(Tip);
 
         private static string GetTipNaziv(int tip)
         {
@@ -31,6 +34,18 @@ namespace FruitSysWeb.Models
                 3 => "Potrosni materijal",
                 4 => "Gotova roba",
                 5 => "Oprema",
+                _ => $"Tip {tip}"
+            };
+        }
+        
+        private static string GetAmbalazaTip(int tip)
+        {
+            return tip switch
+            {
+                1 => "Gajba",
+                2 => "Kesa",
+                3 => "Kutija",
+                4 => "Paleta",
                 _ => $"Tip {tip}"
             };
         }

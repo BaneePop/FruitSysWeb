@@ -5645,19 +5645,19 @@
     ]
   },
   "packageFolders": {
-    "/Users/nikola/.nuget/packages/": {}
+    "/Users/Bane/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/nikola/FruitSysWeb/FruitSysWeb.csproj",
+      "projectUniqueName": "/Users/Bane/FruitSysWeb/FruitSysWeb.csproj",
       "projectName": "FruitSysWeb",
-      "projectPath": "/Users/nikola/FruitSysWeb/FruitSysWeb.csproj",
-      "packagesPath": "/Users/nikola/.nuget/packages/",
-      "outputPath": "/Users/nikola/FruitSysWeb/obj/",
+      "projectPath": "/Users/Bane/FruitSysWeb/FruitSysWeb.csproj",
+      "packagesPath": "/Users/Bane/.nuget/packages/",
+      "outputPath": "/Users/Bane/FruitSysWeb/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/Users/nikola/.nuget/NuGet/NuGet.Config"
+        "/Users/Bane/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"

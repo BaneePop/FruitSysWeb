@@ -1,3 +1,5 @@
+using FruitSysWeb.Services.Core;
+
 namespace FruitSysWeb.Constants
 {
     /// <summary>
@@ -10,7 +12,7 @@ namespace FruitSysWeb.Constants
         public const int KREIRAN = 1;      // Kreiran
         public const int OTVOREN = 2;      // Otvoren (aktivan)
         public const int ZATVOREN = 3;     // Zatvoren/Završen
-        public const int ODUSTANO = 4;     // Otkazan/Odustano
+        public const int STORNO = 4;       // ✅ ISPRAVKA: Storno umesto Odustano
 
         // DISPLAY NAZIVI - Kako se prikazuju u UI
         public static readonly Dictionary<int, string> DisplayNames = new()
@@ -18,7 +20,7 @@ namespace FruitSysWeb.Constants
             { KREIRAN, "Kreiran" },
             { OTVOREN, "Otvoren" },
             { ZATVOREN, "Zatvoren" },
-            { ODUSTANO, "Odustano" }
+            { STORNO, "Storno" }            // ✅ ISPRAVKA: "Storno"
         };
 
         // BADGE CSS KLASE - Bootstrap badge stilovi
@@ -27,7 +29,7 @@ namespace FruitSysWeb.Constants
             { KREIRAN, "bg-info text-white" },       // Plava - novi dokument
             { OTVOREN, "bg-success text-white" },    // Zelena - aktivan
             { ZATVOREN, "bg-secondary text-white" }, // Siva - završen
-            { ODUSTANO, "bg-danger text-white" }     // Crvena - otkazan
+            { STORNO, "bg-danger text-white" }       // ✅ Crvena - storno
         };
 
         // IKONE - Bootstrap ikone za statuse
@@ -36,26 +38,26 @@ namespace FruitSysWeb.Constants
             { KREIRAN, "bi-file-plus" },      // Novi fajl
             { OTVOREN, "bi-folder2-open" },   // Otvoren folder
             { ZATVOREN, "bi-check-circle" },  // Čekirana
-            { ODUSTANO, "bi-x-circle" }       // X krug
+            { STORNO, "bi-x-circle" }         // ✅ X krug za storno
         };
 
         // DROPDOWN OPCIJE - Za select elementi
         public static readonly List<DropdownOption> DropdownOptions = new()
         {
-            new DropdownOption { Value = "", Text = "Svi statusi" }, // Default opcija
-            new DropdownOption { Value = KREIRAN.ToString(), Text = DisplayNames[KREIRAN] },
-            new DropdownOption { Value = OTVOREN.ToString(), Text = DisplayNames[OTVOREN] },
-            new DropdownOption { Value = ZATVOREN.ToString(), Text = DisplayNames[ZATVOREN] },
-            new DropdownOption { Value = ODUSTANO.ToString(), Text = DisplayNames[ODUSTANO] }
+            new DropdownOption("", "Svi statusi"), // Default opcija
+            new DropdownOption(KREIRAN.ToString(), DisplayNames[KREIRAN]),
+            new DropdownOption(OTVOREN.ToString(), DisplayNames[OTVOREN]),
+            new DropdownOption(ZATVOREN.ToString(), DisplayNames[ZATVOREN]),
+            new DropdownOption(STORNO.ToString(), DisplayNames[STORNO])   // ✅ Storno
         };
 
         // STATUSИ GRUPA - Za filtriranje
         public static readonly Dictionary<string, List<int>> StatusGroups = new()
         {
             { "Aktivni", new List<int> { KREIRAN, OTVOREN } },
-            { "Završeni", new List<int> { ZATVOREN, ODUSTANO } },
+            { "Završeni", new List<int> { ZATVOREN, STORNO } },    // ✅ STORNO umesto ODUSTANO
             { "U toku", new List<int> { KREIRAN, OTVOREN } },
-            { "Finalni", new List<int> { ZATVOREN, ODUSTANO } }
+            { "Finalni", new List<int> { ZATVOREN, STORNO } }      // ✅ STORNO umesto ODUSTANO
         };
 
         // HELPER METODE
@@ -101,11 +103,11 @@ namespace FruitSysWeb.Constants
         }
 
         /// <summary>
-        /// Vraća da li je status završen (ZATVOREN ili ODUSTANO)
+        /// Vraća da li je status završen (ZATVOREN ili STORNO)
         /// </summary>
         public static bool IsClosedStatus(int status)
         {
-            return status == ZATVOREN || status == ODUSTANO;
+            return status == ZATVOREN || status == STORNO;    // ✅ STORNO umesto ODUSTANO
         }
 
         /// <summary>
@@ -118,7 +120,7 @@ namespace FruitSysWeb.Constants
                 KREIRAN => OTVOREN,
                 OTVOREN => ZATVOREN,
                 ZATVOREN => null,     // Završen - nema sledeći
-                ODUSTANO => null,     // Otkazan - nema sledeći
+                STORNO => null,       // ✅ Storno - nema sledeći
                 _ => null
             };
         }
@@ -133,7 +135,7 @@ namespace FruitSysWeb.Constants
                 KREIRAN => null,      // Prvi status
                 OTVOREN => KREIRAN,
                 ZATVOREN => OTVOREN,
-                ODUSTANO => OTVOREN,  // Može se otkazati iz OTVOREN
+                STORNO => OTVOREN,    // ✅ Može se storni iz OTVOREN
                 _ => null
             };
         }

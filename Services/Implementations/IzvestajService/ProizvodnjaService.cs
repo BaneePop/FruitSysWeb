@@ -174,21 +174,22 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
         public async Task<Dictionary<string, decimal>> UcitajTopKupcePoKilogramima(FilterRequest filterRequest)
         {
-            try
-            {
-                var sql = new StringBuilder();
-                sql.Append(@"
-                    SELECT 
-                        COALESCE(vpp.Komitent, 'Nepoznato') as Komitent,
-                        SUM(ABS(vpp.Kolicina)) as UkupnaKolicina
-                    FROM vPreradaPregled vpp
-                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
-                    LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
-                    WHERE a.MagacinID = 6  -- GOTOVI PROIZVODI (IZLAZ - KUPCI)
-                      AND vpp.Kolicina < 0  -- NEGATIVNA KOLICINA = IZLAZ
-                      AND EXISTS (SELECT 1 FROM Artikal ar WHERE ar.ID = vpp.ArtikalID AND ar.Aktivno = 1)
-                      AND vpp.Komitent IS NOT NULL
-                      AND vpp.Komitent != ''
+        try
+        {
+        var sql = new StringBuilder();
+        sql.Append(@"
+        SELECT 
+        COALESCE(k.Naziv, vpp.Komitent, 'Nepoznato') as Komitent,
+        SUM(ABS(vpp.Kolicina)) as UkupnaKolicina
+        FROM vPreradaPregled vpp
+        LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+        LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
+        LEFT JOIN Komitent k ON vpp.KomitentID = k.ID
+        WHERE a.MagacinID = 6  -- GOTOVI PROIZVODI
+        AND vpp.Kolicina < 0  -- NEGATIVNA KOLICINA = PRODAJA/IZLAZ
+        AND a.Aktivno = 1
+        AND vpp.Komitent IS NOT NULL
+          AND vpp.Komitent != ''
                 ");
 
                 var parameters = new Dictionary<string, object>();
@@ -206,10 +207,11 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 }
 
                 sql.Append(@"
-                    GROUP BY vpp.Komitent, vpp.KomitentID
-                    ORDER BY UkupnaKolicina DESC
+                GROUP BY COALESCE(k.ID, vpp.KomitentID), COALESCE(k.Naziv, vpp.Komitent)
+                HAVING SUM(ABS(vpp.Kolicina)) > 0
+                ORDER BY UkupnaKolicina DESC
                     LIMIT 5
-                ");
+            ");
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
                 
@@ -227,21 +229,22 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
         public async Task<Dictionary<string, decimal>> UcitajTopDobavljacePoKilogramima(FilterRequest filterRequest)
         {
-            try
-            {
-                var sql = new StringBuilder();
-                sql.Append(@"
-                    SELECT 
-                        COALESCE(vpp.Komitent, 'Nepoznato') as Komitent,
-                        SUM(ABS(vpp.Kolicina)) as UkupnaKolicina
-                    FROM vPreradaPregled vpp
-                    LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
-                    LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
-                    WHERE a.MagacinID IN (2, 3)  -- SVEZA ROBA I SIROVINE (ULAZ - DOBAVLJACI)
-                      AND vpp.Kolicina > 0  -- POZITIVNA KOLICINA = ULAZ
-                      AND EXISTS (SELECT 1 FROM Artikal ar WHERE ar.ID = vpp.ArtikalID AND ar.Aktivno = 1)
-                      AND vpp.Komitent IS NOT NULL
-                      AND vpp.Komitent != ''
+        try
+        {
+        var sql = new StringBuilder();
+        sql.Append(@"
+        SELECT 
+        COALESCE(k.Naziv, vpp.Komitent, 'Nepoznato') as Komitent,
+        SUM(ABS(vpp.Kolicina)) as UkupnaKolicina
+        FROM vPreradaPregled vpp
+        LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
+        LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
+        LEFT JOIN Komitent k ON vpp.KomitentID = k.ID
+        WHERE a.MagacinID IN (2, 3)  -- SVEZA ROBA I SIROVINE
+        AND vpp.Kolicina > 0  -- POZITIVNA KOLICINA = NABAVKA/ULAZ
+        AND a.Aktivno = 1
+        AND vpp.Komitent IS NOT NULL
+          AND vpp.Komitent != ''
                 ");
 
                 var parameters = new Dictionary<string, object>();
@@ -259,10 +262,11 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 }
 
                 sql.Append(@"
-                    GROUP BY vpp.Komitent, vpp.KomitentID
-                    ORDER BY UkupnaKolicina DESC
+                GROUP BY COALESCE(k.ID, vpp.KomitentID), COALESCE(k.Naziv, vpp.Komitent)
+                HAVING SUM(ABS(vpp.Kolicina)) > 0
+                ORDER BY UkupnaKolicina DESC
                     LIMIT 5
-                ");
+            ");
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
                 
@@ -396,8 +400,11 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         SUM(vpp.Kolicina) as UkupnaKolicina
                     FROM vPreradaPregled vpp
                     LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
-                    WHERE vpp.RpArtikalTip = 4  -- SAMO GOTOVI PROIZVODI
-                    AND EXISTS (SELECT 1 FROM Artikal a WHERE a.ID = vpp.ArtikalID AND a.Aktivno = 1)
+                    LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
+                    WHERE a.MagacinID = 6  -- SAMO GOTOVI PROIZVODI
+                    AND a.Aktivno = 1
+                    AND vpp.Komitent IS NOT NULL
+                    AND vpp.Komitent != ''
                 ");
 
                 var parameters = new Dictionary<string, object>();
@@ -416,7 +423,9 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 sql.Append(@"
                     GROUP BY vpp.Komitent, vpp.KomitentID
+                    HAVING SUM(vpp.Kolicina) > 0
                     ORDER BY UkupnaKolicina DESC
+                    LIMIT 10
                 ");
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
@@ -440,11 +449,13 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 var sql = new StringBuilder();
                 sql.Append(@"
                     SELECT 
-                        vpp.RpArtikalTip as Tip,
+                        a.MagacinID as Tip,
                         SUM(vpp.Kolicina) as UkupnaKolicina
                     FROM vPreradaPregled vpp
                     LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
-                    WHERE EXISTS (SELECT 1 FROM Artikal a WHERE a.ID = vpp.ArtikalID AND a.Aktivno = 1)
+                    LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
+                    WHERE a.Aktivno = 1
+                      AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
                 ");
 
                 var parameters = new Dictionary<string, object>();
@@ -462,7 +473,8 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 }
 
                 sql.Append(@"
-                    GROUP BY vpp.RpArtikalTip
+                    GROUP BY a.MagacinID
+                    HAVING SUM(vpp.Kolicina) > 0
                     ORDER BY UkupnaKolicina DESC
                 ");
 

@@ -12,22 +12,22 @@ namespace FruitSysWeb.Constants
         public const int AMBALAZA = 4;
         public const int POLUPROIZVODI = 5;               // Odbačena roba prilikom prerade
         public const int GOTOVA_ROBA = 6;
-        // ❌ ID 7 = Kalo i Rastur (NE RAČUNAJU SE!)
-        public const int POTROSNI_MATERIJAL = 8;          // Uslužni Lager Mlečni
+        public const int KALO_I_RASTUR = 7;              // Kalo i Rastur (koristiće se kasnije)
+        public const int USL_MLEKO = 8;                  // Uslužni Lager Mlečni
         public const int REPROMATERIJAL = 9;              // Lepljiva traka itd
         public const int DJUBRIVA = 10;
-        public const int TRGOVINA = 11;                   // Uslužni Lager Voće i Povrće  
-        public const int KLASE = 12;                      // Uslužni Lager Meso
+        public const int USL_VOCE = 11;                   // Uslužni Lager Voće i Povrće  
+        public const int USL_MESO = 12;                      // Uslužni Lager Meso
 
         /// <summary>
-        /// Lista svih validnih MagacinID vrednosti (osim 1 i 7)
+        /// Lista svih validnih MagacinID vrednosti (osim 1, uključujući 7 za buduće korišćenje)
         /// </summary>
-        public static readonly int[] ValidIds = { 2, 3, 4, 5, 6, 8, 9, 10, 11, 12 };
+        public static readonly int[] ValidIds = { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 
         /// <summary>
-        /// MagacinID vrednosti koje se NE računaju u kalkulacije
+        /// MagacinID vrednosti koje se trenutno NE računaju u kalkulacije
         /// </summary>
-        public static readonly int[] ExcludedIds = { 7 }; // Kalo i Rastur
+        public static readonly int[] ExcludedIds = { 7 }; // Kalo i Rastur (će se koristiti kasnije)
 
         /// <summary>
         /// Mapiranje MagacinID -> Display Name
@@ -37,30 +37,33 @@ namespace FruitSysWeb.Constants
             { SVEZA_ROBA, "Sveza Roba" },
             { SIROVINE, "Sirovine" },
             { AMBALAZA, "Ambalaza" },
-            { POLUPROIZVODI, "PoluProizvodi" },
+            { POLUPROIZVODI, "Polu Proizvod" },           // ✅ ISPRAVKA: "Polu Proizvod"
             { GOTOVA_ROBA, "Gotov Proizvod" },
-            { POTROSNI_MATERIJAL, "Usl. Mlečni" },
+            { KALO_I_RASTUR, "Kalo i Rastur" },           // ✅ DODANO: ID 7
+            { USL_MLEKO, "Usl.Mleko" },                   // ✅ ISPRAVKA: "Usl.Mleko"
             { REPROMATERIJAL, "Repromaterijal" },
             { DJUBRIVA, "Đubriva" },
-            { TRGOVINA, "Usl. Voće" },
-            { KLASE, "Usl. Meso" }
+            { USL_VOCE, "Usl. Voće" },
+            { USL_MESO, "Usl. Meso" }
         };
 
         /// <summary>
         /// Mapiranje MagacinID -> Bootstrap Badge Class
+        /// ✅ ISPRAVKE BOJA prema zahtevima
         /// </summary>
         public static readonly Dictionary<int, string> BadgeClasses = new()
         {
-            { SVEZA_ROBA, "bg-success" },
-            { SIROVINE, "bg-primary" },
-            { AMBALAZA, "bg-warning text-dark" },
-            { POLUPROIZVODI, "bg-secondary" },
-            { GOTOVA_ROBA, "bg-danger" },
-            { POTROSNI_MATERIJAL, "bg-info" },
-            { REPROMATERIJAL, "bg-light text-dark" },
-            { DJUBRIVA, "bg-success text-white" },
-            { TRGOVINA, "bg-warning" },
-            { KLASE, "bg-danger text-white" }
+            { SVEZA_ROBA, "bg-danger text-white" },       // ✅ CRVENA - Sveza Roba
+            { SIROVINE, "bg-primary text-white" },        // Plava - Sirovine
+            { AMBALAZA, "bg-warning text-dark" },         // Žuta - Ambalaza
+            { POLUPROIZVODI, "bg-secondary text-white" }, // Siva - Polu Proizvod
+            { GOTOVA_ROBA, "bg-success text-white" },     // ✅ ZELENA - Gotov Proizvod
+            { KALO_I_RASTUR, "bg-dark text-white" },     // Crna - Kalo i Rastur
+            { USL_MLEKO, "bg-info text-white" },          // Svetlo plava - Usl.Mleko
+            { REPROMATERIJAL, "bg-warning text-dark" },   // ✅ BRAON-ISH - Repromaterijal (koristi warning kao braon)
+            { DJUBRIVA, "bg-success text-white" },        // Zelena - Đubriva
+            { USL_VOCE, "bg-warning text-dark" },         // Žuta - Usl. Voće
+            { USL_MESO, "bg-danger text-white" }          // Crvena - Usl. Meso
         };
 
         /// <summary>
@@ -73,11 +76,12 @@ namespace FruitSysWeb.Constants
             { AMBALAZA, "bi-box" },
             { POLUPROIZVODI, "bi-recycle" },
             { GOTOVA_ROBA, "bi-box-seam" },
-            { POTROSNI_MATERIJAL, "bi-cup" },
+            { KALO_I_RASTUR, "bi-trash" },               // ✅ DODANO: Ikona za Kalo i Rastur
+            { USL_MLEKO, "bi-cup" },
             { REPROMATERIJAL, "bi-tools" },
             { DJUBRIVA, "bi-flower1" },
-            { TRGOVINA, "bi-shop" },
-            { KLASE, "bi-basket" }
+            { USL_VOCE, "bi-basket" },
+            { USL_MESO, "bi-basket3" }
         };
 
         /// <summary>

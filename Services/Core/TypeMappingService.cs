@@ -1,4 +1,9 @@
 using FruitSysWeb.Constants;
+using Microsoft.AspNetCore.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Globalization;
 
 namespace FruitSysWeb.Services.Core
 {
@@ -14,22 +19,41 @@ namespace FruitSysWeb.Services.Core
         string GetStatusBadgeClass(int status);
         string GetStatusDisplayName(int status);
         string GetStatusIcon(int status);
+        List<DropdownOption> GetStatusDropdownOptions();
         (string displayName, string badgeClass, string icon) GetDocumentStatus(int status);
 
         // Quantity status
         (string status, string badgeClass, string icon) GetQuantityStatus(decimal kolicina, decimal minimum = 10);
+        string GetQuantityStatusClass(string status);
 
-        // Formatting utilities
+        // Formatting utilities - ✅ IZMENJENI SRPSKI FORMATI
         string FormatDecimal(decimal value, int decimals = 2);
+        string FormatInteger(int value);
         string FormatDate(DateTime date);
+        string FormatDate(DateTime? date);
+        string FormatDateTime(DateTime dateTime);
+        string FormatCurrency(decimal value);              // ✅ SRPSKI FORMAT
+        string FormatWeight(decimal value);                // ✅ NOVI - kg format
         string GenerateExportFileName(string prefix, string extension);
+
+        // UI Helpers
+        string GetSaldoBadgeClass(decimal saldo);
+        MarkupString BuildDropdown(List<DropdownOption> options, string defaultText = "", string? selectedValue = null);
+        List<DropdownOption> GetFilteredMagacinOptions(params int[] excludeIds);
 
         // Generic dropdown builder
         List<DropdownOption> BuildDropdown<T>(IEnumerable<T> items, Func<T, string> valueSelector, Func<T, string> textSelector, string defaultText = "");
+        
+        // Additional methods needed by components
+        bool IsActiveStatus(int status);
+        List<string> GetChartColors(int count);
     }
 
     public class TypeMappingService : ITypeMappingService
     {
+        // ✅ SRPSKA KULTURA za formatiranje brojeva
+        private static readonly CultureInfo SrpskaCultura = new CultureInfo("sr-Latn-RS");
+
         /// <summary>
         /// Dobija Bootstrap badge klasu za MagacinID
         /// </summary>
@@ -58,6 +82,9 @@ namespace FruitSysWeb.Services.Core
 
             foreach (var magacinId in MagacinTypes.ValidIds)
             {
+                // ✅ Ne prikazuj Kalo i Rastur u dropdown-u (ID 7)
+                if (magacinId == MagacinTypes.KALO_I_RASTUR) continue;
+                
                 options.Add(new DropdownOption(
                     magacinId.ToString(),
                     MagacinTypes.GetDisplayName(magacinId)
@@ -147,19 +174,123 @@ namespace FruitSysWeb.Services.Core
         }
 
         /// <summary>
-        /// Formatira decimal sa određenim brojem decimala
+        /// ✅ FORMATIRA DECIMAL SA SRPSKIM FORMATOM (zarez za decimale, tačka za hiljade)
+        /// Format: 10.456,90
         /// </summary>
         public string FormatDecimal(decimal value, int decimals = 2)
         {
-            return value.ToString($"N{decimals}");
+            return value.ToString($"N{decimals}", SrpskaCultura);
         }
 
         /// <summary>
-        /// Formatira datum u srpskom formatu
+        /// ✅ FORMATIRA DATUM U SRPSKOM FORMATU: 19.09.2025
         /// </summary>
         public string FormatDate(DateTime date)
         {
-            return date == DateTime.MinValue ? "" : date.ToString("dd.MM.yyyy");
+            return date == DateTime.MinValue ? "" : date.ToString("dd.MM.yyyy", SrpskaCultura);
+        }
+
+        /// <summary>
+        /// ✅ FORMATIRA DATUM SA VREMENOM: 19.09.2025 14:30:15
+        /// </summary>
+        public string FormatDateTime(DateTime dateTime)
+        {
+            return dateTime.ToString("dd.MM.yyyy HH:mm:ss", SrpskaCultura);
+        }
+
+        /// <summary>
+        /// ✅ FORMATIRA OPCIONI DATUM
+        /// </summary>
+        public string FormatDate(DateTime? date)
+        {
+            return date?.ToString("dd.MM.yyyy", SrpskaCultura) ?? "";
+        }
+
+        /// <summary>
+        /// ✅ FORMATIRA INTEGER SA SRPSKIM FORMATOM
+        /// </summary>
+        public string FormatInteger(int value)
+        {
+            return value.ToString("N0", SrpskaCultura);
+        }
+
+        /// <summary>
+        /// ✅ FORMATIRA NOVČANE VREDNOSTI: 1.245.455,88 RSD
+        /// </summary>
+        public string FormatCurrency(decimal value)
+        {
+            return $"{value.ToString("N2", SrpskaCultura)} RSD";
+        }
+
+        /// <summary>
+        /// ✅ NOVI - FORMATIRA TEŽINU: 10.456,90 kg
+        /// </summary>
+        public string FormatWeight(decimal value)
+        {
+            return $"{value.ToString("N2", SrpskaCultura)} kg";
+        }
+
+        /// <summary>
+        /// Dobija status dropdown opcije
+        /// </summary>
+        public List<DropdownOption> GetStatusDropdownOptions()
+        {
+            return DocumentStatus.DropdownOptions;
+        }
+
+        /// <summary>
+        /// Dobija CSS klasu za količinu status
+        /// </summary>
+        public string GetQuantityStatusClass(string status)
+        {
+            return status.ToLower() switch
+            {
+                "positive" => "text-success",
+                "negative" => "text-danger",
+                "warning" => "text-warning",
+                "info" => "text-info",
+                _ => "text-muted"
+            };
+        }
+
+        /// <summary>
+        /// Dobija saldo badge CSS klasu
+        /// </summary>
+        public string GetSaldoBadgeClass(decimal saldo)
+        {
+            if (saldo > 0) return "bg-success";
+            if (saldo < 0) return "bg-danger";
+            return "bg-secondary";
+        }
+
+        /// <summary>
+        /// Kreira HTML dropdown sa opcijama
+        /// </summary>
+        public MarkupString BuildDropdown(List<DropdownOption> options, string defaultText = "", string? selectedValue = null)
+        {
+            var html = "";
+            
+            if (!string.IsNullOrEmpty(defaultText))
+            {
+                html += $"<option value=\"\">{defaultText}</option>";
+            }
+            
+            foreach (var option in options)
+            {
+                var selected = option.Value == selectedValue ? "selected" : "";
+                html += $"<option value=\"{option.Value}\" {selected}>{option.Text}</option>";
+            }
+            
+            return new MarkupString(html);
+        }
+
+        /// <summary>
+        /// Dobija filtrirane magacin opcije
+        /// </summary>
+        public List<DropdownOption> GetFilteredMagacinOptions(params int[] excludeIds)
+        {
+            var allOptions = GetMagacinDropdownOptions();
+            return allOptions.Where(o => !excludeIds.Contains(int.TryParse(o.Value, out int id) ? id : 0)).ToList();
         }
 
         /// <summary>
@@ -191,6 +322,34 @@ namespace FruitSysWeb.Services.Core
             }
 
             return options;
+        }
+
+        /// <summary>
+        /// Proverava da li je status aktivan
+        /// </summary>
+        public bool IsActiveStatus(int status)
+        {
+            return DocumentStatus.IsActiveStatus(status);
+        }
+
+        /// <summary>
+        /// Vraća chart boje za grafike
+        /// </summary>
+        public List<string> GetChartColors(int count)
+        {
+            var colors = new List<string>
+            {
+                "#198754", "#0d6efd", "#ffc107", "#dc3545", "#6f42c1",
+                "#fd7e14", "#20c997", "#e83e8c", "#6c757d", "#495057"
+            };
+            
+            var result = new List<string>();
+            for (int i = 0; i < count; i++)
+            {
+                result.Add(colors[i % colors.Count]);
+            }
+            
+            return result;
         }
     }
 

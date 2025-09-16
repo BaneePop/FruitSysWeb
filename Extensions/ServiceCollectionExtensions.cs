@@ -30,6 +30,10 @@ namespace FruitSysWeb.Extensions
             services.AddScoped<IArtikalService, ArtikalService>();
             services.AddScoped<IArtikalKlasifikacijaService, ArtikalKlasifikacijaService>();
             services.AddScoped<IExportService, SimpleExportService>();
+            
+            // NOVO: Prerada i Ulaz-Izlaz servisi
+            services.AddScoped<IPreradaService, PreradaService>();
+            services.AddScoped<IUlazIzlazService, UlazIzlazService>();
 
             return services;
         }

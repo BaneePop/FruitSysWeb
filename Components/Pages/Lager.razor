@@ -550,9 +550,9 @@
         return lagerStanje
             .Where(x => {
                 var magacinId = GetArtikalTipAsInt(x.Tip);
-                return magacinId == MagacinTypes.POTROSNI_MATERIJAL ||  // 8
-                       magacinId == MagacinTypes.TRGOVINA ||            // 11
-                       magacinId == MagacinTypes.KLASE;                 // 12
+                return magacinId == MagacinTypes.USL_MLEKO ||  // 8
+                       magacinId == MagacinTypes.USL_VOCE ||            // 11
+                       magacinId == MagacinTypes.USL_MESO;                 // 12
             })
             .Sum(x => x.Kolicina);
     }

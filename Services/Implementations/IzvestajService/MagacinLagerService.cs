@@ -82,7 +82,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
                 
                 return rezultat.ToDictionary(
-                    x => (string)x.BaseArtikal ?? "Nepoznato",
+                    x => (string)x.Artikal ?? "Nepoznato",
                     x => (decimal)x.UkupnaKolicina
                 );
             }

@@ -1,16 +1,18 @@
 @page "/"
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
-
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
 @using FruitSysWeb.Components.Charts
 @using FruitSysWeb.Components.Shared.Layout
+@using FruitSysWeb.Services.Core
+
 @inject IFinansijeService FinansijeService
 @inject IProizvodnjaService ProizvodnjaService
 @inject IMagacinLagerService LagerService
 @inject IExportService exportService
 @inject NavigationManager NavigationManager
+@inject ITypeMappingService TypeMapping
 
 <style>
     .dashboard-grid {
@@ -105,12 +107,12 @@
             <div class="quick-action-desc">Stanje sirovina i gotovih proizvoda</div>
         </div>
 
-        <div class="quick-action" @onclick="NavigateToIzvjestaji">
+        <div class="quick-action" @onclick="NavigateToTest">
             <div class="quick-action-icon">
                 <i class="bi bi-clipboard-data"></i>
             </div>
-            <div class="quick-action-title">Izveštaje</div>
-            <div class="quick-action-desc">Detaljni poslovni izveštaje</div>
+            <div class="quick-action-title">TypeMapping Test</div>
+            <div class="quick-action-desc">Test refaktorisanih komponenti</div>
         </div>
     </div>
 
@@ -130,7 +132,6 @@
 
     <!-- Charts Section -->
     <DashboardCharts />
-
 
 </div>
 
@@ -182,8 +183,8 @@
         NavigationManager.NavigateTo("/lager");
     }
 
-    private void NavigateToIzvjestaji()
+    private void NavigateToTest()
     {
-        NavigationManager.NavigateTo("/izvjestaji");
+        NavigationManager.NavigateTo("/test-mapping");
     }
 }

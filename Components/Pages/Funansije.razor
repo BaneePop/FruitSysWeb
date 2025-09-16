@@ -5,12 +5,14 @@
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
 @using FruitSysWeb.Models
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Constants
 @inject IFinansijeService FinansijeService
 @inject IExportService ExportService
 @inject IKomitentService KomitentService
 @inject IArtikalService ArtikalService
+@inject ITypeMappingService TypeMapping
 @inject IJSRuntime JSRuntime
-<!-- Isti CSS stilovi -->
 
 <!-- Header sa saldo na vrhu -->
 <div class="bg-primary text-white py-3 mb-4">
@@ -26,9 +28,9 @@
                 <span class="badge bg-light text-dark fs-6">
                     <i class="bi bi-database me-1"></i>@(podaci?.Count ?? 0) stavki
                 </span>
-                <!-- SALDO NA VRHU -->
-                <span class="badge @saldoBadgeClass ms-2 fs-6">
-                    Saldo: @UkupnoSaldo.ToString("N2") RSD
+                <!-- REFACTORED: Koristi TypeMapping za saldo badge -->
+                <span class="badge @TypeMapping.GetSaldoBadgeClass(UkupnoSaldo) ms-2 fs-6">
+                    Saldo: @TypeMapping.FormatDecimal(UkupnoSaldo) RSD
                 </span>
             </div>
         </div>
@@ -36,7 +38,7 @@
 </div>
 
 <div class="container-fluid">
-    <!-- AŽURIRANI Filter Section - uklonjen min/max saldo, dodani potrebni filteri -->
+    <!-- REFACTORED Filter Section -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-primary">
@@ -47,7 +49,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <!-- POSTOJEĆI filteri datuma -->
+                        <!-- Datum filteri - koristi SystemConstants -->
                         <div class="col-md-2 mb-3">
                             <label class="form-label fw-bold">Od datuma:</label>
                             <input type="date" class="form-control" value="@OdDatumValue" @onchange="OnOdDatumChanged" />
@@ -58,7 +60,7 @@
                             <input type="date" class="form-control" value="@DoDatumValue" @onchange="OnDoDatumChanged" />
                         </div>
 
-                        <!-- DODATO: Komitent filter (padajući meni) -->
+                        <!-- Komitent filter -->
                         <div class="col-md-2 mb-3">
                             <label class="form-label fw-bold">Komitent:</label>
                             <select class="form-select" @bind="filterRequest.KomitentId">
@@ -73,19 +75,19 @@
                             </select>
                         </div>
 
-                        <!-- AŽURIRANI Tip komitenta filter sa reaktivnim filtriranjem -->
+                        <!-- REFACTORED: Tip komitenta sa konstantama -->
                         <div class="col-md-2 mb-3">
                             <label class="form-label fw-bold">Tip komitenta:</label>
                             <select class="form-select" value="@filterRequest.KomitentTip" @onchange="OnKomitentTipChanged">
                                 <option value="">Svi tipovi</option>
-                                <option value="kupac">Kupac</option>
-                                <option value="dobavljac">Dobavljač</option>
-                                <option value="proizvodjac">Proizvođač</option>
-                                <option value="otkupljivac">Otkupljivač</option>
+                                @foreach (var option in SystemConstants.KomitentTipovi)
+                                {
+                                    <option value="@option.Key">@option.Value</option>
+                                }
                             </select>
                         </div>
 
-                        <!-- DODATO: Artikal filter (padajući meni) -->
+                        <!-- Artikal filter -->
                         <div class="col-md-2 mb-3">
                             <label class="form-label fw-bold">Artikal:</label>
                             <select class="form-select" @bind="filterRequest.ArtikalId">
@@ -100,26 +102,19 @@
                             </select>
                         </div>
 
-                        <!-- AŽURIRANI Tip artikla filter sa reaktivnim filtriranjem -->
+                        <!-- REFACTORED: Tip artikla sa centralizovanim dropdown -->
                         <div class="col-md-2 mb-3">
                             <label class="form-label fw-bold">Tip artikla:</label>
                             <select class="form-select" value="@filterRequest.Tip" @onchange="OnArtikalTipChanged"> 
-                                <option value="">Svi tipovi</option>
-                                <option value="2">Sveza Roba</option>
-                                <option value="3">Sirovine</option>
-                                <option value="4">Ambalaza</option>
-                                <option value="5">PoluProizvodi</option>
-                                <option value="6">Gotov Proizvod</option>
-                                <option value="8">Uslužni Lager Mlečni Proizvodi</option>
-                                <option value="9">Repromaterijal</option>
-                                <option value="10">Đubriva</option>
-                                <option value="11">Uslužni Lager Voće i Povrće</option>
-                                <option value="12">Uslužni Lager Meso</option>
+                                @TypeMapping.BuildDropdown(
+                                    TypeMapping.GetMagacinDropdownOptions(), 
+                                    "Svi tipovi", 
+                                    filterRequest.Tip
+                                )
                             </select>
                         </div>
 
-                        <!-- UKLONJENI: Min saldo i Max saldo filteri prema dokumentu -->
-
+                        <!-- Action buttons sa SystemConstants -->
                         <div class="col-md-12 mb-3">
                             <div class="d-flex gap-2">
                                 <button class="btn btn-primary" @onclick="UcitajPodatke">
@@ -153,37 +148,35 @@
         </div>
     </div>
 
-    <!-- AŽURIRANE Statistics Cards -->
+    <!-- REFACTORED Statistics Cards sa TypeMapping formatiranjem -->
     <div class="row mb-4 financial-section">
         <div class="col-md-3">
             <div class="dashboard-card">
                 <h6 class="text-muted">Ukupno Potražuje</h6>
-                <h4 class="positive-saldo">@UkupnoPotrazuje.ToString("N2") RSD</h4>
+                <h4 class="@TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(UkupnoPotrazuje) RSD</h4>
             </div>
         </div>
         <div class="col-md-3">
             <div class="dashboard-card">
                 <h6 class="text-muted">Ukupno Duguje</h6>
-                <h4 class="negative-saldo">@UkupnoDuguje.ToString("N2") RSD</h4>
+                <h4 class="@TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(UkupnoDuguje) RSD</h4>
             </div>
         </div>
         <div class="col-md-3">
             <div class="dashboard-card">
                 <h6 class="text-muted">Saldo (Potražuje - Duguje)</h6>
-                <h4 class="@GetSaldoClass(UkupnoSaldo)">@UkupnoSaldo.ToString("N2") RSD</h4>
+                <h4 class="@TypeMapping.GetSaldoBadgeClass(UkupnoSaldo)">@TypeMapping.FormatDecimal(UkupnoSaldo) RSD</h4>
             </div>
         </div>
         <div class="col-md-3">
             <div class="dashboard-card">
                 <h6 class="text-muted">Broj Stavki</h6>
-                <h4 class="text-primary">@(podaci?.Count ?? 0)</h4>
+                <h4 class="text-primary">@TypeMapping.FormatInteger(podaci?.Count ?? 0)</h4>
             </div>
         </div>
     </div>
 
-    <!-- Charts Section ostaje isto -->
-
-    <!-- AŽURIRANA Results Table - uklonjen Tip i Saldo, dodana Cena kolona -->
+    <!-- Results Table -->
     @if (podaci == null)
     {
         <div class="row">
@@ -215,7 +208,7 @@
                         <h5 class="card-title mb-0">
                             <i class="bi bi-list-check me-2"></i>
                             Finansijski podaci - Detaljni prikaz
-                            <span class="badge bg-primary ms-2">@podaci.Count stavki</span>
+                            <span class="badge bg-primary ms-2">@TypeMapping.FormatInteger(podaci.Count) stavki</span>
                         </h5>
                     </div>
                     <div class="card-body p-0">
@@ -225,34 +218,29 @@
                                     <tr>
                                         <th>Datum</th>
                                         <th>Komitent</th>
-                                        <!-- UKLONJENO: Tip kolona prema dokumentu -->
                                         <th>Dokument</th>
                                         <th>Artikal</th>
                                         <th class="text-end">Količina</th>
-                                        <!-- DODATO: Cena kolona posle količine -->
                                         <th class="text-end">Cena</th>
                                         <th class="text-end">Potražuje</th>
                                         <th class="text-end">Duguje</th>
-                                        <!-- UKLONJENO: Saldo kolona prema dokumentu -->
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var item in podaci)
                                     {
-                                        // ISPRAVKA: Cena se računa iz Duguje za prodaju, Potrazuje za kupovinu
                                         var cena = item.Kolicina != 0 ? 
                                             (item.Duguje > 0 ? item.Duguje / item.Kolicina : 
                                              item.Potrazuje > 0 ? item.Potrazuje / item.Kolicina : 0) : 0;
                                         <tr>
-                                            <td>@item.Datum?.ToString("dd.MM.yyyy")</td>
+                                            <td>@TypeMapping.FormatDate(item.Datum)</td>
                                             <td>@item.Komitent</td>
                                             <td>@item.Dokument</td>
                                             <td>@item.Artikal</td>
-                                            <td class="text-end">@item.Kolicina.ToString("N2")</td>
-                                            <!-- ISPRAVKA: Cena prema tipu transakcije -->
-                                            <td class="text-end">@cena.ToString("N2")</td>
-                                            <td class="text-end positive-saldo">@item.Potrazuje.ToString("N2")</td>
-                                            <td class="text-end negative-saldo">@item.Duguje.ToString("N2")</td>
+                                            <td class="text-end">@TypeMapping.FormatDecimal(item.Kolicina)</td>
+                                            <td class="text-end">@TypeMapping.FormatDecimal(cena)</td>
+                                            <td class="text-end @TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(item.Potrazuje)</td>
+                                            <td class="text-end @TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(item.Duguje)</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -260,13 +248,12 @@
                                     <tr>
                                         <th colspan="5" class="text-end">UKUPNO:</th>
                                         <th class="text-end">-</th>
-                                        <th class="text-end positive-saldo">@podaci.Sum(x => x.Potrazuje).ToString("N2")</th>
-                                        <th class="text-end negative-saldo">@podaci.Sum(x => x.Duguje).ToString("N2")</th>
+                                        <th class="text-end @TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(podaci.Sum(x => x.Potrazuje))</th>
+                                        <th class="text-end @TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(podaci.Sum(x => x.Duguje))</th>
                                     </tr>
-                                    <!-- DODATO: Saldo na dnu tabele -->
                                     <tr>
                                         <th colspan="6" class="text-end">SALDO (Potražuje - Duguje):</th>
-                                        <th class="text-end @GetSaldoClass(podaci.Sum(x => x.Saldo))" colspan="2">@podaci.Sum(x => x.Saldo).ToString("N2") RSD</th>
+                                        <th class="text-end @TypeMapping.GetSaldoBadgeClass(podaci.Sum(x => x.Saldo))" colspan="2">@TypeMapping.FormatDecimal(podaci.Sum(x => x.Saldo)) RSD</th>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -275,11 +262,10 @@
                     <div class="card-footer bg-light">
                         <div class="row">
                             <div class="col-md-6">
-                                Poslednje ažuriranje: @DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")
+                                Poslednje ažuriranje: @TypeMapping.FormatDateTime(DateTime.Now)
                             </div>
                             <div class="col-md-6 text-end">
-                                <!-- SALDO NA DNU -->
-                                Ukupno saldo: <strong class="@GetSaldoClass(UkupnoSaldo)">@UkupnoSaldo.ToString("N2") RSD</strong>
+                                Ukupno saldo: <strong class="@TypeMapping.GetSaldoBadgeClass(UkupnoSaldo)">@TypeMapping.FormatDecimal(UkupnoSaldo) RSD</strong>
                             </div>
                         </div>
                     </div>
@@ -298,7 +284,6 @@
     private Dictionary<string, decimal>? topKupci;
     private Dictionary<string, decimal>? topDobavljaci;
 
-    // DODATO: Liste za padajuće menije
     private List<Komitent>? komitentiLista;
     private List<Artikal>? artikliLista;
 
@@ -308,20 +293,18 @@
     private decimal UkupnoSaldo => ukupnoSaldo;
     private decimal UkupnoPotrazuje => ukupnoPotrazuje;
     private decimal UkupnoDuguje => ukupnoDuguje;
-    private string saldoBadgeClass => UkupnoSaldo > 0 ? "bg-success" : UkupnoSaldo < 0 ? "bg-danger" : "bg-secondary";
 
     protected override async Task OnInitializedAsync()
     {
-        var pocetakMeseca = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-        filterRequest.OdDatum = pocetakMeseca;
-        filterRequest.DoDatum = DateTime.Now;
+        // REFACTORED: Koristi SystemConstants za default date range
+        var dateRange = SystemConstants.GetDefaultDateRange();
+        filterRequest.OdDatum = dateRange.startDate;
+        filterRequest.DoDatum = dateRange.endDate;
         
-        // DODATO: Učitavanje lista za padajuće menije
         await UcitajListeZaFiltriranje();
         await UcitajPodatke();
     }
 
-    // DODATO: Metoda za učitavanje lista
     private async Task UcitajListeZaFiltriranje()
     {
         try
@@ -341,14 +324,11 @@
         }
     }
 
-    // NOVO: Reaktivni filter za tip komitenta
     private async Task OnKomitentTipChanged(ChangeEventArgs e)
     {
         filterRequest.KomitentTip = e.Value?.ToString();
-        // Resetuj komitent ID jer se menja tip
         filterRequest.KomitentId = null;
         
-        // Ažuriraj listu komitenata na osnovu novog tipa
         if (string.IsNullOrWhiteSpace(filterRequest.KomitentTip))
         {
             komitentiLista = await KomitentService.UcitajSveKomitente();
@@ -360,14 +340,11 @@
         StateHasChanged();
     }
 
-    // NOVO: Reaktivni filter za tip artikla
     private async Task OnArtikalTipChanged(ChangeEventArgs e)
     {
         filterRequest.Tip = e.Value?.ToString();
-        // Resetuj artikal ID jer se menja tip
         filterRequest.ArtikalId = null;
         
-        // Ažuriraj listu artikala na osnovu novog tipa
         if (string.IsNullOrWhiteSpace(filterRequest.Tip))
         {
             artikliLista = await ArtikalService.UcitajSveArtikle();
@@ -403,15 +380,12 @@
     {
         try
         {
-            // Učitaj osnovne podatke
             podaci = await FinansijeService.UcitajFinansijskiIzvestaj(filterRequest);
             ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filterRequest);
 
-            // Izračunaj ukupne vrednosti iz učitanih podataka
             ukupnoPotrazuje = podaci.Sum(x => x.Potrazuje);
             ukupnoDuguje = podaci.Sum(x => x.Duguje);
 
-            // Učitaj top kupce i dobavljače
             topKupci = await FinansijeService.UcitajTopKupce(filterRequest);
             topDobavljaci = await FinansijeService.UcitajTopDobavljace(filterRequest);
 
@@ -427,33 +401,27 @@
         }
     }
 
-    private string GetSaldoClass(decimal saldo)
-    {
-        return saldo > 0 ? "positive-saldo" : saldo < 0 ? "negative-saldo" : "neutral-saldo";
-    }
-
     private async Task ResetujFiltere()
     {
-        var pocetakMeseca = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        // REFACTORED: Koristi SystemConstants
+        var dateRange = SystemConstants.GetDefaultDateRange();
         filterRequest = new FilterRequest
         {
-            OdDatum = pocetakMeseca,
-            DoDatum = DateTime.Now
+            OdDatum = dateRange.startDate,
+            DoDatum = dateRange.endDate
         };
         
-        // Ponovo učitaj osnovne liste
         await UcitajListeZaFiltriranje();
         await UcitajPodatke();
     }
 
-    // Export metode ostaju iste
     private async Task ExportToExcel()
     {
         try
         {
             var excelData = ExportService.ExportToExcel(podaci);
-            var fileName = $"finansije_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-            await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            var fileName = SystemConstants.GenerateExportFileName("finansije", "xlsx");
+            await DownloadFile(excelData, fileName, SystemConstants.ExcelMimeType);
         }
         catch (Exception ex)
         {
@@ -466,8 +434,8 @@
         try
         {
             var pdfData = ExportService.ExportToPdf(podaci);
-            var fileName = $"finansije_export_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
-            await DownloadFile(pdfData, fileName, "application/pdf");
+            var fileName = SystemConstants.GenerateExportFileName("finansije", "pdf");
+            await DownloadFile(pdfData, fileName, SystemConstants.PdfMimeType);
         }
         catch (Exception ex)
         {

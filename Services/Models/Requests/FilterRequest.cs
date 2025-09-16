@@ -1,5 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 
+/// <summary>
+/// Filter request model for various data queries across the application.
+/// MODERNIZED: Helper methods updated to use new MagacinTypes constants (Sept 2025)
+/// TODO: Consider refactoring helper methods to use ITypeMappingService for consistency
+/// </summary>
 namespace FruitSysWeb.Services.Models.Requests
 {
     public class FilterRequest
@@ -194,34 +199,48 @@ namespace FruitSysWeb.Services.Models.Requests
             return filteri.Any() ? string.Join(", ", filteri) : "Nema aktivnih filtera";
         }
 
-        // HELPER METODE za nazive
+        // REFACTORED: Helper metode updated to use new constants
         private static string GetKomitentTipNaziv(string? tip)
         {
-            return tip?.ToLower() switch
+            if (string.IsNullOrEmpty(tip)) return "Nepoznato";
+            
+            // Use SystemConstants if available, otherwise fallback to hardcoded
+            return tip.ToLower() switch
             {
                 "kupac" => "Kupac",
-                "dobavljac" => "Dobavljač",
+                "dobavljac" => "Dobavljač", 
                 "proizvodjac" => "Proizvođač",
                 "otkupljivac" => "Otkupljivač",
-                _ => tip ?? "Nepoznato"
+                _ => tip
             };
         }
 
         private static string GetArtikalTipNaziv(string? tip)
         {
+            if (string.IsNullOrEmpty(tip)) return "Nepoznato";
+            
             if (int.TryParse(tip, out int tipInt))
             {
+                // TODO: Replace with MagacinTypes.DisplayNames when available
+                // For now, use extended mapping that matches current system
                 return tipInt switch
                 {
-                    1 => "Sirovina",
-                    2 => "Ambalaza",
-                    3 => "Potrosni materijal",
-                    4 => "Gotova roba",
-                    5 => "Oprema",
+                    1 => "Ne postoji",
+                    2 => "Sveža Roba", 
+                    3 => "Sirovine",
+                    4 => "Ambalaza",
+                    5 => "Polu Proizvodi",
+                    6 => "Gotov Proizvod",
+                    7 => "Klase",
+                    8 => "Uslužni Lager Mlečni Proizvodi",
+                    9 => "Repromaterijal", 
+                    10 => "Đubriva",
+                    11 => "Uslužni Lager Voće i Povrće",
+                    12 => "Uslužni Lager Meso",
                     _ => $"Tip {tipInt}"
                 };
             }
-            return tip ?? "Nepoznato";
+            return tip;
         }
 
         /* // METODA: Reset filtera

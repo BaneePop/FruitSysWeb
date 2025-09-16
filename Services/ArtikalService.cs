@@ -107,13 +107,13 @@ namespace FruitSysWeb.Services
             {
                 var whereClause = "Aktivno = 1";
                 var parameters = new Dictionary<string, object>();
-                
+
                 if (!string.IsNullOrEmpty(pretraga))
                 {
                     whereClause += " AND Naziv LIKE @Pretraga";
                     parameters.Add("@Pretraga", $"%{pretraga}%");
                 }
-                
+
                 if (tip.HasValue)
                 {
                     whereClause += " AND Tip = @Tip";
@@ -134,6 +134,28 @@ namespace FruitSysWeb.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Greška pri učitavanju artikala po pretrazi i tipu: {ex.Message}");
+                return new List<Artikal>();
+            }
+
+        }
+        public async Task<List<Artikal>> UcitajAmbalazuPoTipu(int tip)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        ArtikalTip as Tip, Naziv, Tip, JedinicaMereID, Kreirano
+                    FROM Artikal
+                    WHERE Aktivno = 1 AND Tip = @Tip
+                    ORDER BY Naziv
+                ";
+
+                var rezultat = await _databaseService.QueryAsync<Artikal>(sql, new { Tip = tip });
+                return rezultat.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri učitavanju Ambalaze po tipu: {ex.Message}");
                 return new List<Artikal>();
             }
         }

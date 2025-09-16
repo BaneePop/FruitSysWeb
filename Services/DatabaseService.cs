@@ -52,6 +52,18 @@ namespace FruitSysWeb.Services
             return await connection.ExecuteAsync(sql, parameters);
         }
 
+        public async Task<T> QuerySingleAsync<T>(string sql, object? parameters = null)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+            {
+                throw new InvalidOperationException("Connection string is not configured.");
+            }
+
+            using var connection = new MySqlConnection(_connectionString);
+            await connection.OpenAsync();
+            return await connection.QuerySingleAsync<T>(sql, parameters);
+        }
+
         // DODANA METODA - ExecuteScalarAsync
         public async Task<T> ExecuteScalarAsync<T>(string sql, object? parameters = null)
         {

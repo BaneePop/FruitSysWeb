@@ -3,11 +3,14 @@
 @using Microsoft.AspNetCore.Components.Web
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Constants
 @using FruitSysWeb.Models
 @inject IProizvodnjaService ProizvodnjaService
 @inject IExportService ExportService
 @inject IKomitentService KomitentService
 @inject IArtikalKlasifikacijaService ArtikalKlasifikacijaService
+@inject ITypeMappingService TypeMapping
 @inject IJSRuntime JSRuntime
 
 <style>
@@ -45,6 +48,7 @@
     }
 </style>
 
+<!-- REFAKTORISAN HTML sa TypeMapping servisom -->
 <div class="container-fluid">
     <!-- Header -->
     <div class="bg-success text-white py-3 mb-4">
@@ -61,7 +65,7 @@
                         <i class="bi bi-list-ul me-1"></i>@brojUnikatanihNaloga naloga
                     </span>
                     <span class="badge bg-warning text-dark ms-2 fs-6">
-                        Ukupno: @ukupnaProizvodnja.ToString("N2") kg
+                        Ukupno: @TypeMapping.FormatDecimal(ukupnaGotovaRoba) kg
                     </span>
                 </div>
             </div>
@@ -155,12 +159,19 @@
         </div>
     </div>
 
-    <!-- Statistics Cards - DODATNI IZVEŠTAJ -->
+    <!-- Statistics Cards - ISPRAVKA: Ukupna sirovina i Gotova roba -->
     <div class="row mb-4 production-section">
         <div class="col-md-3">
             <div class="metric-card bg-primary text-white">
-                <h6>Ukupna proizvodnja</h6>
-                <h3>@ukupnaProizvodnja.ToString("N2") kg</h3>
+                <h6>Ukupna sirovina</h6>
+                <h3>@TypeMapping.FormatDecimal(ukupnaSirovina) kg</h3>
+                <small>za izabrani period</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card bg-success text-white">
+                <h6>Ukupna gotova roba</h6>
+                <h3>@TypeMapping.FormatDecimal(ukupnaGotovaRoba) kg</h3>
                 <small>za izabrani period</small>
             </div>
         </div>
@@ -178,16 +189,9 @@
                 <small>trenutno u radu</small>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="metric-card bg-success text-white">
-                <h6>Prosečna dnevna proizvodnja</h6>
-                <h3>@prosecnaDnevnaProizvodnja.ToString("N2") kg</h3>
-                <small>po danu</small>
-            </div>
-        </div>
     </div>
 
-    <!-- Charts and Analytics - DODATNI IZVEŠTAJ -->
+    <!-- Charts and Analytics -->
     @if (proizvodnjaPoArtiklima?.Any() == true || proizvodnjaPoKomitentima?.Any() == true)
     {
         <div class="row mb-4 production-section">
@@ -215,8 +219,8 @@
                                     {
                                         <tr>
                                             <td>@artikal.Key</td>
-                                            <td class="text-end fw-bold">@artikal.Value.ToString("N2")</td>
-                                            <td class="text-end">@((artikal.Value / ukupnoArtikli * 100).ToString("N1"))%</td>
+                                            <td class="text-end fw-bold">@TypeMapping.FormatDecimal(artikal.Value)</td>
+                                            <td class="text-end">@TypeMapping.FormatDecimal((artikal.Value / ukupnoArtikli * 100))%</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -253,8 +257,8 @@
                                     {
                                         <tr>
                                             <td>@komitent.Key</td>
-                                            <td class="text-end fw-bold">@komitent.Value.ToString("N2")</td>
-                                            <td class="text-end">@((komitent.Value / ukupnoKomitenti * 100).ToString("N1"))%</td>
+                                            <td class="text-end fw-bold">@TypeMapping.FormatDecimal(komitent.Value)</td>
+                                            <td class="text-end">@TypeMapping.FormatDecimal((komitent.Value / ukupnoKomitenti * 100))%</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -269,7 +273,7 @@
             </div>
         </div>
 
-        <!-- Analiza po tipovima artikala - DODATNI IZVEŠTAJ -->
+        <!-- Analiza po tipovima artikala -->
         @if (proizvodnjaPoTipovima?.Any() == true)
         {
             <div class="row mb-4 production-section">
@@ -281,26 +285,15 @@
                         <div class="row">
                             @foreach (var tip in proizvodnjaPoTipovima)
                             {
-                                var tipNaziv = tip.Key switch {
-                                    2 => "Sveza Roba",
-                                    3 => "Sirovine", 
-                                    4 => "Ambalaza",
-                                    5 => "PoluProizvodi",
-                                    6 => "Gotov Proizvod",
-                                    8 => "Usl. Mlečni",
-                                    9 => "Repromaterijal",
-                                    10 => "Đubriva",
-                                    11 => "Usl. Voće",
-                                    12 => "Usl. Meso",
-                                    _ => $"MagacinID {tip.Key}"
-                                };
-                                var procenat = ukupnaProizvodnja > 0 ? (tip.Value / ukupnaProizvodnja * 100) : 0;
+                                var tipNaziv = TypeMapping.GetMagacinDisplayName(tip.Key);
+                                var ukupnoZaProcenat = ukupnaSirovina + ukupnaGotovaRoba;
+                                var procenat = ukupnoZaProcenat > 0 ? (tip.Value / ukupnoZaProcenat * 100) : 0;
                                 
                                 <div class="col-md-2">
                                     <div class="text-center p-3 border rounded">
                                         <h6 class="text-muted">@tipNaziv</h6>
-                                        <h4 class="text-primary">@tip.Value.ToString("N2")</h4>
-                                        <small class="text-muted">@procenat.ToString("N1")%</small>
+                                        <h4 class="text-primary">@TypeMapping.FormatDecimal(tip.Value)</h4>
+                                        <small class="text-muted">@TypeMapping.FormatDecimal(procenat)%</small>
                                     </div>
                                 </div>
                             }
@@ -311,54 +304,7 @@
         }
     }
 
-    <!-- Najproduktivniji radni nalozi - DODATNI IZVEŠTAJ -->
-    @if (najproduktivnijiNalozi?.Any() == true)
-    {
-        <div class="row mb-4 production-section">
-            <div class="col-12">
-                <div class="dashboard-card">
-                    <h5 class="section-title">
-                        <i class="bi bi-trophy me-2"></i>Top 10 najproduktivnijih radnih naloga
-                    </h5>
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Datum</th>
-                                    <th>Radni Nalog</th>
-                                    <th>Artikal</th>
-                                    <th>Komitent</th>
-                                    <th class="text-end">Količina</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @for (int i = 0; i < najproduktivnijiNalozi.Count; i++)
-                                {
-                                    var nalog = najproduktivnijiNalozi[i];
-                                    <tr>
-                                        <td>
-                                            @if (i == 0) { <span class="badge bg-warning">🥇 1.</span> }
-                                            else if (i == 1) { <span class="badge bg-secondary">🥈 2.</span> }
-                                            else if (i == 2) { <span class="badge bg-warning text-dark">🥉 3.</span> }
-                                            else { <span class="badge bg-light text-dark">@(i + 1).</span> }
-                                        </td>
-                                        <td>@nalog.Datum?.ToString("dd.MM.yyyy")</td>
-                                        <td>@nalog.RadniNalog</td>
-                                        <td>@nalog.Artikal</td>
-                                        <td>@nalog.Komitent</td>
-                                        <td class="text-end fw-bold text-success">@nalog.GotovProizvod.ToString("N2")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-
-    <!-- Main Data Table -->
+    <!-- Main Data Table - ISPRAVKA: Ambalaza u dve kolone -->
     @if (podaci == null)
     {
         <div class="alert alert-info">
@@ -393,9 +339,7 @@
                                         <th>Datum</th>
                                         <th>Radni Nalog</th>
                                         <th>Artikal</th>
-                                        <!-- NOVE KOLONE prema zahtevima -->
                                         <th class="text-end">Količina Roba</th>
-                                        <th class="text-end">Količina Ambalaza</th>
                                         <th class="text-end">Gotov Proizvod</th>
                                         <th>Komitent</th>
                                     </tr>
@@ -404,18 +348,16 @@
                                     @foreach (var item in podaci)
                                     {
                                         <tr>
-                                            <td>@item.Datum?.ToString("dd.MM.yyyy")</td>
+                                            <td>@TypeMapping.FormatDate(item.Datum ?? DateTime.MinValue)</td>
                                             <td>
                                                 <span class="badge bg-info">@item.RadniNalog</span>
                                             </td>
                                             <td>
-                                @item.Artikal
-                                <span class="badge bg-secondary ms-1">@item.TipArtikla</span>
-                            </td>
-                                            <!-- NOVE KOLONE prema zahtevima -->
-                                            <td class="text-end fw-bold">@item.KolicinaRoba.ToString("N2")</td>
-                                            <td class="text-end fw-bold text-warning">@item.KolicinaAmbalaza.ToString("N2")</td>
-                                            <td class="text-end fw-bold text-success">@item.GotovProizvod.ToString("N2")</td>
+                                                @NormalizujArtikalNaziv(item.Artikal)
+                                                <span class="badge bg-secondary ms-1">@item.TipArtikla</span>
+                                            </td>
+                                            <td class="text-end fw-bold">@TypeMapping.FormatDecimal(item.KolicinaRoba)</td>
+                                            <td class="text-end fw-bold text-success">@TypeMapping.FormatDecimal(item.GotovProizvod)</td>
                                             <td>@item.Komitent</td>
                                         </tr>
                                     }
@@ -423,9 +365,8 @@
                                 <tfoot class="table-secondary">
                                     <tr>
                                         <th colspan="3" class="text-end">UKUPNO:</th>
-                                        <th class="text-end text-primary">@podaci.Sum(x => x.KolicinaRoba).ToString("N2")</th>
-                                        <th class="text-end text-warning">@podaci.Sum(x => x.KolicinaAmbalaza).ToString("N2")</th>
-                                        <th class="text-end text-success">@podaci.Sum(x => x.GotovProizvod).ToString("N2")</th>
+                                        <th class="text-end text-primary">@TypeMapping.FormatDecimal(podaci.Sum(x => x.KolicinaRoba))</th>
+                                        <th class="text-end text-success">@TypeMapping.FormatDecimal(podaci.Sum(x => x.GotovProizvod))</th>
                                         <th></th>
                                     </tr>
                                 </tfoot>
@@ -435,10 +376,10 @@
                     <div class="card-footer bg-light">
                         <div class="row">
                             <div class="col-md-6">
-                                Poslednje ažuriranje: @DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")
+                                Poslednje ažuriranje: @TypeMapping.FormatDateTime(DateTime.Now)
                             </div>
                             <div class="col-md-6 text-end">
-                                Period: @(filterRequest.OdDatum?.ToString("dd.MM") ?? "...") - @(filterRequest.DoDatum?.ToString("dd.MM.yyyy") ?? "...")
+                                Period: @TypeMapping.FormatDate(filterRequest.OdDatum) - @TypeMapping.FormatDate(filterRequest.DoDatum)
                             </div>
                         </div>
                     </div>
@@ -452,15 +393,15 @@
     private List<ProizvodnjaModel> podaci = new List<ProizvodnjaModel>();
     private FilterRequest filterRequest = new FilterRequest();
     
-    // DODATO: Liste za padajuće menije
     private List<Komitent>? komitentiLista;
     private List<string>? radniNaloziLista;
     private List<ArtikalKlasifikacija>? artikalKlasifikacijeLista;
     
-    // DODATNI IZVEŠTAJ - statistike
-    private decimal ukupnaProizvodnja = 0;
+    // ISPRAVKA: Ukupna sirovina i gotova roba umesto ukupne proizvodnje
+    private decimal ukupnaSirovina = 0;
+    private decimal ukupnaGotovaRoba = 0;
     private int brojAktivnihNaloga = 0;
-    private int brojUnikatanihNaloga = 0; // DODATO: Broj unikatnih radnih naloga
+    private int brojUnikatanihNaloga = 0;
     private decimal prosecnaDnevnaProizvodnja = 0;
     private Dictionary<string, decimal>? proizvodnjaPoArtiklima;
     private Dictionary<string, decimal>? proizvodnjaPoKomitentima;
@@ -470,13 +411,32 @@
     private string OdDatumValue => filterRequest.OdDatum?.ToString("yyyy-MM-dd") ?? "";
     private string DoDatumValue => filterRequest.DoDatum?.ToString("yyyy-MM-dd") ?? "";
 
+    // UKLONJENA: Logika za ambalažu - čeka se implementacija Smenskih izveštaja
+
+    /// <summary>
+    /// Spaja artikle sa + i - obeležjima u osnovni naziv
+    /// </summary>
+    private string NormalizujArtikalNaziv(string artikal)
+    {
+        if (string.IsNullOrEmpty(artikal))
+            return artikal;
+
+        // Ukloni + ili - sa kraja naziva
+        artikal = artikal.Trim();
+        if (artikal.EndsWith("+") || artikal.EndsWith("-"))
+        {
+            return artikal.Substring(0, artikal.Length - 1).Trim();
+        }
+        
+        return artikal;
+    }
+
     protected override async Task OnInitializedAsync()
     {
-        var pocetakMeseca = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-        filterRequest.OdDatum = pocetakMeseca;
-        filterRequest.DoDatum = DateTime.Now;
+        var (startDate, endDate) = SystemConstants.GetDefaultDateRange();
+        filterRequest.OdDatum = startDate;
+        filterRequest.DoDatum = endDate;
         
-        // DODATO: Učitaj liste za padajuće menije
         await UcitajListeZaFiltriranje();
         await UcitajPodatke();
     }
@@ -497,24 +457,24 @@
         }
     }
 
-    // DODATO: Metoda za učitavanje lista za padajuće menije
     private async Task UcitajListeZaFiltriranje()
     {
         try
         {
             Console.WriteLine("Učitavam liste za filtriranje...");
             
-            // Učitaj komitente koji imaju radne naloge (NOVO)
             komitentiLista = await KomitentService.UcitajKomitenteKojiImajuRadneNaloge();
             Console.WriteLine($"Učitano {komitentiLista?.Count ?? 0} komitenata koji imaju radne naloge");
             
-            // Učitaj radne naloge na osnovu trenutnih filtera
             radniNaloziLista = await ProizvodnjaService.UcitajListuRadnihNaloga(filterRequest);
             Console.WriteLine($"Učitano {radniNaloziLista?.Count ?? 0} radnih naloga");
             
-            // NOVO: Učitaj klasifikacije (bez klasa)
-            artikalKlasifikacijeLista = await ArtikalKlasifikacijaService.UcitajSveKlasifikacije();
-            Console.WriteLine($"Učitano {artikalKlasifikacijeLista?.Count ?? 0} klasifikacija");
+            var sveKlasifikacije = await ArtikalKlasifikacijaService.UcitajSveKlasifikacije();
+            // Filtriraj Malina Org i Kupina Org
+            artikalKlasifikacijeLista = sveKlasifikacije
+                ?.Where(k => !k.Naziv.Contains("Malina Org") && !k.Naziv.Contains("Kupina Org"))
+                ?.ToList() ?? new List<ArtikalKlasifikacija>();
+            Console.WriteLine($"Učitano {artikalKlasifikacijeLista.Count} klasifikacija (bez Malina Org i Kupina Org)");
             
             StateHasChanged();
         }
@@ -526,40 +486,67 @@
             artikalKlasifikacijeLista = new List<ArtikalKlasifikacija>();
         }
     }
-
+    
     private async Task UcitajPodatke()
     {
         try
         {
-            // Osnovni podaci
-            podaci = await ProizvodnjaService.UcitajIzvestajProizvodnje(filterRequest);
+            var sirovi_podaci = await ProizvodnjaService.UcitajIzvestajProizvodnje(filterRequest);
             
-            // ISPRAVKA: Ukupna proizvodnja = suma novih kolona
-            if (podaci != null && podaci.Any())
+            // Spoji artikle sa + i - obeležjima
+            if (sirovi_podaci != null && sirovi_podaci.Any())
             {
-                ukupnaProizvodnja = podaci.Sum(x => x.KolicinaRoba + x.KolicinaAmbalaza + x.GotovProizvod);
-                // DODATO: Broji unikatne radne naloge
+                var grupisani = sirovi_podaci
+                    .GroupBy(x => new {
+                        x.Datum,
+                        x.RadniNalog,
+                        ArtikalNormalizovan = NormalizujArtikalNaziv(x.Artikal),
+                        x.TipArtikla,
+                        x.Komitent,
+                        x.Tip
+                    })
+                    .Select(g => new ProizvodnjaModel
+                    {
+                        Datum = g.Key.Datum,
+                        RadniNalog = g.Key.RadniNalog,
+                        Artikal = g.Key.ArtikalNormalizovan,
+                        TipArtikla = g.Key.TipArtikla,
+                        Komitent = g.Key.Komitent,
+                        Tip = g.Key.Tip,
+                        KolicinaRoba = g.Sum(x => x.KolicinaRoba),
+                        KolicinaAmbalaza = g.Sum(x => x.KolicinaAmbalaza),
+                        GotovProizvod = g.Sum(x => x.GotovProizvod),
+                        Kolicina = g.Sum(x => x.Kolicina)
+                    })
+                    .ToList();
+                    
+                podaci = grupisani;
+                
+                // ISPRAVKA: Računanje ukupne sirovine i gotove robe
+                ukupnaSirovina = podaci.Sum(x => x.KolicinaRoba); // Pretpostavljam da je KolicinaRoba sirovina
+                ukupnaGotovaRoba = podaci.Sum(x => x.GotovProizvod); // Gotov proizvod
                 brojUnikatanihNaloga = podaci.Select(x => x.RadniNalog).Distinct().Count();
             }
             else
             {
-                ukupnaProizvodnja = 0;
+                podaci = new List<ProizvodnjaModel>();
+                ukupnaSirovina = 0;
+                ukupnaGotovaRoba = 0;
                 brojUnikatanihNaloga = 0;
             }
+            
             brojAktivnihNaloga = await ProizvodnjaService.UcitajBrojAktivnihNaloga(filterRequest);
             
-            // Izračunaj prosečnu dnevnu proizvodnju
             if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue)
             {
                 var dana = (filterRequest.DoDatum.Value - filterRequest.OdDatum.Value).Days + 1;
-                prosecnaDnevnaProizvodnja = dana > 0 ? ukupnaProizvodnja / dana : 0;
+                prosecnaDnevnaProizvodnja = dana > 0 ? ukupnaGotovaRoba / dana : 0; // Baziramo na gotovoj robi
             }
             else
             {
                 prosecnaDnevnaProizvodnja = 0;
             }
 
-            // DODATNI IZVEŠTAJ - analize
             proizvodnjaPoArtiklima = await ProizvodnjaService.UcitajProizvodnjuPoArtiklima(filterRequest);
             proizvodnjaPoKomitentima = await ProizvodnjaService.UcitajProizvodnjuPoKomitentima(filterRequest);
             proizvodnjaPoTipovima = await ProizvodnjaService.UcitajProizvodnjuPoTipovima(filterRequest);
@@ -571,7 +558,8 @@
         {
             Console.WriteLine($"Greška pri učitavanju podataka: {ex.Message}");
             podaci = new List<ProizvodnjaModel>();
-            ukupnaProizvodnja = 0;
+            ukupnaSirovina = 0;
+            ukupnaGotovaRoba = 0;
             brojAktivnihNaloga = 0;
             brojUnikatanihNaloga = 0;
             prosecnaDnevnaProizvodnja = 0;
@@ -580,118 +568,24 @@
 
     private async Task ResetujFiltere()
     {
-        var (odDatum, doDatum) = SystemConstants.GetDefaultDateRange();
+        var (startDate, endDate) = SystemConstants.GetDefaultDateRange();
         filterRequest = new FilterRequest
         {
-            OdDatum = odDatum,
-            DoDatum = doDatum
+            OdDatum = startDate,
+            DoDatum = endDate
         };
         
         await UcitajListeZaFiltriranje();
         await UcitajPodatke();
     }
 
-    // REFAKTORISANE EXPORT METODE sa TypeMapping
+    // REFAKTORISANO: Export metode sa TypeMapping
     private async Task ExportToExcel()
     {
         try
         {
             var excelData = ExportService.ExportToExcel(podaci);
-            var fileName = TypeMapping.GenerateExportFileName("proizvodnja_export", SystemConstants.Export.EXCEL_EXTENSION);
-            await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u Excel: {ex.Message}");
-        }
-    }
-
-    private async Task ExportToPdf()
-    {
-        try
-        {
-            var pdfData = ExportService.ExportToPdf(podaci);
-            var fileName = TypeMapping.GenerateExportFileName("proizvodnja_export", SystemConstants.Export.PDF_EXTENSION);
-            await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u PDF: {ex.Message}");
-        }
-    }
-
-    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
-    {
-        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
-    }
-}Mapping
-    private async Task ExportToExcel()
-    {
-        try
-        {
-            var excelData = ExportService.ExportToExcel(podaci);
-            var fileName = TypeMapping.GenerateExportFileName("proizvodnja_export", SystemConstants.Export.EXCEL_EXTENSION);
-            await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u Excel: {ex.Message}");
-        }
-    }
-
-    private async Task ExportToPdf()
-    {
-        try
-        {
-            var pdfData = ExportService.ExportToPdf(podaci);
-            var fileName = TypeMapping.GenerateExportFileName("proizvodnja_export", SystemConstants.Export.PDF_EXTENSION);
-            await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u PDF: {ex.Message}");
-        }
-    }
-
-    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
-    {
-        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
-    }
-}Request, 10);
-
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška pri učitavanju podataka: {ex.Message}");
-            podaci = new List<ProizvodnjaModel>();
-            ukupnaProizvodnja = 0;
-            brojAktivnihNaloga = 0;
-            brojUnikatanihNaloga = 0;
-            prosecnaDnevnaProizvodnja = 0;
-        }
-    }
-
-    private async Task ResetujFiltere()
-    {
-        var pocetakMeseca = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-        filterRequest = new FilterRequest
-        {
-            OdDatum = pocetakMeseca,
-            DoDatum = DateTime.Now
-        };
-        
-        // DODATO: Ponovo učitaj liste nakon resetovanja filtera
-        await UcitajListeZaFiltriranje();
-        await UcitajPodatke();
-    }
-
-    private async Task ExportToExcel()
-    {
-        try
-        {
-            var excelData = ExportService.ExportToExcel(podaci);
-            var fileName = $"proizvodnja_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            var fileName = TypeMapping.GenerateExportFileName("proizvodnja", ".xlsx");
             await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         }
         catch (Exception ex)
@@ -705,7 +599,7 @@
         try
         {
             var pdfData = ExportService.ExportToPdf(podaci);
-            var fileName = $"proizvodnja_export_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+            var fileName = TypeMapping.GenerateExportFileName("proizvodnja", ".pdf");
             await DownloadFile(pdfData, fileName, "application/pdf");
         }
         catch (Exception ex)
