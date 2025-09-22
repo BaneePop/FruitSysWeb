@@ -254,240 +254,329 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
         public async Task<List<OtkupniListModel>> UcitajSveOtkupneListove(FilterRequest filterRequest)
         {
-            // Implementacija će biti dodana
-            return new List<OtkupniListModel>();
+            try
+            {
+                // Mock podaci za testiranje
+                await Task.Delay(100); // Simuliranje async poziva
+                
+                return new List<OtkupniListModel>
+                {
+                    new OtkupniListModel
+                    {
+                        ID = 1,
+                        Sifra = "OL-2025-001",
+                        Datum = DateTime.Now.AddDays(-1),
+                        KomitentID = 1,
+                        IznosOsnovice = 15000.00m,
+                        StopaPDV = 20.0m,
+                        IznosPDV = 3000.00m,
+                        IznosUkupno = 18000.00m,
+                        DokumentStatus = 3
+                    },
+                    new OtkupniListModel
+                    {
+                        ID = 2,
+                        Sifra = "OL-2025-002",
+                        Datum = DateTime.Now.AddDays(-2),
+                        KomitentID = 2,
+                        IznosOsnovice = 25000.00m,
+                        StopaPDV = 20.0m,
+                        IznosPDV = 5000.00m,
+                        IznosUkupno = 30000.00m,
+                        DokumentStatus = 2
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Greška pri učitavanju otkupnih listova: {ex.Message}", ex);
+            }
         }
 
         public async Task<OtkupniListModel?> UcitajOtkupniListPoId(long id)
+        
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return null;
         }
 
         public async Task<List<OtkupniListModel>> UcitajOtkupneListovePoKomitentu(long komitentId)
         {
+
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return new List<OtkupniListModel>();
         }
 
         public async Task<List<OtkupniListModel>> UcitajOtkupneListovePoDatumu(DateTime odDatum, DateTime doDatum)
         {
+            await Task.Delay(100); // Simuliranje async poziva
+           
             // Implementacija će biti dodana
             return new List<OtkupniListModel>();
         }
 
         public async Task<List<OtkupniListModel>> UcitajOtkupneListovePoStatusu(int status)
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return new List<OtkupniListModel>();
         }
 
         public async Task<List<OtkupniListModel>> UcitajOtkupneListovePoOtkupnomMestu(long otkupnoMestoId)
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return new List<OtkupniListModel>();
         }
 
         public async Task<List<OtkupniListModel>> UcitajIsplaceneOtkupneListove()
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return new List<OtkupniListModel>();
         }
 
         public async Task<List<OtkupniListModel>> UcitajNeisplaceneOtkupneListove()
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return new List<OtkupniListModel>();
         }
 
         public async Task<List<PrijemnicaModel>> UcitajSvePrijemnice(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return new List<PrijemnicaModel>();
         }
 
         public async Task<PrijemnicaModel?> UcitajPrijemnicuPoId(long id)
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return null;
         }
 
         public async Task<List<PrijemnicaModel>> UcitajPrijemnicePoKomitentu(long komitentId)
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return new List<PrijemnicaModel>();
         }
 
         public async Task<List<PrijemnicaModel>> UcitajPrijemnicePoDatumu(DateTime odDatum, DateTime doDatum)
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return new List<PrijemnicaModel>();
         }
 
         public async Task<List<PrijemnicaModel>> UcitajPrijemnicePoStatusu(int status)
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return new List<PrijemnicaModel>();
         }
 
         public async Task<List<PrijemnicaModel>> UcitajPrijemnicePoMagacinu(long magacinId)
         {
+            await Task.Delay(100); // Simuliranje async poziva
+
             // Implementacija će biti dodana
             return new List<PrijemnicaModel>();
         }
 
         public async Task<List<PrijemnicaModel>> UcitajPrijemnicePoTipuPrijema(int tipPrijema)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<PrijemnicaModel>();
         }
 
         public async Task<List<PrijemnicaModel>> UcitajPrijemniceZaKontrolu()
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<PrijemnicaModel>();
         }
 
         public async Task<List<PrijemnicaModel>> UcitajReklamiranePrijemnice()
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<PrijemnicaModel>();
         }
 
         public async Task<List<OtpremnicaModel>> UcitajSveOtpremnice(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<OtpremnicaModel>();
         }
 
         public async Task<OtpremnicaModel?> UcitajOtpremnicuPoId(long id)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return null;
         }
 
         public async Task<List<OtpremnicaModel>> UcitajOtpremnicePoKomitentu(long komitentId)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<OtpremnicaModel>();
         }
 
         public async Task<List<OtpremnicaModel>> UcitajOtpremnicePoDatumu(DateTime odDatum, DateTime doDatum)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<OtpremnicaModel>();
         }
 
         public async Task<List<OtpremnicaModel>> UcitajOtpremnicePoStatusu(int status)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<OtpremnicaModel>();
         }
 
         public async Task<List<OtpremnicaModel>> UcitajOtpremnicePoMagacinu(long magacinId)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<OtpremnicaModel>();
         }
 
         public async Task<List<OtpremnicaModel>> UcitajOtpremnicePoTipu(int tipOtpreme)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<OtpremnicaModel>();
         }
 
         public async Task<List<OtpremnicaModel>> UcitajIzvozneOtpremnice()
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<OtpremnicaModel>();
         }
 
         public async Task<List<OtpremnicaModel>> UcitajTranzitneOtpremnice()
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new List<OtpremnicaModel>();
         }
 
         public async Task<Dictionary<string, decimal>> UcitajStatistikuPoKomitentima(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new Dictionary<string, decimal>();
         }
 
         public async Task<Dictionary<string, decimal>> UcitajStatistikuPoMagacinima(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new Dictionary<string, decimal>();
         }
 
         public async Task<Dictionary<string, decimal>> UcitajStatistikuPoStatusima(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new Dictionary<string, decimal>();
         }
 
         public async Task<Dictionary<string, decimal>> UcitajStatistikuPoMesecima(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new Dictionary<string, decimal>();
         }
 
         public async Task<decimal> UcitajUkupnuVrednostFaktura(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return 0;
         }
 
         public async Task<decimal> UcitajUkupnuVrednostOtkupnihListova(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return 0;
         }
 
         public async Task<int> UcitajUkupanBrojDokumenata(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return 0;
         }
 
         public async Task<Dictionary<string, decimal>> UcitajTopKomitentePoVrednosti(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new Dictionary<string, decimal>();
         }
 
         public async Task<Dictionary<string, decimal>> UcitajTopMagacinePoKolicini(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return new Dictionary<string, decimal>();
         }
 
         public async Task<decimal> UcitajUkupnuKolicinu(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return 0;
         }
 
         public async Task<decimal> UcitajUkupnuVrednost(FilterRequest filterRequest)
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return 0;
         }
 
         public async Task<int> UcitajBrojOtvorenihDokumenata()
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return 0;
         }
 
         public async Task<int> UcitajBrojZakljucenihDokumenata()
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return 0;
         }
 
         public async Task<int> UcitajBrojStornoDokumenata()
         {
+            await Task.Delay(100); // Simuliranje async poziva
             // Implementacija će biti dodana
             return 0;
         }

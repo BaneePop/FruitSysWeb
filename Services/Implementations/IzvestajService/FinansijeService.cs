@@ -230,11 +230,9 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         SUM(ABS(COALESCE(o.Kolicina, 0))) as UkupnaKolicina
                     FROM Otpremnica o
                     LEFT JOIN Komitent k ON o.KomitentID = k.ID
-                    LEFT JOIN Artikal a ON o.ArtikalID = a.ID
                     WHERE o.Aktivno = 1
                       AND k.Aktivno = 1
-                      AND a.Aktivno = 1
-                      AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
+                      AND o.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
                       AND o.DokumentStatus IN (2, 3)  -- OTVORENO ILI ZATVORENO
                 ");
 
@@ -285,28 +283,13 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         SUM(ABS(COALESCE(p.Kolicina, 0))) as UkupnaKolicina
                     FROM Prijemnica p
                     LEFT JOIN Komitent k ON p.KomitentID = k.ID
-                    LEFT JOIN Artikal a ON p.ArtikalID = a.ID
                     WHERE p.Aktivno = 1
                       AND k.Aktivno = 1
-                      AND a.Aktivno = 1
-                      AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
+                      AND p.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
                       AND p.DokumentStatus IN (2, 3)  -- OTVORENO ILI ZATVORENO
                 ");
 
                 var parameters = new Dictionary<string, object>();
-
-                // Datum filteri
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
 
                 // Datum filteri za Prijemnicu
                 if (filterRequest.OdDatum.HasValue)

@@ -39,6 +39,9 @@ namespace FruitSysWeb.Services.Models.Requests
         [Display(Name = "Radni nalog")]
         public string? RadniNalog { get; set; }
         
+        [Display(Name = "Broj ugovora")]
+        public string? BrojUgovora { get; set; }
+        
         [Display(Name = "Dokument tip")]
         public string? DokumentTip { get; set; }
         
@@ -103,6 +106,16 @@ namespace FruitSysWeb.Services.Models.Requests
         
         [Display(Name = "Vrsta Artikla")]
         public string? VrstaArtikla { get; set; }
+        
+        // NOVO: Prerada modul filteri
+        [Display(Name = "Radni Proces ID")]
+        public long? RadniProcesID { get; set; }
+        
+        [Display(Name = "Proizvodni Proces ID")]
+        public long? ProizvodniProcesID { get; set; }
+        
+        [Display(Name = "Smena")]
+        public int? Smena { get; set; }
 
         // METODA: Provera da li ima aktivne filtere
         public bool ImaAktivneFiltre()
@@ -117,6 +130,7 @@ namespace FruitSysWeb.Services.Models.Requests
                    TipArtikla.HasValue ||
                    !string.IsNullOrEmpty(Tip) ||
                    !string.IsNullOrEmpty(RadniNalog) ||
+                   !string.IsNullOrEmpty(BrojUgovora) ||
                    !string.IsNullOrEmpty(DokumentTip) ||
                    MinKolicina.HasValue ||
                    MaxKolicina.HasValue ||
@@ -165,6 +179,9 @@ namespace FruitSysWeb.Services.Models.Requests
 
             if (!string.IsNullOrEmpty(RadniNalog))
                 filteri.Add($"Radni nalog: {RadniNalog}");
+
+            if (!string.IsNullOrEmpty(BrojUgovora))
+                filteri.Add($"Broj ugovora: {BrojUgovora}");
 
             if (MinKolicina.HasValue)
                 filteri.Add($"Min količina: {MinKolicina:N2}");
@@ -293,6 +310,7 @@ namespace FruitSysWeb.Services.Models.Requests
                 TipArtikla = this.TipArtikla,
                 Tip = this.Tip,
                 RadniNalog = this.RadniNalog,
+                BrojUgovora = this.BrojUgovora,
                 DokumentTip = this.DokumentTip,
                 MinKolicina = this.MinKolicina,
                 MaxKolicina = this.MaxKolicina,

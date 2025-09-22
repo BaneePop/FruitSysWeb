@@ -40,9 +40,20 @@ namespace FruitSysWeb.Services.Interfaces
         Task<int> UcitajBrojOtvorenihSmenskihIzvestaja();
         Task<int> UcitajBrojZakljucenihSmenskihIzvestaja();
 
-        // Dashboard metode
-        Task<Dictionary<string, decimal>> UcitajTopRadneProcese(FilterRequest filterRequest);
-        Task<Dictionary<string, decimal>> UcitajTopProizvodneProcese(FilterRequest filterRequest);
-        Task<decimal> UcitajUkupnuAktivnost(FilterRequest filterRequest);
+        Task<Dictionary<string, int>> UcitajTopRadneProcese(FilterRequest filterRequest);
+        Task<Dictionary<string, int>> UcitajTopProizvodneProcese(FilterRequest filterRequest);
+        Task<int> UcitajUkupnuAktivnost(FilterRequest filterRequest);
+
+        // Novi izveštaji
+        Task<List<RadniNalogIzvestajModel>> UcitajRadniNalogIzvestaj(FilterRequest filterRequest);
+        Task<List<EvidencijeIzvestajModel>> UcitajEvidencijeIzvestaj(FilterRequest filterRequest);
+        Task<StatistikeModel> UcitajStatistike(FilterRequest filterRequest);
+
+        // Helper metode za dropdown liste
+        Task<List<RadniProcesModel>> UcitajRadneProcese();
+        Task<List<ProizvodniProcesModel>> UcitajProizvodneProcese();
+        
+
+        
     }
 }
