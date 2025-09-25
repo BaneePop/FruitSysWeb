@@ -287,5 +287,16 @@ namespace FruitSysWeb.Services.Implementations.ExportService
                 return false;
             }
         }
+
+        // DODATO: Async verzije sa title parametrom
+        public async Task<byte[]> ExportToExcel<T>(IEnumerable<T> data, string title)
+        {
+            return await Task.FromResult(ExportToExcel(data));
+        }
+
+        public async Task<byte[]> ExportToPdf<T>(IEnumerable<T> data, string title)
+        {
+            return await Task.FromResult(ExportToPdf(data));
+        }
     }
 }

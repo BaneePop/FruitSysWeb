@@ -52,6 +52,16 @@ namespace FruitSysWeb.Services.Interfaces
         // Helper metode za dropdown liste
         Task<List<RadniProcesModel>> UcitajRadneProcese();
         Task<List<ProizvodniProcesModel>> UcitajProizvodneProcese();
+
+        // Dodati u postojeći IPreradaService.cs interface:
+        Task<List<RadniNalogIzvestajModel>> UcitajRadniNalogIzvestajPoNalogu(string radniNalog);
+        Task<decimal> UcitajUkupanTrosakPoRadnomNalogu(string radniNalog);
+        Task<decimal> UcitajUkupneRadneSatePoNalogu(string radniNalog);
+        Task<decimal> UcitajUkupnuRobuPoNalogu(string radniNalog);
+        Task<decimal> UcitajProcenatIskoriscenjaPoNalogu(string radniNalog);
+        Task<List<string>> UcitajSveRadneNaloge();
+        /* Task<List<RadniProcesModel>> UcitajRadneProcese(); */
+        Task<Dictionary<string, decimal>> UcitajStatistikePoRadnomNalogu(FilterRequest filter);
         
 
         

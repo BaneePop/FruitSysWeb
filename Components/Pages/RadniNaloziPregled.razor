@@ -1,0 +1,479 @@
+@page "/radni-nalozi"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Constants
+@inject IPreradaService PreradaService
+@inject IKomitentService KomitentService
+@inject IArtikalKlasifikacijaService ArtikalKlasifikacijaService
+@inject IExportService ExportService
+@inject ITypeMappingService TypeMapping
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Izveštaj po Radnom nalogu</PageTitle>
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-clipboard-data text-primary me-2"></i>
+                        Izveštaj po Radnom nalogu
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Detaljni pregled gotovih proizvoda po smenskim izveštajima
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-success" onclick="() => ExportToExcel(\"RadniNalog\")">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="() => ExportToPDF(\"RadniNalog\")">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    @if (statistikeData != null)
+    {
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-6 text-primary mb-2">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <h3 class="text-primary mb-1">@TypeMapping.FormatDecimal(statistikeData["UkupnoSati"])</h3>
+                        <p class="text-muted mb-0">Ukupno sati</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-6 text-success mb-2">
+                            <i class="bi bi-currency-exchange"></i>
+                        </div>
+                        <h3 class="text-success mb-1">@TypeMapping.FormatCurrency(statistikeData["UkupanTrosak"])</h3>
+                        <p class="text-muted mb-0">Ukupan trošak</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-6 text-info mb-2">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <h3 class="text-info mb-1">@TypeMapping.FormatDecimal(statistikeData["UkupnoRadnika"])</h3>
+                        <p class="text-muted mb-0">Broj radnika</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="display-6 text-warning mb-2">
+                            <i class="bi bi-calculator"></i>
+                        </div>
+                        <h3 class="text-warning mb-1">@TypeMapping.FormatCurrency(statistikeData["ProsecanTrosak"])</h3>
+                        <p class="text-muted mb-0">Prosečan trošak</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel me-2"></i>Filteri
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Datum filteri -->
+                <div class="col-md-3">
+                    <label class="form-label">Od datuma</label>
+                    <input type="date" class="form-control" 
+                           value="@(filterRequest.OdDatum?.ToString("yyyy-MM-dd"))" 
+                           @onchange="OnOdDatumChanged" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Do datuma</label>
+                    <input type="date" class="form-control" 
+                           value="@(filterRequest.DoDatum?.ToString("yyyy-MM-dd"))" 
+                           @onchange="OnDoDatumChanged" />
+                </div>
+
+                <!-- Radni nalog filter -->
+                <div class="col-md-3">
+                    <label class="form-label">Radni nalog</label>
+                    <select class="form-select" @bind="filterRequest.RadniNalog">
+                        <option value="">Svi radni nalozi</option>
+                        @if (radniNaloziLista != null)
+                        {
+                            @foreach (var nalog in radniNaloziLista)
+                            {
+                                <option value="@nalog">@nalog</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Vrsta artikla filter (umesto Radni proces) -->
+                <div class="col-md-3">
+                    <label class="form-label">Vrsta artikla</label>
+                    <select class="form-select" @bind="filterRequest.ArtikalKlasifikacijaId">
+                        <option value="">Sve vrste</option>
+                        @if (artikalKlasifikacijeLista != null)
+                        {
+                            @foreach (var klasifikacija in artikalKlasifikacijeLista)
+                            {
+                                <option value="@klasifikacija.Id">@klasifikacija.Naziv</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Komitent filter -->
+                <div class="col-md-3">
+                    <label class="form-label">Kupac</label>
+                    <select class="form-select" @bind="filterRequest.KomitentId">
+                        <option value="">Svi kupci</option>
+                        @if (komitentiLista != null)
+                        {
+                            @foreach (var komitent in komitentiLista)
+                            {
+                                <option value="@komitent.Id">@komitent.Naziv</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="col-md-9"></div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary w-100" @onclick="UcitajPodatke">
+                            <i class="bi bi-search me-1"></i>Pretraži
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="ResetFilter">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-table me-2"></i>
+                Rezultati (@(radniNalogData?.Count ?? 0) stavki)
+            </h5>
+            <small class="text-muted">
+                Poslednji put ažurirano: @TypeMapping.FormatDateTime(DateTime.Now)
+            </small>
+        </div>
+        <div class="card-body p-0">
+            @if (radniNalogData == null)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Učitavanje...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Učitavanje podataka...</p>
+                </div>
+            }
+            else if (!radniNalogData.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="mt-3 text-muted">Nema podataka za prikaz</h4>
+                    <p class="text-muted">Promenite filtere i pokušajte ponovo</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th><strong>Radni nalog</strong></th>
+                                <th><strong>Smenski izveštaj</strong></th>
+                                <th><strong>Datum</strong></th>
+                                <th><strong>Kupac</strong></th>
+                                <th><strong>Vrsta artikla</strong></th>
+                                <th><strong>Br. radnika</strong></th>
+                                <th><strong>Sati</strong></th>
+                                <th><strong>Trošak</strong></th>
+                                <th><strong>Procenat</strong></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in radniNalogData)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">@item.RadniNalog</span>
+                                    </td>
+                                    <td>
+                                        <code class="text-info">@item.BrojIzvestaja</code>
+                                    </td>
+                                    <td>@TypeMapping.FormatDate(item.Datum ?? DateTime.MinValue)</td>
+                                    <td>@item.Komitent</td>
+                                    <td>
+                                        <span class="badge bg-secondary">@item.VrstaArtikla</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@item.BrojRadnika</span>
+                                    </td>
+                                    <td>
+                                        <strong>@TypeMapping.FormatDecimal(item.BrojRadnihSati)</strong>
+                                        <small class="text-muted d-block">h</small>
+                                    </td>
+                                    <td>
+                                        <strong class="text-success">@TypeMapping.FormatCurrency(item.TrosakPoRadnomNalogu)</strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                <div class="progress-bar @item.ProductivnostBadgeClass" 
+                                                     style="width: @Math.Min(item.ProcenatIskoriscenja, 100)%"></div>
+                                            </div>
+                                            <small class="text-muted">@TypeMapping.FormatDecimal(item.ProcenatIskoriscenja)%</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="5" class="text-end"><strong>UKUPNO:</strong></th>
+                                <th>
+                                    <span class="badge bg-primary">@radniNalogData.Sum(x => x.BrojRadnika)</span>
+                                </th>
+                                <th>
+                                    <strong>@TypeMapping.FormatDecimal(radniNalogData.Sum(x => x.BrojRadnihSati))</strong>
+                                    <small class="text-muted d-block">h</small>
+                                </th>
+                                <th>
+                                    <strong class="text-success">@TypeMapping.FormatCurrency(radniNalogData.Sum(x => x.TrosakPoRadnomNalogu))</strong>
+                                </th>
+                                <th>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                            <div class="progress-bar bg-info" 
+                                                 style="width: @Math.Min(radniNalogData.Any() ? radniNalogData.Average(x => x.ProcenatIskoriscenja) : 0, 100)%"></div>
+                                        </div>
+                                        <small class="text-muted">
+                                            @TypeMapping.FormatDecimal(radniNalogData.Any() ? radniNalogData.Average(x => x.ProcenatIskoriscenja) : 0)%
+                                        </small>
+                                    </div>
+                                </th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    // Data properties
+    private List<RadniNalogIzvestajModel>? radniNalogData;
+    private Dictionary<string, decimal>? statistikeData;
+
+    // Dropdown data
+    private List<Komitent>? komitentiLista;
+    private List<string>? radniNaloziLista;
+    private List<ArtikalKlasifikacija>? artikalKlasifikacijeLista;
+
+    // Filter
+    private FilterRequest filterRequest = new FilterRequest();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Postavi datum range na poslednji 7 dana za statistics
+        var (startDate, endDate) = SystemConstants.GetDefaultDateRange();
+        filterRequest.OdDatum = DateTime.Now.AddDays(-7); // Poslednji 7 dana
+        filterRequest.DoDatum = endDate;
+        
+        await UcitajListeZaFiltriranje();
+        await UcitajPodatke();
+    }
+
+    private async Task UcitajListeZaFiltriranje()
+    {
+        try
+        {
+            Console.WriteLine("Učitavam liste za filtriranje...");
+
+            // Učitaj komitente (samo kupce)
+            try
+            {
+                var allKomitenti = await KomitentService.UcitajKomitenteKojiImajuRadneNaloge();
+                komitentiLista = allKomitenti.Where(k => k.JeKupac).Take(50).ToList();
+                Console.WriteLine($"Učitano {komitentiLista?.Count ?? 0} kupaca");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Greška pri učitavanju komitenata: {ex.Message}");
+                komitentiLista = new List<Komitent>();
+            }
+
+            // Učitaj radne naloge (SQL već isključuje ST-)
+            try
+            {
+                radniNaloziLista = await PreradaService.UcitajSveRadneNaloge();
+                Console.WriteLine($"Učitano {radniNaloziLista?.Count ?? 0} radnih naloga (bez ST-)");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Greška pri učitavanju radnih naloga: {ex.Message}");
+                radniNaloziLista = new List<string>();
+            }
+
+            // Učitaj artikal klasifikacije
+            try
+            {
+                var sveKlasifikacije = await ArtikalKlasifikacijaService.UcitajSveKlasifikacije();
+                artikalKlasifikacijeLista = sveKlasifikacije
+                    ?.Where(k => !k.Naziv.Contains("Malina Org") && !k.Naziv.Contains("Kupina Org"))
+                    ?.ToList() ?? new List<ArtikalKlasifikacija>();
+                Console.WriteLine($"Učitano {artikalKlasifikacijeLista?.Count ?? 0} klasifikacija");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Greška pri učitavanju klasifikacija: {ex.Message}");
+                artikalKlasifikacijeLista = new List<ArtikalKlasifikacija>();
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Generička greška pri učitavanju lista: {ex.Message}");
+        }
+    }
+
+    private async Task UcitajPodatke()
+    {
+        try
+        {
+            Console.WriteLine("🚀 POČETAK učitavanja podataka...");
+            Console.WriteLine($"Filter: Od {filterRequest.OdDatum} do {filterRequest.DoDatum}");
+            Console.WriteLine($"Radni nalog: '{filterRequest.RadniNalog}'");
+            Console.WriteLine($"Komitent ID: {filterRequest.KomitentId}");
+            Console.WriteLine($"ArtikalKlasifikacijaId: {filterRequest.ArtikalKlasifikacijaId}");
+
+            // Učitaj glavne podatke - SQL sada koristi RpArtikalTip = 6 (gotovi proizvodi)
+            radniNalogData = await PreradaService.UcitajRadniNalogIzvestaj(filterRequest);
+            
+            Console.WriteLine($"✅ Učitano {radniNalogData?.Count ?? 0} stavki");
+            if (radniNalogData?.Any() == true)
+            {
+                Console.WriteLine($"Prvi red: RN={radniNalogData.First().RadniNalog}, Datum={radniNalogData.First().Datum}");
+            }
+
+            // Učitaj statistike
+            statistikeData = await PreradaService.UcitajStatistikePoRadnomNalogu(filterRequest);
+            Console.WriteLine($"✅ Učitano {statistikeData?.Count ?? 0} statistika");
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ GREŠKA pri učitavanju podataka: {ex.Message}");
+            Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
+            
+            radniNalogData = new List<RadniNalogIzvestajModel>();
+            statistikeData = new Dictionary<string, decimal>();
+            
+            StateHasChanged();
+        }
+    }
+
+    // Event handlers za datume
+    private async Task OnOdDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            filterRequest.OdDatum = date;
+            await UcitajPodatke();
+        }
+    }
+
+    private async Task OnDoDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            filterRequest.DoDatum = date;
+            await UcitajPodatke();
+        }
+    }
+
+    // Reset filter
+    private async Task ResetFilter()
+    {
+        var (startDate, endDate) = SystemConstants.GetDefaultDateRange();
+        filterRequest = new FilterRequest
+        {
+            OdDatum = startDate,
+            DoDatum = endDate
+        };
+        await UcitajPodatke();
+        StateHasChanged();
+    }
+
+    // Export funkcionalnosti - ISPRAVKA: kao u Proizvodnja.razor
+    private async Task ExportToExcel(string tabName)
+    {
+        try
+        {
+            if (radniNalogData?.Any() == true)
+            {
+                var excelData = ExportService.ExportToExcel(radniNalogData);
+                var fileName = TypeMapping.GenerateExportFileName("radni_nalog", ".xlsx");
+                await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u Excel: {ex.Message}");
+        }
+    }
+
+    private async Task ExportToPDF(string tabName)
+    {
+        try
+        {
+            if (radniNalogData?.Any() == true)
+            {
+                var pdfData = ExportService.ExportToPdf(radniNalogData);
+                var fileName = TypeMapping.GenerateExportFileName("radni_nalog", ".pdf");
+                await DownloadFile(pdfData, fileName, "application/pdf");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u PDF: {ex.Message}");
+        }
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
+    }
+}
