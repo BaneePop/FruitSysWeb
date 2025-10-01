@@ -6,6 +6,8 @@ namespace FruitSysWeb.Models
     {
         [Display(Name = "ID")]
         public long ID { get; set; }
+        [Display(Name = "Artikal Magacin ID")]
+        public int ArtikalMagacinId { get; set; }
 
         [Display(Name = "Šifra")]
         public string Sifra { get; set; } = string.Empty;

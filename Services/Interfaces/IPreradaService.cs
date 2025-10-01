@@ -63,6 +63,12 @@ namespace FruitSysWeb.Services.Interfaces
         /* Task<List<RadniProcesModel>> UcitajRadneProcese(); */
         Task<Dictionary<string, decimal>> UcitajStatistikePoRadnomNalogu(FilterRequest filter);
         
+        // Smenski izvestaji metode
+        Task<List<string>> UcitajSveSmenskeIzvestaje();
+        Task<List<RadniProcesModel>> UcitajRadneProcesePoPorizvodnomProcesu(int proizvodniProcesId);
+        Task<List<SmenskiIzvestajModel>> UcitajSmenskeIzvestaje(FilterRequest filter);
+        Task<Dictionary<string, decimal>> UcitajStatistikePoSmenskimIzvestajima(FilterRequest filter);
+        
 
         
     }

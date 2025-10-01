@@ -37,7 +37,7 @@ namespace FruitSysWeb.Models
         [Display(Name = "Je Nov")]
         public bool JeNov => (DateTime.Now - Kreirano).TotalDays < 30;
 
-        [Display(Name = "Kategorija")]
+        /* [Display(Name = "Kategorija")]
         public string Kategorija
         {
             get
@@ -60,6 +60,6 @@ namespace FruitSysWeb.Models
                     return "Trešnja";
                 return "Ostalo";
             }
-        }
+        } */
     }
 }

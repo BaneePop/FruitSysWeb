@@ -37,6 +37,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         fm.Artikal,
                         fm.ArtikalPrvaKlasifikacijaID,
                         fm.Kolicina,
+                        a.MagacinID as ArtikalMagacinId,
                         COALESCE(fm.Potrazuje, 0) as Potrazuje,
                         COALESCE(fm.Duguje, 0) as Duguje,
                         COALESCE(fm.Saldo, 0) as Saldo,
@@ -57,6 +58,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         0 as JedinicaMereID,
                         0 as OtkupniArtikal
                     FROM vPrometFinansijev9 fm
+                    LEFT JOIN Artikal a ON fm.ArtikalID = a.ID  -- DODAJ OVO
                     WHERE 1=1
                 ");
 
@@ -115,8 +117,8 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     if (int.TryParse(filterRequest.Tip, out int TipInt))
                     {
                         // Ovde treba join sa Artikal tabelom da dobijemo tip
-                        sql.Append(" AND EXISTS (SELECT 1 FROM Artikal a WHERE a.ID = fm.ArtikalID AND a.Tip = @ArtikalTip)");
-                        parameters.Add("@ArtikalTip", TipInt);
+                        sql.Append(" AND a.MagacinID = @TipArtikla");
+                        parameters.Add("@TipArtikla", TipInt);
                     }
                 }
 
@@ -514,6 +516,138 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             {
                 Console.WriteLine($"Greška u UcitajSaldoPoMesecima: {ex.Message}");
                 return new Dictionary<string, decimal>();
+            }
+        }
+
+        // ========================================
+        // NOVO: BRZI PREGLED - ROBA NA ZALIHAMA
+        // ========================================
+        public async Task<List<RobaNaZalihamaModel>> UcitajRobuNaZalihama(
+            List<long> artikalIds, 
+            DateTime? odDatum = null, 
+            DateTime? doDatum = null)
+        {
+            try
+            {
+                if (artikalIds == null || !artikalIds.Any())
+                {
+                    Console.WriteLine("Lista artikala je prazna!");
+                    return new List<RobaNaZalihamaModel>();
+                }
+
+                var rezultat = new List<RobaNaZalihamaModel>();
+                var artikalIdsString = string.Join(",", artikalIds);
+
+                // === STEP 1: NABAVKA (KL- dokumenti) ===
+                var sqlNabavka = $@"
+                    SELECT 
+                        vp.ArtikalID,
+                        vp.Artikal,
+                        SUM(ABS(vp.Kolicina)) as NabavkaKg,
+                        SUM(ABS(vp.Potrazuje)) as NabavkaVrednost
+                    FROM vPrometFinansijev9 vp
+                    WHERE vp.ArtikalID IN ({artikalIdsString})
+                      AND vp.Dokument LIKE 'KL-%'
+                      AND vp.DokumentStatus != 4
+                      AND vp.Cena > 0
+                ";
+
+                var parametersNabavka = new Dictionary<string, object>();
+                if (odDatum.HasValue)
+                {
+                    sqlNabavka += " AND DATE(vp.Datum) >= @OdDatum";
+                    parametersNabavka.Add("@OdDatum", odDatum.Value.Date);
+                }
+                if (doDatum.HasValue)
+                {
+                    sqlNabavka += " AND DATE(vp.Datum) <= @DoDatum";
+                    parametersNabavka.Add("@DoDatum", doDatum.Value.Date);
+                }
+                sqlNabavka += " GROUP BY vp.ArtikalID, vp.Artikal";
+
+                var nabavkaData = await _databaseService.QueryAsync<dynamic>(sqlNabavka, parametersNabavka);
+
+                // === STEP 2: PRODAJA (FK- dokumenti) ===
+                var sqlProdaja = $@"
+                    SELECT 
+                        vp.ArtikalID,
+                        SUM(ABS(vp.Kolicina)) as ProdajaKg,
+                        SUM(ABS(vp.Duguje)) as ProdajaVrednost
+                    FROM vPrometFinansijev9 vp
+                    WHERE vp.ArtikalID IN ({artikalIdsString})
+                      AND vp.Dokument LIKE 'FK-%'
+                      AND vp.DokumentStatus != 4
+                      AND vp.Cena > 0
+                ";
+
+                var parametersProdaja = new Dictionary<string, object>();
+                if (odDatum.HasValue)
+                {
+                    sqlProdaja += " AND DATE(vp.Datum) >= @OdDatum";
+                    parametersProdaja.Add("@OdDatum", odDatum.Value.Date);
+                }
+                if (doDatum.HasValue)
+                {
+                    sqlProdaja += " AND DATE(vp.Datum) <= @DoDatum";
+                    parametersProdaja.Add("@DoDatum", doDatum.Value.Date);
+                }
+                sqlProdaja += " GROUP BY vp.ArtikalID";
+
+                var prodajaData = await _databaseService.QueryAsync<dynamic>(sqlProdaja, parametersProdaja);
+
+                // === STEP 3: LAGER + CENE ===
+                var sqlLager = $@"
+                    SELECT 
+                        ml.ArtikalID,
+                        SUM(ml.Kolicina) as LagerKg,
+                        COALESCE(kac.BrutoCena, 0) as BrutoCena
+                    FROM vwMagacinLager ml
+                    LEFT JOIN KalkulacijaArtikalCena kac ON ml.ArtikalID = kac.ArtikalID
+                    WHERE ml.ArtikalID IN ({artikalIdsString})
+                    GROUP BY ml.ArtikalID, kac.BrutoCena
+                ";
+
+                var lagerData = await _databaseService.QueryAsync<dynamic>(sqlLager);
+
+                // === STEP 4: KOMBINOVANJE PODATAKA ===
+                foreach (var nabavka in nabavkaData)
+                {
+                    var model = new RobaNaZalihamaModel
+                    {
+                        ArtikalID = Convert.ToInt64(nabavka.ArtikalID),
+                        Artikal = (string)nabavka.Artikal ?? "Nepoznato",
+                        NabavkaKg = (decimal)nabavka.NabavkaKg,
+                        NabavkaVrednost = (decimal)nabavka.NabavkaVrednost
+                    };
+
+                    // Dodaj prodaju ako postoji
+                    var prodaja = prodajaData.FirstOrDefault(p => Convert.ToInt64(p.ArtikalID) == model.ArtikalID);
+                    if (prodaja != null)
+                    {
+                        model.ProdajaKg = (decimal)prodaja.ProdajaKg;
+                        model.ProdajaVrednost = (decimal)prodaja.ProdajaVrednost;
+                    }
+
+                    // Dodaj lager ako postoji
+                    var lager = lagerData.FirstOrDefault(l => Convert.ToInt64(l.ArtikalID) == model.ArtikalID);
+                    if (lager != null)
+                    {
+                        model.LagerKg = (decimal)lager.LagerKg;
+                        model.BrutoCena = (decimal)lager.BrutoCena;
+                        model.LagerVrednost = model.LagerKg * model.BrutoCena;
+                    }
+
+                    rezultat.Add(model);
+                }
+
+                Console.WriteLine($"Učitano {rezultat.Count} artikala za brzi pregled");
+                return rezultat;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajRobuNaZalihama: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return new List<RobaNaZalihamaModel>();
             }
         }
     }

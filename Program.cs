@@ -22,6 +22,9 @@ builder.Services.AddFruitSysServices();
 
 // ISPRAVLJENA registracija DashboardService - bez HttpClient
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IFinansijskiPregledService, FinansijskiPregledService>();
+builder.Services.AddScoped<IBrziPregledService, BrziPregledService>();
+
 
 // DODANO: Konfigurisanje baze podataka ako koristiš EF Core
 // builder.Services.AddDbContext<ApplicationDbContext>(options =>

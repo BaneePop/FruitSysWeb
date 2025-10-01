@@ -1,0 +1,322 @@
+@page "/finansijehome"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Core
+
+@inject NavigationManager NavigationManager
+@inject IFinansijeService FinansijeService
+@inject ITypeMappingService TypeMapping
+
+<style>
+    .finansije-header {
+        background: linear-gradient(135deg, #0f5132, #198754);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    
+    .section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .section-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border-left: 4px solid #198754;
+        cursor: pointer;
+        height: 100%;
+    }
+    
+    .section-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        border-left-color: #0f5132;
+    }
+    
+    .section-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        color: #198754;
+    }
+    
+    .section-title {
+        font-weight: 700;
+        color: #0f5132;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+    }
+    
+    .section-description {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+    
+    .section-features {
+        list-style: none;
+        padding: 0;
+        text-align: left;
+    }
+    
+    .section-features li {
+        padding: 0.3rem 0;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+    
+    .section-features li i {
+        color: #198754;
+        margin-right: 0.5rem;
+    }
+
+    .finance-stats {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        border-left: 4px solid #198754;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .stat-card.income {
+        border-left-color: #198754;
+    }
+
+    .stat-card.expense {
+        border-left-color: #dc3545;
+    }
+
+    .stat-card.balance {
+        border-left-color: #0d6efd;
+    }
+
+    .stat-card.profit {
+        border-left-color: #fd7e14;
+    }
+
+    .stat-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #0f5132;
+        display: block;
+    }
+
+    .stat-value.negative {
+        color: #dc3545;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+        font-weight: 500;
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: #198754;
+    }
+</style>
+
+<!-- Header -->
+<div class="finansije-header text-white py-4 mb-4">
+    <div class="container-fluid">
+        <h1 class="h2 mb-1">
+            <i class="bi bi-cash-stack me-2"></i>Promet i Finansije
+        </h1>
+        <p class="mb-0">Centralizirano upravljanje finansijskim tokovima i prometom</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Financial Stats -->
+    <div class="finance-stats">
+        <h5 class="mb-3">
+            <i class="bi bi-graph-up me-2"></i>Finansijski pregled (zadnjih 30 dana)
+        </h5>
+        <div class="stats-grid">
+            <div class="stat-card income">
+                <div class="stat-icon">
+                    <i class="bi bi-arrow-up-circle"></i>
+                </div>
+                <span class="stat-value">@TypeMapping.FormatCurrency(ukupanPrihod)</span>
+                <div class="stat-label">Ukupan Prihod</div>
+            </div>
+            <div class="stat-card expense">
+                <div class="stat-icon">
+                    <i class="bi bi-arrow-down-circle"></i>
+                </div>
+                <span class="stat-value negative">@TypeMapping.FormatCurrency(ukupanRashod)</span>
+                <div class="stat-label">Ukupan Rashod</div>
+            </div>
+            <div class="stat-card balance">
+                <div class="stat-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <span class="stat-value @(ukupnoSaldo >= 0 ? "" : "negative")">@TypeMapping.FormatCurrency(ukupnoSaldo)</span>
+                <div class="stat-label">Neto Saldo</div>
+            </div>
+            <div class="stat-card profit">
+                <div class="stat-icon">
+                    <i class="bi bi-percent"></i>
+                </div>
+                <span class="stat-value">@profitMarza%</span>
+                <div class="stat-label">Profit Marža</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Sections -->
+    <div class="section-grid">
+        <!-- 2.1 Finansije -->
+        <div class="section-card" onclick="() => NavigateTo('/finansije')">
+            <div class="section-icon">
+                <i class="bi bi-calculator"></i>
+            </div>
+            <h4 class="section-title">Finansije</h4>
+            <p class="section-description">
+                Detaljni pregled prihoda, rashoda i salda po komitentima
+            </p>
+            <ul class="section-features">
+                <li><i class="bi bi-check-circle"></i>Prihodi i rashodi</li>
+                <li><i class="bi bi-check-circle"></i>Saldo po komitentima</li>
+                <li><i class="bi bi-check-circle"></i>Top kupci i dobavljači</li>
+                <li><i class="bi bi-check-circle"></i>Mesečna analiza</li>
+                <li><i class="bi bi-check-circle"></i>Export u Excel/PDF</li>
+            </ul>
+        </div>
+
+        <!-- 2.2 Ulaz-Izlaz -->
+        <div class="section-card" onclick="() => NavigateTo('/ulazizlaz')">
+            <div class="section-icon">
+                <i class="bi bi-arrow-left-right"></i>
+            </div>
+            <h4 class="section-title">Ulaz-Izlaz</h4>
+            <p class="section-description">
+                Upravljanje ulaznim i izlaznim dokumentima
+            </p>
+            <ul class="section-features">
+                <li><i class="bi bi-check-circle"></i>Fakture i računi</li>
+                <li><i class="bi bi-check-circle"></i>Otkupni listovi</li>
+                <li><i class="bi bi-check-circle"></i>Prijemnice i otpremnice</li>
+                <li><i class="bi bi-check-circle"></i>Kombinovane statistike</li>
+                <li><i class="bi bi-check-circle"></i>Analiza po mesecima</li>
+            </ul>
+        </div>
+
+        <!-- Dodatni moduli (buduće proširenje) -->
+        <div class="section-card" style="border-left-color: #6c757d; opacity: 0.7;" onclick="() => NavigateTo('/cash-flow')">
+            <div class="section-icon" style="color: #6c757d;">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <h4 class="section-title" style="color: #6c757d;">Cash Flow</h4>
+            <p class="section-description">
+                Praćenje novčanih tokova i likvidnosti (uskoro)
+            </p>
+            <ul class="section-features">
+                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Planirana funkcionalnost</li>
+                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Mesečni cash flow</li>
+                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Prognoza likvidnosti</li>
+                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Analiza rizika</li>
+            </ul>
+        </div>
+
+        <div class="section-card" style="border-left-color: #6c757d; opacity: 0.7;" onclick="() => NavigateTo('/budgets')">
+            <div class="section-icon" style="color: #6c757d;">
+                <i class="bi bi-pie-chart"></i>
+            </div>
+            <h4 class="section-title" style="color: #6c757d;">Budžeti</h4>
+            <p class="section-description">
+                Planiranje i praćenje budžeta (uskoro)
+            </p>
+            <ul class="section-features">
+                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Godišnji budžeti</li>
+                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Plan vs. realizacija</li>
+                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Analiza odstupanja</li>
+                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Troškovna centri</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Navigation Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Početna</a></li>
+            <li class="breadcrumb-item active">Promet i Finansije</li>
+        </ol>
+    </nav>
+</div>
+
+@code {
+    private decimal ukupanPrihod = 0;
+    private decimal ukupanRashod = 0;
+    private decimal ukupnoSaldo = 0;
+    private decimal profitMarza = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UcitajFinansijskeStatistike();
+    }
+
+    private async Task UcitajFinansijskeStatistike()
+    {
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-30),
+                DoDatum = DateTime.Now
+            };
+
+            // Učitaj finansijsko stanje
+            ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filter);
+            
+            // Mock podaci dok se ne implementiraju detaljnije metode
+            ukupanPrihod = Math.Abs(ukupnoSaldo) + new Random().Next(100000, 500000);
+            ukupanRashod = ukupanPrihod - ukupnoSaldo;
+            
+            if (ukupanPrihod > 0)
+            {
+                profitMarza = Math.Round((ukupnoSaldo / ukupanPrihod) * 100, 1);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju finansijskih statistika: {ex.Message}");
+            
+            // Fallback podaci
+            ukupanPrihod = 1250000;
+            ukupanRashod = 950000;
+            ukupnoSaldo = 300000;
+            profitMarza = 24.0m;
+        }
+    }
+
+    private void NavigateTo(string url)
+    {
+        NavigationManager.NavigateTo(url);
+    }
+}

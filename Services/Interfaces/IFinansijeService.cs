@@ -28,6 +28,9 @@ namespace FruitSysWeb.Services.Interfaces
         Task<decimal> UcitajUkupnuZaduzenju(FilterRequest filterRequest);
         Task<decimal> UcitajUkupnoPotrazenost(FilterRequest filterRequest);
         Task<Dictionary<string, decimal>> UcitajSaldoPoMesecima(FilterRequest filterRequest);
+        
+        // NOVO: Brzi pregled robe na zalihama
+        Task<List<RobaNaZalihamaModel>> UcitajRobuNaZalihama(List<long> artikalIds, DateTime? odDatum = null, DateTime? doDatum = null);
     }
 }
 

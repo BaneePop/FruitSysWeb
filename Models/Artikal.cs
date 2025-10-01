@@ -25,6 +25,9 @@ namespace FruitSysWeb.Models
         [Display(Name = "Tip naziv")]
         public string AmbalazaTip => GetAmbalazaTip(Tip);
 
+        [Display(Name = "Aktivan")]
+        public int? Aktivan { get; set; }
+
         private static string GetTipNaziv(int tip)
         {
             return tip switch

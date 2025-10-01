@@ -30,6 +30,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9DaGFydHMvRGFzaGJvYXJkQ2hhcnRzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/Bane/FruitSysWeb/Components/Pages/Brzi-pregled-konfiguracija.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9CcnppLXByZWdsZWQta29uZmlndXJhY2lqYS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/Bane/FruitSysWeb/Components/Pages/ChartsTest.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9DaGFydHNUZXN0LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
@@ -40,6 +44,14 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/Users/Bane/FruitSysWeb/Components/Pages/FilterSection.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9GaWx0ZXJTZWN0aW9uLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/Bane/FruitSysWeb/Components/Pages/FinansijeHome.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9GaW5hbnNpamVIb21lLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/Bane/FruitSysWeb/Components/Pages/FinansijskiPregled.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9GaW5hbnNpanNraVByZWdsZWQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/Bane/FruitSysWeb/Components/Pages/Funansije.razor]
@@ -58,12 +70,28 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9MYWdlci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/Bane/FruitSysWeb/Components/Pages/LagerHome.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9MYWdlckhvbWUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/Bane/FruitSysWeb/Components/Pages/LagerProizvodnje.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9MYWdlclByb2l6dm9kbmplLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/Bane/FruitSysWeb/Components/Pages/Nabavka.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9OYWJhdmthLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/Bane/FruitSysWeb/Components/Pages/Prerada.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9QcmVyYWRhLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/Bane/FruitSysWeb/Components/Pages/PreradaHome.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9QcmVyYWRhSG9tZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/Bane/FruitSysWeb/Components/Pages/Prodaja.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Qcm9kYWphLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/Bane/FruitSysWeb/Components/Pages/Proizvodnja.razor]
@@ -82,8 +110,8 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9UZXN0TWFwcGluZy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/Bane/FruitSysWeb/Components/Pages/UlazIzlaz.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9VbGF6SXpsYXoucmF6b3I=
+[/Users/Bane/FruitSysWeb/Components/Shared/BrziPregledTabela.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvQnJ6aVByZWdsZWRUYWJlbGEucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/Bane/FruitSysWeb/Components/Shared/Filters/ArtikalFilter.razor]
@@ -104,6 +132,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/Users/Bane/FruitSysWeb/Components/Shared/Layout/DashboardStats.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvTGF5b3V0L0Rhc2hib2FyZFN0YXRzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/Bane/FruitSysWeb/Components/Shared/RobaNaZalihama.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvUm9iYU5hWmFsaWhhbWEucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/Bane/FruitSysWeb/Components/Shared/Tables/DataTable.razor]

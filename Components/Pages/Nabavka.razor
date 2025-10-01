@@ -1,4 +1,4 @@
-@page "/finansije"
+@page "/Nabavka"
 @using Microsoft.AspNetCore.Components.Web
 @using ApexCharts
 @using FruitSysWeb.Components.Charts
@@ -15,13 +15,13 @@
 @inject IJSRuntime JSRuntime
 
 <!-- Header sa saldo na vrhu -->
-<div class="bg-primary text-white py-3 mb-4">
+<div class="bg-danger text-white py-3 mb-4">
     <div class="container-fluid">
         <div class="row align-items-center">
             <div class="col-md-6">
                 <h1 class="h3 mb-0">
-                    <i class="bi bi-cash-coin me-2"></i>
-                    Finansijski Pregled
+                    <i class="bi bi-box-arrow-up me-2"></i>
+                    Nabavka - Finansijski Pregled
                 </h1>
             </div>
             <div class="col-md-6 text-end">
@@ -103,7 +103,7 @@
                         </div>
 
                         <!-- REFACTORED: Tip artikla sa centralizovanim dropdown -->
-                        <div class="col-md-2 mb-3">
+                         <div class="col-md-2 mb-3">
                             <label class="form-label fw-bold">Tip artikla:</label>
                             <select class="form-select" @bind="filterRequest.Tip">
                                 @foreach(var option in TypeMapping.GetMagacinDropdownOptions())
@@ -112,7 +112,7 @@
                                 }       
                             </select>
                         </div>
-
+                        
                         <!-- Action buttons sa SystemConstants -->
                         <div class="col-md-12 mb-3">
                             <div class="d-flex gap-2">
@@ -150,7 +150,7 @@
     <!-- REFACTORED Statistics Cards sa TypeMapping formatiranjem -->
     <div class="row mb-4 financial-section">
         <div class="col-md-3">
-            <div class="dashboard-card">
+            <div class="dashboard-card bg-danger-light">
                 <h6 class="text-muted">Ukupno Potražuje</h6>
                 <h4 class="@TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(UkupnoPotrazuje) RSD</h4>
             </div>
@@ -205,9 +205,9 @@
                 <div class="card">
                     <div class="card-header bg-light">
                         <h5 class="card-title mb-0">
-                            <i class="bi bi-list-check me-2"></i>
-                            Finansijski podaci - Detaljni prikaz
-                            <span class="badge bg-primary ms-2">@TypeMapping.FormatInteger(podaci.Count) stavki</span>
+                                <i class="bi bi-box-arrow-up me-2"></i>
+                                Nabavka - Detaljni prikaz (bez FK- dokumenata)  <!-- Izmeni naslov -->
+                            <span class="badge bg-danger ms-2">@TypeMapping.FormatInteger(podaci.Count) stavki</span>
                         </h5>
                     </div>
                     <div class="card-body p-0">
@@ -339,25 +339,7 @@
         StateHasChanged();
     }
 
-    private async Task OnArtikalTipChanged(ChangeEventArgs e)
-    {
-        filterRequest.Tip = e.Value?.ToString();
-        filterRequest.ArtikalId = null;
     
-        if (string.IsNullOrWhiteSpace(filterRequest.Tip))
-        {
-            artikliLista = await ArtikalService.UcitajSveArtikle();
-        }
-        else if (int.TryParse(filterRequest.Tip, out int tipInt))
-        {
-            artikliLista = await ArtikalService.UcitajArtiklePoPretragaITipu("", tipInt);
-        }
-        else
-        {
-            artikliLista = await ArtikalService.UcitajSveArtikle();
-        }
-        StateHasChanged();
-    }
 
     private void OnOdDatumChanged(ChangeEventArgs e)
     {
@@ -375,30 +357,36 @@
         }
     }
 
-    private async Task UcitajPodatke()
+   private async Task UcitajPodatke()
     {
         try
         {
-            podaci = await FinansijeService.UcitajFinansijskiIzvestaj(filterRequest);
-            ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filterRequest);
+        // Učitaj sve podatke iz servisa
+        var rezultat = await FinansijeService.UcitajFinansijskiIzvestaj(filterRequest);
+        
+        // ISPRAVKA - Dodaj null check
+        podaci = rezultat?.Where(x => x.Dokument != null && !x.Dokument.StartsWith("FK-", StringComparison.OrdinalIgnoreCase)).ToList() 
+                 ?? new List<FinansijeModel>();
+        
+        ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filterRequest);
 
-            ukupnoPotrazuje = podaci.Sum(x => x.Potrazuje);
-            ukupnoDuguje = podaci.Sum(x => x.Duguje);
+        ukupnoPotrazuje = podaci.Sum(x => x.Potrazuje);
+        ukupnoDuguje = podaci.Sum(x => x.Duguje);
 
-            topKupci = await FinansijeService.UcitajTopKupce(filterRequest);
-            topDobavljaci = await FinansijeService.UcitajTopDobavljace(filterRequest);
+        topKupci = await FinansijeService.UcitajTopKupce(filterRequest);
+        topDobavljaci = await FinansijeService.UcitajTopDobavljace(filterRequest);
 
-            StateHasChanged();
+        StateHasChanged();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greška pri učitavanju podataka: {ex.Message}");
-            podaci = new List<FinansijeModel>();
-            ukupnoSaldo = 0;
-            ukupnoPotrazuje = 0;
-            ukupnoDuguje = 0;
+        Console.WriteLine($"Greška pri učitavanju podataka: {ex.Message}");
+        podaci = new List<FinansijeModel>();
+        ukupnoSaldo = 0;
+        ukupnoPotrazuje = 0;
+        ukupnoDuguje = 0;
         }
-    }
+    }   
 
     private async Task ResetujFiltere()
     {

@@ -62,3 +62,5 @@ implementacija_*.md
 # Temp files
 *.tmp
 *.temp
+
+.fake

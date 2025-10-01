@@ -164,13 +164,7 @@ nteractiveServer.rendermode;
     private List<ChartDataPoint>? testPieData;
     private bool isLoadingTest = false;
     private bool hasErrorTest = false;
-  // Chart Data
-    private List<ChartDataPoint>? TopKupciData;
-    private List<ChartDataPoint>? TopDobavljaciData;
-    private List<ChartDataPoint>? ProizvodnjaData;
-    private List<ChartDataPoint>? SirovineData;
-    private List<ChartDataPoint>? GotoviProizvodiData;
-    private List<ChartDataPoint>? AmbalazeData;
+    // Chart Data (removed unused fields)
 
     // Real data
     private List<ChartDataPoint>? topKupciData;
@@ -227,7 +221,7 @@ nteractiveServer.rendermode;
         {
             Logger.LogError(ex, "Error refreshing test data");
             hasErrorTest = true;
-            TopKupciData = ChartDataHelper.GetMockData("Kupac", 5);
+            topKupciData = ChartDataHelper.GetMockData("Kupac", 5);
         }
         finally
         {

@@ -1,0 +1,247 @@
+@page "/brzi-pregled-konfiguracija"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Models
+@using System.Text.Json
+
+@inject IBrziPregledService BrziPregledService
+@inject IKomitentService KomitentService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-gear-fill"></i> Konfiguracija Brzog Pregleda
+                    </h4>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- DOBAVLJACI SEKCIJA -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="border-bottom pb-2">
+                                <i class="bi bi-truck"></i> Izaberi Dobavljace (max 6)
+                            </h5>
+                        </div>
+                        @for (int i = 0; i < 6; i++)
+                        {
+                            var index = i;
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Dobavljac @(i + 1):</label>
+                                <select class="form-select" 
+                                        @bind="izabraniDobavljaci[index]">
+                                    <option value="">-- Nije izabran --</option>
+                                    @if (sviDobavljaci != null)
+                                    {
+                                        @foreach (var k in sviDobavljaci)
+                                        {
+                                            <option value="@k.Id">@k.Naziv</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- KUPCI SEKCIJA -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="border-bottom pb-2">
+                                <i class="bi bi-cart-check"></i> Izaberi Kupce (max 6)
+                            </h5>
+                        </div>
+                        @for (int i = 0; i < 6; i++)
+                        {
+                            var index = i;
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Kupac @(i + 1):</label>
+                                <select class="form-select" 
+                                        @bind="izabraniKupci[index]">
+                                    <option value="">-- Nije izabran --</option>
+                                    @if (sviKupci != null)
+                                    {
+                                        @foreach (var k in sviKupci)
+                                        {
+                                            <option value="@k.Id">@k.Naziv</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- AKCIJE -->
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            <button class="btn btn-success btn-lg me-2" 
+                                    @onclick="SacuvajKonfiguraciju">
+                                <i class="bi bi-save"></i> Sacuvaj Konfiguraciju
+                            </button>
+                            <button class="btn btn-secondary btn-lg me-2" 
+                                    @onclick="ResetuiKonfiguraciju">
+                                <i class="bi bi-arrow-clockwise"></i> Resetuj
+                            </button>
+                            <button class="btn btn-primary btn-lg" 
+                                    @onclick="PrikaziPregled">
+                                <i class="bi bi-eye"></i> Prikazi Pregled
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PREGLED IZBORA -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6>Izabrani Dobavljaci:</h6>
+                                @if (izabraniDobavljaci.Any(x => x.HasValue))
+                                {
+                                    <ul class="mb-0">
+                                        @foreach (var id in izabraniDobavljaci.Where(x => x.HasValue))
+                                        {
+                                            var naziv = sviDobavljaci?.FirstOrDefault(k => k.Id == id.Value)?.Naziv;
+                                            <li>@naziv</li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <p class="text-muted mb-0">Jos nije izabran dobavljac</p>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-success">
+                                <h6>Izabrani Kupci:</h6>
+                                @if (izabraniKupci.Any(x => x.HasValue))
+                                {
+                                    <ul class="mb-0">
+                                        @foreach (var id in izabraniKupci.Where(x => x.HasValue))
+                                        {
+                                            var naziv = sviKupci?.FirstOrDefault(k => k.Id == id.Value)?.Naziv;
+                                            <li>@naziv</li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <p class="text-muted mb-0">Jos nije izabran kupac</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Komitent>? sviDobavljaci;
+    private List<Komitent>? sviKupci;
+    
+    private int?[] izabraniDobavljaci = new int?[6];
+    private int?[] izabraniKupci = new int?[6];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UcitajKomitente();
+        await UcitajPostojecuKonfiguraciju();
+    }
+
+    private async Task UcitajKomitente()
+    {
+        try
+        {
+            var sviKomitenti = await KomitentService.UcitajSveKomitente();
+            sviDobavljaci = sviKomitenti.ToList();
+            sviKupci = sviKomitenti.ToList();
+            Console.WriteLine($"Ucitano {sviKomitenti.Count()} komitenata");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greska pri ucitavanju komitenata: {ex.Message}");
+        }
+    }
+
+    private async Task UcitajPostojecuKonfiguraciju()
+    {
+        try
+        {
+            var json = await JS.InvokeAsync<string>("localStorage.getItem", "brzi_pregled_config");
+            
+            if (!string.IsNullOrEmpty(json))
+            {
+                var config = JsonSerializer.Deserialize<BrziPregledKonfiguracija>(json);
+                
+                if (config != null)
+                {
+                    for (int i = 0; i < 6 && i < config.IzabraniDobavljaci.Count; i++)
+                    {
+                        izabraniDobavljaci[i] = config.IzabraniDobavljaci[i];
+                    }
+                    
+                    for (int i = 0; i < 6 && i < config.IzabraniKupci.Count; i++)
+                    {
+                        izabraniKupci[i] = config.IzabraniKupci[i];
+                    }
+                    
+                    Console.WriteLine("Konfiguracija ucitana iz localStorage");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greska pri ucitavanju konfiguracije: {ex.Message}");
+        }
+    }
+
+    private async Task SacuvajKonfiguraciju()
+    {
+        try
+        {
+            var config = new BrziPregledKonfiguracija
+            {
+                IzabraniDobavljaci = izabraniDobavljaci
+                    .Where(x => x.HasValue)
+                    .Select(x => x.Value)
+                    .ToList(),
+                    
+                IzabraniKupci = izabraniKupci
+                    .Where(x => x.HasValue)
+                    .Select(x => x.Value)
+                    .ToList()
+            };
+
+            var json = JsonSerializer.Serialize(config);
+            await JS.InvokeVoidAsync("localStorage.setItem", "brzi_pregled_config", json);
+            
+            Console.WriteLine($"Konfiguracija sacuvana: {config.IzabraniDobavljaci.Count} dobavljaca, {config.IzabraniKupci.Count} kupaca");
+            await JS.InvokeVoidAsync("alert", "Konfiguracija uspesno sacuvana!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greska pri cuvanju: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Greska pri cuvanju konfiguracije!");
+        }
+    }
+
+    private void ResetuiKonfiguraciju()
+    {
+        izabraniDobavljaci = new int?[6];
+        izabraniKupci = new int?[6];
+        StateHasChanged();
+    }
+
+    private void PrikaziPregled()
+    {
+        Navigation.NavigateTo("/finansijski-pregled");
+    }
+}

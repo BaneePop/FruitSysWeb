@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web
 @using ApexCharts
 @using FruitSysWeb.Components.Charts
 @using Blazor_ApexCharts
@@ -12,17 +12,103 @@
         <div class="col-12">
             <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-3">
                 <div class="container-fluid">
-                    <a class="navbar-brand" href="/">FruitSysWeb</a>
+                    <a class="navbar-brand fw-bold" href="/">
+                        <i class="bi bi-apple me-2"></i>FruitSysWeb
+                    </a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav">
+                        <ul class="navbar-nav me-auto">
+                            <!-- Početna -->
                             <li class="nav-item">
-                                <a class="nav-link" href="/">Početna</a>
+                                <a class="nav-link" href="/">
+                                    <i class="bi bi-house me-1"></i>Početna
+                                </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/proizvodnja">Proizvodnja</a>
+
+                            <!-- 1. PRERADA Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-gear-wide-connected me-1"></i>Prerada
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/preradahome">
+                                        <i class="bi bi-house-door me-2"></i>Prerada početna
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/proizvodnja">
+                                        <i class="bi bi-gear me-2"></i>Proizvodnja
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/lager-proizvodnje">
+                                        <i class="bi bi-boxes me-2"></i>Lager proizvodnje
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/radni-nalozi">
+                                        <i class="bi bi-clipboard-data me-2"></i>Radni nalozi
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/smenski-izvestaji">
+                                        <i class="bi bi-calendar3 me-2"></i>Smenski izveštaji
+                                    </a></li>
+                                </ul>
+                            </li>
+
+                            <!-- 2. FINANSIJE Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-cash-stack me-1"></i>Finansije
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/finansijehome">
+                                        <i class="bi bi-house-door me-2"></i>Finansije početna
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/finansije">
+                                        <i class="bi bi-calculator me-2"></i>Finansijski pregledi
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/ulazizlaz">
+                                        <i class="bi bi-arrow-left-right me-2"></i>Ulaz-Izlaz
+                                    </a></li>
+                                </ul>
+                            </li>
+
+                            <!-- 3. LAGER Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-boxes me-1"></i>Lager
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/lagerhome">
+                                        <i class="bi bi-house-door me-2"></i>Lager početna
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/lager">
+                                        <i class="bi bi-archive me-2"></i>Magacin lager
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/lager-proizvodnje">
+                                        <i class="bi bi-gear-wide-connected me-2"></i>Lager proizvodnje
+                                    </a></li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <!-- Right side items -->
+                        <ul class="navbar-nav">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-tools me-1"></i>Alati
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="/test-mapping">
+                                        <i class="bi bi-code-slash me-2"></i>TypeMapping Test
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/charts-test">
+                                        <i class="bi bi-bar-chart me-2"></i>Charts Test
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/prerada">
+                                        <i class="bi bi-wrench me-2"></i>Prerada (Legacy)
+                                    </a></li>
+                                </ul>
                             </li>
                         </ul>
                     </div>
@@ -38,55 +124,169 @@
     </div>
 </div>
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+<!-- Mobile/Sidebar Navigation (for smaller screens) -->
+<div class="@NavMenuCssClass navbar-toggler-target" @onclick="ToggleNavMenu">
     <nav class="flex-column">
+        <!-- Home -->
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="bi bi-house" aria-hidden="true"></span> Početna
             </NavLink>
         </div>
+
+        <!-- Prerada Section -->
         <div class="nav-item px-3">
+            <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">PRERADA</div>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="preradahome">
+                <span class="bi bi-house-door" aria-hidden="true"></span> Prerada početna
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
             <NavLink class="nav-link" href="proizvodnja">
-                <span class="bi bi-list-check" aria-hidden="true"></span> Proizvodnja
+                <span class="bi bi-gear" aria-hidden="true"></span> Proizvodnja
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="finansije">
-                <span class="bi bi-cash-coin" aria-hidden="true"></span> Finansije
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="lager">
-                <span class="bi bi-boxes" aria-hidden="true"></span> Lager
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="prerada">
-                <span class="bi bi-gear-fill" aria-hidden="true"></span> Prerada
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
+        <div class="nav-item px-3 ms-3">
             <NavLink class="nav-link" href="radni-nalozi">
                 <span class="bi bi-clipboard-data" aria-hidden="true"></span> Radni nalozi
             </NavLink>
         </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="smenski-izvestaji">
+                <span class="bi bi-calendar3" aria-hidden="true"></span> Smenski izveštaji
+            </NavLink>
+        </div>
+
+        <!-- Finansije Section -->
         <div class="nav-item px-3">
+            <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">FINANSIJE</div>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="finansijehome">
+                <span class="bi bi-house-door" aria-hidden="true"></span> Finansije početna
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="finansije">
+                <span class="bi bi-calculator" aria-hidden="true"></span> Finansijski pregledi
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
             <NavLink class="nav-link" href="ulazizlaz">
                 <span class="bi bi-arrow-left-right" aria-hidden="true"></span> Ulaz-Izlaz
             </NavLink>
         </div>
+
+        <!-- Lager Section -->
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="izvjestaji">
-                <span class="bi bi-clipboard-data" aria-hidden="true"></span> Izveštaji
-            </NavLink>
+            <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">LAGER</div>
         </div>
         <div class="nav-item px-3">
+            <NavLink class="nav-link" href="lagerhome">
+                <span class="bi bi-house-door" aria-hidden="true"></span> Lager početna
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="lager">
+                <span class="bi bi-archive" aria-hidden="true"></span> Magacin lager
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="lager-proizvodnje">
+                <span class="bi bi-gear-wide-connected" aria-hidden="true"></span> Lager proizvodnje
+            </NavLink>
+        </div>
+
+        <!-- Tools Section -->
+        <div class="nav-item px-3">
+            <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">ALATI</div>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="test-mapping">
+                <span class="bi bi-code-slash" aria-hidden="true"></span> TypeMapping Test
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
             <NavLink class="nav-link" href="charts-test">
                 <span class="bi bi-bar-chart" aria-hidden="true"></span> Charts Test
             </NavLink>
         </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="prerada">
+                <span class="bi bi-wrench text-muted" aria-hidden="true"></span> <small class="text-muted">Prerada (Legacy)</small>
+            </NavLink>
+        </div>
     </nav>
 </div>
+
+<style>
+    .navbar-brand {
+        font-size: 1.4rem;
+    }
+
+    .dropdown-menu {
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        padding: 0.5rem 0;
+    }
+
+    .dropdown-item {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+
+    .dropdown-divider {
+        margin: 0.5rem 0;
+    }
+
+    .nav-section-header {
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-left: 0.5rem;
+    }
+
+    /* Mobile sidebar styling */
+    .navbar-toggler-target {
+        position: fixed;
+        top: 0;
+        left: -300px;
+        width: 300px;
+        height: 100vh;
+        background: #f8f9fa;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        transition: left 0.3s ease;
+        z-index: 1000;
+        overflow-y: auto;
+        padding-top: 70px;
+    }
+
+    .navbar-toggler-target:not(.collapse) {
+        left: 0;
+    }
+
+    media (max-width: 768px) {
+        .dropdown-menu {
+            position: static;
+            float: none;
+            width: 100%;
+            margin-top: 0;
+            background-color: rgba(255,255,255,0.95);
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+        }
+    }
+</style>
 
 @code {
     private bool collapseNavMenu = true;

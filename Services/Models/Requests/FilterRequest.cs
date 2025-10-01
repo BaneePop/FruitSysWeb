@@ -100,6 +100,10 @@ namespace FruitSysWeb.Services.Models.Requests
         [Display(Name = "Dokument Status")]
         public int? DokumentStatus { get; set; }
         
+        // NOVO: Filter za Magacin
+        [Display(Name = "Magacin ID")]
+        public long? MagacinId { get; set; }
+        
         // NOVO: Filter za ArtikalKlasifikacija (vrsta artikla)
         [Display(Name = "Artikal Klasifikacija ID")]
         public long? ArtikalKlasifikacijaId { get; set; }
@@ -116,6 +120,16 @@ namespace FruitSysWeb.Services.Models.Requests
         
         [Display(Name = "Smena")]
         public int? Smena { get; set; }
+        
+        // NOVO: Smenski izvestaji
+        [Display(Name = "Smenski Izveštaj")]
+        public string? SmenskiIzvestaj { get; set; }
+        
+        [Display(Name = "Radni Proces ID")]
+        public int? RadniProcesId { get; set; }
+        
+        [Display(Name = "Proizvodni Proces ID")]
+        public int? ProizvodniProcesId { get; set; }
 
         // METODA: Provera da li ima aktivne filtere
         public bool ImaAktivneFiltre()
@@ -149,6 +163,7 @@ namespace FruitSysWeb.Services.Models.Requests
                    !string.IsNullOrEmpty(Status) ||
                    Aktivno.HasValue ||
                    DokumentStatus.HasValue ||
+                   MagacinId.HasValue ||
                    ArtikalKlasifikacijaId.HasValue ||
                    !string.IsNullOrEmpty(VrstaArtikla);
         }
@@ -210,6 +225,9 @@ namespace FruitSysWeb.Services.Models.Requests
             if (MinimalnaKolicinaLager.HasValue)
                 filteri.Add($"Min količina lager: {MinimalnaKolicinaLager:N2}");
 
+            if (MagacinId.HasValue)
+                filteri.Add($"Magacin: {GetMagacinNaziv(MagacinId.Value)}");
+
             if (!string.IsNullOrEmpty(VrstaArtikla))
                 filteri.Add($"Vrsta artikla: {VrstaArtikla}");
 
@@ -258,6 +276,27 @@ namespace FruitSysWeb.Services.Models.Requests
                 };
             }
             return tip;
+        }
+
+        private static string GetMagacinNaziv(long magacinId)
+        {
+            // TODO: Replace with MagacinTypes.DisplayNames when available
+            return magacinId switch
+            {
+                1 => "Ne postoji",
+                2 => "Sveza Roba",
+                3 => "Sirovine", 
+                4 => "Ambalaza",
+                5 => "Polu Proizvod",
+                6 => "Gotov Proizvod",
+                7 => "Kalo i Rastur",
+                8 => "Usl.Mleko",
+                9 => "Repromaterijal",
+                10 => "Đubriva",
+                11 => "Usl.Voće",
+                12 => "Usl.Meso",
+                _ => $"Magacin {magacinId}"
+            };
         }
 
         /* // METODA: Reset filtera
@@ -329,6 +368,7 @@ namespace FruitSysWeb.Services.Models.Requests
                 Status = this.Status,
                 Aktivno = this.Aktivno,
                 DokumentStatus = this.DokumentStatus,
+                MagacinId = this.MagacinId,
                 ArtikalKlasifikacijaId = this.ArtikalKlasifikacijaId,
                 VrstaArtikla = this.VrstaArtikla
             };

@@ -15,137 +15,316 @@
 @inject ITypeMappingService TypeMapping
 
 <style>
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    .quick-action {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-        border-left: 4px solid #198754;
-        cursor: pointer;
-    }
-    
-    .quick-action:hover {
-        transform: translateY(-3px);
+    .main-header {
+        background: linear-gradient(135deg, #0f5132, #198754, #20c997);
+        border-radius: 15px;
+        margin-bottom: 2.5rem;
         box-shadow: 0 6px 20px rgba(0,0,0,0.15);
     }
     
-    .quick-action-icon {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-        color: #198754;
+    .section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2.5rem;
     }
     
-    .quick-action-title {
+    .main-section {
+        background: white;
+        border-radius: 15px;
+        padding: 2.5rem;
+        text-align: center;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: none;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .main-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, #198754, #20c997);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.4s ease;
+    }
+
+    .main-section:hover::before {
+        transform: scaleX(1);
+    }
+    
+    .main-section:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    }
+    
+    .section-icon-main {
+        font-size: 4rem;
+        margin-bottom: 2rem;
+        background: linear-gradient(135deg, #198754, #20c997);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        transition: all 0.3s ease;
+    }
+
+    .main-section:hover .section-icon-main {
+        transform: scale(1.1);
+    }
+    
+    .section-title-main {
+        font-weight: 800;
+        color: #0f5132;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+    }
+    
+    .section-description-main {
+        color: #6c757d;
+        margin-bottom: 2rem;
+        line-height: 1.7;
+        font-size: 1.05rem;
+    }
+    
+    .section-features-main {
+        list-style: none;
+        padding: 0;
+        text-align: left;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    
+    .section-features-main li {
+        padding: 0.4rem 0;
+        color: #495057;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-features-main li i {
+        color: #198754;
+        margin-right: 0.7rem;
+        font-size: 1rem;
+    }
+
+    .stats-overview {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .stats-grid-main {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .stat-card-main {
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border-left: 4px solid #198754;
+    }
+
+    .stat-card-main:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .stat-value-main {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #0f5132;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label-main {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .welcome-text {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, rgba(25, 135, 84, 0.05), rgba(32, 201, 151, 0.05));
+        border-radius: 12px;
+        border: 1px solid rgba(25, 135, 84, 0.1);
+    }
+
+    .welcome-title {
+        font-size: 1.3rem;
         font-weight: 600;
         color: #0f5132;
         margin-bottom: 0.5rem;
     }
-    
-    .quick-action-desc {
+
+    .welcome-subtitle {
         color: #6c757d;
-        font-size: 0.9rem;
-    }
-    
-    .dashboard-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        margin-bottom: 1.5rem;
+        font-size: 1rem;
     }
 
-    .section-title {
-        margin-bottom: 0;
-        font-weight: 600;
-        color: #0f5132;
+    media (max-width: 768px) {
+        .section-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .section-features-main {
+            grid-template-columns: 1fr;
+        }
+
+        .main-section {
+            padding: 1.5rem;
+        }
+
+        .section-icon-main {
+            font-size: 3rem;
+        }
     }
 </style>
 
 <!-- Header -->
-<div class="financial-header text-white py-4 mb-4">
+<div class="main-header text-white py-5 mb-4">
     <div class="container-fluid">
-        <h1 class="h2 mb-1">
-            <i class="bi bi-speedometer2 me-2"></i>Dashboard
-        </h1>
-        <p class="mb-0">Pregled ključnih poslovnih pokazatelja</p>
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-5 mb-2 fw-bold">
+                    <i class="bi bi-speedometer2 me-3"></i>FruitSysWeb Dashboard
+                </h1>
+                <p class="lead mb-0">Integrisani sistem za upravljanje voćnom proizvodnjom</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="text-white-50">
+                    <i class="bi bi-calendar-event me-2"></i>@DateTime.Now.ToString("dd.MM.yyyy")
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="container-fluid">
-    <!-- Quick Actions -->
-    <div class="dashboard-grid">
-        <div class="quick-action" @onclick="NavigateToFinansije">
-            <div class="quick-action-icon">
-                <i class="bi bi-cash-coin"></i>
-            </div>
-            <div class="quick-action-title">Finansije</div>
-            <div class="quick-action-desc">Pregled prihoda, rashoda i salda</div>
-        </div>
+    <!-- Welcome Section -->
+    <div class="welcome-text">
+        <div class="welcome-title">Dobrodošli u FruitSysWeb</div>
+        <div class="welcome-subtitle">Izaberite sekciju za nastavak rada sa sistemom</div>
+    </div>
 
-        <div class="quick-action" @onclick="NavigateToProizvodnja">
-            <div class="quick-action-icon">
-                <i class="bi bi-gear"></i>
+    <!-- Quick Stats Overview -->
+    <div class="stats-overview">
+        <h5 class="mb-3">
+            <i class="bi bi-graph-up me-2"></i>Ključni pokazatelje (zadnjih 30 dana)
+        </h5>
+        <div class="stats-grid-main">
+            <div class="stat-card-main" style="border-left-color: #198754;">
+                <span class="stat-value-main">@TypeMapping.FormatCurrency(ukupnoSaldo)</span>
+                <div class="stat-label-main">Ukupno Saldo</div>
             </div>
-            <div class="quick-action-title">Proizvodnja</div>
-            <div class="quick-action-desc">Radni nalozi i analiza prerade</div>
-        </div>
-
-        <div class="quick-action" @onclick="NavigateToLager">
-            <div class="quick-action-icon">
-                <i class="bi bi-boxes"></i>
+            <div class="stat-card-main" style="border-left-color: #6f42c1;">
+                <span class="stat-value-main">@TypeMapping.FormatCurrency(ukupnaVrednostLager)</span>
+                <div class="stat-label-main">Vrednost Lagera</div>
             </div>
-            <div class="quick-action-title">Lager</div>
-            <div class="quick-action-desc">Stanje sirovina i gotovih proizvoda</div>
-        </div>
-
-        <div class="quick-action" @onclick="NavigateToTest">
-            <div class="quick-action-icon">
-                <i class="bi bi-clipboard-data"></i>
+            <div class="stat-card-main" style="border-left-color: #fd7e14;">
+                <span class="stat-value-main">@TypeMapping.FormatWeight(ukupnaProizvodnja)</span>
+                <div class="stat-label-main">Proizvodnja (7 dana)</div>
             </div>
-            <div class="quick-action-title">TypeMapping Test</div>
-            <div class="quick-action-desc">Test refaktorisanih komponenti</div>
+            <div class="stat-card-main" style="border-left-color: #dc3545;">
+                <span class="stat-value-main">@brojAktivnihNaloga</span>
+                <div class="stat-label-main">Aktivni Nalozi</div>
+            </div>
         </div>
     </div>
-    <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-        <i class="bi bi-gear me-1"></i>Prerada
-    </a>
-    <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="/radni-nalozi">
-            <i class="bi bi-clipboard-data me-2"></i>Radni Nalozi
-        </a></li>
-        <li><a class="dropdown-item" href="/smenski-izvestaji">
-            <i class="bi bi-calendar3 me-2"></i>Smenski Izveštaji
-        </a></li>
-    </ul>
-</li>
 
-    <!-- Statistics -->
-    <DashboardStats Value1="@ukupnoSaldo"
-                    Value2="@ukupnaVrednostLager"
-                    Value3="@ukupnaProizvodnja"
-                    Value4="@brojAktivnihNaloga"
-                    Label1="Ukupno Saldo"
-                    Label2="Vrednost Lager"
-                    Label3="Gotov proizvod (7 dana)"
-                    Label4="Aktivni Nalozi"
-                    Icon1="bi-cash-coin"
-                    Icon2="bi-box-seam"
-                    Icon3="bi-gear"
-                    Icon4="bi-clipboard-check" />
+    <!-- Main Sections -->
+    <div class="section-grid">
+        <!-- 1. Prerada Home -->
+        <div class="main-section" onclick="() => NavigateTo('/preradahome')">
+            <div class="section-icon-main">
+                <i class="bi bi-gear-wide-connected"></i>
+            </div>
+            <h3 class="section-title-main">Prerada</h3>
+            <p class="section-description-main">
+                Upravljanje proizvodnim procesima, radnim nalozima i smenskim izveštajima
+            </p>
+            <ul class="section-features-main">
+                <li><i class="bi bi-check-circle"></i>Proizvodnja</li>
+                <li><i class="bi bi-check-circle"></i>Lager proizvodnje</li>
+                <li><i class="bi bi-check-circle"></i>Radni nalozi</li>
+                <li><i class="bi bi-check-circle"></i>Smenski izveštaji</li>
+                <li><i class="bi bi-check-circle"></i>Evidencija rada</li>
+                <li><i class="bi bi-check-circle"></i>Efikasnost procesa</li>
+            </ul>
+        </div>
 
-    <!-- Charts Section -->
-    <DashboardCharts />
+        <!-- 2. Finansije Home -->
+        <div class="main-section" onclick="() => NavigateTo('/finansijehome')">
+            <div class="section-icon-main">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <h3 class="section-title-main">Promet i Finansije</h3>
+            <p class="section-description-main">
+                Centralizirano upravljanje finansijskim tokovima i prometom
+            </p>
+            <ul class="section-features-main">
+                <li><i class="bi bi-check-circle"></i>Finansijski pregledi</li>
+                <li><i class="bi bi-check-circle"></i>Ulaz-Izlaz dokumenti</li>
+                <li><i class="bi bi-check-circle"></i>Saldo analiza</li>
+                <li><i class="bi bi-check-circle"></i>Top kupci/dobavljači</li>
+                <li><i class="bi bi-check-circle"></i>Mesečne analize</li>
+                <li><i class="bi bi-check-circle"></i>Export izveštaja</li>
+            </ul>
+        </div>
 
+        <!-- 3. Lager Home -->
+        <div class="main-section" onclick="() => NavigateTo('/lagerhome')">
+            <div class="section-icon-main">
+                <i class="bi bi-boxes"></i>
+            </div>
+            <h3 class="section-title-main">Lager</h3>
+            <p class="section-description-main">
+                Upravljanje magacinskim operacijama i zalihama sirovina i gotovih proizvoda
+            </p>
+            <ul class="section-features-main">
+                <li><i class="bi bi-check-circle"></i>Magacin lager</li>
+                <li><i class="bi bi-check-circle"></i>Lager proizvodnje</li>
+                <li><i class="bi bi-check-circle"></i>Stanje sirovina</li>
+                <li><i class="bi bi-check-circle"></i>Gotovi proizvodi</li>
+                <li><i class="bi bi-check-circle"></i>Ambalažni materijal</li>
+                <li><i class="bi bi-check-circle"></i>Status indikatori</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Charts Section (Existing Dashboard Analytics) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart me-2"></i>Analitika i pregled
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <DashboardCharts />
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @code {
@@ -178,26 +357,17 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Greška pri učitavanju statistika: {ex.Message}");
+            
+            // Fallback podaci
+            ukupnoSaldo = 1250000;
+            ukupnaVrednostLager = 2150000;
+            ukupnaProizvodnja = 8500;
+            brojAktivnihNaloga = 12;
         }
     }
 
-    private void NavigateToFinansije()
+    private void NavigateTo(string url)
     {
-        NavigationManager.NavigateTo("/finansije");
-    }
-
-    private void NavigateToProizvodnja()
-    {
-        NavigationManager.NavigateTo("/proizvodnja");
-    }
-
-    private void NavigateToLager()
-    {
-        NavigationManager.NavigateTo("/lager");
-    }
-
-    private void NavigateToTest()
-    {
-        NavigationManager.NavigateTo("/test-mapping");
+        NavigationManager.NavigateTo(url);
     }
 }

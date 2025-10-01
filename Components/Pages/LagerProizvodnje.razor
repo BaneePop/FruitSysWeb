@@ -1,0 +1,394 @@
+@page "/lager-proizvodnje"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Constants
+@inject IMagacinLagerService LagerService
+@inject IExportService ExportService
+@inject ITypeMappingService TypeMapping
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<style>
+    .lager-header {
+        background: linear-gradient(135deg, #3e6b1f, #2d5016);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+
+    .filter-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .data-table {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .table thead th {
+        background-color: #2d5016;
+        color: white;
+        font-weight: 600;
+        border: none;
+        padding: 1rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+        transform: translateY(-1px);
+        transition: all 0.2s ease;
+    }
+
+    .badge-status {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.7rem;
+    }
+
+    .stats-row {
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d5016;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 0.2rem;
+    }
+
+    .export-buttons {
+        gap: 0.5rem;
+    }
+
+    .progress-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .progress-mini {
+        width: 60px;
+        height: 18px;
+        border-radius: 9px;
+        overflow: hidden;
+    }
+</style>
+
+<!-- Header -->
+<div class="lager-header text-white py-4 mb-4">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-1">
+                    <i class="bi bi-gear-wide-connected me-2"></i>Lager Proizvodnje
+                </h1>
+                <p class="mb-0">Praćenje radnih naloga u toku i rezervisanih materijala</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-light text-dark fs-6">
+                    <i class="bi bi-activity me-1"></i>@(lagerProizvodnje?.Count ?? 0) naloga
+                </span>
+                <span class="badge bg-warning text-dark ms-2 fs-6">
+                    @TypeMapping.FormatWeight(lagerProizvodnje?.Sum(x => x.Kolicina) ?? 0)
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Početna</a></li>
+            <li class="breadcrumb-item"><a href="/lagerhome">Lager</a></li>
+            <li class="breadcrumb-item active">Lager Proizvodnje</li>
+        </ol>
+    </nav>
+
+    <!-- Statistics -->
+    <div class="stats-row">
+        <div class="row">
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-item">
+                    <div class="stat-value">@(lagerProizvodnje?.Count ?? 0)</div>
+                    <div class="stat-label">
+                        <i class="bi bi-clipboard-data me-1"></i>Aktivni nalozi
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-item">
+                    <div class="stat-value">@TypeMapping.FormatDecimal(lagerProizvodnje?.Sum(x => x.Kolicina) ?? 0)</div>
+                    <div class="stat-label">
+                        <i class="bi bi-box-seam me-1"></i>Trenutno u lageru
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-item">
+                    <div class="stat-value">@TypeMapping.FormatDecimal(lagerProizvodnje?.Sum(x => x.PotrebnaKolicina) ?? 0)</div>
+                    <div class="stat-label">
+                        <i class="bi bi-target me-1"></i>Potrebno ukupno
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-item">
+                    <div class="stat-value">@TypeMapping.FormatDecimal(lagerProizvodnje?.Sum(x => x.PotrebnaKolicina - x.Kolicina) ?? 0)</div>
+                    <div class="stat-label">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Fali do završetka
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-outline-primary btn-sm" @onclick="RefreshData">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Osveži podatke
+                </button>
+                <button class="btn btn-outline-info btn-sm" @onclick="() => NavigateToLager()">
+                    <i class="bi bi-arrow-left me-1"></i>Povratak na Lager
+                </button>
+                <div class="ms-auto d-flex export-buttons">
+                    <button class="btn btn-success btn-sm" @onclick="ExportToExcel" disabled="@(lagerProizvodnje?.Count == 0)">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-danger btn-sm" @onclick="ExportToPdf" disabled="@(lagerProizvodnje?.Count == 0)">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="data-table">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0">
+                <i class="bi bi-list-check me-2"></i>Radni nalozi u proizvodnji
+                @if (lagerProizvodnje != null)
+                {
+                    <span class="text-muted">(@lagerProizvodnje.Count)</span>
+                }
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            @if (lagerProizvodnje == null)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Učitavanje...</span>
+                    </div>
+                    <p class="text-muted mt-2">Učitavanje podataka o lageru proizvodnje...</p>
+                </div>
+            }
+            else if (!lagerProizvodnje.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted mt-3">Nema podataka o lageru proizvodnje</h5>
+                    <p class="text-muted">Trenutno nema aktivnih radnih naloga u proizvodnji.</p>
+                    <button class="btn btn-primary mt-2" @onclick="RefreshData">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Pokušaj ponovo
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Radni Nalog</th>
+                                <th>Artikal</th>
+                                <th>Pakovanje</th>
+                                <th class="text-end">Količina u lageru</th>
+                                <th class="text-end">Potrebna količina</th>
+                                <th class="text-end">Fali do završetka</th>
+                                <th class="text-center">Status izvršenja</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in lagerProizvodnje)
+                            {
+                                var faliDoZavrsetka = item.PotrebnaKolicina - item.Kolicina;
+                                var procenatZavrsenosti = item.PotrebnaKolicina > 0 ? 
+                                    Math.Round((item.Kolicina / item.PotrebnaKolicina) * 100, 1) : 0;
+                                var statusBadgeClass = GetStatusBadgeClass(procenatZavrsenosti);
+                                var progressBarClass = GetProgressBarClass(procenatZavrsenosti);
+
+                                <tr>
+                                    <td>
+                                        <strong class="text-primary">@item.BrojNaloga</strong>
+                                    </td>
+                                    <td>
+                                        <strong>@item.Artikal</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@item.Pakovanje</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="fw-bold text-info">@TypeMapping.FormatDecimal(item.Kolicina)</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="text-muted">@TypeMapping.FormatDecimal(item.PotrebnaKolicina)</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge @(faliDoZavrsetka > 0 ? "bg-warning" : "bg-success")">
+                                            @TypeMapping.FormatDecimal(Math.Max(0, faliDoZavrsetka))
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="progress-container">
+                                            <div class="progress progress-mini">
+                                                <div class="progress-bar @progressBarClass" 
+                                                     style="width: @(procenatZavrsenosti)%"></div>
+                                            </div>
+                                            <small class="fw-bold @statusBadgeClass">@(procenatZavrsenosti)%</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-secondary">
+                            <tr>
+                                <th colspan="3" class="text-end">UKUPNO:</th>
+                                <th class="text-end text-info">@TypeMapping.FormatDecimal(lagerProizvodnje.Sum(x => x.Kolicina))</th>
+                                <th class="text-end text-muted">@TypeMapping.FormatDecimal(lagerProizvodnje.Sum(x => x.PotrebnaKolicina))</th>
+                                <th class="text-end text-warning">@TypeMapping.FormatDecimal(lagerProizvodnje.Sum(x => Math.Max(0, x.PotrebnaKolicina - x.Kolicina)))</th>
+                                <th class="text-center">
+                                    @{
+                                        var ukupnoProcenat = lagerProizvodnje.Sum(x => x.PotrebnaKolicina) > 0 ? 
+                                            Math.Round((lagerProizvodnje.Sum(x => x.Kolicina) / lagerProizvodnje.Sum(x => x.PotrebnaKolicina)) * 100, 1) : 0;
+                                    }
+                                    <strong class="@GetStatusBadgeClass(ukupnoProcenat)">@(ukupnoProcenat)%</strong>
+                                </th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<RadniNalogLagerModel>? lagerProizvodnje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UcitajLagerProizvodnje();
+    }
+
+    private async Task UcitajLagerProizvodnje()
+    {
+        try
+        {
+            Console.WriteLine("Učitavam lager proizvodnje podatke...");
+            lagerProizvodnje = await LagerService.UcitajLagerProizvodnje();
+            Console.WriteLine($"Učitano {lagerProizvodnje?.Count ?? 0} radnih naloga");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju lager proizvodnje: {ex.Message}");
+            lagerProizvodnje = new List<RadniNalogLagerModel>();
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        lagerProizvodnje = null;
+        StateHasChanged();
+        await UcitajLagerProizvodnje();
+    }
+
+    private void NavigateToLager()
+    {
+        // Navigiraj na lager stranicu i aktiviraj proizvodnja tab
+        NavigationManager.NavigateTo("/lager");
+    }
+
+    private string GetStatusBadgeClass(decimal procenat) => procenat switch
+    {
+        >= 90 => "text-success",
+        >= 70 => "text-info", 
+        >= 50 => "text-warning",
+        _ => "text-danger"
+    };
+
+    private string GetProgressBarClass(decimal procenat) => procenat switch
+    {
+        >= 90 => "bg-success",
+        >= 70 => "bg-info",
+        >= 50 => "bg-warning", 
+        _ => "bg-danger"
+    };
+
+    // Export metode - kopirane iz Lager.razor
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            if (lagerProizvodnje != null && lagerProizvodnje.Any())
+            {
+                var excelData = ExportService.ExportToExcel(lagerProizvodnje);
+                var fileName = TypeMapping.GenerateExportFileName("lager_proizvodnje", SystemConstants.Export.EXCEL_EXTENSION);
+                await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u Excel: {ex.Message}");
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        try
+        {
+            if (lagerProizvodnje != null && lagerProizvodnje.Any())
+            {
+                var pdfData = ExportService.ExportToPdf(lagerProizvodnje);
+                var fileName = TypeMapping.GenerateExportFileName("lager_proizvodnje", SystemConstants.Export.PDF_EXTENSION);
+                await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u PDF: {ex.Message}");
+        }
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
+    }
+}

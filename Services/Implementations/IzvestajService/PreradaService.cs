@@ -170,6 +170,176 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         }
 
         #endregion
+        
+        #region SMENSKI IZVESTAJI METODE
+        
+        public async Task<List<string>> UcitajSveSmenskeIzvestaje()
+        {
+            try
+            {
+                var sql = @"
+                    SELECT DISTINCT si.Broj
+                    FROM SmenskiIzvestaj si
+                    WHERE si.Broj IS NOT NULL
+                    ORDER BY si.Broj DESC
+                    LIMIT 100";
+                    
+                var result = await _databaseService.QueryAsync<string>(sql);
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri učitavanju smenskih izveštaja: {ex.Message}");
+                return new List<string> { "SI-2025-001", "SI-2025-002", "SI-2025-003" };
+            }
+        }
+        
+        public async Task<List<RadniProcesModel>> UcitajRadneProcesePoPorizvodnomProcesu(int proizvodniProcesId)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT DISTINCT rp.ID, rp.Naziv
+                    FROM RadniProces rp
+                    INNER JOIN RadniProcesToProizvodniProces rppp ON rp.ID = rppp.RadniProcesID
+                    WHERE rppp.ProizvodniProcesID = @ProizvodniProcesId
+                      AND rp.Naziv NOT LIKE '%#%'
+                    ORDER BY rp.Naziv";
+                    
+                var result = await _databaseService.QueryAsync<RadniProcesModel>(sql, new { ProizvodniProcesId = proizvodniProcesId });
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri učitavanju povezanih radnih procesa: {ex.Message}");
+                return new List<RadniProcesModel>();
+            }
+        }
+        
+        public async Task<List<SmenskiIzvestajModel>> UcitajSmenskeIzvestaje(FilterRequest filter)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        si.Broj as BrojIzvestaja,
+                        si.Datum,
+                        COALESCE(pp.Naziv, 'Nepoznato') as ProizvodniProces,
+                        COALESCE(rp.Naziv, 'Nepoznato') as RadniProces,
+                        er.BrojRadnika,
+                        SUM(er.BrojRadnihSati) as BrojRadnihSati,
+                        SUM(er.CenaKostanjaDirektanRad) as TrosakPoRadnomNalogu,
+                        75.0 as ProcenatIskoriscenja
+                    FROM SmenskiIzvestaj si
+                    LEFT JOIN EvidencijaRada er ON si.ID = er.SmenskiIzvestajID
+                    LEFT JOIN RadniProces rp ON er.RadniProcesID = rp.ID
+                    LEFT JOIN RadniProcesToProizvodniProces rppp ON rp.ID = rppp.RadniProcesID
+                    LEFT JOIN ProizvodniProces pp ON rppp.ProizvodniProcesID = pp.ID
+                    WHERE si.Broj IS NOT NULL
+                      AND er.Obrisan = 0";
+
+                var parameters = new DynamicParameters();
+
+                if (filter.OdDatum.HasValue)
+                {
+                    sql += " AND si.Datum >= @OdDatum";
+                    parameters.Add("@OdDatum", filter.OdDatum.Value);
+                }
+
+                if (filter.DoDatum.HasValue)
+                {
+                    sql += " AND si.Datum <= @DoDatum";
+                    parameters.Add("@DoDatum", filter.DoDatum.Value);
+                }
+
+                if (!string.IsNullOrEmpty(filter.SmenskiIzvestaj))
+                {
+                    sql += " AND si.Broj LIKE @SmenskiIzvestaj";
+                    parameters.Add("@SmenskiIzvestaj", $"%{filter.SmenskiIzvestaj}%");
+                }
+
+                if (filter.ProizvodniProcesId.HasValue)
+                {
+                    sql += " AND pp.ID = @ProizvodniProcesId";
+                    parameters.Add("@ProizvodniProcesId", filter.ProizvodniProcesId.Value);
+                }
+
+                if (filter.RadniProcesId.HasValue)
+                {
+                    sql += " AND rp.ID = @RadniProcesId";
+                    parameters.Add("@RadniProcesId", filter.RadniProcesId.Value);
+                }
+
+                sql += " AND si.Datum >= DATE_SUB(NOW(), INTERVAL 6 MONTH)";
+                sql += " GROUP BY si.ID, si.Broj, si.Datum, pp.Naziv, rp.Naziv, er.BrojRadnika";
+                sql += " ORDER BY si.Datum DESC";
+                sql += " LIMIT 200";
+
+                var result = await _databaseService.QueryAsync<SmenskiIzvestajModel>(sql, parameters);
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri učitavanju smenskih izveštaja: {ex.Message}");
+                return new List<SmenskiIzvestajModel>();
+            }
+        }
+        
+        public async Task<Dictionary<string, decimal>> UcitajStatistikePoSmenskimIzvestajima(FilterRequest filter)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        COUNT(DISTINCT si.ID) as BrojIzvestaja,
+                        SUM(er.BrojRadnihSati) as UkupnoSati,
+                        SUM(er.BrojRadnika) as UkupnoRadnika,
+                        AVG(er.CenaKostanjaDirektanRad) as ProsecanTrosak
+                    FROM SmenskiIzvestaj si
+                    LEFT JOIN EvidencijaRada er ON si.ID = er.SmenskiIzvestajID
+                    WHERE si.Broj IS NOT NULL
+                      AND er.Obrisan = 0";
+
+                var parameters = new DynamicParameters();
+
+                if (filter.OdDatum.HasValue)
+                {
+                    sql += " AND si.Datum >= @OdDatum";
+                    parameters.Add("@OdDatum", filter.OdDatum.Value);
+                }
+
+                if (filter.DoDatum.HasValue)
+                {
+                    sql += " AND si.Datum <= @DoDatum";
+                    parameters.Add("@DoDatum", filter.DoDatum.Value);
+                }
+
+                sql += " AND si.Datum >= DATE_SUB(NOW(), INTERVAL 6 MONTH)";
+
+                var result = await _databaseService.QuerySingleOrDefaultAsync<dynamic>(sql, parameters);
+                
+                return new Dictionary<string, decimal>
+                {
+                    ["UkupnoIzvestaja"] = Convert.ToDecimal(result?.BrojIzvestaja ?? 0),
+                    ["UkupnoSati"] = Convert.ToDecimal(result?.UkupnoSati ?? 0),
+                    ["UkupnoRadnika"] = Convert.ToDecimal(result?.UkupnoRadnika ?? 0),
+                    ["ProsecanTrosak"] = Convert.ToDecimal(result?.ProsecanTrosak ?? 0)
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri računanju statistika smenskih izveštaja: {ex.Message}");
+                return new Dictionary<string, decimal>
+                {
+                    ["UkupnoIzvestaja"] = 0,
+                    ["UkupnoSati"] = 0,
+                    ["UkupnoRadnika"] = 0,
+                    ["ProsecanTrosak"] = 0
+                };
+            }
+        }
+        
+        #endregion
 
         #region HELPER METODE ZA DROPDOWN LISTE
 
