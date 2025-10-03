@@ -186,7 +186,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
         LEFT JOIN Komitent k ON vpp.KomitentID = k.ID
         WHERE a.MagacinID = 6  -- GOTOVI PROIZVODI
-        AND vpp.Kolicina < 0  -- NEGATIVNA KOLICINA = PRODAJA/IZLAZ
+        AND vpp.Kolicina > 0 -- POZITIVNA KOLICINA = PRODAJA/IZLAZ
         AND a.Aktivno = 1
         AND vpp.Komitent IS NOT NULL
           AND vpp.Komitent != ''
@@ -234,36 +234,36 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         var sql = new StringBuilder();
         sql.Append(@"
         SELECT 
-        COALESCE(k.Naziv, vpp.Komitent, 'Nepoznato') as Komitent,
-        SUM(ABS(vpp.Kolicina)) as UkupnaKolicina
-        FROM vPreradaPregled vpp
-        LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
-        LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
-        LEFT JOIN Komitent k ON vpp.KomitentID = k.ID
-        WHERE a.MagacinID IN (2, 3)  -- SVEZA ROBA I SIROVINE
-        AND vpp.Kolicina > 0  -- POZITIVNA KOLICINA = NABAVKA/ULAZ
-        AND a.Aktivno = 1
-        AND vpp.Komitent IS NOT NULL
-          AND vpp.Komitent != ''
+        COALESCE(k.Naziv, vrp.Komitent, 'Nepoznato') as Komitent,
+        SUM(ABS(vrp.Ulaz)) as UkupnaKolicina
+        FROM vPrometRoba vrp 
+        LEFT JOIN Artikal a ON vrp.ArtikalID = a.ID
+        LEFT JOIN Komitent k ON vrp.KomitentID = k.ID
+        WHERE a.MagacinID IN (2, 3, 5)  -- SVEZA ROBA I SIROVINE
+        AND vrp.DOKUMENT LIKE 'PR-%'
+        AND vrp.Ulaz > 0  -- POZITIVNA KOLICINA = NABAVKA/ULAZ
+        AND vrp.DokumentStatus = (3)
+        
+          AND vrp.Komitent != ''
                 ");
 
                 var parameters = new Dictionary<string, object>();
 
                 if (filterRequest.OdDatum.HasValue)
                 {
-                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
+                    sql.Append(" AND DATE(vrp.Datum) >= @OdDatum");
                     parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
                 }
 
                 if (filterRequest.DoDatum.HasValue)
                 {
-                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
+                    sql.Append(" AND DATE(vrp.Datum) <= @DoDatum");
                     parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
                 }
 
                 sql.Append(@"
-                GROUP BY COALESCE(k.ID, vpp.KomitentID), COALESCE(k.Naziv, vpp.Komitent)
-                HAVING SUM(ABS(vpp.Kolicina)) > 0
+                GROUP BY COALESCE(k.ID, vrp.KomitentID), COALESCE(k.Naziv, vrp.Komitent)
+                HAVING SUM(ABS(vrp.Ulaz)) > 0
                 ORDER BY UkupnaKolicina DESC
                     LIMIT 5
             ");
@@ -289,13 +289,18 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 var sql = new StringBuilder();
                 sql.Append(@"
                     SELECT 
-                        vpp.Artikal,
+                        CASE 
+                            WHEN vpp.Artikal LIKE '%+' THEN LEFT(vpp.Artikal, LENGTH(vpp.Artikal) - 1)
+                            WHEN vpp.Artikal LIKE '%-' THEN LEFT(vpp.Artikal, LENGTH(vpp.Artikal) - 1)
+                            ELSE vpp.Artikal
+                        END as BaseArtikal,
                         SUM(vpp.Kolicina) as UkupnaKolicina
                     FROM vPreradaPregled vpp
                     LEFT JOIN RadniNalog rn ON vpp.RadniNalogID = rn.ID
                     LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
                     WHERE a.MagacinID = 6  -- GOTOVI PROIZVODI
-                      AND a.Aktivno = 1
+                    AND a.Aktivno = 1
+                    
                 ");
 
                 var parameters = new Dictionary<string, object>();
@@ -313,15 +318,14 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 }
 
                 sql.Append(@"
-                    GROUP BY vpp.Artikal
-                    HAVING SUM(vpp.Kolicina) > 0
+                    GROUP BY BaseArtikal
                     ORDER BY UkupnaKolicina DESC
                 ");
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
 
                 return rezultat.ToDictionary(
-                    x => (string)x.Artikal ?? "Nepoznato",
+                    x => (string)x.BaseArtikal ?? "Nepoznato",
                     x => (decimal)x.UkupnaKolicina
                 );
             }

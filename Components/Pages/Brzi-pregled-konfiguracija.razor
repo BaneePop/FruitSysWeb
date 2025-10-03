@@ -9,6 +9,8 @@
 
 @inject IBrziPregledService BrziPregledService
 @inject IKomitentService KomitentService
+@inject IArtikalService ArtikalService
+@inject IArtikalKlasifikacijaService ArtikalKlasifikacijaService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -77,32 +79,161 @@
                         }
                     </div>
 
+                    <!-- ✨ ROBA NA ZALIHAMA - ARTIKLI PO VRSTAMA VOĆA -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="border-bottom pb-2">
+                                <i class="bi bi-box-seam"></i> Roba na Zalihama - Artikli po Vrstama Voća
+                            </h5>
+                            <p class="text-muted small">
+                                Izaberite vrstu voća iz padajućeg menija, a zatim označite artikle koji pripadaju toj vrsti.
+                            </p>
+                        </div>
+                        
+                        @foreach (var vrsta in vrsteVoca)
+                        {
+                            <div class="col-12 mb-4">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <div class="form-check">
+                                            <input class="form-check-input" 
+                                                   type="checkbox" 
+                                                   id="vrsta_@vrsta"
+                                                   checked="@izabraneVrste.Contains(vrsta)"
+                                                   @onchange="@(e => ToggleVrsta(vrsta, e))">
+                                            <label class="form-check-label fw-bold" for="vrsta_@vrsta">
+                                                <i class="bi bi-apple"></i> @vrsta
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    @if (izabraneVrste.Contains(vrsta))
+                                    {
+                                        <div class="card-body">
+                                            <!-- Pretraga artikala -->
+                                            <div class="mb-3">
+                                                <label class="form-label">
+                                                    <i class="bi bi-search"></i> Pretraga artikala:
+                                                </label>
+                                                <input type="text" 
+                                                       class="form-control" 
+                                                       placeholder="Unesite naziv artikla..."
+                                                       value="@(pretragaArtikala.ContainsKey(vrsta) ? pretragaArtikala[vrsta] : "")"
+                                                       @oninput="@(e => OnPretragaChanged(vrsta, e.Value?.ToString() ?? ""))" />
+                                            </div>
+                                            
+                                            <!-- Lista artikala -->
+                                            <div style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 0.75rem; background-color: #f8f9fa;">
+                                                @if (ucitavanje)
+                                                {
+                                                    <div class="text-center py-3">
+                                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                            <span class="visually-hidden">Učitavanje...</span>
+                                                        </div>
+                                                        <p class="text-muted small mt-2">Učitavanje artikala...</p>
+                                                    </div>
+                                                }
+                                                else if (sviArtikli != null && sviArtikli.Any())
+                                                {
+                                                    var filtriraniArtikli = FiltrirajArtikle(vrsta);
+                                                    
+                                                    @if (filtriraniArtikli.Any())
+                                                    {
+                                                        <div class="row">
+                                                            @foreach (var artikal in filtriraniArtikli.Take(100))
+                                                            {
+                                                                var key = $"{vrsta}_{artikal.Id}";
+                                                                <div class="col-md-6 mb-2">
+                                                                    <div class="form-check">
+                                                                        <input class="form-check-input" 
+                                                                               type="checkbox" 
+                                                                               id="art_@key"
+                                                                               checked="@IsArtikalIzabran(vrsta, artikal.Id)"
+                                                                               @onchange="@(e => ToggleArtikal(vrsta, artikal.Id, e))">
+                                                                        <label class="form-check-label small" for="art_@key">
+                                                                            <span class="badge bg-secondary">@artikal.Id</span>
+                                                                            @artikal.Naziv
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                        
+                                                        @if (filtriraniArtikli.Count > 100)
+                                                        {
+                                                            <div class="alert alert-info small mt-2 mb-0">
+                                                                <i class="bi bi-info-circle"></i>
+                                                                Prikazano prvih 50 od @filtriraniArtikli.Count artikala. Koristite pretragu za sužavanje rezultata.
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="text-center py-3">
+                                                            <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
+                                                            <p class="text-muted small mb-0 mt-2">
+                                                                Nema artikala za prikaz. Pokušajte sa drugom pretragom.
+                                                            </p>
+                                                        </div>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-center py-3">
+                                                        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                                                        <p class="text-muted small mb-0 mt-2">
+                                                            Artikli nisu učitani. Osvežite stranicu.
+                                                        </p>
+                                                    </div>
+                                                }
+                                            </div>
+                                            
+                                            <!-- Counter izabranih artikala -->
+                                            @if (artikliPoVrstama.ContainsKey(vrsta) && artikliPoVrstama[vrsta].Any())
+                                            {
+                                                <div class="mt-3">
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check-circle"></i>
+                                                        Izabrano: @artikliPoVrstama[vrsta].Count artikala
+                                                    </span>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
                     <!-- AKCIJE -->
                     <div class="row">
                         <div class="col-12 text-center">
                             <button class="btn btn-success btn-lg me-2" 
-                                    @onclick="SacuvajKonfiguraciju">
-                                <i class="bi bi-save"></i> Sacuvaj Konfiguraciju
+                                    @onclick="SacuvajKonfiguraciju"
+                                    disabled="@ucitavanje">
+                                <i class="bi bi-save"></i> Sačuvaj Konfiguraciju
                             </button>
                             <button class="btn btn-secondary btn-lg me-2" 
-                                    @onclick="ResetuiKonfiguraciju">
+                                    @onclick="ResetuiKonfiguraciju"
+                                    disabled="@ucitavanje">
                                 <i class="bi bi-arrow-clockwise"></i> Resetuj
                             </button>
                             <button class="btn btn-primary btn-lg" 
-                                    @onclick="PrikaziPregled">
-                                <i class="bi bi-eye"></i> Prikazi Pregled
+                                    @onclick="PrikaziPregled"
+                                    disabled="@ucitavanje">
+                                <i class="bi bi-eye"></i> Prikaži Pregled
                             </button>
                         </div>
                     </div>
 
                     <!-- PREGLED IZBORA -->
                     <div class="row mt-4">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="alert alert-info">
-                                <h6>Izabrani Dobavljaci:</h6>
+                                <h6><i class="bi bi-truck"></i> Izabrani Dobavljači:</h6>
                                 @if (izabraniDobavljaci.Any(x => x.HasValue))
                                 {
-                                    <ul class="mb-0">
+                                    <ul class="mb-0 small">
                                         @foreach (var id in izabraniDobavljaci.Where(x => x.HasValue))
                                         {
                                             var naziv = sviDobavljaci?.FirstOrDefault(k => k.Id == id.Value)?.Naziv;
@@ -112,16 +243,16 @@
                                 }
                                 else
                                 {
-                                    <p class="text-muted mb-0">Jos nije izabran dobavljac</p>
+                                    <p class="text-muted small mb-0">Još nije izabran dobavljač</p>
                                 }
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="alert alert-success">
-                                <h6>Izabrani Kupci:</h6>
+                                <h6><i class="bi bi-cart-check"></i> Izabrani Kupci:</h6>
                                 @if (izabraniKupci.Any(x => x.HasValue))
                                 {
-                                    <ul class="mb-0">
+                                    <ul class="mb-0 small">
                                         @foreach (var id in izabraniKupci.Where(x => x.HasValue))
                                         {
                                             var naziv = sviKupci?.FirstOrDefault(k => k.Id == id.Value)?.Naziv;
@@ -131,7 +262,25 @@
                                 }
                                 else
                                 {
-                                    <p class="text-muted mb-0">Jos nije izabran kupac</p>
+                                    <p class="text-muted small mb-0">Još nije izabran kupac</p>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="alert alert-warning">
+                                <h6><i class="bi bi-box-seam"></i> Artikli po Vrstama:</h6>
+                                @if (artikliPoVrstama.Any(x => x.Value.Any()))
+                                {
+                                    <ul class="mb-0 small">
+                                        @foreach (var vrsta in artikliPoVrstama.Where(x => x.Value.Any()))
+                                        {
+                                            <li><strong>@vrsta.Key:</strong> @vrsta.Value.Count artikala</li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <p class="text-muted small mb-0">Još nije izabran artikal</p>
                                 }
                             </div>
                         </div>
@@ -144,16 +293,61 @@
 </div>
 
 @code {
+    // State
+    private bool ucitavanje = false;
+    
+    // Data
     private List<Komitent>? sviDobavljaci;
     private List<Komitent>? sviKupci;
+    private List<Artikal>? sviArtikli;
+    private List<ArtikalKlasifikacija>? klasifikacije;
     
+    // Selekcije
     private int?[] izabraniDobavljaci = new int?[6];
     private int?[] izabraniKupci = new int?[6];
+    
+    // ✨ Vrste voća (hardcoded)
+    private List<string> vrsteVoca = new List<string> 
+    { 
+        "Malina", "Kupina", "Šljiva", "Kajsija", "Višnja", "Usluga" 
+    };
+    
+    private HashSet<string> izabraneVrste = new HashSet<string>();
+    private Dictionary<string, List<long>> artikliPoVrstama = new Dictionary<string, List<long>>();
+    private Dictionary<string, string> pretragaArtikala = new Dictionary<string, string>();
 
     protected override async Task OnInitializedAsync()
     {
-        await UcitajKomitente();
-        await UcitajPostojecuKonfiguraciju();
+        ucitavanje = true;
+        
+        try
+        {
+            // Inicijalizuj dictionary za pretragu i artikle
+            foreach (var vrsta in vrsteVoca)
+            {
+                pretragaArtikala[vrsta] = "";
+                artikliPoVrstama[vrsta] = new List<long>();
+            }
+            
+            // Učitaj sve podatke paralelno
+            await Task.WhenAll(
+                UcitajKomitente(),
+                UcitajArtikle(),
+                UcitajKlasifikacije()
+            );
+            
+            // Učitaj postojeću konfiguraciju
+            await UcitajPostojecuKonfiguraciju();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška u OnInitializedAsync: {ex.Message}");
+        }
+        finally
+        {
+            ucitavanje = false;
+            StateHasChanged();
+        }
     }
 
     private async Task UcitajKomitente()
@@ -163,11 +357,60 @@
             var sviKomitenti = await KomitentService.UcitajSveKomitente();
             sviDobavljaci = sviKomitenti.ToList();
             sviKupci = sviKomitenti.ToList();
-            Console.WriteLine($"Ucitano {sviKomitenti.Count()} komitenata");
+            Console.WriteLine($"✅ Učitano {sviKomitenti.Count()} komitenata");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greska pri ucitavanju komitenata: {ex.Message}");
+            Console.WriteLine($"❌ Greška pri učitavanju komitenata: {ex.Message}");
+            sviDobavljaci = new List<Komitent>();
+            sviKupci = new List<Komitent>();
+        }
+    }
+    
+    private async Task UcitajArtikle()
+    {
+        try
+        {
+            sviArtikli = await ArtikalService.UcitajSveArtikle();
+            Console.WriteLine($"✅ Učitano {sviArtikli?.Count ?? 0} artikala");
+            
+            if (sviArtikli?.Any() == true)
+            {
+                Console.WriteLine($"📦 Primeri artikala:");
+                foreach (var art in sviArtikli.Take(5))
+                {
+                    Console.WriteLine($"  - [{art.Id}] {art.Naziv} (Tip: {art.Tip})");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Greška pri učitavanju artikala: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            sviArtikli = new List<Artikal>();
+        }
+    }
+    
+    private async Task UcitajKlasifikacije()
+    {
+        try
+        {
+            klasifikacije = await ArtikalKlasifikacijaService.UcitajSveKlasifikacije();
+            Console.WriteLine($"✅ Učitano {klasifikacije?.Count ?? 0} klasifikacija");
+            
+            if (klasifikacije?.Any() == true)
+            {
+                Console.WriteLine($"🍎 Voćne klasifikacije:");
+                foreach (var k in klasifikacije)
+                {
+                    Console.WriteLine($"  - [{k.Id}] {k.Naziv}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Greška pri učitavanju klasifikacija: {ex.Message}");
+            klasifikacije = new List<ArtikalKlasifikacija>();
         }
     }
 
@@ -183,23 +426,38 @@
                 
                 if (config != null)
                 {
+                    // Dobavljači
                     for (int i = 0; i < 6 && i < config.IzabraniDobavljaci.Count; i++)
                     {
                         izabraniDobavljaci[i] = config.IzabraniDobavljaci[i];
                     }
                     
+                    // Kupci
                     for (int i = 0; i < 6 && i < config.IzabraniKupci.Count; i++)
                     {
                         izabraniKupci[i] = config.IzabraniKupci[i];
                     }
                     
-                    Console.WriteLine("Konfiguracija ucitana iz localStorage");
+                    // Artikli po vrstama
+                    if (config.ArtikliPoVrstama != null)
+                    {
+                        foreach (var vrsta in config.ArtikliPoVrstama)
+                        {
+                            if (vrsta.Value.Any())
+                            {
+                                izabraneVrste.Add(vrsta.Key);
+                                artikliPoVrstama[vrsta.Key] = vrsta.Value.ToList();
+                            }
+                        }
+                    }
+                    
+                    Console.WriteLine("✅ Konfiguracija učitana iz localStorage");
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greska pri ucitavanju konfiguracije: {ex.Message}");
+            Console.WriteLine($"❌ Greška pri učitavanju konfiguracije: {ex.Message}");
         }
     }
 
@@ -217,19 +475,25 @@
                 IzabraniKupci = izabraniKupci
                     .Where(x => x.HasValue)
                     .Select(x => x.Value)
-                    .ToList()
+                    .ToList(),
+                    
+                ArtikliPoVrstama = artikliPoVrstama
+                    .Where(x => x.Value.Any())
+                    .ToDictionary(x => x.Key, x => x.Value)
             };
 
             var json = JsonSerializer.Serialize(config);
             await JS.InvokeVoidAsync("localStorage.setItem", "brzi_pregled_config", json);
             
-            Console.WriteLine($"Konfiguracija sacuvana: {config.IzabraniDobavljaci.Count} dobavljaca, {config.IzabraniKupci.Count} kupaca");
-            await JS.InvokeVoidAsync("alert", "Konfiguracija uspesno sacuvana!");
+            var ukupnoArtikala = config.ArtikliPoVrstama.Sum(x => x.Value.Count);
+            Console.WriteLine($"✅ Konfiguracija sačuvana: {config.IzabraniDobavljaci.Count} dobavljača, {config.IzabraniKupci.Count} kupaca, {ukupnoArtikala} artikala");
+            
+            await JS.InvokeVoidAsync("alert", "Konfiguracija uspešno sačuvana!");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greska pri cuvanju: {ex.Message}");
-            await JS.InvokeVoidAsync("alert", "Greska pri cuvanju konfiguracije!");
+            Console.WriteLine($"❌ Greška pri čuvanju: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Greška pri čuvanju konfiguracije!");
         }
     }
 
@@ -237,11 +501,100 @@
     {
         izabraniDobavljaci = new int?[6];
         izabraniKupci = new int?[6];
+        izabraneVrste.Clear();
+        artikliPoVrstama = vrsteVoca.ToDictionary(v => v, v => new List<long>());
+        pretragaArtikala = vrsteVoca.ToDictionary(v => v, v => "");
         StateHasChanged();
     }
 
     private void PrikaziPregled()
     {
         Navigation.NavigateTo("/finansijski-pregled");
+    }
+    
+    // ✨ Helper metode za vrstu voća i artikle
+    
+    private void ToggleVrsta(string vrsta, ChangeEventArgs e)
+    {
+        var isChecked = (bool)(e.Value ?? false);
+        
+        if (isChecked)
+        {
+            izabraneVrste.Add(vrsta);
+        }
+        else
+        {
+            izabraneVrste.Remove(vrsta);
+            artikliPoVrstama[vrsta].Clear();
+        }
+        
+        StateHasChanged();
+    }
+    
+    private void ToggleArtikal(string vrsta, long artikalId, ChangeEventArgs e)
+    {
+        var isChecked = (bool)(e.Value ?? false);
+        
+        if (!artikliPoVrstama.ContainsKey(vrsta))
+        {
+            artikliPoVrstama[vrsta] = new List<long>();
+        }
+        
+        if (isChecked)
+        {
+            if (!artikliPoVrstama[vrsta].Contains(artikalId))
+            {
+                artikliPoVrstama[vrsta].Add(artikalId);
+                Console.WriteLine($"✅ Dodato: {vrsta} - Artikal ID {artikalId}");
+            }
+        }
+        else
+        {
+            artikliPoVrstama[vrsta].Remove(artikalId);
+            Console.WriteLine($"❌ Uklonjeno: {vrsta} - Artikal ID {artikalId}");
+        }
+        
+        StateHasChanged();
+    }
+    
+    private bool IsArtikalIzabran(string vrsta, long artikalId)
+    {
+        return artikliPoVrstama.ContainsKey(vrsta) && artikliPoVrstama[vrsta].Contains(artikalId);
+    }
+    
+    private void OnPretragaChanged(string vrsta, string pretraga)
+    {
+        if (pretragaArtikala.ContainsKey(vrsta))
+        {
+            pretragaArtikala[vrsta] = pretraga;
+        }
+        else
+        {
+            pretragaArtikala.Add(vrsta, pretraga);
+        }
+        
+        StateHasChanged();
+    }
+    
+    private List<Artikal> FiltrirajArtikle(string vrsta)
+    {
+        if (sviArtikli == null || !sviArtikli.Any()) 
+        {
+            Console.WriteLine($"⚠️ Nema artikala za filtriranje");
+            return new List<Artikal>();
+        }
+        
+        var pretraga = pretragaArtikala.ContainsKey(vrsta) ? pretragaArtikala[vrsta] : "";
+        
+        // Filtriranje po nazivu vrste voća i pretrazi
+        var filtriraniArtikli = sviArtikli
+            .Where(a => a.Naziv.Contains(vrsta, StringComparison.OrdinalIgnoreCase) ||
+                       (string.IsNullOrEmpty(pretraga) ? true : a.Naziv.Contains(pretraga, StringComparison.OrdinalIgnoreCase)))
+            .OrderBy(a => a.Naziv)
+            .ToList();
+        
+        Console.WriteLine($"🔍 Filtrirano za {vrsta} (pretraga: '{pretraga}'): {filtriraniArtikli.Count} artikala");
+        
+        return filtriraniArtikli;
     }
 }

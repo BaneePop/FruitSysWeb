@@ -19,7 +19,7 @@
             <h3 class="mb-1">
                 <i class="bi bi-speedometer2 text-primary"></i> Brzi Pregled Stanja
             </h3>
-            <p class="text-muted mb-0">Pregled nabavke i prodaje za izabrane partnere</p>
+            <p class="text-muted mb-0">Pregled nabavke, prodaje i robe na zalihama</p>
         </div>
         <div>
             <a href="/brzi-pregled-konfiguracija" class="btn btn-outline-primary me-2">
@@ -32,57 +32,98 @@
         </div>
     </div>
 
-    <!-- BRZI PREGLED SEKCIJA -->
-    @if (brziPregledDobavljaci?.Any() == true || brziPregledKupci?.Any() == true)
+    <!-- ✨ LOADING STATE -->
+    @if (ucitavanje)
     {
-        <div class="row mb-4">
-            <!-- DOBAVLJAČI BRZI PREGLED -->
-            @if (brziPregledDobavljaci?.Any() == true)
-            {
-                <div class="col-12">
-                    <BrziPregledTabela 
-                        Stavke="@brziPregledDobavljaci"
-                        Naslov="Pregled Nabavke"
-                        TipPartnera="Dobavljač"
-                        IsplataLabel="Isplata"
-                        HeaderBgClass="bg-danger text-white"
-                        IkonaClass="bi-truck"
-                        OdDatum="@startDatum"
-                        DoDatum="@endDatum" />
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Učitavanje...</span>
+                        </div>
+                        <h5>Učitavanje podataka...</h5>
+                        <p class="text-muted">Molimo sačekajte, učitavamo brzi pregled.</p>
+                    </div>
                 </div>
-            }
-
-            <!-- KUPCI BRZI PREGLED -->
-            @if (brziPregledKupci?.Any() == true)
-            {
-                <div class="col-12">
-                    <BrziPregledTabela 
-                        Stavke="@brziPregledKupci"
-                        Naslov="Pregled Prodaje"
-                        TipPartnera="Kupac"
-                        IsplataLabel="Uplata"
-                        HeaderBgClass="bg-success text-white"
-                        IkonaClass="bi-cart-check"
-                        OdDatum="@startDatum"
-                        DoDatum="@endDatum" />
-                </div>
-            }
+            </div>
         </div>
     }
     else
     {
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>Nema izabranih partnera.</strong> 
-            Kliknite na "Konfiguriši Brzi Pregled" da biste izabrali dobavljače i kupce.
-        </div>
+        <!-- BRZI PREGLED SEKCIJA -->
+        @if (brziPregledDobavljaci?.Any() == true || brziPregledKupci?.Any() == true || robaZalihe?.Any() == true)
+        {
+            <!-- ✨ NOVA ORGANIZACIJA: Nabavka i Prodaja JEDAN PORED DRUGOG -->
+            <div class="row mb-4">
+                <!-- DOBAVLJAČI BRZI PREGLED - LEVO -->
+                @if (brziPregledDobavljaci?.Any() == true)
+                {
+                    <div class="col-md-6">
+                        <BrziPregledTabela 
+                            Stavke="@brziPregledDobavljaci"
+                            Naslov="Pregled Nabavke"
+                            TipPartnera="Dobavljač"
+                            IsplataLabel="Isplata"
+                            HeaderBgClass="bg-danger text-white"
+                            IkonaClass="bi-truck"
+                            OdDatum="@startDatum"
+                            DoDatum="@endDatum" />
+                    </div>
+                }
+
+                <!-- KUPCI BRZI PREGLED - DESNO -->
+                @if (brziPregledKupci?.Any() == true)
+                {
+                    <div class="col-md-6">
+                        <BrziPregledTabela 
+                            Stavke="@brziPregledKupci"
+                            Naslov="Pregled Prodaje"
+                            TipPartnera="Kupac"
+                            IsplataLabel="Uplata"
+                            HeaderBgClass="bg-success text-white"
+                            IkonaClass="bi-cart-check"
+                            OdDatum="@startDatum"
+                            DoDatum="@endDatum" />
+                    </div>
+                }
+            </div>
+            
+            <!-- ✨ ROBA NA ZALIHAMA - PUNA ŠIRINA ISPOD -->
+            @if (robaZalihe?.Any() == true)
+            {
+                <div class="row">
+                    <div class="col-12">
+                        <RobaZaliheTabela 
+                            Stavke="@robaZalihe"
+                            Naslov="Roba na Zalihama"
+                            HeaderBgClass="bg-info text-white"
+                            IkonaClass="bi-box-seam"
+                            OdDatum="@startDatum"
+                            DoDatum="@endDatum" />
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Nema izabranih partnera ili artikala.</strong> 
+                Kliknite na "Konfiguriši Brzi Pregled" da biste izabrali dobavljače, kupce i artikle.
+            </div>
+        }
     }
 </div>
 
 @code {
+    // State
+    private bool ucitavanje = true;
+    
     // Brzi pregled data
     private List<BrziPregledStavka>? brziPregledDobavljaci;
     private List<BrziPregledStavka>? brziPregledKupci;
+    private List<RobaZaliheStavka>? robaZalihe;
     private FilterRequest brziPregledFilter = new FilterRequest();
     
     // Date range (od 01.06.2025)
@@ -91,45 +132,116 @@
     
     protected override async Task OnInitializedAsync()
     {
-        // Postavi filter za brzi pregled
-        brziPregledFilter.OdDatum = startDatum;
-        brziPregledFilter.DoDatum = endDatum;
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        Console.WriteLine("🏁 FinansijskiPregled - OnInitializedAsync started");
         
-        await UcitajBrziPregled();
+        try
+        {
+            // Postavi filter za brzi pregled
+            brziPregledFilter.OdDatum = startDatum;
+            brziPregledFilter.DoDatum = endDatum;
+            
+            Console.WriteLine($"📅 Period: {startDatum:dd.MM.yyyy} - {endDatum:dd.MM.yyyy}");
+            
+            await UcitajBrziPregled();
+        }
+        finally
+        {
+            ucitavanje = false;
+            stopwatch.Stop();
+            Console.WriteLine($"⏱️ Ukupno vreme učitavanja: {stopwatch.ElapsedMilliseconds}ms");
+            StateHasChanged();
+        }
     }
     
     private async Task UcitajBrziPregled()
     {
         try
         {
+            Console.WriteLine("🔍 Učitavam konfiguraciju iz localStorage...");
+            
             // Učitaj konfiguraciju iz localStorage (preko JS Interop)
             var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "brzi_pregled_config");
             
-            if (!string.IsNullOrEmpty(json))
+            if (string.IsNullOrEmpty(json))
             {
-                var config = JsonSerializer.Deserialize<BrziPregledKonfiguracija>(json);
-                
-                if (config != null)
-                {
-                    if (config.IzabraniDobavljaci?.Any() == true)
-                    {
-                        brziPregledDobavljaci = await BrziPregledService
-                            .UcitajBrziPregledDobavljaca(config.IzabraniDobavljaci, brziPregledFilter);
-                        Console.WriteLine($"Učitano {brziPregledDobavljaci?.Count ?? 0} dobavljača");
-                    }
-                    
-                    if (config.IzabraniKupci?.Any() == true)
-                    {
-                        brziPregledKupci = await BrziPregledService
-                            .UcitajBrziPregledKupaca(config.IzabraniKupci, brziPregledFilter);
-                        Console.WriteLine($"Učitano {brziPregledKupci?.Count ?? 0} kupaca");
-                    }
-                }
+                Console.WriteLine("⚠️ localStorage je prazan - nema konfiguracije");
+                return;
             }
+            
+            var config = JsonSerializer.Deserialize<BrziPregledKonfiguracija>(json);
+            
+            if (config == null)
+            {
+                Console.WriteLine("❌ Deserijalizacija konfiguracije nije uspela");
+                return;
+            }
+            
+            Console.WriteLine($"📦 Konfiguracija parsirana:");
+            Console.WriteLine($"  - Dobavljači: {config.IzabraniDobavljaci?.Count ?? 0}");
+            Console.WriteLine($"  - Kupci: {config.IzabraniKupci?.Count ?? 0}");
+            Console.WriteLine($"  - Artikli po vrstama: {config.ArtikliPoVrstama?.Count ?? 0}");
+            
+            // ✨ OPTIMIZACIJA: Paralelno učitavanje sva tri poziva
+            var tasks = new List<Task>();
+            
+            // Dobavljači
+            if (config.IzabraniDobavljaci?.Any() == true)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    Console.WriteLine($"🚚 Učitavam {config.IzabraniDobavljaci.Count} dobavljača...");
+                    
+                    brziPregledDobavljaci = await BrziPregledService
+                        .UcitajBrziPregledDobavljaca(config.IzabraniDobavljaci, brziPregledFilter);
+                    
+                    sw.Stop();
+                    Console.WriteLine($"✅ Dobavljači učitani za {sw.ElapsedMilliseconds}ms");
+                }));
+            }
+            
+            // Kupci
+            if (config.IzabraniKupci?.Any() == true)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    Console.WriteLine($"🛒 Učitavam {config.IzabraniKupci.Count} kupaca...");
+                    
+                    brziPregledKupci = await BrziPregledService
+                        .UcitajBrziPregledKupaca(config.IzabraniKupci, brziPregledFilter);
+                    
+                    sw.Stop();
+                    Console.WriteLine($"✅ Kupci učitani za {sw.ElapsedMilliseconds}ms");
+                }));
+            }
+            
+            // Roba na zalihama
+            if (config.ArtikliPoVrstama?.Any(x => x.Value.Any()) == true)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    Console.WriteLine($"📦 Učitavam robu na zalihama za {config.ArtikliPoVrstama.Count} vrsta voća...");
+                    
+                    robaZalihe = await BrziPregledService
+                        .UcitajRobaNaZalihama(config.ArtikliPoVrstama, brziPregledFilter);
+                    
+                    sw.Stop();
+                    Console.WriteLine($"✅ Roba na zalihama učitana za {sw.ElapsedMilliseconds}ms");
+                }));
+            }
+            
+            // ✨ Čekaj da se svi pozivi završe PARALELNO
+            await Task.WhenAll(tasks);
+            
+            Console.WriteLine($"🎉 Svi podaci učitani!");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greška pri učitavanju brzog pregleda: {ex.Message}");
+            Console.WriteLine($"❌ Greška pri učitavanju brzog pregleda: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
         }
     }
 }

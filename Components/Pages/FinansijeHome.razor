@@ -1,13 +1,21 @@
 @page "/finansijehome"
+@rendermode @(new InteractiveServerRenderMode())
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
 @using FruitSysWeb.Services.Core
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Models
+@using System.Text.Json
 
 @inject NavigationManager NavigationManager
 @inject IFinansijeService FinansijeService
 @inject ITypeMappingService TypeMapping
+@inject IProizvodnjaService ProizvodnjaService
+@inject IBrziPregledService BrziPregledService
+@inject IJSRuntime JSRuntime
+@inject ILogger<FinansijeHome> Logger
 
 <style>
     .finansije-header {
@@ -39,6 +47,11 @@
         transform: translateY(-5px);
         box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         border-left-color: #0f5132;
+    }
+
+    .section-card.active {
+        border-left-color: #0f5132;
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
     }
     
     .section-icon {
@@ -77,67 +90,27 @@
         margin-right: 0.5rem;
     }
 
-    .finance-stats {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
+    .section-card.future {
+        border-left-color: #6c757d;
+        opacity: 0.7;
     }
 
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 1rem;
-    }
-
-    .stat-card {
-        background: linear-gradient(135deg, #f8f9fa, #ffffff);
-        border-radius: 8px;
-        padding: 1.5rem;
-        text-align: center;
-        border-left: 4px solid #198754;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-
-    .stat-card.income {
-        border-left-color: #198754;
-    }
-
-    .stat-card.expense {
-        border-left-color: #dc3545;
-    }
-
-    .stat-card.balance {
-        border-left-color: #0d6efd;
-    }
-
-    .stat-card.profit {
-        border-left-color: #fd7e14;
-    }
-
-    .stat-value {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #0f5132;
-        display: block;
-    }
-
-    .stat-value.negative {
-        color: #dc3545;
-    }
-
-    .stat-label {
-        font-size: 0.85rem;
+    .section-card.future .section-icon,
+    .section-card.future .section-features li i {
         color: #6c757d;
-        margin-top: 0.5rem;
-        font-weight: 500;
     }
 
-    .stat-icon {
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
-        color: #198754;
+    .section-card.future .section-title {
+        color: #6c757d;
+    }
+
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 </style>
 
@@ -152,47 +125,60 @@
 </div>
 
 <div class="container-fluid">
-    <!-- Financial Stats -->
-    <div class="finance-stats">
-        <h5 class="mb-3">
-            <i class="bi bi-graph-up me-2"></i>Finansijski pregled (zadnjih 30 dana)
-        </h5>
-        <div class="stats-grid">
-            <div class="stat-card income">
-                <div class="stat-icon">
-                    <i class="bi bi-arrow-up-circle"></i>
-                </div>
-                <span class="stat-value">@TypeMapping.FormatCurrency(ukupanPrihod)</span>
-                <div class="stat-label">Ukupan Prihod</div>
-            </div>
-            <div class="stat-card expense">
-                <div class="stat-icon">
-                    <i class="bi bi-arrow-down-circle"></i>
-                </div>
-                <span class="stat-value negative">@TypeMapping.FormatCurrency(ukupanRashod)</span>
-                <div class="stat-label">Ukupan Rashod</div>
-            </div>
-            <div class="stat-card balance">
-                <div class="stat-icon">
-                    <i class="bi bi-wallet2"></i>
-                </div>
-                <span class="stat-value @(ukupnoSaldo >= 0 ? "" : "negative")">@TypeMapping.FormatCurrency(ukupnoSaldo)</span>
-                <div class="stat-label">Neto Saldo</div>
-            </div>
-            <div class="stat-card profit">
-                <div class="stat-icon">
-                    <i class="bi bi-percent"></i>
-                </div>
-                <span class="stat-value">@profitMarza%</span>
-                <div class="stat-label">Profit Marža</div>
-            </div>
-        </div>
-    </div>
-
     <!-- Main Sections -->
     <div class="section-grid">
-        <!-- 2.1 Finansije -->
-        <div class="section-card" onclick="() => NavigateTo('/finansije')">
+        <div class="section-card active" @onclick="@(() => NavigateTo("/finansijski-pregled"))">
+            <div class="section-icon">
+                <i class="bi bi-speedometer2"></i>
+            </div>
+            <h4 class="section-title">Finansijski Pregled</h4>
+            <p class="section-description">
+                Brzi pregled nabavke, prodaje i zaliha
+            </p>
+            <ul class="section-features">
+                <li><i class="bi bi-check-circle"></i>Pregled nabavke</li>
+                <li><i class="bi bi-check-circle"></i>Pregled prodaje</li>
+                <li><i class="bi bi-check-circle"></i>Roba na zalihama</li>
+                <li><i class="bi bi-check-circle"></i>Konfigurisanje partnera</li>
+                <li><i class="bi bi-check-circle"></i>Real-time podaci</li>
+            </ul>
+        </div>
+
+        <div class="section-card active" @onclick="@(() => NavigateTo("/nabavka"))">
+            <div class="section-icon">
+                <i class="bi bi-truck"></i>
+            </div>
+            <h4 class="section-title">Nabavka</h4>
+            <p class="section-description">
+                Detaljni pregled nabavke i dobavljača
+            </p>
+            <ul class="section-features">
+                <li><i class="bi bi-check-circle"></i>Otkupni listovi</li>
+                <li><i class="bi bi-check-circle"></i>Dobavljači</li>
+                <li><i class="bi bi-check-circle"></i>Analiza nabavke</li>
+                <li><i class="bi bi-check-circle"></i>Statistike</li>
+                <li><i class="bi bi-check-circle"></i>Export podataka</li>
+            </ul>
+        </div>
+
+        <div class="section-card active" @onclick="@(() => NavigateTo("/prodaja"))">
+            <div class="section-icon">
+                <i class="bi bi-cart-check"></i>
+            </div>
+            <h4 class="section-title">Prodaja</h4>
+            <p class="section-description">
+                Detaljni pregled prodaje i kupaca
+            </p>
+            <ul class="section-features">
+                <li><i class="bi bi-check-circle"></i>Fakture</li>
+                <li><i class="bi bi-check-circle"></i>Kupci</li>
+                <li><i class="bi bi-check-circle"></i>Analiza prodaje</li>
+                <li><i class="bi bi-check-circle"></i>Top kupci</li>
+                <li><i class="bi bi-check-circle"></i>Mesečna analiza</li>
+            </ul>
+        </div>
+
+        <div class="section-card" @onclick="@(() => NavigateTo("/finansije"))">
             <div class="section-icon">
                 <i class="bi bi-calculator"></i>
             </div>
@@ -208,56 +194,101 @@
                 <li><i class="bi bi-check-circle"></i>Export u Excel/PDF</li>
             </ul>
         </div>
+    </div>
 
-        <!-- 2.2 Ulaz-Izlaz -->
-        <div class="section-card" onclick="() => NavigateTo('/ulazizlaz')">
-            <div class="section-icon">
-                <i class="bi bi-arrow-left-right"></i>
-            </div>
-            <h4 class="section-title">Ulaz-Izlaz</h4>
-            <p class="section-description">
-                Upravljanje ulaznim i izlaznim dokumentima
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-check-circle"></i>Fakture i računi</li>
-                <li><i class="bi bi-check-circle"></i>Otkupni listovi</li>
-                <li><i class="bi bi-check-circle"></i>Prijemnice i otpremnice</li>
-                <li><i class="bi bi-check-circle"></i>Kombinovane statistike</li>
-                <li><i class="bi bi-check-circle"></i>Analiza po mesecima</li>
-            </ul>
+    <!-- Brzi Pregled Tabele - Nabavka i Prodaja -->
+    @if (brziPregledDobavljaci?.Any() == true || brziPregledKupci?.Any() == true)
+    {
+        <div class="row mb-4">
+            @if (brziPregledDobavljaci?.Any() == true)
+            {
+                <div class="col-md-6">
+                    <BrziPregledTabela 
+                        Stavke="@brziPregledDobavljaci"
+                        Naslov="Pregled Nabavke"
+                        TipPartnera="Dobavljač"
+                        IsplataLabel="Isplata"
+                        HeaderBgClass="bg-danger text-white"
+                        IkonaClass="bi-truck"
+                        OdDatum="@startDatum"
+                        DoDatum="@endDatum" />
+                </div>
+            }
+
+            @if (brziPregledKupci?.Any() == true)
+            {
+                <div class="col-md-6">
+                    <BrziPregledTabela 
+                        Stavke="@brziPregledKupci"
+                        Naslov="Pregled Prodaje"
+                        TipPartnera="Kupac"
+                        IsplataLabel="Uplata"
+                        HeaderBgClass="bg-success text-white"
+                        IkonaClass="bi-cart-check"
+                        OdDatum="@startDatum"
+                        DoDatum="@endDatum" />
+                </div>
+            }
         </div>
+    }
 
-        <!-- Dodatni moduli (buduće proširenje) -->
-        <div class="section-card" style="border-left-color: #6c757d; opacity: 0.7;" onclick="() => NavigateTo('/cash-flow')">
-            <div class="section-icon" style="color: #6c757d;">
-                <i class="bi bi-graph-up-arrow"></i>
+    <!-- Roba na Zalihama -->
+    @if (robaZalihe?.Any() == true)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <RobaZaliheTabela 
+                    Stavke="@robaZalihe"
+                    Naslov="Roba na Zalihama"
+                    HeaderBgClass="bg-info text-white"
+                    IkonaClass="bi-box-seam"
+                    OdDatum="@startDatum"
+                    DoDatum="@endDatum" />
             </div>
-            <h4 class="section-title" style="color: #6c757d;">Cash Flow</h4>
-            <p class="section-description">
-                Praćenje novčanih tokova i likvidnosti (uskoro)
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Planirana funkcionalnost</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Mesečni cash flow</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Prognoza likvidnosti</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Analiza rizika</li>
-            </ul>
         </div>
+    }
 
-        <div class="section-card" style="border-left-color: #6c757d; opacity: 0.7;" onclick="() => NavigateTo('/budgets')">
-            <div class="section-icon" style="color: #6c757d;">
-                <i class="bi bi-pie-chart"></i>
+    <!-- Dashboard Analitika - Top 5 Kupaca i Dobavljača -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>
+                    <i class="bi bi-graph-up me-2"></i>Dashboard Analitika
+                </h5>
+                <button class="btn btn-sm btn-primary" @onclick="RefreshCharts" disabled="@IsRefreshing">
+                    <i class="bi bi-arrow-clockwise @(IsRefreshing ? "spin" : "")"></i>
+                    @(IsRefreshing ? "Osvežavam..." : "Osveži")
+                </button>
             </div>
-            <h4 class="section-title" style="color: #6c757d;">Budžeti</h4>
-            <p class="section-description">
-                Planiranje i praćenje budžeta (uskoro)
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Godišnji budžeti</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Plan vs. realizacija</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Analiza odstupanja</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Troškovna centri</li>
-            </ul>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart 
+                Title="Top 5 Kupaca"
+                Icon="bi bi-people"
+                SeriesName="Količina"
+                Unit="kg"
+                Color="#28a745"
+                Data="@TopKupciData"
+                IsLoading="@IsLoadingKupci"
+                HasError="@HasErrorKupci"
+                ShowSummary="false"
+                OnRefresh="@RefreshKupci" />
+        </div>
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart 
+                Title="Top 5 Dobavljača Sirovina"
+                Icon="bi bi-truck"
+                SeriesName="Količina"
+                Unit="kg"
+                Color="#dc3545"
+                Data="@TopDobavljaciData"
+                IsLoading="@IsLoadingDobavljaci"
+                HasError="@HasErrorDobavljaci"
+                ShowSummary="false"
+                OnRefresh="@RefreshDobavljaci" />
         </div>
     </div>
 
@@ -271,47 +302,178 @@
 </div>
 
 @code {
-    private decimal ukupanPrihod = 0;
-    private decimal ukupanRashod = 0;
-    private decimal ukupnoSaldo = 0;
-    private decimal profitMarza = 0;
+    // Chart Data
+    private List<ChartDataPoint>? TopKupciData;
+    private List<ChartDataPoint>? TopDobavljaciData;
+
+    // Brzi pregled data
+    private List<BrziPregledStavka>? brziPregledDobavljaci;
+    private List<BrziPregledStavka>? brziPregledKupci;
+    private List<RobaZaliheStavka>? robaZalihe;
+
+    // Loading States
+    private bool IsLoadingKupci = false;
+    private bool IsLoadingDobavljaci = false;
+    private bool IsRefreshing = false;
+
+    // Error States
+    private bool HasErrorKupci = false;
+    private bool HasErrorDobavljaci = false;
+
+    // Date range
+    private DateTime startDatum = new DateTime(2025, 6, 1);
+    private DateTime endDatum = DateTime.Now;
+
+    // Datumski filter
+    private FilterRequest StatistikaFilter => new FilterRequest
+    {
+        OdDatum = new DateTime(2025, 6, 1),
+        DoDatum = DateTime.Now
+    };
+
+    private FilterRequest brziPregledFilter => new FilterRequest
+    {
+        OdDatum = startDatum,
+        DoDatum = endDatum
+    };
 
     protected override async Task OnInitializedAsync()
     {
-        await UcitajFinansijskeStatistike();
+        await Task.WhenAll(
+            RefreshCharts(),
+            UcitajBrziPregled()
+        );
     }
 
-    private async Task UcitajFinansijskeStatistike()
+    private async Task UcitajBrziPregled()
     {
         try
         {
-            var filter = new FilterRequest
-            {
-                OdDatum = DateTime.Now.AddDays(-30),
-                DoDatum = DateTime.Now
-            };
-
-            // Učitaj finansijsko stanje
-            ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filter);
+            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "brzi_pregled_config");
             
-            // Mock podaci dok se ne implementiraju detaljnije metode
-            ukupanPrihod = Math.Abs(ukupnoSaldo) + new Random().Next(100000, 500000);
-            ukupanRashod = ukupanPrihod - ukupnoSaldo;
-            
-            if (ukupanPrihod > 0)
+            if (string.IsNullOrEmpty(json))
             {
-                profitMarza = Math.Round((ukupnoSaldo / ukupanPrihod) * 100, 1);
+                return;
             }
+            
+            var config = JsonSerializer.Deserialize<BrziPregledKonfiguracija>(json);
+            
+            if (config == null)
+            {
+                return;
+            }
+            
+            var tasks = new List<Task>();
+            
+            if (config.IzabraniDobavljaci?.Any() == true)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    brziPregledDobavljaci = await BrziPregledService
+                        .UcitajBrziPregledDobavljaca(config.IzabraniDobavljaci, brziPregledFilter);
+                }));
+            }
+            
+            if (config.IzabraniKupci?.Any() == true)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    brziPregledKupci = await BrziPregledService
+                        .UcitajBrziPregledKupaca(config.IzabraniKupci, brziPregledFilter);
+                }));
+            }
+
+            if (config.ArtikliPoVrstama?.Any(x => x.Value.Any()) == true)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    robaZalihe = await BrziPregledService
+                        .UcitajRobaNaZalihama(config.ArtikliPoVrstama, brziPregledFilter);
+                }));
+            }
+            
+            await Task.WhenAll(tasks);
+            StateHasChanged();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greška pri učitavanju finansijskih statistika: {ex.Message}");
-            
-            // Fallback podaci
-            ukupanPrihod = 1250000;
-            ukupanRashod = 950000;
-            ukupnoSaldo = 300000;
-            profitMarza = 24.0m;
+            Logger.LogError(ex, "Error loading brzi pregled");
+        }
+    }
+
+    private async Task RefreshCharts()
+    {
+        IsRefreshing = true;
+        StateHasChanged();
+
+        try
+        {
+            await Task.WhenAll(RefreshKupci(), RefreshDobavljaci());
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing charts");
+        }
+        finally
+        {
+            IsRefreshing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshKupci()
+    {
+        if (IsLoadingKupci) return;
+        
+        IsLoadingKupci = true;
+        HasErrorKupci = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(100);
+            var data = await ProizvodnjaService.UcitajTopKupcePoKilogramima(StatistikaFilter);
+            TopKupciData = ChartDataHelper.FromDictionary(data, 5);
+            TopKupciData = ChartDataHelper.TruncateLabels(TopKupciData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading top kupci data");
+            HasErrorKupci = true;
+            TopKupciData = ChartDataHelper.GetMockData("Kupac", 5);
+        }
+        finally
+        {
+            IsLoadingKupci = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshDobavljaci()
+    {
+        if (IsLoadingDobavljaci) return;
+        
+        IsLoadingDobavljaci = true;
+        HasErrorDobavljaci = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(150);
+            var data = await ProizvodnjaService.UcitajTopDobavljacePoKilogramima(StatistikaFilter);
+            TopDobavljaciData = ChartDataHelper.FromDictionary(data, 5);
+            TopDobavljaciData = ChartDataHelper.TruncateLabels(TopDobavljaciData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading top dobavljaci data");
+            HasErrorDobavljaci = true;
+            TopDobavljaciData = ChartDataHelper.GetMockData("Dobavljač", 5);
+        }
+        finally
+        {
+            IsLoadingDobavljaci = false;
+            StateHasChanged();
         }
     }
 

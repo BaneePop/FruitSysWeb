@@ -191,119 +191,6 @@
         </div>
     </div>
 
-    <!-- Charts and Analytics -->
-    @if (proizvodnjaPoArtiklima?.Any() == true || proizvodnjaPoKomitentima?.Any() == true)
-    {
-        <div class="row mb-4 production-section">
-            <div class="col-md-6">
-                <div class="dashboard-card">
-                    <h5 class="section-title">
-                        <i class="bi bi-box-seam me-2"></i>Top 10 Artikala po proizvodnji
-                    </h5>
-                    @if (proizvodnjaPoArtiklima?.Any() == true)
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Artikal</th>
-                                        <th class="text-end">Količina</th>
-                                        <th class="text-end">%</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @{
-                                        var ukupnoArtikli = proizvodnjaPoArtiklima.Values.Sum();
-                                    }
-                                    @foreach (var artikal in proizvodnjaPoArtiklima.Take(10))
-                                    {
-                                        <tr>
-                                            <td>@artikal.Key</td>
-                                            <td class="text-end fw-bold">@TypeMapping.FormatDecimal(artikal.Value)</td>
-                                            <td class="text-end">@TypeMapping.FormatDecimal((artikal.Value / ukupnoArtikli * 100))%</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="text-muted">Nema podataka o proizvodnji po artiklima</p>
-                    }
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="dashboard-card">
-                    <h5 class="section-title">
-                        <i class="bi bi-people me-2"></i>Top 10 Komitenata po proizvodnji
-                    </h5>
-                    @if (proizvodnjaPoKomitentima?.Any() == true)
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Komitent</th>
-                                        <th class="text-end">Količina</th>
-                                        <th class="text-end">%</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @{
-                                        var ukupnoKomitenti = proizvodnjaPoKomitentima.Values.Sum();
-                                    }
-                                    @foreach (var komitent in proizvodnjaPoKomitentima.Take(10))
-                                    {
-                                        <tr>
-                                            <td>@komitent.Key</td>
-                                            <td class="text-end fw-bold">@TypeMapping.FormatDecimal(komitent.Value)</td>
-                                            <td class="text-end">@TypeMapping.FormatDecimal((komitent.Value / ukupnoKomitenti * 100))%</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="text-muted">Nema podataka o proizvodnji po komitentima</p>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <!-- Analiza po tipovima artikala -->
-        @if (proizvodnjaPoTipovima?.Any() == true)
-        {
-            <div class="row mb-4 production-section">
-                <div class="col-12">
-                    <div class="dashboard-card">
-                        <h5 class="section-title">
-                            <i class="bi bi-pie-chart me-2"></i>Proizvodnja po tipovima artikala
-                        </h5>
-                        <div class="row">
-                            @foreach (var tip in proizvodnjaPoTipovima)
-                            {
-                                var tipNaziv = TypeMapping.GetMagacinDisplayName(tip.Key);
-                                var ukupnoZaProcenat = ukupnaSirovina + ukupnaGotovaRoba;
-                                var procenat = ukupnoZaProcenat > 0 ? (tip.Value / ukupnoZaProcenat * 100) : 0;
-                                
-                                <div class="col-md-2">
-                                    <div class="text-center p-3 border rounded">
-                                        <h6 class="text-muted">@tipNaziv</h6>
-                                        <h4 class="text-primary">@TypeMapping.FormatDecimal(tip.Value)</h4>
-                                        <small class="text-muted">@TypeMapping.FormatDecimal(procenat)%</small>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-    }
-
     <!-- Main Data Table - ISPRAVKA: Ambalaza u dve kolone -->
     @if (podaci == null)
     {
@@ -403,9 +290,6 @@
     private int brojAktivnihNaloga = 0;
     private int brojUnikatanihNaloga = 0;
     private decimal prosecnaDnevnaProizvodnja = 0;
-    private Dictionary<string, decimal>? proizvodnjaPoArtiklima;
-    private Dictionary<string, decimal>? proizvodnjaPoKomitentima;
-    private Dictionary<int, decimal>? proizvodnjaPoTipovima;
     private List<ProizvodnjaModel>? najproduktivnijiNalozi;
 
     private string OdDatumValue => filterRequest.OdDatum?.ToString("yyyy-MM-dd") ?? "";
@@ -547,9 +431,6 @@
                 prosecnaDnevnaProizvodnja = 0;
             }
 
-            proizvodnjaPoArtiklima = await ProizvodnjaService.UcitajProizvodnjuPoArtiklima(filterRequest);
-            proizvodnjaPoKomitentima = await ProizvodnjaService.UcitajProizvodnjuPoKomitentima(filterRequest);
-            proizvodnjaPoTipovima = await ProizvodnjaService.UcitajProizvodnjuPoTipovima(filterRequest);
             najproduktivnijiNalozi = await ProizvodnjaService.UcitajNajproduktivnijeNaloge(filterRequest, 10);
 
             StateHasChanged();

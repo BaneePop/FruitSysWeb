@@ -25,8 +25,12 @@ namespace FruitSysWeb.Models
         [Display(Name = "Tip naziv")]
         public string AmbalazaTip => GetAmbalazaTip(Tip);
 
+        // ✅ ISPRAVKA: Oba polja za kompatibilnost
         [Display(Name = "Aktivan")]
         public int? Aktivan { get; set; }
+        
+        [Display(Name = "Aktivno")]
+        public bool Aktivno => Aktivan == 1;
 
         private static string GetTipNaziv(int tip)
         {
@@ -37,6 +41,7 @@ namespace FruitSysWeb.Models
                 3 => "Potrosni materijal",
                 4 => "Gotova roba",
                 5 => "Oprema",
+                7 => "Klase",
                 _ => $"Tip {tip}"
             };
         }

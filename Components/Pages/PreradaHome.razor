@@ -1,11 +1,19 @@
 @page "/preradahome"
+@rendermode @(new InteractiveServerRenderMode())
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
 @using FruitSysWeb.Services.Interfaces
 @using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Components.Shared.Layout
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Models
 
 @inject NavigationManager NavigationManager
 @inject IProizvodnjaService ProizvodnjaService
+@inject IMagacinLagerService LagerService
+@inject ITypeMappingService TypeMapping
+@inject ILogger<PreradaHome> Logger
 
 <style>
     .prerada-header {
@@ -109,6 +117,23 @@
         color: #6c757d;
         margin-top: 0.2rem;
     }
+
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .dashboard-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
 </style>
 
 <!-- Header -->
@@ -149,8 +174,7 @@
 
     <!-- Main Sections -->
     <div class="section-grid">
-        <!-- 1.1 Proizvodnja -->
-        <div class="section-card" onclick="() => NavigateTo('/proizvodnja')">
+        <div class="section-card" @onclick="@(() => NavigateTo("/proizvodnja"))">
             <div class="section-icon">
                 <i class="bi bi-gear-fill"></i>
             </div>
@@ -166,8 +190,7 @@
             </ul>
         </div>
 
-        <!-- 1.2 Lager Proizvodnje -->
-        <div class="section-card" onclick="() => NavigateTo('/lager-proizvodnje')">
+        <div class="section-card" @onclick="@(() => NavigateTo("/lager-proizvodnje"))">
             <div class="section-icon">
                 <i class="bi bi-boxes"></i>
             </div>
@@ -183,8 +206,7 @@
             </ul>
         </div>
 
-        <!-- 1.3 Radni Nalozi Pregled -->
-        <div class="section-card" onclick="() => NavigateTo('/radni-nalozi')">
+        <div class="section-card" @onclick="@(() => NavigateTo("/radni-nalozi"))">
             <div class="section-icon">
                 <i class="bi bi-clipboard-data"></i>
             </div>
@@ -200,8 +222,7 @@
             </ul>
         </div>
 
-        <!-- 1.4 Smenski Izveštaji -->
-        <div class="section-card" onclick="() => NavigateTo('/smenski-izvestaji')">
+        <div class="section-card" @onclick="@(() => NavigateTo("/smenski-izvestaji"))">
             <div class="section-icon">
                 <i class="bi bi-calendar3"></i>
             </div>
@@ -218,6 +239,160 @@
         </div>
     </div>
 
+    <!-- Dashboard Analitika -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>
+                    <i class="bi bi-graph-up me-2"></i>Dashboard Analitika
+                </h5>
+                <button class="btn btn-sm btn-primary" @onclick="RefreshCharts" disabled="@IsRefreshing">
+                    <i class="bi bi-arrow-clockwise @(IsRefreshing ? "spin" : "")"></i>
+                    @(IsRefreshing ? "Osvežavam..." : "Osveži")
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Struktura Lagera - 4 Charts -->
+    <div class="row mb-4">
+        <div class="col-lg-3 mb-3">
+            <ApexBarChart 
+                Title="Struktura Sirovina"
+                Icon="bi bi-basket"
+                SeriesName="Količina"
+                Unit="kg"
+                Color="#28a745"
+                Data="@SirovineData"
+                IsLoading="@IsLoadingSirovine"
+                HasError="@HasErrorSirovine"
+                ShowSummary="false"
+                OnRefresh="@RefreshSirovine" />
+        </div>
+        <div class="col-lg-3 mb-3">
+            <ApexBarChart 
+                Title="Struktura Gotovih Proizvoda"
+                Icon="bi bi-box2"
+                SeriesName="Količina"
+                Unit="kg"
+                Color="#007bff"
+                Data="@GotoviProizvodiData"
+                IsLoading="@IsLoadingGotovi"
+                HasError="@HasErrorGotovi"
+                ShowSummary="false"
+                OnRefresh="@RefreshGotovi" />
+        </div>
+        <div class="col-lg-3 mb-3">
+            <ApexBarChart 
+                Title="Struktura Kutija/Džakova"
+                Icon="bi bi-box"
+                SeriesName="Količina"
+                Unit="kom"
+                Color="#fd7e14"
+                Data="@KutijeData"
+                IsLoading="@IsLoadingKutije"
+                HasError="@HasErrorKutije"
+                ShowSummary="false"
+                OnRefresh="@RefreshKutije" />
+        </div>
+        <div class="col-lg-3 mb-3">
+            <ApexBarChart 
+                Title="Struktura Kesa"
+                Icon="bi bi-bag"
+                SeriesName="Količina"
+                Unit="kom"
+                Color="#6f42c1"
+                Data="@KesaData"
+                IsLoading="@IsLoadingKesa"
+                HasError="@HasErrorKesa"
+                ShowSummary="false"
+                OnRefresh="@RefreshKesa" />
+        </div>
+    </div>
+
+    <!-- Top 10 Artikala i Komitenata po proizvodnji -->
+    @if (proizvodnjaPoArtiklima?.Any() == true || proizvodnjaPoKomitentima?.Any() == true)
+    {
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h5 class="section-title">
+                        <i class="bi bi-box-seam me-2"></i>Top 10 Artikala po proizvodnji
+                    </h5>
+                    @if (proizvodnjaPoArtiklima?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Artikal</th>
+                                        <th class="text-end">Količina</th>
+                                        <th class="text-end">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        var ukupnoArtikli = proizvodnjaPoArtiklima.Values.Sum();
+                                    }
+                                    @foreach (var artikal in proizvodnjaPoArtiklima.Take(10))
+                                    {
+                                        <tr>
+                                            <td>@artikal.Key</td>
+                                            <td class="text-end fw-bold">@TypeMapping.FormatDecimal(artikal.Value)</td>
+                                            <td class="text-end">@TypeMapping.FormatDecimal((artikal.Value / ukupnoArtikli * 100))%</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Nema podataka o proizvodnji po artiklima</p>
+                    }
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h5 class="section-title">
+                        <i class="bi bi-people me-2"></i>Top 10 Komitenata po proizvodnji
+                    </h5>
+                    @if (proizvodnjaPoKomitentima?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Komitent</th>
+                                        <th class="text-end">Količina</th>
+                                        <th class="text-end">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        var ukupnoKomitenti = proizvodnjaPoKomitentima.Values.Sum();
+                                    }
+                                    @foreach (var komitent in proizvodnjaPoKomitentima.Take(10))
+                                    {
+                                        <tr>
+                                            <td>@komitent.Key</td>
+                                            <td class="text-end fw-bold">@TypeMapping.FormatDecimal(komitent.Value)</td>
+                                            <td class="text-end">@TypeMapping.FormatDecimal((komitent.Value / ukupnoKomitenti * 100))%</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Nema podataka o proizvodnji po komitentima</p>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- Navigation Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -233,9 +408,39 @@
     private int prosecnaEfikasnost = 0;
     private int brojRadnika = 0;
 
+    // Chart Data
+    private List<ChartDataPoint>? SirovineData;
+    private List<ChartDataPoint>? GotoviProizvodiData;
+    private List<ChartDataPoint>? KutijeData;
+    private List<ChartDataPoint>? KesaData;
+
+    // Proizvodnja Top 10
+    private Dictionary<string, decimal>? proizvodnjaPoArtiklima;
+    private Dictionary<string, decimal>? proizvodnjaPoKomitentima;
+
+    // Loading States
+    private bool IsLoadingSirovine = false;
+    private bool IsLoadingGotovi = false;
+    private bool IsLoadingKutije = false;
+    private bool IsLoadingKesa = false;
+    private bool IsRefreshing = false;
+
+    // Error States
+    private bool HasErrorSirovine = false;
+    private bool HasErrorGotovi = false;
+    private bool HasErrorKutije = false;
+    private bool HasErrorKesa = false;
+
+    private FilterRequest proizvodnjFilter => new FilterRequest
+    {
+        OdDatum = new DateTime(2025, 6, 1),
+        DoDatum = DateTime.Now
+    };
+
     protected override async Task OnInitializedAsync()
     {
         await UcitajBrzuStatistiku();
+        await RefreshCharts();
     }
 
     private async Task UcitajBrzuStatistiku()
@@ -248,10 +453,8 @@
                 DoDatum = DateTime.Now
             };
 
-            // Učitaj osnovne statistike
             aktivniNalozi = await ProizvodnjaService.UcitajBrojAktivnihNaloga(filter);
             
-            // Mock podaci dok se ne implementiraju prave metode
             ukupnoSati = new Random().Next(120, 200);
             prosecnaEfikasnost = new Random().Next(75, 95);
             brojRadnika = new Random().Next(8, 15);
@@ -260,11 +463,162 @@
         {
             Console.WriteLine($"Greška pri učitavanju statistika: {ex.Message}");
             
-            // Fallback podaci
             aktivniNalozi = 12;
             ukupnoSati = 156;
             prosecnaEfikasnost = 87;
             brojRadnika = 11;
+        }
+    }
+
+    private async Task RefreshCharts()
+    {
+        IsRefreshing = true;
+        StateHasChanged();
+
+        try
+        {
+            await Task.WhenAll(
+                RefreshSirovine(),
+                RefreshGotovi(),
+                RefreshKutije(),
+                RefreshKesa(),
+                RefreshProizvodnja()
+            );
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing charts");
+        }
+        finally
+        {
+            IsRefreshing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshProizvodnja()
+    {
+        try
+        {
+            proizvodnjaPoArtiklima = await ProizvodnjaService.UcitajProizvodnjuPoArtiklima(proizvodnjFilter);
+            proizvodnjaPoKomitentima = await ProizvodnjaService.UcitajProizvodnjuPoKomitentima(proizvodnjFilter);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading proizvodnja data");
+        }
+    }
+
+    private async Task RefreshSirovine()
+    {
+        if (IsLoadingSirovine) return;
+        
+        IsLoadingSirovine = true;
+        HasErrorSirovine = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(250);
+            var data = await LagerService.UcitajStrukturuSirovina();
+            SirovineData = ChartDataHelper.FromDictionary(data, 5);
+            SirovineData = ChartDataHelper.TruncateLabels(SirovineData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading sirovine data");
+            HasErrorSirovine = true;
+            SirovineData = ChartDataHelper.GetMockData("Sirovina", 5);
+        }
+        finally
+        {
+            IsLoadingSirovine = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshGotovi()
+    {
+        if (IsLoadingGotovi) return;
+        
+        IsLoadingGotovi = true;
+        HasErrorGotovi = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(300);
+            var data = await LagerService.UcitajStrukturuGotovihProizvoda();
+            GotoviProizvodiData = ChartDataHelper.FromDictionary(data, 5);
+            GotoviProizvodiData = ChartDataHelper.TruncateLabels(GotoviProizvodiData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading gotovi proizvodi data");
+            HasErrorGotovi = true;
+            GotoviProizvodiData = ChartDataHelper.GetMockData("Proizvod", 5);
+        }
+        finally
+        {
+            IsLoadingGotovi = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshKutije()
+    {
+        if (IsLoadingKutije) return;
+        
+        IsLoadingKutije = true;
+        HasErrorKutije = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(350);
+            var data = await LagerService.UcitajStrukturuKutija();
+            KutijeData = ChartDataHelper.FromDictionary(data, 5);
+            KutijeData = ChartDataHelper.TruncateLabels(KutijeData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading kutije data");
+            HasErrorKutije = true;
+            KutijeData = ChartDataHelper.GetMockData("Kutija", 5);
+        }
+        finally
+        {
+            IsLoadingKutije = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshKesa()
+    {
+        if (IsLoadingKesa) return;
+        
+        IsLoadingKesa = true;
+        HasErrorKesa = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(400);
+            var data = await LagerService.UcitajStrukturuKesa();
+            KesaData = ChartDataHelper.FromDictionary(data, 5);
+            KesaData = ChartDataHelper.TruncateLabels(KesaData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading kesa data");
+            HasErrorKesa = true;
+            KesaData = ChartDataHelper.GetMockData("Kesa", 5);
+        }
+        finally
+        {
+            IsLoadingKesa = false;
+            StateHasChanged();
         }
     }
 

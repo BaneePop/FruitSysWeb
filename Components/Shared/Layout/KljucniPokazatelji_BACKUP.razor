@@ -1,0 +1,138 @@
+@* 
+    ============================================
+    BACKUP - Ključni pokazatelji sekcija
+    ============================================
+    Ova sekcija je uklonjena iz Home.razor
+    Sačuvana za buduću upotrebu
+    Datum backup-a: @DateTime.Now.ToString("dd.MM.yyyy HH:mm")
+*@
+
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Core
+
+@inject IFinansijeService FinansijeService
+@inject IProizvodnjaService ProizvodnjaService
+@inject IMagacinLagerService LagerService
+@inject ITypeMappingService TypeMapping
+
+<style>
+    .stats-overview {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .stats-grid-main {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .stat-card-main {
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border-left: 4px solid #198754;
+    }
+
+    .stat-card-main:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .stat-value-main {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #0f5132;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label-main {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+</style>
+
+<!-- Quick Stats Overview - BACKUP -->
+<div class="stats-overview">
+    <h5 class="mb-3">
+        <i class="bi bi-graph-up me-2"></i>Ključni pokazatelje (zadnjih 30 dana)
+    </h5>
+    <div class="stats-grid-main">
+        <div class="stat-card-main" style="border-left-color: #198754;">
+            <span class="stat-value-main">@TypeMapping.FormatCurrency(ukupnoSaldo)</span>
+            <div class="stat-label-main">Ukupno Saldo</div>
+        </div>
+        <div class="stat-card-main" style="border-left-color: #6f42c1;">
+            <span class="stat-value-main">@TypeMapping.FormatCurrency(ukupnaVrednostLager)</span>
+            <div class="stat-label-main">Vrednost Lagera</div>
+        </div>
+        <div class="stat-card-main" style="border-left-color: #fd7e14;">
+            <span class="stat-value-main">@TypeMapping.FormatWeight(ukupnaProizvodnja)</span>
+            <div class="stat-label-main">Proizvodnja (7 dana)</div>
+        </div>
+        <div class="stat-card-main" style="border-left-color: #dc3545;">
+            <span class="stat-value-main">@brojAktivnihNaloga</span>
+            <div class="stat-label-main">Aktivni Nalozi</div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private decimal ukupnoSaldo = 0;
+    private decimal ukupnaVrednostLager = 0;
+    private decimal ukupnaProizvodnja = 0;
+    private int brojAktivnihNaloga = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UcitajStatistike();
+    }
+
+    private async Task UcitajStatistike()
+    {
+        try
+        {
+            // Filter za ukupno saldo (zadnji mesec)
+            var filterMesec = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddMonths(-1),
+                DoDatum = DateTime.Now
+            };
+
+            ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filterMesec);
+            ukupnaProizvodnja = await ProizvodnjaService.UcitajGotoveProizvodePoslednjihDana(7);
+            brojAktivnihNaloga = await ProizvodnjaService.UcitajBrojAktivnihNaloga(filterMesec);
+            ukupnaVrednostLager = await LagerService.UcitajUkupnuVrednostLager();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju statistika: {ex.Message}");
+            
+            // Fallback podaci
+            ukupnoSaldo = 1250000;
+            ukupnaVrednostLager = 2150000;
+            ukupnaProizvodnja = 8500;
+            brojAktivnihNaloga = 12;
+        }
+    }
+}
+
+@* 
+    ============================================
+    KAKO KORISTITI OVAJ KOD:
+    ============================================
+    1. Kopiraj HTML deo u novu stranicu
+    2. Kopiraj @code sekciju
+    3. Kopiraj CSS stilove
+    4. Dodaj potrebne @inject direktive
+    5. Pozovi metodu UcitajStatistike() u OnInitializedAsync()
+*@
