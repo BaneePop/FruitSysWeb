@@ -1,10 +1,12 @@
 using FruitSysWeb.Services;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Implementations.IzvestajService;
-using FruitSysWeb.Services.Implementations.ExportService;
+using FruitSysWeb.Services.Implementations;
 using FruitSysWeb.Models;
 using FruitSysWeb.Extensions; // DODATO: Extension methods
 using ApexCharts;
+using FruitSysWeb.Services.Core;
+using FruitSysWeb.Components.Layout;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +26,11 @@ builder.Services.AddFruitSysServices();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IFinansijskiPregledService, FinansijskiPregledService>();
 builder.Services.AddScoped<IBrziPregledService, BrziPregledService>();
+builder.Services.AddScoped<IUgovorService, UgovorService>();
+builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+
 
 
 // DODANO: Konfigurisanje baze podataka ako koristiš EF Core
@@ -36,7 +43,8 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents()
-    .AddCircuitOptions(options => {
+    .AddCircuitOptions(options =>
+    {
         options.DetailedErrors = true;
         options.DisconnectedCircuitMaxRetained = 100;
         options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(3);
@@ -80,7 +88,10 @@ else
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -102,14 +113,14 @@ using (var scope = app.Services.CreateScope())
     {
         var dbService = scope.ServiceProvider.GetRequiredService<DatabaseService>();
         Console.WriteLine("Database service registered successfully");
-        
+
         var exportService = scope.ServiceProvider.GetRequiredService<IExportService>();
         if (exportService is FruitSysWeb.Services.Implementations.ExportService.SimpleExportService simpleExportService)
         {
             var pdfTest = simpleExportService.TestPdfGeneration();
             Console.WriteLine($"PDF generation test: {(pdfTest ? "PASSED" : "FAILED")}");
         }
-        
+
         var dashboardService = scope.ServiceProvider.GetRequiredService<IDashboardService>();
         Console.WriteLine("Dashboard service registered successfully");
     }

@@ -15,11 +15,19 @@ namespace FruitSysWeb.Utils
         [Obsolete("Use MagacinTypes.DisplayNames from Constants instead")]
         public static readonly Dictionary<int, string> TipoviArtikala = new()
         {
-            { 1, "Sirovina" },
-            { 2, "Ambalaza" },
-            { 3, "Potrosni materijal" },
-            { 4, "Gotova roba" },
-            { 5, "Oprema" }
+            { 1, "Ne Postoji" },
+            { 2, "Sveza Roba" },
+            { 3, "Sirovine" },
+            { 4, "Ambalaza" },
+            { 5, "PoluProizvodi" },
+            { 6, "Gotovi Proizvodi" },
+            { 7, "Kalo i Rastur" },
+            { 8, "Uluzni Lager Mleko" },
+            { 9, "Repromaterijal" },
+            { 10, "Djubriva" },
+            { 11, "Uluzni Lager Voce" },
+            { 12, "Usluzni Lager Meso" }
+
         };
 
         /// <summary>

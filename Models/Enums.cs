@@ -6,19 +6,19 @@ namespace FruitSysWeb.Models
     {
         [Display(Name = "Sirovina")]
         Sirovina = 1,
-        
+
         [Display(Name = "Ambalaza")]
         Ambalaza = 2,
-        
+
         [Display(Name = "Potrosni materijal")]
         PotrosniMaterijal = 3,
-        
+
         [Display(Name = "Gotova roba")]
         GotovaRoba = 4,
-        
+
         [Display(Name = "Oprema")]
         Oprema = 5,
-        
+
         [Display(Name = "Ostali tip")]
         OstaliTip = 7
     }
@@ -27,7 +27,7 @@ namespace FruitSysWeb.Models
     {
         [Display(Name = "Otvoren")]
         Otvoren = 2,
-        
+
         [Display(Name = "Zaključen")]
         Zakljucen = 3
     }
@@ -36,13 +36,13 @@ namespace FruitSysWeb.Models
     {
         [Display(Name = "Kupac")]
         Kupac = 1,
-        
+
         [Display(Name = "Dobavljač")]
         Dobavljac = 2,
-        
+
         [Display(Name = "Proizvođač")]
         Proizvodjac = 3,
-        
+
         [Display(Name = "Otkupljivač")]
         Otkupljivac = 4
     }
@@ -54,7 +54,7 @@ namespace FruitSysWeb.Models
             return Tip switch
             {
                 1 => "Sirovina",
-                2 => "Ambalaza", 
+                2 => "Ambalaza",
                 3 => "Potrosni materijal",
                 4 => "Gotova roba",
                 5 => "Oprema",

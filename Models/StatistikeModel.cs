@@ -14,7 +14,7 @@ namespace FruitSysWeb.Models
         public decimal ProsecnaEfikasnost { get; set; }
         public int BrojEvidencija { get; set; }
         public int BrojRadnihNaloga { get; set; }
-        
+
         // Kalkulisana svojstva
         public decimal ProsecniTrosakPoSatu
         {
@@ -23,7 +23,7 @@ namespace FruitSysWeb.Models
                 return UkupniRadniSati > 0 ? UkupniTrosakRada / UkupniRadniSati : 0;
             }
         }
-        
+
         public decimal ProsecnaProizvodnjaPoDanu
         {
             get
@@ -31,7 +31,7 @@ namespace FruitSysWeb.Models
                 return BrojEvidencija > 0 ? UkupnaProizvodnja / BrojEvidencija : 0;
             }
         }
-        
+
         // Format helper properties
         public string FormattedUkupnaProizvodnja => UkupnaProizvodnja.ToString("F2");
         public string FormattedUkupniRadniSati => UkupniRadniSati.ToString("F2");

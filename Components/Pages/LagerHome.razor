@@ -17,9 +17,10 @@
 
 <style>
     .lager-header {
-        background: linear-gradient(135deg, #6f42c1, #8b5fbf);
+        background: linear-gradient(135deg, #1a2332, #232d3f);
         border-radius: 12px;
         margin-bottom: 2rem;
+        border: 1px solid #374151;
     }
     
     .section-grid {
@@ -30,59 +31,40 @@
     }
     
     .section-card {
-        background: white;
-        border-radius: 12px;
-        padding: 2rem;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-        border-left: 4px solid #6f42c1;
-        cursor: pointer;
-        height: 100%;
-    }
-    
-    .section-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        border-left-color: #5a32a3;
-    }
-    
-    .section-icon {
-        font-size: 3rem;
-        margin-bottom: 1.5rem;
-        color: #6f42c1;
-    }
-    
-    .section-title {
-        font-weight: 700;
-        color: #0f5132;
-        margin-bottom: 1rem;
-        font-size: 1.3rem;
-    }
-    
-    .section-description {
-        color: #6c757d;
-        margin-bottom: 1.5rem;
-        line-height: 1.6;
-    }
-    
-    .section-features {
-        list-style: none;
-        padding: 0;
-        text-align: left;
-    }
-    
-    .section-features li {
-        padding: 0.3rem 0;
-        color: #495057;
-        font-size: 0.9rem;
-    }
-    
-    .section-features li i {
-        color: #6f42c1;
-        margin-right: 0.5rem;
+    background: #1a2332;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    border-left: 4px solid #3e6b1f;
+    cursor: pointer;
+    border: 1px solid #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
     }
 
+    .section-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    border-left-color: #2d5016;
+    }
+
+    .section-icon {
+    font-size: 2rem;
+    margin-bottom: 0;
+    color: #3e6b1f;
+    }
+
+    .section-title {
+    font-weight: 600;
+    color: #e5e7eb;
+    margin-bottom: 0;
+    font-size: 1.1rem;
+    }
+    
     .spin {
         animation: spin 1s linear infinite;
     }
@@ -111,16 +93,6 @@
                 <i class="bi bi-archive"></i>
             </div>
             <h4 class="section-title">Magacin Lager</h4>
-            <p class="section-description">
-                Osnovno stanje sirovina i gotovih proizvoda u magacinu
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-check-circle"></i>Stanje sirovina</li>
-                <li><i class="bi bi-check-circle"></i>Gotovi proizvodi</li>
-                <li><i class="bi bi-check-circle"></i>Ambalažni materijali</li>
-                <li><i class="bi bi-check-circle"></i>Status indikatori</li>
-                <li><i class="bi bi-check-circle"></i>Filtriranje po tipovima</li>
-            </ul>
         </div>
 
         <div class="section-card" @onclick="@(() => NavigateTo("/lager-proizvodnje"))">
@@ -128,48 +100,19 @@
                 <i class="bi bi-gear-wide-connected"></i>
             </div>
             <h4 class="section-title">Lager Proizvodnje</h4>
-            <p class="section-description">
-                Praćenje radnih naloga u toku i rezervisanih materijala
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-check-circle"></i>Nalozi u proizvodnji</li>
-                <li><i class="bi bi-check-circle"></i>Rezervisani materijali</li>
-                <li><i class="bi bi-check-circle"></i>Status radnih naloga</li>
-                <li><i class="bi bi-check-circle"></i>Planirana proizvodnja</li>
-                <li><i class="bi bi-check-circle"></i>Real-time praćenje</li>
-            </ul>
+        </div>
+        <div class="section-card" @onclick="@(() => NavigateTo("/ambalaza"))">
+            <div class="section-icon" 
+                <i class="bi bi-gear-wide-connected"></i>
+            </div>
+            <h4 class="section-title">Ambalaža</h4>
         </div>
 
-        <div class="section-card" style="border-left-color: #6c757d; opacity: 0.7;">
-            <div class="section-icon" style="color: #6c757d;">
-                <i class="bi bi-calendar2-week"></i>
+        <div class="section-card" @onclick="@(() => NavigateTo("/roba"))">
+            <div class="section-icon"
+                <i class="bi bi-gear-wide-connected"></i>
             </div>
-            <h4 class="section-title" style="color: #6c757d;">Planiranje zaliha</h4>
-            <p class="section-description">
-                Automatsko planiranje nabavke i optimizacija zaliha (uskoro)
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>ABC analiza artikala</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Minimum/maksimum nivoi</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Automatska narudžbenica</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Sezonska analiza</li>
-            </ul>
-        </div>
-
-        <div class="section-card" style="border-left-color: #6c757d; opacity: 0.7;">
-            <div class="section-icon" style="color: #6c757d;">
-                <i class="bi bi-truck"></i>
-            </div>
-            <h4 class="section-title" style="color: #6c757d;">Magacinske operacije</h4>
-            <p class="section-description">
-                Upravljanje ulazima, izlazima i transferima (uskoro)
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Prijemnice materijala</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Otpremnice robe</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Interni transferi</li>
-                <li><i class="bi bi-clock" style="color: #6c757d;"></i>Inventarski spiskovi</li>
-            </ul>
+            <h4 class="section-title">Roba</h4>
         </div>
     </div>
 

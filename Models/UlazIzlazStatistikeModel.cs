@@ -29,11 +29,11 @@ namespace FruitSysWeb.Models
         public int BrojOtpremnica { get; set; }
 
         [Display(Name = "Prosečna Vrednost Po Dokumentu")]
-        public decimal ProsecnaVrednostPoKumentu => BrojDokumenata > 0 ? 
+        public decimal ProsecnaVrednostPoKumentu => BrojDokumenata > 0 ?
             (UkupnaProdaja + UkupnaNabavka) / BrojDokumenata : 0;
 
         [Display(Name = "Profit Margin %")]
-        public decimal ProfitMarginProcenat => UkupnaProdaja > 0 ? 
+        public decimal ProfitMarginProcenat => UkupnaProdaja > 0 ?
             (UkupniProfit / UkupnaProdaja) * 100 : 0;
 
         [Display(Name = "Ukupna Prodaja Formatirana")]

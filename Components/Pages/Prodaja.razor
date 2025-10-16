@@ -15,7 +15,7 @@
 @inject IJSRuntime JSRuntime
 
 <!-- Header sa saldo na vrhu -->
-<div class="bg-danger text-white py-3 mb-4">
+<div class="bg-dark text-white py-3 mb-4">
     <div class="container-fluid">
         <div class="row align-items-center">
             <div class="col-md-6">
@@ -383,7 +383,7 @@
         var rezultat = await FinansijeService.UcitajFinansijskiIzvestaj(filterRequest);
         
         // ISPRAVKA - Dodaj null check
-        podaci = rezultat?.Where(x => x.Dokument != null && !x.Dokument.StartsWith("KL-", StringComparison.OrdinalIgnoreCase)).ToList() 
+        podaci = rezultat?.Where(x => x.Dokument != null && !x.Dokument.StartsWith("KL-", StringComparison.OrdinalIgnoreCase) && !x.Dokument.StartsWith("IS-", StringComparison.OrdinalIgnoreCase)).ToList()
                  ?? new List<FinansijeModel>();
         
         ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filterRequest);

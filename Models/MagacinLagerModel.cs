@@ -6,44 +6,58 @@ namespace FruitSysWeb.Models
     {
         [Display(Name = "Artikal ID")]
         public long ArtikalID { get; set; }
-        
-        [Display(Name = "Tip artikla")]
-        public string? ArtikalTip { get; set; }
-        
-        // DODATO: Tip kao string property jer view vraća string
+
+        // ✅ NOVO: Tip kao int (MagacinID iz baze)
         [Display(Name = "Tip")]
-        public string? Tip { get; set; }
-        
+        public int? Tip { get; set; }
+
+        // ✅ NOVO: TipArtikla kao string (CASE statement rezultat)
+        [Display(Name = "Tip artikla")]
+        public string? TipArtikla { get; set; }
+
+        // ZADRŽANO: Stari naziv za backward compatibility
+        [Display(Name = "Tip artikla (staro)")]
+        public string? ArtikalTip { get; set; }
+
+        [Display(Name = "MagacinID")]
+        public int MagacinID { get; set; }
+
         [Display(Name = "Artikal")]
         public string Artikal { get; set; } = string.Empty;
-        
+
         [Display(Name = "Količina")]
         public decimal Kolicina { get; set; }
-        
+
         [Display(Name = "Pakovanje")]
         public string? Pakovanje { get; set; }
-        
+
         [Display(Name = "Jedinica mere")]
         public string? JM { get; set; }
-        
-        // DODATO: Dodatna polja iz view-a ako postoje
+
         [Display(Name = "Lot")]
         public string? Lot { get; set; }
-        
+
         [Display(Name = "Rok važenja")]
         public DateTime? RokVazenja { get; set; }
-        
+
         [Display(Name = "Cena")]
         public decimal? Cena { get; set; }
-        
+
         [Display(Name = "Vrednost")]
         public decimal Vrednost => Kolicina * (Cena ?? 0);
-        
+
+        // Za kolonu "Za najavljene Utovare"
+        [Display(Name = "Za najavljene Utovare")]
+        public string? ZaNajavljeneUtovare { get; set; }
+
         [Display(Name = "Status")]
         public string Status => GetStatusOpis();
-        
+
+        // ✅ NOVO: Helper property za badge klasu prema MagacinID
+        public string TipArtiklaBadgeClass => GetTipBadgeClass();
+
         [Display(Name = "Tip naziv")]
-        public string TipNaziv => GetTipNaziv();
+        public string TipNaziv => GetTipNaziv(Tip ?? MagacinID);
 
         private string GetStatusOpis()
         {
@@ -53,21 +67,45 @@ namespace FruitSysWeb.Models
             return "Dostupno";
         }
 
-        private string GetTipNaziv()
+        private static string GetTipNaziv(int magacinId)
         {
-            if (int.TryParse(Tip ?? ArtikalTip, out int tipInt))
+            return magacinId switch
             {
-                return tipInt switch
-                {
-                    1 => "Sirovina",
-                    2 => "Ambalaza", 
-                    3 => "Potrosni materijal",
-                    4 => "Gotova roba",
-                    5 => "Oprema",
-                    _ => $"Tip {tipInt}"
-                };
-            }
-            return "Nepoznato";
+                2 => "Sveza Roba",
+                3 => "Sirovine",
+                4 => "Ambalaza",
+                5 => "Polu Proizvod",
+                6 => "Gotov Proizvod",
+                7 => "Kalo i Rastur",
+                8 => "Usl.Mleko",
+                9 => "Repromaterijal",
+                10 => "Đubriva",
+                11 => "Usl. Voće",
+                12 => "Usl. Meso",
+                _ => $"MagacinID {magacinId}"
+            };
+        }
+
+        // ✅ NOVO: Badge klasa prema MagacinID
+        private string GetTipBadgeClass()
+        {
+            int magacinId = Tip ?? MagacinID;
+
+            return magacinId switch
+            {
+                2 => "bg-danger text-white",      // Sveza Roba - Crvena
+                3 => "bg-secondary text-white",   // Sirovine - Siva
+                4 => "bg-success text-white",     // Ambalaza - Zelena
+                5 => "bg-secondary text-white",   // Polu Proizvod - Siva
+                6 => "bg-success text-white",     // Gotov Proizvod - Zelena
+                7 => "bg-dark text-white",        // Kalo i Rastur - Crna
+                8 => "bg-info text-white",        // Usl.Mleko - Plava
+                9 => "bg-warning text-dark",      // Repromaterijal - Žuta/Braon
+                10 => "bg-success text-white",    // Đubriva - Zelena
+                11 => "bg-info text-white",       // Usl. Voće - Plava
+                12 => "bg-info text-white",       // Usl. Meso - Plava
+                _ => "bg-secondary text-white"    // Default - Siva
+            };
         }
     }
 }

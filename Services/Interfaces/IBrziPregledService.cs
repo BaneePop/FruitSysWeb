@@ -11,10 +11,10 @@ namespace FruitSysWeb.Services.Interfaces
             List<int> komitentIds, FilterRequest filter);
         Task<List<BrziPregledStavka>> UcitajBrziPregledKupaca(
             List<int> komitentIds, FilterRequest filter);
-        
+
         // ✨ NOVO: Roba na zalihama po vrstama voća
         Task<List<RobaZaliheStavka>> UcitajRobaNaZalihama(
-            Dictionary<string, List<long>> artikliPoVrstama, 
+            Dictionary<string, List<long>> artikliPoVrstama,
             FilterRequest filter);
     }
 }

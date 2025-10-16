@@ -53,7 +53,7 @@ namespace FruitSysWeb.Models
         public string Status => DokumentStatus switch
         {
             2 => "Otvoren",
-            3 => "Zaključen", 
+            3 => "Zaključen",
             4 => "Storno",
             _ => "Nepoznato"
         };

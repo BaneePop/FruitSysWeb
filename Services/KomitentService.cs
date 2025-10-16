@@ -95,7 +95,7 @@ namespace FruitSysWeb.Services
                 var whereClause = tip.ToLower() switch
                 {
                     "kupac" => "JeKupac = 1",
-                    "dobavljac" => "JeDobavljac = 1", 
+                    "dobavljac" => "JeDobavljac = 1",
                     "proizvodjac" => "JeProizvodjac = 1",
                     "otkupljivac" => "JeOtkupljivac = 1",
                     _ => "1=1"
@@ -128,19 +128,19 @@ namespace FruitSysWeb.Services
             {
                 var whereClause = "Aktivno = 1";
                 var parameters = new Dictionary<string, object>();
-                
+
                 if (!string.IsNullOrEmpty(pretraga))
                 {
                     whereClause += " AND (Naziv LIKE @Pretraga OR PoreskiBroj LIKE @Pretraga)";
                     parameters.Add("@Pretraga", $"%{pretraga}%");
                 }
-                
+
                 if (!string.IsNullOrEmpty(tip))
                 {
                     whereClause += tip.ToLower() switch
                     {
                         "kupac" => " AND JeKupac = 1",
-                        "dobavljac" => " AND JeDobavljac = 1", 
+                        "dobavljac" => " AND JeDobavljac = 1",
                         "proizvodjac" => " AND JeProizvodjac = 1",
                         "otkupljivac" => " AND JeOtkupljivac = 1",
                         _ => ""

@@ -43,7 +43,7 @@ namespace FruitSysWeb.Services.Core
 
         // Generic dropdown builder
         List<DropdownOption> BuildDropdown<T>(IEnumerable<T> items, Func<T, string> valueSelector, Func<T, string> textSelector, string defaultText = "");
-        
+
         // Additional methods needed by components
         bool IsActiveStatus(int status);
         List<string> GetChartColors(int count);
@@ -84,7 +84,7 @@ namespace FruitSysWeb.Services.Core
             {
                 // ✅ Ne prikazuj Kalo i Rastur u dropdown-u (ID 7)
                 if (magacinId == MagacinTypes.KALO_I_RASTUR) continue;
-                
+
                 options.Add(new DropdownOption(
                     magacinId.ToString(),
                     MagacinTypes.GetDisplayName(magacinId)
@@ -167,7 +167,7 @@ namespace FruitSysWeb.Services.Core
         public (string status, string badgeClass, string icon) GetQuantityStatus(decimal kolicina, decimal minimum = 10)
         {
             if (kolicina < minimum)
-                return ("Ispod minimuma", "bg-danger", "bi-exclamation-triangle");
+                return ("Ispod minimuma", "bg-warning", "bi-exclamation-triangle");
             if (kolicina < minimum * 2)
                 return ("Ograničeno", "bg-warning", "bi-exclamation-circle");
             return ("Dostupno", "bg-success", "bi-check-circle");
@@ -259,7 +259,7 @@ namespace FruitSysWeb.Services.Core
         public string GetSaldoBadgeClass(decimal saldo)
         {
             if (saldo > 0) return "bg-success";
-            if (saldo < 0) return "bg-danger";
+            if (saldo < 0) return "";
             return "bg-secondary";
         }
 
@@ -269,18 +269,18 @@ namespace FruitSysWeb.Services.Core
         public MarkupString BuildDropdown(List<DropdownOption> options, string defaultText = "", string? selectedValue = null)
         {
             var html = "";
-            
+
             if (!string.IsNullOrEmpty(defaultText))
             {
                 html += $"<option value=\"\">{defaultText}</option>";
             }
-            
+
             foreach (var option in options)
             {
                 var selected = option.Value == selectedValue ? "selected" : "";
                 html += $"<option value=\"{option.Value}\" {selected}>{option.Text}</option>";
             }
-            
+
             return new MarkupString(html);
         }
 
@@ -307,7 +307,7 @@ namespace FruitSysWeb.Services.Core
         public List<DropdownOption> BuildDropdown<T>(IEnumerable<T> items, Func<T, string> valueSelector, Func<T, string> textSelector, string defaultText = "")
         {
             var options = new List<DropdownOption>();
-            
+
             if (!string.IsNullOrEmpty(defaultText))
             {
                 options.Add(new DropdownOption("", defaultText));
@@ -333,22 +333,31 @@ namespace FruitSysWeb.Services.Core
         }
 
         /// <summary>
-        /// Vraća chart boje za grafike
+        /// Vraća chart boje za grafike - DARK THEME OPTIMIZOVANO
+        /// Boje su usklađene sa modernom tamnom temom
         /// </summary>
         public List<string> GetChartColors(int count)
         {
             var colors = new List<string>
             {
-                "#198754", "#0d6efd", "#ffc107", "#dc3545", "#6f42c1",
-                "#fd7e14", "#20c997", "#e83e8c", "#6c757d", "#495057"
+                "#60a5fa",  // Plava (Chart primary)
+                "#f87171",  // Crvena (Chart danger)
+                "#fb923c",  // Narandžasta (Chart warning)
+                "#2dd4bf",  // Tirkiz (Chart info)
+                "#a78bfa",  // Ljubičasta (Chart purple)
+                "#34d399",  // Zelena (Chart success)
+                "#fbbf24",  // Žuta (Chart yellow)
+                "#f472b6",  // Pink (Chart pink)
+                "#93c5fd",  // Svetlo plava
+                "#fca5a5"   // Svetlo crvena
             };
-            
+
             var result = new List<string>();
             for (int i = 0; i < count; i++)
             {
                 result.Add(colors[i % colors.Count]);
             }
-            
+
             return result;
         }
     }

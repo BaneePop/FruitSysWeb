@@ -59,7 +59,9 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         0 as OtkupniArtikal
                     FROM vPrometFinansijev9 fm
                     LEFT JOIN Artikal a ON fm.ArtikalID = a.ID  -- DODAJ OVO
-                    WHERE 1=1
+                    WHERE fm.DokumentStatus != 4 
+                    AND fm.DokumentStatus != 2
+                    
                 ");
 
                 var parameters = new Dictionary<string, object>();
@@ -261,7 +263,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 ");
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
-                
+
                 return rezultat.ToDictionary(
                     x => (string)x.Komitent ?? "Nepoznato",
                     x => (decimal)x.UkupnaKolicina
@@ -314,7 +316,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 ");
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
-                
+
                 return rezultat.ToDictionary(
                     x => (string)x.Komitent ?? "Nepoznato",
                     x => (decimal)x.UkupnaKolicina
@@ -506,7 +508,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 ";
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
-                
+
                 return rezultat.ToDictionary(
                     x => (string)x.Mesec ?? "Nepoznato",
                     x => (decimal)x.UkupnoSaldo
@@ -523,8 +525,8 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         // NOVO: BRZI PREGLED - ROBA NA ZALIHAMA
         // ========================================
         public async Task<List<RobaNaZalihamaModel>> UcitajRobuNaZalihama(
-            List<long> artikalIds, 
-            DateTime? odDatum = null, 
+            List<long> artikalIds,
+            DateTime? odDatum = null,
             DateTime? doDatum = null)
         {
             try
@@ -648,6 +650,72 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 Console.WriteLine($"Greška u UcitajRobuNaZalihama: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 return new List<RobaNaZalihamaModel>();
+            }
+        }
+        public async Task<List<ZbirniFinansijeModel>> UcitajZbirnePodatkePoRadnomDanu(FilterRequest filterRequest)
+        {
+        try
+        {
+        var sql = new StringBuilder();
+        sql.Append(@"
+            SELECT 
+                DATE(DATE_SUB(vp.Datum, INTERVAL 4 HOUR)) as Datum,
+                k.ID as KomitentID,
+                k.Naziv as Komitent,
+                a.Naziv as Artikal,
+                SUM(vp.Kolicina) as Kolicina,
+                SUM(vp.Potrazuje) as Potrazuje,
+                SUM(vp.Duguje) as Duguje,
+            FROM vPrometFinansijev9 vp
+            LEFT JOIN Komitent k ON vp.KomitentID = k.ID
+            WHERE vp.DokumentStatus = 3
+        ");
+
+        var parameters = new Dictionary<string, object>();
+
+        // Prilagođeni datumi za radni dan 04:00-03:59
+        if (filterRequest.OdDatum.HasValue)
+        {
+            var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
+            sql.Append(" AND vp.Datum >= @OdDatum");
+            parameters.Add("@OdDatum", adjustedOdDatum);
+        }
+
+        if (filterRequest.DoDatum.HasValue)
+        {
+            var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
+            sql.Append(" AND vp.Datum < @DoDatum");
+            parameters.Add("@DoDatum", adjustedDoDatum);
+        }
+
+        if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
+        {
+            sql.Append(" AND vp.KomitentID = @KomitentId");
+            parameters.Add("@KomitentId", filterRequest.KomitentId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterRequest.KomitentTip))
+        {
+            sql.Append(" AND k.Tip = @KomitentTip");
+            parameters.Add("@KomitentTip", filterRequest.KomitentTip);
+        }
+
+        // Isključi FK- i UP- dokumente
+        sql.Append(" AND vp.DokumentID NOT LIKE 'FK-%'");
+        sql.Append(" AND vp.DokumentID NOT LIKE 'UP-%'");
+
+        sql.Append(@"
+            GROUP BY DATE(DATE_SUB(vp.Datum, INTERVAL 4 HOUR)), k.ID, k.Naziv, a.Naziv
+            ORDER BY Datum DESC, k.Naziv
+        ");
+
+        var rezultat = await _databaseService.QueryAsync<ZbirniFinansijeModel>(sql.ToString(), parameters);
+        return rezultat.ToList();
+        }
+        catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u UcitajZbirnePodatkePoRadnomDanu: {ex.Message}");
+                return new List<ZbirniFinansijeModel>();
             }
         }
     }

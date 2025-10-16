@@ -54,7 +54,7 @@ namespace FruitSysWeb.Models
         {
             2 => "Otvoren",
             3 => "Zaključen",
-            4 => "Storno", 
+            4 => "Storno",
             _ => "Nepoznato"
         };
 
@@ -62,7 +62,7 @@ namespace FruitSysWeb.Models
         public string StatusBadge => DokumentStatus switch
         {
             2 => "bg-warning text-dark",
-            3 => "bg-success text-white", 
+            3 => "bg-success text-white",
             4 => "bg-danger text-white",
             _ => "bg-secondary text-white"
         };

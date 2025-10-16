@@ -4,7 +4,7 @@ namespace FruitSysWeb.Constants
     /// MagacinID vrednosti iz Artikal.MagacinID kolone u bazi
     /// NAPOMENA: ID 1 ne postoji, ID 7 (Kalo i Rastur) se ne računa!
     /// </summary>
-    public static class MagacinTypes 
+    public static class MagacinTypes
     {
         // ❌ ID 1 = Ne postoji
         public const int SVEZA_ROBA = 2;
@@ -97,19 +97,19 @@ namespace FruitSysWeb.Constants
         /// <summary>
         /// Dobija display name za MagacinID
         /// </summary>
-        public static string GetDisplayName(int magacinId) => 
+        public static string GetDisplayName(int magacinId) =>
             DisplayNames.TryGetValue(magacinId, out var name) ? name : $"MagacinID {magacinId}";
 
         /// <summary>
         /// Dobija badge class za MagacinID
         /// </summary>
-        public static string GetBadgeClass(int magacinId) => 
+        public static string GetBadgeClass(int magacinId) =>
             BadgeClasses.TryGetValue(magacinId, out var badgeClass) ? badgeClass : "bg-light text-dark";
 
         /// <summary>
         /// Dobija ikonu za MagacinID
         /// </summary>
-        public static string GetIcon(int magacinId) => 
+        public static string GetIcon(int magacinId) =>
             Icons.TryGetValue(magacinId, out var icon) ? icon : "bi-question-circle";
     }
 }

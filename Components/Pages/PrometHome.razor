@@ -1,0 +1,419 @@
+@page "/promethome"
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Models
+@using System.Text.Json
+
+@inject NavigationManager NavigationManager
+@inject IFinansijeService FinansijeService
+@inject ITypeMappingService TypeMapping
+@inject IProizvodnjaService ProizvodnjaService
+@inject IBrziPregledService BrziPregledService
+@inject IJSRuntime JSRuntime
+@inject ILogger<FinansijeHome> Logger
+
+<style>
+    .finansije-header {
+        background: linear-gradient(135deg, #1a2332, #232d3f);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid #374151;
+    }
+    
+    .section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .section-card {
+    background: #1a2332;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    border-left: 4px solid #3e6b1f;
+    cursor: pointer;
+    border: 1px solid #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    }
+
+    .section-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    border-left-color: #2d5016;
+    }
+
+    .section-icon {
+    font-size: 2rem;
+    margin-bottom: 0;
+    color: #3e6b1f;
+    }
+
+    .section-title {
+    font-weight: 600;
+    color: #e5e7eb;
+    margin-bottom: 0;
+    font-size: 1.1rem;
+    }
+
+    .section-card.future {
+        border-left-color: #6c757d;
+        opacity: 0.7;
+    }
+
+    .section-card.future .section-icon,
+    .section-card.future .section-features li i {
+        color: #6c757d;
+    }
+
+    .section-card.future .section-title {
+        color: #6c757d;
+    }
+
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+
+<!-- Header -->
+<div class="finansije-header text-white py-4 mb-4">
+    <div class="container-fluid">
+        <h1 class="h2 mb-1">
+            <i class="bi bi-cash-stack me-2"></i>Promet 
+        </h1>
+        <p class="mb-0">Centralizirano upravljanje prometom</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Main Sections -->
+    <div class="section-grid">
+        <div class="section-card active" @onclick="@(() => NavigateTo("/nabavka"))">
+            <div class="section-icon">
+                <i class="bi bi-speedometer2"></i>
+            </div>
+            <h4 class="section-title">Nabavka</h4>
+        </div>
+
+        <div class="section-card active" @onclick="@(() => NavigateTo("/prodaja"))">
+            <div class="section-icon">
+                <i class="bi bi-truck"></i>
+            </div>
+            <h4 class="section-title">Prodaja</h4>
+        </div>
+        <div class="section-card" @onclick="@(() => NavigateTo("/izvestaj-prijem"))">
+            <div class="section-icon">
+                <i class="bi bi-calculator"></i>
+            </div>
+            <h4 class="section-title">Izvestaj Promet uzivo</h4>
+        </div>
+        <div class="section-card active" @onclick="@(() => NavigateTo("/izvestaj-prijem-istorija"))">
+            <div class="section-icon">
+                <i class="bi bi-cart-check"></i>
+            </div>
+            <h4 class="section-title">Promet istorija</h4>
+        </div>
+    </div>
+
+    <!-- Brzi Pregled Tabele - Nabavka i Prodaja -->
+    @if (brziPregledDobavljaci?.Any() == true || brziPregledKupci?.Any() == true)
+    {
+        <div class="row mb-4">
+            @if (brziPregledDobavljaci?.Any() == true)
+            {
+                <div class="col-md-6">
+                    <BrziPregledTabela 
+                        Stavke="@brziPregledDobavljaci"
+                        Naslov="Pregled Nabavke"
+                        TipPartnera="Dobavljač"
+                        IsplataLabel="Isplata"
+                        HeaderBgClass="bg-danger text-white"
+                        IkonaClass="bi-truck"
+                        OdDatum="@startDatum"
+                        DoDatum="@endDatum" />
+                </div>
+            }
+
+            @if (brziPregledKupci?.Any() == true)
+            {
+                <div class="col-md-6">
+                    <BrziPregledTabela 
+                        Stavke="@brziPregledKupci"
+                        Naslov="Pregled Prodaje"
+                        TipPartnera="Kupac"
+                        IsplataLabel="Uplata"
+                        HeaderBgClass="bg-success text-white"
+                        IkonaClass="bi-cart-check"
+                        OdDatum="@startDatum"
+                        DoDatum="@endDatum" />
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Roba na Zalihama -->
+    @if (robaZalihe?.Any() == true)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <RobaZaliheTabela 
+                    Stavke="@robaZalihe"
+                    Naslov="Roba na Zalihama"
+                    HeaderBgClass="bg-info text-white"
+                    IkonaClass="bi-box-seam"
+                    OdDatum="@startDatum"
+                    DoDatum="@endDatum" />
+            </div>
+        </div>
+    }
+
+    <!-- Dashboard Analitika - Top 5 Kupaca i Dobavljača -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>
+                    <i class="bi bi-graph-up me-2"></i>Dashboard Analitika
+                </h5>
+                <button class="btn btn-sm btn-primary" @onclick="RefreshCharts" disabled="@IsRefreshing">
+                    <i class="bi bi-arrow-clockwise @(IsRefreshing ? "spin" : "")"></i>
+                    @(IsRefreshing ? "Osvežavam..." : "Osveži")
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart 
+                Title="Top 5 Kupaca"
+                Icon="bi bi-people"
+                SeriesName="Količina"
+                Unit="kg"
+                Color="#28a745"
+                Data="@TopKupciData"
+                IsLoading="@IsLoadingKupci"
+                HasError="@HasErrorKupci"
+                ShowSummary="false"
+                OnRefresh="@RefreshKupci" />
+        </div>
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart 
+                Title="Top 5 Dobavljača Sirovina"
+                Icon="bi bi-truck"
+                SeriesName="Količina"
+                Unit="kg"
+                Color="#dc3545"
+                Data="@TopDobavljaciData"
+                IsLoading="@IsLoadingDobavljaci"
+                HasError="@HasErrorDobavljaci"
+                ShowSummary="false"
+                OnRefresh="@RefreshDobavljaci" />
+        </div>
+    </div>
+
+    <!-- Navigation Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Početna</a></li>
+            <li class="breadcrumb-item active">Promet</li>
+        </ol>
+    </nav>
+</div>
+
+@code {
+    // Chart Data
+    private List<ChartDataPoint>? TopKupciData;
+    private List<ChartDataPoint>? TopDobavljaciData;
+
+    // Brzi pregled data
+    private List<BrziPregledStavka>? brziPregledDobavljaci;
+    private List<BrziPregledStavka>? brziPregledKupci;
+    private List<RobaZaliheStavka>? robaZalihe;
+
+    // Loading States
+    private bool IsLoadingKupci = false;
+    private bool IsLoadingDobavljaci = false;
+    private bool IsRefreshing = false;
+
+    // Error States
+    private bool HasErrorKupci = false;
+    private bool HasErrorDobavljaci = false;
+
+    // Date range
+    private DateTime startDatum = new DateTime(2025, 6, 1);
+    private DateTime endDatum = DateTime.Now;
+
+    // Datumski filter
+    private FilterRequest StatistikaFilter => new FilterRequest
+    {
+        OdDatum = new DateTime(2025, 6, 1),
+        DoDatum = DateTime.Now
+    };
+
+    private FilterRequest brziPregledFilter => new FilterRequest
+    {
+        OdDatum = startDatum,
+        DoDatum = endDatum
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            RefreshCharts(),
+            UcitajBrziPregled()
+        );
+    }
+
+    private async Task UcitajBrziPregled()
+    {
+        try
+        {
+            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "brzi_pregled_config");
+            
+            if (string.IsNullOrEmpty(json))
+            {
+                return;
+            }
+            
+            var config = JsonSerializer.Deserialize<BrziPregledKonfiguracija>(json);
+            
+            if (config == null)
+            {
+                return;
+            }
+            
+            var tasks = new List<Task>();
+            
+            if (config.IzabraniDobavljaci?.Any() == true)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    brziPregledDobavljaci = await BrziPregledService
+                        .UcitajBrziPregledDobavljaca(config.IzabraniDobavljaci, brziPregledFilter);
+                }));
+            }
+            
+            if (config.IzabraniKupci?.Any() == true)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    brziPregledKupci = await BrziPregledService
+                        .UcitajBrziPregledKupaca(config.IzabraniKupci, brziPregledFilter);
+                }));
+            }
+
+            if (config.ArtikliPoVrstama?.Any(x => x.Value.Any()) == true)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    robaZalihe = await BrziPregledService
+                        .UcitajRobaNaZalihama(config.ArtikliPoVrstama, brziPregledFilter);
+                }));
+            }
+            
+            await Task.WhenAll(tasks);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading brzi pregled");
+        }
+    }
+
+    private async Task RefreshCharts()
+    {
+        IsRefreshing = true;
+        StateHasChanged();
+
+        try
+        {
+            await Task.WhenAll(RefreshKupci(), RefreshDobavljaci());
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing charts");
+        }
+        finally
+        {
+            IsRefreshing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshKupci()
+    {
+        if (IsLoadingKupci) return;
+        
+        IsLoadingKupci = true;
+        HasErrorKupci = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(100);
+            var data = await ProizvodnjaService.UcitajTopKupcePoKilogramima(StatistikaFilter);
+            TopKupciData = ChartDataHelper.FromDictionary(data, 5);
+            TopKupciData = ChartDataHelper.TruncateLabels(TopKupciData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading top kupci data");
+            HasErrorKupci = true;
+            TopKupciData = ChartDataHelper.GetMockData("Kupac", 5);
+        }
+        finally
+        {
+            IsLoadingKupci = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshDobavljaci()
+    {
+        if (IsLoadingDobavljaci) return;
+        
+        IsLoadingDobavljaci = true;
+        HasErrorDobavljaci = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(150);
+            var data = await ProizvodnjaService.UcitajTopDobavljacePoKilogramima(StatistikaFilter);
+            TopDobavljaciData = ChartDataHelper.FromDictionary(data, 5);
+            TopDobavljaciData = ChartDataHelper.TruncateLabels(TopDobavljaciData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading top dobavljaci data");
+            HasErrorDobavljaci = true;
+            TopDobavljaciData = ChartDataHelper.GetMockData("Dobavljač", 5);
+        }
+        finally
+        {
+            IsLoadingDobavljaci = false;
+            StateHasChanged();
+        }
+    }
+
+    private void NavigateTo(string url)
+    {
+        NavigationManager.NavigateTo(url);
+    }
+}

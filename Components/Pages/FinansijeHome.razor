@@ -19,9 +19,10 @@
 
 <style>
     .finansije-header {
-        background: linear-gradient(135deg, #0f5132, #198754);
+        background: linear-gradient(135deg, #1a2332, #232d3f);
         border-radius: 12px;
         margin-bottom: 2rem;
+        border: 1px solid #374151;
     }
     
     .section-grid {
@@ -32,62 +33,38 @@
     }
     
     .section-card {
-        background: white;
-        border-radius: 12px;
-        padding: 2rem;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-        border-left: 4px solid #198754;
-        cursor: pointer;
-        height: 100%;
-    }
-    
-    .section-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        border-left-color: #0f5132;
+    background: #1a2332;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    border-left: 4px solid #3e6b1f;
+    cursor: pointer;
+    border: 1px solid #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
     }
 
-    .section-card.active {
-        border-left-color: #0f5132;
-        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+    .section-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    border-left-color: #2d5016;
     }
-    
+
     .section-icon {
-        font-size: 3rem;
-        margin-bottom: 1.5rem;
-        color: #198754;
+    font-size: 2rem;
+    margin-bottom: 0;
+    color: #3e6b1f;
     }
-    
+
     .section-title {
-        font-weight: 700;
-        color: #0f5132;
-        margin-bottom: 1rem;
-        font-size: 1.3rem;
-    }
-    
-    .section-description {
-        color: #6c757d;
-        margin-bottom: 1.5rem;
-        line-height: 1.6;
-    }
-    
-    .section-features {
-        list-style: none;
-        padding: 0;
-        text-align: left;
-    }
-    
-    .section-features li {
-        padding: 0.3rem 0;
-        color: #495057;
-        font-size: 0.9rem;
-    }
-    
-    .section-features li i {
-        color: #198754;
-        margin-right: 0.5rem;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin-bottom: 0;
+    font-size: 1.1rem;
     }
 
     .section-card.future {
@@ -132,16 +109,6 @@
                 <i class="bi bi-speedometer2"></i>
             </div>
             <h4 class="section-title">Finansijski Pregled</h4>
-            <p class="section-description">
-                Brzi pregled nabavke, prodaje i zaliha
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-check-circle"></i>Pregled nabavke</li>
-                <li><i class="bi bi-check-circle"></i>Pregled prodaje</li>
-                <li><i class="bi bi-check-circle"></i>Roba na zalihama</li>
-                <li><i class="bi bi-check-circle"></i>Konfigurisanje partnera</li>
-                <li><i class="bi bi-check-circle"></i>Real-time podaci</li>
-            </ul>
         </div>
 
         <div class="section-card active" @onclick="@(() => NavigateTo("/nabavka"))">
@@ -149,50 +116,24 @@
                 <i class="bi bi-truck"></i>
             </div>
             <h4 class="section-title">Nabavka</h4>
-            <p class="section-description">
-                Detaljni pregled nabavke i dobavljača
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-check-circle"></i>Otkupni listovi</li>
-                <li><i class="bi bi-check-circle"></i>Dobavljači</li>
-                <li><i class="bi bi-check-circle"></i>Analiza nabavke</li>
-                <li><i class="bi bi-check-circle"></i>Statistike</li>
-                <li><i class="bi bi-check-circle"></i>Export podataka</li>
-            </ul>
         </div>
-
+        <div class="section-card" @onclick="@(() => NavigateTo("/ugovori"))">
+            <div class="section-icon">
+                <i class="bi bi-calculator"></i>
+            </div>
+            <h4 class="section-title">ugovori</h4>
+        </div>
         <div class="section-card active" @onclick="@(() => NavigateTo("/prodaja"))">
             <div class="section-icon">
                 <i class="bi bi-cart-check"></i>
             </div>
             <h4 class="section-title">Prodaja</h4>
-            <p class="section-description">
-                Detaljni pregled prodaje i kupaca
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-check-circle"></i>Fakture</li>
-                <li><i class="bi bi-check-circle"></i>Kupci</li>
-                <li><i class="bi bi-check-circle"></i>Analiza prodaje</li>
-                <li><i class="bi bi-check-circle"></i>Top kupci</li>
-                <li><i class="bi bi-check-circle"></i>Mesečna analiza</li>
-            </ul>
         </div>
-
         <div class="section-card" @onclick="@(() => NavigateTo("/finansije"))">
             <div class="section-icon">
                 <i class="bi bi-calculator"></i>
             </div>
             <h4 class="section-title">Finansije</h4>
-            <p class="section-description">
-                Detaljni pregled prihoda, rashoda i salda po komitentima
-            </p>
-            <ul class="section-features">
-                <li><i class="bi bi-check-circle"></i>Prihodi i rashodi</li>
-                <li><i class="bi bi-check-circle"></i>Saldo po komitentima</li>
-                <li><i class="bi bi-check-circle"></i>Top kupci i dobavljači</li>
-                <li><i class="bi bi-check-circle"></i>Mesečna analiza</li>
-                <li><i class="bi bi-check-circle"></i>Export u Excel/PDF</li>
-            </ul>
         </div>
     </div>
 

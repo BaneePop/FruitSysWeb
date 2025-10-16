@@ -2,15 +2,17 @@ namespace FruitSysWeb.Models
 {
     public class SmenskiIzvestajModel
     {
-        public string BrojIzvestaja { get; set; } = "";
+        public string BrojIzvestaja { get; set; } = string.Empty;
         public DateTime? Datum { get; set; }
-        public string ProizvodniProces { get; set; } = "";
+        public string ProizvodniProces { get; set; } = "Nepoznato";
         public string RadniProces { get; set; } = "";
         public int BrojRadnika { get; set; }
         public decimal BrojRadnihSati { get; set; }
         public decimal TrosakPoRadnomNalogu { get; set; }
         public decimal ProcenatIskoriscenja { get; set; }
-        
+
+
+
         // Helper properties
         public string ProductivnostBadgeClass => ProcenatIskoriscenja switch
         {
@@ -20,21 +22,21 @@ namespace FruitSysWeb.Models
             _ => "bg-danger"
         };
     }
-    
-   /*  public class ProizvodniProcesModel
-    {
-        public int Id { get; set; }
-        public string Naziv { get; set; } = "";
-        public string? Opis { get; set; }
-        public bool Aktivan { get; set; } = true;
-    }
-    
-    public class RadniProcesModel
-    {
-        public int Id { get; set; }
-        public string Naziv { get; set; } = "";
-        public string? Opis { get; set; }
-        public bool Aktivan { get; set; } = true;
-        public int? ProizvodniProcesId { get; set; }
-    } */
+
+    /*  public class ProizvodniProcesModel
+     {
+         public int Id { get; set; }
+         public string Naziv { get; set; } = "";
+         public string? Opis { get; set; }
+         public bool Aktivan { get; set; } = true;
+     }
+
+     public class RadniProcesModel
+     {
+         public int Id { get; set; }
+         public string Naziv { get; set; } = "";
+         public string? Opis { get; set; }
+         public bool Aktivan { get; set; } = true;
+         public int? ProizvodniProcesId { get; set; }
+     } */
 }

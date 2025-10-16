@@ -1,3 +1,8 @@
+/* ========================================
+   APP.CSS - DARK THEME COMPATIBLE
+   Ažurirano da radi sa dark-theme.css
+   ======================================== */
+
 .page {
     position: relative;
     display: flex;
@@ -9,32 +14,35 @@ main {
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+    border-right: 1px solid var(--border-color);
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+    border-bottom: 1px solid var(--border-color);
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
     align-items: center;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
+.top-row ::deep a, .top-row ::deep .btn-link {
+    white-space: nowrap;
+    margin-left: 1.5rem;
+    text-decoration: none;
+    color: var(--text-primary);
+}
 
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
+.top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
+    text-decoration: underline;
+    color: var(--accent-blue-light);
+}
 
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+.top-row ::deep a:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 @media (max-width: 640.98px) {
     .top-row {
@@ -70,31 +78,35 @@ main {
     }
 }
 
-
-/* Shared Components Styles */
+/* Shared Components Styles - DARK THEME COMPATIBLE */
 .stats-card {
-    background: linear-gradient(135deg, #0f5132 0%, #198754 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1.5rem;
     text-align: center;
     margin-bottom: 1.5rem;
     transition: transform 0.2s ease;
+    box-shadow: var(--shadow-md);
 }
 
 .stats-card:hover {
     transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
 }
 
 .stats-number {
     font-size: 2rem;
     font-weight: bold;
     margin-bottom: 0.5rem;
+    color: var(--text-primary);
 }
 
 .stats-label {
     font-size: 0.9rem;
     opacity: 0.9;
+    color: var(--text-secondary);
 }
 
 .chart-container {
@@ -103,13 +115,14 @@ main {
 }
 
 .table-header-dark {
-    background-color: #f8f9fa !important;
-    color: #212529 !important;
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
 }
 
 .total-row {
-    background-color: #e9ecef !important;
+    background-color: var(--bg-tertiary) !important;
     font-weight: bold;
+    color: var(--text-primary);
 }
 
 /* Responsive improvements */
@@ -126,20 +139,22 @@ main {
         height: 200px;
     }
 }
-/* Dashboard Specific Styles */
+
+/* Dashboard Specific Styles - DARK THEME */
 .dashboard-card {
-    background: white;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border-left: 4px solid #198754;
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
 }
 
 .dashboard-card .section-title {
     border-bottom: none;
     margin-bottom: 1rem;
-    color: #0f5132;
+    color: var(--accent-blue);
 }
 
 /* Quick actions grid */
@@ -165,7 +180,9 @@ main {
         align-items: flex-start;
         gap: 1rem;
     }
-}/* Reports Specific Styles */
+}
+
+/* Reports Specific Styles - DARK THEME */
 .reports-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -174,17 +191,18 @@ main {
 }
 
 .report-card {
-    background: white;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-md);
     transition: all 0.3s ease;
-    border-left: 4px solid #198754;
+    color: var(--text-primary);
 }
 
 .report-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-lg);
 }
 
 .report-actions {
@@ -206,7 +224,8 @@ main {
 }
 
 .custom-report-section {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 2rem;
     margin-bottom: 2rem;
@@ -229,49 +248,52 @@ main {
     .custom-report-section {
         padding: 1rem;
     }
+}
 
-    * Lager Specific Styles */
-    .inventory-card {
-    background: white;
+/* Lager Specific Styles - DARK THEME */
+.inventory-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border-left: 4px solid #198754;
-    }
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
+}
 
-    .stock-alert {
-    border-left: 4px solid #dc3545 !important;
-    }
+.stock-alert {
+    border-left: 4px solid var(--accent-red) !important;
+}
 
-    .stock-warning {
-    border-left: 4px solid #ffc107 !important;
-    }
+.stock-warning {
+    border-left: 4px solid var(--accent-orange) !important;
+}
 
-    .stock-indicator {
+.stock-indicator {
     width: 12px;
     height: 12px;
     border-radius: 50%;
     display: inline-block;
     margin-right: 0.5rem;
-    }
+}
 
-    .stock-high { background-color: #28a745; }
-    .stock-medium { background-color: #ffc107; }
-    .stock-low { background-color: #dc3545; }
+.stock-high { background-color: var(--accent-green); }
+.stock-medium { background-color: var(--accent-orange); }
+.stock-low { background-color: var(--accent-red); }
 
-    .stock-value {
+.stock-value {
     font-weight: bold;
     font-size: 1.2rem;
     margin-bottom: 0.5rem;
-    }
+    color: var(--text-primary);
+}
 
-    .stock-unit {
-    color: #6c757d;
+.stock-unit {
+    color: var(--text-secondary);
     font-size: 0.9rem;
-    }
+}
 
-    /* Responsive improvements */
+/* Responsive improvements */
 @media (max-width: 768px) {
     .inventory-card {
         padding: 1rem;
@@ -284,7 +306,10 @@ main {
     .table-responsive {
         font-size: 0.8rem;
     }
-}}.chart-container {
+}
+
+/* Chart Container - DARK THEME */
+.chart-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
     gap: 20px;
@@ -296,12 +321,13 @@ main {
     justify-content: center;
     align-items: center;
     height: 300px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
-    background-color: #f9f9f9;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
 }
 
 .chart-error {
-    color: #d32f2f;
-    border-color: #ffcdd2;
+    color: var(--accent-red-light);
+    border-color: var(--accent-red);
 }

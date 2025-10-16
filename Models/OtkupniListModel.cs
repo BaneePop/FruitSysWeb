@@ -127,8 +127,8 @@ namespace FruitSysWeb.Models
         public bool JeIsplacen => DatumIsplateOsnovice.HasValue;
 
         [Display(Name = "Dani do Isplate")]
-        public int? DaniDoIsplate => DatumIsplateOsnovice.HasValue 
-            ? (int)(DatumIsplateOsnovice.Value - DateTime.Now).TotalDays 
+        public int? DaniDoIsplate => DatumIsplateOsnovice.HasValue
+            ? (int)(DatumIsplateOsnovice.Value - DateTime.Now).TotalDays
             : null;
     }
 }

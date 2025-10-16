@@ -11,10 +11,10 @@ namespace FruitSysWeb.Models
         public string Naziv { get; set; } = string.Empty;
 
         [Display(Name = "Tip")]
-        public int Tip { get; set; }
+        public int MagacinID { get; set; }
 
         [Display(Name = "Tip naziv")]
-        public string TipNaziv => GetTipNaziv(Tip);
+        public string TipNaziv => GetTipNaziv(MagacinID);
 
         [Display(Name = "Jedinica mere ID")]
         public int? JedinicaMereID { get; set; }
@@ -23,29 +23,36 @@ namespace FruitSysWeb.Models
         public DateTime? Kreirano { get; set; }
 
         [Display(Name = "Tip naziv")]
-        public string AmbalazaTip => GetAmbalazaTip(Tip);
+        public string AmbalazaTip => GetAmbalazaTip(MagacinID);
 
         // ✅ ISPRAVKA: Oba polja za kompatibilnost
         [Display(Name = "Aktivan")]
         public int? Aktivan { get; set; }
-        
+
         [Display(Name = "Aktivno")]
         public bool Aktivno => Aktivan == 1;
 
-        private static string GetTipNaziv(int tip)
+        private static string GetTipNaziv(int MagacinID)
         {
-            return tip switch
+            return MagacinID switch
             {
-                1 => "Sirovina",
-                2 => "Ambalaza",
-                3 => "Potrosni materijal",
-                4 => "Gotova roba",
-                5 => "Oprema",
-                7 => "Klase",
-                _ => $"Tip {tip}"
+                1 => "Ne postojeci",
+                2 => "Sveza roba",
+                3 => "Sirovina",
+                4 => "Ambalaza",
+                5 => "Poluproizvod",
+                6 => "Gotova roba",
+                7 => "Kalo i Rastur",
+                8 => "Usluzni Lager",
+                9 => "Repromaterijal",
+                10 => "Djubriva",
+                11 => "Usluzni Lager Voce i Povrce",
+                12 => "Usluzni Lager Razno",
+
+                _ => $"MagacinID {MagacinID}"
             };
         }
-        
+
         private static string GetAmbalazaTip(int tip)
         {
             return tip switch

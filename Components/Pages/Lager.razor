@@ -257,10 +257,10 @@
                                                 <tr class="@stockClass">
                                                     <td>
                                                         @{
-                                                            var tipInt = GetArtikalTipAsInt(item.Tip);
+                                                            string? magacinDisplayName = TypeMapping.GetMagacinDisplayName(item.MagacinID);
                                                         }
-                                                        <span class="badge @TypeMapping.GetMagacinBadgeClass(tipInt) artikal-tip-badge">
-                                                            @TypeMapping.GetMagacinDisplayName(tipInt)
+                                                        <span class="badge @TypeMapping.GetMagacinBadgeClass(item.MagacinID) artikal-tip-badge">
+                                                            @magacinDisplayName
                                                         </span>
                                                     </td>
                                                     <td>
@@ -539,7 +539,7 @@
         
         return lagerStanje
             .Where(x => x.JM != null && x.JM.ToLower().Contains("kg") && 
-                       GetArtikalTipAsInt(x.Tip) != 7)  // 7 = Kalo i Rastur
+                       GetArtikalTipAsInt(x.ArtikalTip) != 7)  // 7 = Kalo i Rastur
             .Sum(x => x.Kolicina);
     }
 
@@ -549,7 +549,7 @@
         
         return lagerStanje
             .Where(x => {
-                var magacinId = GetArtikalTipAsInt(x.Tip);
+                var magacinId = GetArtikalTipAsInt(x.ArtikalTip);
                 return magacinId == MagacinTypes.USL_MLEKO ||  // 8
                        magacinId == MagacinTypes.USL_VOCE ||            // 11
                        magacinId == MagacinTypes.USL_MESO;                 // 12
@@ -562,7 +562,7 @@
         if (lagerStanje == null) return 0;
         
         return lagerStanje
-            .Where(x => GetArtikalTipAsInt(x.Tip) == MagacinTypes.POLUPROIZVODI)  // 5
+            .Where(x => GetArtikalTipAsInt(x.ArtikalTip) == MagacinTypes.POLUPROIZVODI)  // 5
             .Sum(x => x.Kolicina);
     }
 

@@ -174,10 +174,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
         public async Task<Dictionary<string, decimal>> UcitajTopKupcePoKilogramima(FilterRequest filterRequest)
         {
-        try
-        {
-        var sql = new StringBuilder();
-        sql.Append(@"
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
         SELECT 
         COALESCE(k.Naziv, vpp.Komitent, 'Nepoznato') as Komitent,
         SUM(ABS(vpp.Kolicina)) as UkupnaKolicina
@@ -214,7 +214,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             ");
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
-                
+
                 return rezultat.ToDictionary(
                     x => (string)x.Komitent ?? "Nepoznato",
                     x => (decimal)x.UkupnaKolicina
@@ -229,10 +229,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
         public async Task<Dictionary<string, decimal>> UcitajTopDobavljacePoKilogramima(FilterRequest filterRequest)
         {
-        try
-        {
-        var sql = new StringBuilder();
-        sql.Append(@"
+            try
+            {
+                var sql = new StringBuilder();
+                sql.Append(@"
         SELECT 
         COALESCE(k.Naziv, vrp.Komitent, 'Nepoznato') as Komitent,
         SUM(ABS(vrp.Ulaz)) as UkupnaKolicina
@@ -269,7 +269,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             ");
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
-                
+
                 return rezultat.ToDictionary(
                     x => (string)x.Komitent ?? "Nepoznato",
                     x => (decimal)x.UkupnaKolicina

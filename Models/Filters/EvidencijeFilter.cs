@@ -7,7 +7,7 @@ namespace FruitSysWeb.Models.Filters
         public string VrstaProizvoda { get; set; } = "";
         public long? ProizvodniProcesId { get; set; }
         public string Smenovoda { get; set; } = "";
-        
+
         public string OdDatumValue => OdDatum?.ToString("yyyy-MM-dd") ?? "";
         public string DoDatumValue => DoDatum?.ToString("yyyy-MM-dd") ?? "";
     }

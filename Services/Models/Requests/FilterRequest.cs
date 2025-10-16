@@ -11,125 +11,128 @@ namespace FruitSysWeb.Services.Models.Requests
     {
         [Display(Name = "Od datuma")]
         public DateTime? OdDatum { get; set; }
-        
+
         [Display(Name = "Do datuma")]
         public DateTime? DoDatum { get; set; }
-        
+
         [Display(Name = "Komitent ID")]
         public long? KomitentId { get; set; }
-        
+
         [Display(Name = "Komitent")]
         public string? Komitent { get; set; }
-        
+
         [Display(Name = "Tip komitenta")]
         public string? KomitentTip { get; set; }
-        
+
         [Display(Name = "Artikal ID")]
         public long? ArtikalId { get; set; }
-        
+
         [Display(Name = "Artikal")]
         public string? Artikal { get; set; }
-        
+
         [Display(Name = "Tip artikla")]
         public int? TipArtikla { get; set; }
-        
+
         [Display(Name = "Tip")] // String verzija za padajuće menije
         public string? Tip { get; set; }
-        
+
         [Display(Name = "Radni nalog")]
         public string? RadniNalog { get; set; }
-        
+
         [Display(Name = "Broj ugovora")]
         public string? BrojUgovora { get; set; }
-        
+
         [Display(Name = "Dokument tip")]
         public string? DokumentTip { get; set; }
-        
+
         [Display(Name = "Min količina")]
         public decimal? MinKolicina { get; set; }
-        
+
         [Display(Name = "Max količina")]
         public decimal? MaxKolicina { get; set; }
-        
+
         [Display(Name = "Min saldo")]
         public decimal? MinSaldo { get; set; }
-        
+
         [Display(Name = "Max saldo")]
         public decimal? MaxSaldo { get; set; }
-        
+
         // DODATO: Specifični filteri za Lager
         [Display(Name = "Minimalna količina lager")]
         public decimal? MinimalnaKolicinaLager { get; set; }
-        
+
         [Display(Name = "Pakovanje")]
         public string? Pakovanje { get; set; }
-        
+
         [Display(Name = "Lot")]
         public string? Lot { get; set; }
-        
+
         [Display(Name = "Rok važenja od")]
         public DateTime? RokVazenjaOd { get; set; }
-        
+
         [Display(Name = "Rok važenja do")]
         public DateTime? RokVazenjaDo { get; set; }
-        
+
         // DODATO: Boolean filteri za brzu selekciju
         [Display(Name = "Samo gotove robe")]
         public bool? SamoGotoveRobe { get; set; }
-        
+
         [Display(Name = "Samo sirovine")]
         public bool? SamoSirovine { get; set; }
-        
+
         [Display(Name = "Samo ambalaze")]
         public bool? SamoAmbalaže { get; set; }
-        
+
         // DODATO: Kolekcije za multiple selekciju
         [Display(Name = "Artikal IDs")]
         public List<long>? ArtikalIds { get; set; }
-        
+
         [Display(Name = "Komitent IDs")]
         public List<long>? KomitentIds { get; set; }
-        
+
         // DODATO: Status filteri
         [Display(Name = "Status")]
         public string? Status { get; set; }
-        
+
         [Display(Name = "Aktivno")]
         public bool? Aktivno { get; set; }
-        
+
         [Display(Name = "Dokument Status")]
         public int? DokumentStatus { get; set; }
-        
+
         // NOVO: Filter za Magacin
         [Display(Name = "Magacin ID")]
         public long? MagacinId { get; set; }
-        
+
         // NOVO: Filter za ArtikalKlasifikacija (vrsta artikla)
         [Display(Name = "Artikal Klasifikacija ID")]
         public long? ArtikalKlasifikacijaId { get; set; }
-        
+
         [Display(Name = "Vrsta Artikla")]
         public string? VrstaArtikla { get; set; }
-        
+
         // NOVO: Prerada modul filteri
         [Display(Name = "Radni Proces ID")]
         public long? RadniProcesID { get; set; }
-        
+
         [Display(Name = "Proizvodni Proces ID")]
         public long? ProizvodniProcesID { get; set; }
-        
+
         [Display(Name = "Smena")]
         public int? Smena { get; set; }
-        
+
         // NOVO: Smenski izvestaji
         [Display(Name = "Smenski Izveštaj")]
         public string? SmenskiIzvestaj { get; set; }
-        
+
         [Display(Name = "Radni Proces ID")]
         public int? RadniProcesId { get; set; }
-        
+
         [Display(Name = "Proizvodni Proces ID")]
         public int? ProizvodniProcesId { get; set; }
+
+        [Display(Name = "Zbirno po datumu")]
+        public bool ZbirnoPoDatumu { get; set; }
 
         // METODA: Provera da li ima aktivne filtere
         public bool ImaAktivneFiltre()
@@ -238,12 +241,12 @@ namespace FruitSysWeb.Services.Models.Requests
         private static string GetKomitentTipNaziv(string? tip)
         {
             if (string.IsNullOrEmpty(tip)) return "Nepoznato";
-            
+
             // Use SystemConstants if available, otherwise fallback to hardcoded
             return tip.ToLower() switch
             {
                 "kupac" => "Kupac",
-                "dobavljac" => "Dobavljač", 
+                "dobavljac" => "Dobavljač",
                 "proizvodjac" => "Proizvođač",
                 "otkupljivac" => "Otkupljivač",
                 _ => tip
@@ -253,7 +256,7 @@ namespace FruitSysWeb.Services.Models.Requests
         private static string GetArtikalTipNaziv(string? tip)
         {
             if (string.IsNullOrEmpty(tip)) return "Nepoznato";
-            
+
             if (int.TryParse(tip, out int tipInt))
             {
                 // TODO: Replace with MagacinTypes.DisplayNames when available
@@ -261,14 +264,14 @@ namespace FruitSysWeb.Services.Models.Requests
                 return tipInt switch
                 {
                     1 => "Ne postoji",
-                    2 => "Sveža Roba", 
+                    2 => "Sveža Roba",
                     3 => "Sirovine",
                     4 => "Ambalaza",
                     5 => "Polu Proizvodi",
                     6 => "Gotov Proizvod",
                     7 => "Klase",
                     8 => "Uslužni Lager Mlečni Proizvodi",
-                    9 => "Repromaterijal", 
+                    9 => "Repromaterijal",
                     10 => "Đubriva",
                     11 => "Uslužni Lager Voće i Povrće",
                     12 => "Uslužni Lager Meso",
@@ -285,7 +288,7 @@ namespace FruitSysWeb.Services.Models.Requests
             {
                 1 => "Ne postoji",
                 2 => "Sveza Roba",
-                3 => "Sirovine", 
+                3 => "Sirovine",
                 4 => "Ambalaza",
                 5 => "Polu Proizvod",
                 6 => "Gotov Proizvod",

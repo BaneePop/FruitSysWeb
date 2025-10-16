@@ -24,16 +24,24 @@ namespace FruitSysWeb.Services.Interfaces
         Task<List<MagacinLagerModel>> UcitajArtikleIspodMinimuma(decimal minKolicina = 10);
         Task<List<MagacinLagerModel>> UcitajArtikleIspodMinimuma();
         Task<Dictionary<string, decimal>> UcitajStatistikeLagera();
-        
+
         // DASHBOARD - nove metode za strukturu lagera
         Task<Dictionary<string, decimal>> UcitajStrukturuSirovina();
         Task<Dictionary<string, decimal>> UcitajStrukturuGotovihProizvoda();
         Task<Dictionary<string, decimal>> UcitajStrukturuKutija();
         Task<Dictionary<string, decimal>> UcitajStrukturuKesa();
-        
+
         // Ostale metode
         Task<List<MagacinLagerModel>> UcitajLagerStanjePoLotu(string lot);
         Task<List<RadniNalogLagerModel>> UcitajOtvoreneRadneNaloge();
         Task<List<RadniNalogLagerModel>> UcitajRadneNalogePoStatusu(int status);
+
+        // Ambalažne metode
+        Task<List<MagacinLagerModel>> UcitajKutije(FilterRequest filterRequest);
+        Task<List<MagacinLagerModel>> UcitajKese(FilterRequest filterRequest);
+
+        // Metode za Roba stranicu
+        Task<List<MagacinLagerModel>> UcitajSirovine(FilterRequest filterRequest);
+        Task<List<MagacinLagerModel>> UcitajPoluproizvode(FilterRequest filterRequest);
     }
 }

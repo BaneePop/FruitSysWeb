@@ -16,7 +16,7 @@ namespace FruitSysWeb.Models
         public decimal Kolicina { get; set; }
         public decimal Efikasnost { get; set; }
         public string Status { get; set; } = string.Empty;
-        
+
         // Helper properties za UI
         public string StatusBadgeClass
         {
@@ -31,7 +31,7 @@ namespace FruitSysWeb.Models
                 };
             }
         }
-        
+
         public string FormattedRadniSati => RadniSati.ToString("F2");
         public string FormattedKolicina => Kolicina.ToString("F2");
         public string FormattedEfikasnost => Efikasnost > 0 ? $"{Efikasnost:F2}%" : "-";

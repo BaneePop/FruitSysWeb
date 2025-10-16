@@ -1,0 +1,162 @@
+@page "/login"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Components.Layout
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+@layout EmptyLayout
+
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="text-center mb-4">
+            <i class="bi bi-box-seam display-1 text-success"></i>
+            <h2 class="mt-3">FruitSys web verzija</h2>
+            <p class="text-muted">Prijavite se na vaš nalog</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+                <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+            </div>
+        }
+
+        <EditForm Model="loginRequest" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label class="form-label">Korisničko ime</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <InputText @bind-Value="loginRequest.Username" 
+                               class="form-control" 
+                               placeholder="Unesite korisničko ime"
+                               disabled="@isLoading" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Lozinka</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <InputText @bind-Value="loginRequest.Password" 
+                               type="password"
+                               class="form-control" 
+                               placeholder="Unesite lozinku"
+                               disabled="@isLoading" />
+                </div>
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox @bind-Value="loginRequest.RememberMe" 
+                               class="form-check-input" 
+                               id="rememberMe" />
+                <label class="form-check-label" for="rememberMe">
+                    Zapamti me
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                else
+                {
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                }
+                Prijavi se
+            </button>
+        </EditForm>
+
+        <div class="text-center mt-3">
+            <small class="text-muted">FruitSys © 2025</small>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #010411 0%, #12061f 100%);
+    }
+
+    .login-card {
+        background: rgb(18, 8, 8);
+        padding: 2.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 420px;
+    }
+
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-right: none;
+    }
+
+    .form-control {
+        border-left: none;
+    }
+
+    .form-control:focus {
+        border-color: #198754;
+        box-shadow: none;
+    }
+</style>
+
+@code {
+    private LoginRequest loginRequest = new();
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Proveri da li je već ulogovan
+        if (await AuthService.IsAuthenticated())
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = string.Empty;
+            StateHasChanged();
+
+            var response = await AuthService.Login(loginRequest);
+
+            if (response.Success)
+            {
+                Navigation.NavigateTo("/", forceLoad: true);
+            }
+            else
+            {
+                errorMessage = response.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Greška pri prijavljivanju. Pokušajte ponovo.";
+            Console.WriteLine($"Login error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+
+
+
+        
+    }
+}

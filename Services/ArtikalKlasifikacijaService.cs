@@ -48,7 +48,7 @@ namespace FruitSysWeb.Services
 
                 var rezultat = await _databaseService.QueryAsync<ArtikalKlasifikacija>(sql);
                 Console.WriteLine($"Učitano {rezultat.Count()} voćnih klasifikacija iz baze");
-                
+
                 if (rezultat.Any())
                 {
                     foreach (var klasifikacija in rezultat)

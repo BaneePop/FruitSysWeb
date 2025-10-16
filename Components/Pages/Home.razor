@@ -6,6 +6,7 @@
 @using FruitSysWeb.Components.Charts
 @using FruitSysWeb.Components.Shared.Layout
 @using FruitSysWeb.Services.Core
+@using FruitSysWeb.Models
 
 @inject IFinansijeService FinansijeService
 @inject IProizvodnjaService ProizvodnjaService
@@ -13,13 +14,15 @@
 @inject IExportService exportService
 @inject NavigationManager NavigationManager
 @inject ITypeMappingService TypeMapping
+@inject IPreradaService PreradaService
 
 <style>
     .main-header {
-        background: linear-gradient(135deg, #0f5132, #198754, #20c997);
+        background: linear-gradient(135deg, #1a2332, #232d3f, #2a3441);
         border-radius: 15px;
         margin-bottom: 2.5rem;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        border: 1px solid #374151;
     }
     
     .section-grid {
@@ -30,13 +33,13 @@
     }
     
     .main-section {
-        background: white;
+        background: #1a2332;
         border-radius: 15px;
         padding: 2.5rem;
         text-align: center;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.3);
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        border: none;
+        border: 1px solid #374151;
         cursor: pointer;
         position: relative;
         overflow: hidden;
@@ -80,13 +83,13 @@
     
     .section-title-main {
         font-weight: 800;
-        color: #0f5132;
+        color: #e5e7eb;
         margin-bottom: 1rem;
         font-size: 1.5rem;
     }
     
     .section-description-main {
-        color: #6c757d;
+        color: #9ca3af;
         margin-bottom: 2rem;
         line-height: 1.7;
         font-size: 1.05rem;
@@ -103,7 +106,7 @@
     
     .section-features-main li {
         padding: 0.4rem 0;
-        color: #495057;
+        color: #9ca3af;
         font-size: 0.9rem;
         display: flex;
         align-items: center;
@@ -127,12 +130,12 @@
     .welcome-title {
         font-size: 1.3rem;
         font-weight: 600;
-        color: #0f5132;
+        color: #e5e7eb;
         margin-bottom: 0.5rem;
     }
 
     .welcome-subtitle {
-        color: #6c757d;
+        color: #9ca3af;
         font-size: 1rem;
     }
 
@@ -242,6 +245,94 @@
         </div>
     </div>
 
+    <!-- Najavljeni Utovari Section -->
+    <div class="row mt-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-truck me-2 text-primary"></i>Najavljeni Utovari (narednih 20 dana)
+                    </h5>
+                    @if (najavljeniUtovari != null)
+                    {
+                        <span class="badge bg-primary">@najavljeniUtovari.Count stavki</span>
+                    }
+                </div>
+                <div class="card-body p-0">
+                    @if (najavljeniUtovari == null)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Učitavanje...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Učitavanje najavljenih utovara...</p>
+                        </div>
+                    }
+                    else if (!najavljeniUtovari.Any())
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-check display-3 text-muted"></i>
+                            <h5 class="mt-3 text-muted">Nema najavljenih utovara u narednih 20 dana</h5>
+                            <p class="text-muted">Svi radni nalozi su isporučeni ili trenutno nema aktivnih naloga</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Radni nalog</th>
+                                        <th>Datum utovara</th>
+                                        <th>Dana</th>
+                                        <th>Kupac</th>
+                                        <th>Artikal</th>
+                                        <th>Potrebna količina</th>
+                                        <th>Lot</th>
+                                        <th>Ugovor prodaja</th>
+                                        <th>Prioritet</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var utovar in najavljeniUtovari)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge @utovar.StatusBadgeClass">@utovar.RadniNalog</span>
+                                            </td>
+                                            <td>
+                                                <strong>@TypeMapping.FormatDate(utovar.DatumIsporuke ?? DateTime.MinValue)</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@utovar.DanaDoUtovara dana</span>
+                                            </td>
+                                            <td>@utovar.Kupac</td>
+                                            <td>
+                                                <span class="text-primary">@utovar.Artikal</span>
+                                            </td>
+                                            <td>
+                                                <strong>@TypeMapping.FormatWeight(utovar.Kolicina)</strong>
+                                            </td>
+                                            <td>
+                                                <code class="text-info">@(utovar.LotNaloga ?? "N/A")</code>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@(utovar.BrojUgovora ?? "N/A")</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge @utovar.UrgentnostBadgeClass">@utovar.StatusUrgentnosti</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Charts Section (Existing Dashboard Analytics) -->
     <div class="row mt-4">
         <div class="col-12">
@@ -260,6 +351,27 @@
 </div>
 
 @code {
+    private List<NajavljeniUtovarModel>? najavljeniUtovari;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UcitajNajavljeneUtovare();
+    }
+
+    private async Task UcitajNajavljeneUtovare()
+    {
+        try
+        {
+            najavljeniUtovari = await PreradaService.UcitajNajavljeneUtovare();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju najavljenih utovara: {ex.Message}");
+            najavljeniUtovari = new List<NajavljeniUtovarModel>();
+        }
+    }
+
     private void NavigateTo(string url)
     {
         NavigationManager.NavigateTo(url);

@@ -74,7 +74,7 @@ namespace FruitSysWeb.Services
 
             using var connection = new MySqlConnection(_connectionString);
             await connection.OpenAsync();
-            
+
             // Koristimo ExecuteScalarAsync sa Dapper
             var result = await connection.ExecuteScalarAsync<T?>(sql, parameters);
             return result ?? default(T)!;

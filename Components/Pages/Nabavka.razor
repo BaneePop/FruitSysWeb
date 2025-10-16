@@ -15,7 +15,7 @@
 @inject IJSRuntime JSRuntime
 
 <!-- Header sa saldo na vrhu -->
-<div class="bg-danger text-white py-3 mb-4">
+<div class="bg-dark text-white py-3 mb-4">
     <div class="container-fluid">
         <div class="row align-items-center">
             <div class="col-md-6">
@@ -111,6 +111,16 @@
                                     <option value="@option.Value">@option.Text</option>
                                 }       
                             </select>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="zbirnoPoDatumu" @bind="filterRequest.ZbirnoPoDatumu">
+                                <label class="form-check-label" for="zbirnoPoDatumu">
+                                    <i class="bi bi-calendar-check me-1"></i>
+                                    <strong>Zbirno po datumu</strong> 
+                                    <small class="text-muted">(radni dan 04:00 - 03:59)</small>
+                                </label>
+                            </div>
                         </div>
                         
                         <!-- Action buttons sa SystemConstants -->
@@ -215,6 +225,18 @@
                             <table class="table table-striped table-hover mb-0">
                                 <thead class="table-dark">
                                     <tr>
+                                    @if (filterRequest.ZbirnoPoDatumu)
+                                    {
+                                        <th>Datum</th>
+                                        <th>Komitent</th>
+                                        <th>Broj dokumenata</th>
+                                        <th class="text-end">Ukupna količina</th>
+                                        <th class="text-end">Ukupno potražuje</th>
+                                        <th class="text-end">Ukupno duguje</th>
+                                        <th class="text-end">Saldo</th>
+                                    }
+                                    else
+                                    {
                                         <th>Datum</th>
                                         <th>Komitent</th>
                                         <th>Dokument</th>
@@ -223,37 +245,70 @@
                                         <th class="text-end">Cena</th>
                                         <th class="text-end">Potražuje</th>
                                         <th class="text-end">Duguje</th>
+                                    }
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var item in podaci)
+                                     @if (filterRequest.ZbirnoPoDatumu && zbirniPodaci != null)
                                     {
+                                        @foreach (var item in zbirniPodaci)
+                                        {
+                                            <tr>
+                                                <td>@TypeMapping.FormatDate(item.Datum)</td>
+                                                <td>@item.Komitent</td>
+                                                <td class="text-center">@item.BrojDokumenata</td>
+                                                <td class="text-end">@TypeMapping.FormatDecimal(item.UkupnaKolicina)</td>
+                                                <td class="text-end @TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(item.UkupnoPotrazuje)</td>
+                                                <td class="text-end @TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(item.UkupnoDuguje)</td>
+                                                <td class="text-end @TypeMapping.GetSaldoBadgeClass(item.Saldo)">@TypeMapping.FormatDecimal(item.Saldo)</td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @foreach (var item in podaci)
+                                        {
                                         var cena = item.Kolicina != 0 ? 
                                             (item.Duguje > 0 ? item.Duguje / item.Kolicina : 
                                              item.Potrazuje > 0 ? item.Potrazuje / item.Kolicina : 0) : 0;
-                                        <tr>
-                                            <td>@TypeMapping.FormatDate(item.Datum)</td>
-                                            <td>@item.Komitent</td>
-                                            <td>@item.Dokument</td>
-                                            <td>@item.Artikal</td>
-                                            <td class="text-end">@TypeMapping.FormatDecimal(item.Kolicina)</td>
-                                            <td class="text-end">@TypeMapping.FormatDecimal(cena)</td>
-                                            <td class="text-end @TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(item.Potrazuje)</td>
-                                            <td class="text-end @TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(item.Duguje)</td>
-                                        </tr>
+                                            <tr>
+                                                <td>@TypeMapping.FormatDate(item.Datum)</td>
+                                                <td>@item.Komitent</td>
+                                                <td>@item.Dokument</td>
+                                                <td>@item.Artikal</td>
+                                                <td class="text-end">@TypeMapping.FormatDecimal(item.Kolicina)</td>
+                                                <td class="text-end">@TypeMapping.FormatDecimal(cena)</td>
+                                                <td class="text-end @TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(item.Potrazuje)</td>
+                                                <td class="text-end @TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(item.Duguje)</td>
+                                            </tr>
+                                        }
                                     }
                                 </tbody>
                                 <tfoot class="table-secondary">
                                     <tr>
-                                        <th colspan="5" class="text-end">UKUPNO:</th>
-                                        <th class="text-end">-</th>
-                                        <th class="text-end @TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(podaci.Sum(x => x.Potrazuje))</th>
-                                        <th class="text-end @TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(podaci.Sum(x => x.Duguje))</th>
+                                        @if (filterRequest.ZbirnoPoDatumu && zbirniPodaci != null)
+                                        {
+                                            <th colspan="3" class="text-end">UKUPNO:</th>
+                                            <th class="text-end">@TypeMapping.FormatDecimal(zbirniPodaci.Sum(x => x.UkupnaKolicina))</th>
+                                            <th class="text-end @TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(zbirniPodaci.Sum(x => x.UkupnoPotrazuje))</th>
+                                            <th class="text-end @TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(zbirniPodaci.Sum(x => x.UkupnoDuguje))</th>
+                                            <th class="text-end @TypeMapping.GetSaldoBadgeClass(zbirniPodaci.Sum(x => x.Saldo))">@TypeMapping.FormatDecimal(zbirniPodaci.Sum(x => x.Saldo)) RSD</th>
+                                        }
+                                        else
+                                        {
+                                            <th colspan="5" class="text-end">UKUPNO:</th>
+                                            <th class="text-end">-</th>
+                                            <th class="text-end @TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(podaci.Sum(x => x.Potrazuje))</th>
+                                            <th class="text-end @TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(podaci.Sum(x => x.Duguje))</th>
+                                        }
                                     </tr>
-                                    <tr>
-                                        <th colspan="6" class="text-end">SALDO (Potražuje - Duguje):</th>
-                                        <th class="text-end @TypeMapping.GetSaldoBadgeClass(podaci.Sum(x => x.Saldo))" colspan="2">@TypeMapping.FormatDecimal(podaci.Sum(x => x.Saldo)) RSD</th>
-                                    </tr>
+                                    @if (!filterRequest.ZbirnoPoDatumu)
+                                    {
+                                        <tr>
+                                            <th colspan="6" class="text-end">SALDO (Potražuje - Duguje):</th>
+                                            <th class="text-end @TypeMapping.GetSaldoBadgeClass(podaci.Sum(x => x.Saldo))" colspan="2">@TypeMapping.FormatDecimal(podaci.Sum(x => x.Saldo)) RSD</th>
+                                        </tr>
+                                    }
                                 </tfoot>
                             </table>
                         </div>
@@ -282,6 +337,7 @@
     private decimal ukupnoDuguje = 0;
     private Dictionary<string, decimal>? topKupci;
     private Dictionary<string, decimal>? topDobavljaci;
+    private List<ZbirniFinansijeModel>? zbirniPodaci;
 
     private List<Komitent>? komitentiLista;
     private List<Artikal>? artikliLista;
@@ -359,34 +415,47 @@
 
    private async Task UcitajPodatke()
     {
-        try
+    try
+    {
+        if (filterRequest.ZbirnoPoDatumu)
         {
-        // Učitaj sve podatke iz servisa
-        var rezultat = await FinansijeService.UcitajFinansijskiIzvestaj(filterRequest);
+            // Učitaj zbirne podatke
+            zbirniPodaci = await FinansijeService.UcitajZbirnePodatkePoRadnomDanu(filterRequest);
+            podaci = new List<FinansijeModel>(); // prazan za običan prikaz
+        }
+        else
+        {
+            // postojeći kod
+            var rezultat = await FinansijeService.UcitajFinansijskiIzvestaj(filterRequest);
+            podaci = rezultat?.Where(x => x.Dokument != null && !x.Dokument.StartsWith("FK-", StringComparison.OrdinalIgnoreCase) && !x.Dokument.StartsWith("UP-", StringComparison.OrdinalIgnoreCase)).ToList()
+                     ?? new List<FinansijeModel>();
+            zbirniPodaci = null;
+        }
         
-        // ISPRAVKA - Dodaj null check
-        podaci = rezultat?.Where(x => x.Dokument != null && !x.Dokument.StartsWith("FK-", StringComparison.OrdinalIgnoreCase)).ToList() 
-                 ?? new List<FinansijeModel>();
-        
+        // ostatak postojećeg koda
         ukupnoSaldo = await FinansijeService.UcitajUkupnoSaldo(filterRequest);
-
-        ukupnoPotrazuje = podaci.Sum(x => x.Potrazuje);
-        ukupnoDuguje = podaci.Sum(x => x.Duguje);
-
+        ukupnoPotrazuje = filterRequest.ZbirnoPoDatumu && zbirniPodaci != null 
+            ? zbirniPodaci.Sum(x => x.UkupnoPotrazuje) 
+            : podaci.Sum(x => x.Potrazuje);
+        ukupnoDuguje = filterRequest.ZbirnoPoDatumu && zbirniPodaci != null 
+            ? zbirniPodaci.Sum(x => x.UkupnoDuguje) 
+            : podaci.Sum(x => x.Duguje);
+            
         topKupci = await FinansijeService.UcitajTopKupce(filterRequest);
         topDobavljaci = await FinansijeService.UcitajTopDobavljace(filterRequest);
-
+        
         StateHasChanged();
-        }
-        catch (Exception ex)
-        {
+    }
+    catch (Exception ex)
+    {
         Console.WriteLine($"Greška pri učitavanju podataka: {ex.Message}");
         podaci = new List<FinansijeModel>();
+        zbirniPodaci = null;
         ukupnoSaldo = 0;
         ukupnoPotrazuje = 0;
         ukupnoDuguje = 0;
-        }
-    }   
+    }
+}   
 
     private async Task ResetujFiltere()
     {

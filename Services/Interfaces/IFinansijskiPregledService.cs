@@ -14,7 +14,7 @@ public interface IFinansijskiPregledService
     /// <param name="doDatum">Krajnji datum (danas)</param>
     /// <returns>Lista robe na zalihama po vrstama</returns>
     Task<List<RobaZalihaModel>> UcitajRobuNaZalihama(DateTime odDatum, DateTime doDatum);
-    
+
     /// <summary>
     /// Učitava obračun otkupa po dobavljačima
     /// </summary>
@@ -22,7 +22,7 @@ public interface IFinansijskiPregledService
     /// <param name="doDatum">Krajnji datum (danas)</param>
     /// <returns>Lista obračuna po dobavljačima</returns>
     Task<List<ObracunOtkupaModel>> UcitajObracunOtkupa(DateTime odDatum, DateTime doDatum);
-    
+
     /// <summary>
     /// Učitava kompletan obračun - sva roba + troškovi
     /// </summary>
@@ -30,7 +30,7 @@ public interface IFinansijskiPregledService
     /// <param name="doDatum">Krajnji datum (danas)</param>
     /// <returns>Kompletan obračun</returns>
     Task<ObracunSvaRobaModel> UcitajObracunSvaRoba(DateTime odDatum, DateTime doDatum);
-    
+
     /// <summary>
     /// Računa prosečnu cenu robe na osnovu zadnjih 3 kalkulacije
     /// Ako nema kalkulacija, koristi nabavnu cenu sirovine

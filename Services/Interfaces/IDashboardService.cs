@@ -13,7 +13,7 @@ namespace FruitSysWeb.Services
         Task<Dictionary<DateTime, double>> GetRevenueTrendAsync();
         Task<Dictionary<DateTime, double>> GetCustomerGrowthAsync();
         // Dodajte druge metode po potrebi
-         // Postojeće metode
+        // Postojeće metode
         Task<List<MagacinLagerModel>> UcitajLagerStanje();
         Task<List<MagacinLagerModel>> UcitajLagerStanjeSaFilterima(FilterRequest filterRequest);
         Task<List<MagacinLagerModel>> UcitajLagerStanjeSaFilterima(string filter);
@@ -32,12 +32,12 @@ namespace FruitSysWeb.Services
         Task<List<MagacinLagerModel>> UcitajArtikleIspodMinimuma(decimal minKolicina = 10);
         Task<List<MagacinLagerModel>> UcitajArtikleIspodMinimuma();
         Task<Dictionary<string, decimal>> UcitajStatistikeLagera();
-        
+
         // DASHBOARD - nove metode za strukturu lagera
         Task<Dictionary<string, decimal>> UcitajStrukturuSirovina();
         Task<Dictionary<string, decimal>> UcitajStrukturuGotovihProizvoda();
         Task<Dictionary<string, decimal>> UcitajStrukturuAmbalaze();
-        
+
         // Ostale metode
         Task<List<MagacinLagerModel>> UcitajLagerStanjePoLotu(string lot);
         Task<List<RadniNalogLagerModel>> UcitajOtvoreneRadneNaloge();

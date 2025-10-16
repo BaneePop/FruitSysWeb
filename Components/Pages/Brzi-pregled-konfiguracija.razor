@@ -18,27 +18,43 @@
     <div class="row">
         <div class="col-12">
             <div class="card shadow">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">
                         <i class="bi bi-gear-fill"></i> Konfiguracija Brzog Pregleda
                     </h4>
+                    @if (poslednjeKuvanje.HasValue)
+                    {
+                        <small class="text-white-50">
+                            <i class="bi bi-check-circle"></i> Poslednje čuvanje: @poslednjeKuvanje.Value.ToString("HH:mm:ss")
+                        </small>
+                    }
                 </div>
                 <div class="card-body">
+                    
+                    @* Obaveštenje o automatskom čuvanju *@
+                    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+                        <i class="bi bi-info-circle-fill me-2" style="font-size: 1.5rem;"></i>
+                        <div>
+                            <strong>Automatsko čuvanje je aktivno!</strong><br/>
+                            <small>Svaka promena se automatski čuva. Ne morate klikati na "Sačuvaj" dugme.</small>
+                        </div>
+                    </div>
                     
                     <!-- DOBAVLJACI SEKCIJA -->
                     <div class="row mb-4">
                         <div class="col-12">
                             <h5 class="border-bottom pb-2">
-                                <i class="bi bi-truck"></i> Izaberi Dobavljace (max 6)
+                                <i class="bi bi-truck"></i> Izaberi Dobavljače (max 6)
                             </h5>
                         </div>
                         @for (int i = 0; i < 6; i++)
                         {
                             var index = i;
                             <div class="col-md-4 mb-3">
-                                <label class="form-label fw-bold">Dobavljac @(i + 1):</label>
+                                <label class="form-label fw-bold">Dobavljač @(i + 1):</label>
                                 <select class="form-select" 
-                                        @bind="izabraniDobavljaci[index]">
+                                        value="@izabraniDobavljaci[index]"
+                                        @onchange="@(e => OnDobavljacChanged(index, e))">
                                     <option value="">-- Nije izabran --</option>
                                     @if (sviDobavljaci != null)
                                     {
@@ -65,7 +81,8 @@
                             <div class="col-md-4 mb-3">
                                 <label class="form-label fw-bold">Kupac @(i + 1):</label>
                                 <select class="form-select" 
-                                        @bind="izabraniKupci[index]">
+                                        value="@izabraniKupci[index]"
+                                        @onchange="@(e => OnKupacChanged(index, e))">
                                     <option value="">-- Nije izabran --</option>
                                     @if (sviKupci != null)
                                     {
@@ -163,7 +180,7 @@
                                                         {
                                                             <div class="alert alert-info small mt-2 mb-0">
                                                                 <i class="bi bi-info-circle"></i>
-                                                                Prikazano prvih 50 od @filtriraniArtikli.Count artikala. Koristite pretragu za sužavanje rezultata.
+                                                                Prikazano prvih 100 od @filtriraniArtikli.Count artikala. Koristite pretragu za sužavanje rezultata.
                                                             </div>
                                                         }
                                                     }
@@ -208,11 +225,6 @@
                     <!-- AKCIJE -->
                     <div class="row">
                         <div class="col-12 text-center">
-                            <button class="btn btn-success btn-lg me-2" 
-                                    @onclick="SacuvajKonfiguraciju"
-                                    disabled="@ucitavanje">
-                                <i class="bi bi-save"></i> Sačuvaj Konfiguraciju
-                            </button>
                             <button class="btn btn-secondary btn-lg me-2" 
                                     @onclick="ResetuiKonfiguraciju"
                                     disabled="@ucitavanje">
@@ -236,7 +248,7 @@
                                     <ul class="mb-0 small">
                                         @foreach (var id in izabraniDobavljaci.Where(x => x.HasValue))
                                         {
-                                            var naziv = sviDobavljaci?.FirstOrDefault(k => k.Id == id.Value)?.Naziv;
+                                            var naziv = sviDobavljaci?.FirstOrDefault(k => k.Id == id!.Value)?.Naziv;
                                             <li>@naziv</li>
                                         }
                                     </ul>
@@ -255,7 +267,7 @@
                                     <ul class="mb-0 small">
                                         @foreach (var id in izabraniKupci.Where(x => x.HasValue))
                                         {
-                                            var naziv = sviKupci?.FirstOrDefault(k => k.Id == id.Value)?.Naziv;
+                                            var naziv = sviKupci?.FirstOrDefault(k => k.Id == id!.Value)?.Naziv;
                                             <li>@naziv</li>
                                         }
                                     </ul>
@@ -295,6 +307,7 @@
 @code {
     // State
     private bool ucitavanje = false;
+    private DateTime? poslednjeKuvanje = null;
     
     // Data
     private List<Komitent>? sviDobavljaci;
@@ -306,7 +319,7 @@
     private int?[] izabraniDobavljaci = new int?[6];
     private int?[] izabraniKupci = new int?[6];
     
-    // ✨ Vrste voća (hardcoded)
+    // Vrste voća (hardcoded)
     private List<string> vrsteVoca = new List<string> 
     { 
         "Malina", "Kupina", "Šljiva", "Kajsija", "Višnja", "Usluga" 
@@ -336,7 +349,7 @@
                 UcitajKlasifikacije()
             );
             
-            // Učitaj postojeću konfiguraciju
+            // ✅ AUTOMATSKI UČITAJ KONFIGURACIJU
             await UcitajPostojecuKonfiguraciju();
         }
         catch (Exception ex)
@@ -373,20 +386,10 @@
         {
             sviArtikli = await ArtikalService.UcitajSveArtikle();
             Console.WriteLine($"✅ Učitano {sviArtikli?.Count ?? 0} artikala");
-            
-            if (sviArtikli?.Any() == true)
-            {
-                Console.WriteLine($"📦 Primeri artikala:");
-                foreach (var art in sviArtikli.Take(5))
-                {
-                    Console.WriteLine($"  - [{art.Id}] {art.Naziv} (Tip: {art.Tip})");
-                }
-            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Greška pri učitavanju artikala: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
             sviArtikli = new List<Artikal>();
         }
     }
@@ -397,15 +400,6 @@
         {
             klasifikacije = await ArtikalKlasifikacijaService.UcitajSveKlasifikacije();
             Console.WriteLine($"✅ Učitano {klasifikacije?.Count ?? 0} klasifikacija");
-            
-            if (klasifikacije?.Any() == true)
-            {
-                Console.WriteLine($"🍎 Voćne klasifikacije:");
-                foreach (var k in klasifikacije)
-                {
-                    Console.WriteLine($"  - [{k.Id}] {k.Naziv}");
-                }
-            }
         }
         catch (Exception ex)
         {
@@ -451,7 +445,7 @@
                         }
                     }
                     
-                    Console.WriteLine("✅ Konfiguracija učitana iz localStorage");
+                    Console.WriteLine("✅ Konfiguracija automatski učitana iz localStorage");
                 }
             }
         }
@@ -461,7 +455,46 @@
         }
     }
 
-    private async Task SacuvajKonfiguraciju()
+    // ✅ AUTOMATSKO ČUVANJE - Handler za dobavljače
+    private async Task OnDobavljacChanged(int index, ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        
+        if (string.IsNullOrEmpty(value))
+        {
+            izabraniDobavljaci[index] = null;
+        }
+        else if (int.TryParse(value, out var id))
+        {
+            izabraniDobavljaci[index] = id;
+        }
+        
+        // Automatski sačuvaj
+        await AutomatskiSacuvajKonfiguraciju();
+        StateHasChanged();
+    }
+
+    // ✅ AUTOMATSKO ČUVANJE - Handler za kupce
+    private async Task OnKupacChanged(int index, ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        
+        if (string.IsNullOrEmpty(value))
+        {
+            izabraniKupci[index] = null;
+        }
+        else if (int.TryParse(value, out var id))
+        {
+            izabraniKupci[index] = id;
+        }
+        
+        // Automatski sačuvaj
+        await AutomatskiSacuvajKonfiguraciju();
+        StateHasChanged();
+    }
+
+    // ✅ NOVA METODA - Automatsko čuvanje bez obaveštenja
+    private async Task AutomatskiSacuvajKonfiguraciju()
     {
         try
         {
@@ -469,12 +502,12 @@
             {
                 IzabraniDobavljaci = izabraniDobavljaci
                     .Where(x => x.HasValue)
-                    .Select(x => x.Value)
+                    .Select(x => x!.Value)
                     .ToList(),
                     
                 IzabraniKupci = izabraniKupci
                     .Where(x => x.HasValue)
-                    .Select(x => x.Value)
+                    .Select(x => x!.Value)
                     .ToList(),
                     
                 ArtikliPoVrstama = artikliPoVrstama
@@ -485,25 +518,28 @@
             var json = JsonSerializer.Serialize(config);
             await JS.InvokeVoidAsync("localStorage.setItem", "brzi_pregled_config", json);
             
-            var ukupnoArtikala = config.ArtikliPoVrstama.Sum(x => x.Value.Count);
-            Console.WriteLine($"✅ Konfiguracija sačuvana: {config.IzabraniDobavljaci.Count} dobavljača, {config.IzabraniKupci.Count} kupaca, {ukupnoArtikala} artikala");
+            poslednjeKuvanje = DateTime.Now;
             
-            await JS.InvokeVoidAsync("alert", "Konfiguracija uspešno sačuvana!");
+            Console.WriteLine($"✅ Automatski sačuvano: {config.IzabraniDobavljaci.Count} dobavljača, {config.IzabraniKupci.Count} kupaca");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Greška pri čuvanju: {ex.Message}");
-            await JS.InvokeVoidAsync("alert", "Greška pri čuvanju konfiguracije!");
+            Console.WriteLine($"❌ Greška pri automatskom čuvanju: {ex.Message}");
         }
     }
 
-    private void ResetuiKonfiguraciju()
+    private async Task ResetuiKonfiguraciju()
     {
         izabraniDobavljaci = new int?[6];
         izabraniKupci = new int?[6];
         izabraneVrste.Clear();
         artikliPoVrstama = vrsteVoca.ToDictionary(v => v, v => new List<long>());
         pretragaArtikala = vrsteVoca.ToDictionary(v => v, v => "");
+        poslednjeKuvanje = null;
+        
+        // Obriši iz localStorage
+        await JS.InvokeVoidAsync("localStorage.removeItem", "brzi_pregled_config");
+        
         StateHasChanged();
     }
 
@@ -512,9 +548,9 @@
         Navigation.NavigateTo("/finansijski-pregled");
     }
     
-    // ✨ Helper metode za vrstu voća i artikle
+    // Helper metode za vrstu voća i artikle
     
-    private void ToggleVrsta(string vrsta, ChangeEventArgs e)
+    private async void ToggleVrsta(string vrsta, ChangeEventArgs e)
     {
         var isChecked = (bool)(e.Value ?? false);
         
@@ -528,10 +564,12 @@
             artikliPoVrstama[vrsta].Clear();
         }
         
+        // ✅ Automatski sačuvaj
+        await AutomatskiSacuvajKonfiguraciju();
         StateHasChanged();
     }
     
-    private void ToggleArtikal(string vrsta, long artikalId, ChangeEventArgs e)
+    private async void ToggleArtikal(string vrsta, long artikalId, ChangeEventArgs e)
     {
         var isChecked = (bool)(e.Value ?? false);
         
@@ -554,6 +592,8 @@
             Console.WriteLine($"❌ Uklonjeno: {vrsta} - Artikal ID {artikalId}");
         }
         
+        // ✅ Automatski sačuvaj
+        await AutomatskiSacuvajKonfiguraciju();
         StateHasChanged();
     }
     
@@ -580,7 +620,6 @@
     {
         if (sviArtikli == null || !sviArtikli.Any()) 
         {
-            Console.WriteLine($"⚠️ Nema artikala za filtriranje");
             return new List<Artikal>();
         }
         
@@ -592,8 +631,6 @@
                        (string.IsNullOrEmpty(pretraga) ? true : a.Naziv.Contains(pretraga, StringComparison.OrdinalIgnoreCase)))
             .OrderBy(a => a.Naziv)
             .ToList();
-        
-        Console.WriteLine($"🔍 Filtrirano za {vrsta} (pretraga: '{pretraga}'): {filtriraniArtikli.Count} artikala");
         
         return filtriraniArtikli;
     }

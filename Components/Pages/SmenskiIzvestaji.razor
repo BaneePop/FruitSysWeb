@@ -142,7 +142,7 @@
 
                 <!-- Radni proces filter -->
                 <div class="col-md-3">
-                    <label class="form-label">Radni proces</label>
+                    <label class="form-label">Filter radnog procesa</label>
                     <select class="form-select" @bind="filterRequest.RadniProcesId">
                         <option value="">Svi radni procesi</option>
                         @if (radniProcesiLista != null)
@@ -153,6 +153,7 @@
                             }
                         }
                     </select>
+                    <small class="text-muted">Filtrira evidencije pre agregacije</small>
                 </div>
 
                 <!-- Action buttons -->
@@ -209,15 +210,14 @@
                             <tr>
                                 <th><strong>Smenski izveštaj</strong></th>
                                 <th><strong>Datum</strong></th>
-                                <th><strong>Proizvodni proces</strong></th>
-                                <th><strong>Radni proces</strong></th>
+                                <th><strong>Proizvodni procesi</strong></th>
                                 <th><strong>Br. radnika</strong></th>
                                 <th><strong>Sati</strong></th>
                                 <th><strong>Trošak</strong></th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var item in smenskiData)
+                            @foreach (SmenskiIzvestajModel item in smenskiData)
                             {
                                 <tr>
                                     <td>
@@ -226,9 +226,6 @@
                                     <td>@TypeMapping.FormatDate(item.Datum ?? DateTime.MinValue)</td>
                                     <td>
                                         <span class="badge bg-info">@item.ProizvodniProces</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary">@item.RadniProces</span>
                                     </td>
                                     <td>
                                         <span class="badge bg-primary">@item.BrojRadnika</span>
@@ -245,9 +242,9 @@
                         </tbody>
                         <tfoot class="table-light">
                             <tr>
-                                <th colspan="4" class="text-end"><strong>UKUPNO:</strong></th>
+                                <th colspan="3" class="text-end"><strong>UKUPNO:</strong></th>
                                 <th>
-                                    <span class="badge bg-primary">@smenskiData.Sum(x => x.BrojRadnika)</span>
+                                    <span class="badge bg-primary">@TypeMapping.FormatDecimal(smenskiData.Sum(x => x.BrojRadnihSati/8))</span>
                                 </th>
                                 <th>
                                     <strong>@TypeMapping.FormatDecimal(smenskiData.Sum(x => x.BrojRadnihSati))</strong>

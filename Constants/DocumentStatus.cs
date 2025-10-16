@@ -145,7 +145,7 @@ namespace FruitSysWeb.Constants
         /// </summary>
         public static List<DropdownOption> GetActiveStatusDropdown()
         {
-            return DropdownOptions.Where(opt => 
+            return DropdownOptions.Where(opt =>
                 string.IsNullOrEmpty(opt.Value) || // Zadržи "Svi statusi"
                 IsActiveStatus(int.Parse(opt.Value))
             ).ToList();
@@ -167,7 +167,7 @@ namespace FruitSysWeb.Constants
         public static List<DropdownOption> GetFilteredDropdownOptions(params int[] excludeStatuses)
         {
             var excludeSet = new HashSet<int>(excludeStatuses);
-            return DropdownOptions.Where(opt => 
+            return DropdownOptions.Where(opt =>
                 string.IsNullOrEmpty(opt.Value) || // Zadržи "Svi statusi"
                 !excludeSet.Contains(int.Parse(opt.Value))
             ).ToList();

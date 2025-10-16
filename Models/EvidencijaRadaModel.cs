@@ -18,19 +18,19 @@ namespace FruitSysWeb.Models
         public decimal CenaKostanjaDirektanRad { get; set; }
         public bool RezijskiProces { get; set; }
         public decimal CenaSataPoReziji { get; set; }
-        
+
         // Foreign Keys
         public long RadniNalogID { get; set; }
         public long SmenskiIzvestajID { get; set; }
         public long RadniProcesID { get; set; }
         public long? RezijaID { get; set; }
-        
+
         // Metadata
         public DateTime Kreirano { get; set; }
         public DateTime Azurirano { get; set; }
         public int Version { get; set; }
         public bool Obrisan { get; set; }
-        
+
         // Helper properties za UI
         public string StatusText
         {
@@ -45,7 +45,7 @@ namespace FruitSysWeb.Models
                 };
             }
         }
-        
+
         public string StatusBadgeClass
         {
             get
@@ -59,7 +59,7 @@ namespace FruitSysWeb.Models
                 };
             }
         }
-        
+
         // Kalkulisana svojstva
         public decimal TrosakPoSatu
         {
@@ -68,7 +68,7 @@ namespace FruitSysWeb.Models
                 return BrojRadnihSati > 0 ? CenaKostanjaDirektanRad / BrojRadnihSati : 0;
             }
         }
-        
+
         public decimal TrosakPoRadniku
         {
             get
@@ -76,7 +76,7 @@ namespace FruitSysWeb.Models
                 return BrojRadnika > 0 ? CenaKostanjaDirektanRad / BrojRadnika : 0;
             }
         }
-        
+
         // Format helper properties
         public string FormattedDatum => Datum.ToString("dd.MM.yyyy");
         public string FormattedBrojRadnihSati => BrojRadnihSati.ToString("F2");

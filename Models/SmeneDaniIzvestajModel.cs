@@ -19,31 +19,31 @@ namespace FruitSysWeb.Models
         public DateTime Datum { get; set; }
         public int Smena { get; set; }
         public int DokumentStatus { get; set; }
-        
+
         // Poslovne informacije
         public string? Smenovoda { get; set; }
         public string? ProizvodniProces { get; set; }
-        
+
         // Podaci o radu - agregirani iz EvidencijaRada
         public decimal UkupnoSati { get; set; }
         public decimal UkupanTrosak { get; set; }
         public int UkupnoBrojRadnika { get; set; }
-        
+
         // Produktivnost i efikasnost - kalkulisano
         public decimal Produktivnost { get; set; }  // kg/h ili komada/h
         public decimal Efikasnost { get; set; }     // procenat iskorišćenja
         public decimal UkupnaKolicina { get; set; } // ukupna proizvedena količina
-        
+
         // Vremenski podaci
         public int DanUNedelji { get; set; }         // 1=Ponedeljak, 7=Nedelja
         public int NedeljaUGodini { get; set; }
         public int MesecUGodini { get; set; }
-        
+
         // Metadata - sistemske kolone
         public DateTime Kreirano { get; set; }
         public DateTime Azurirano { get; set; }
         public int Version { get; set; }
-        
+
         // Kalkulisana svojstva za UI
         public string StatusText
         {
@@ -58,7 +58,7 @@ namespace FruitSysWeb.Models
                 };
             }
         }
-        
+
         public string StatusBadgeClass
         {
             get
@@ -73,7 +73,7 @@ namespace FruitSysWeb.Models
             }
         }
     }
-    
+
     /// <summary>
     /// Helper model za RadniProces dropdown
     /// </summary>
@@ -87,7 +87,7 @@ namespace FruitSysWeb.Models
         public DateTime Azurirano { get; set; }
         public int Version { get; set; }
     } */
-    
+
     /// <summary>
     /// Helper model za ProizvodniProces dropdown
     /// </summary>

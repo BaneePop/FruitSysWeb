@@ -12,10 +12,10 @@ namespace FruitSysWeb.Constants
             public const decimal DEFAULT_MIN_KOLICINA = 10.0m;
             public const decimal CRITICAL_MIN_KOLICINA = 5.0m;
             public const decimal WARNING_MIN_KOLICINA = 20.0m;
-            
+
             public const int MAX_ITEMS_PER_PAGE = 100;
             public const int DEFAULT_ITEMS_PER_PAGE = 50;
-            
+
             // Status indikatori za količine
             public static readonly Dictionary<string, (decimal Threshold, string BadgeClass, string Icon)> QuantityStatus = new()
             {
@@ -31,12 +31,12 @@ namespace FruitSysWeb.Constants
             public const int MAX_EXPORT_RECORDS = 10000;
             public const string DEFAULT_DATE_FORMAT = "dd.MM.yyyy";
             public const string DEFAULT_DECIMAL_FORMAT = "N2";
-            
+
             // File format extensions
             public const string EXCEL_EXTENSION = ".xlsx";
             public const string PDF_EXTENSION = ".pdf";
             public const string CSV_EXTENSION = ".csv";
-            
+
             // MIME types
             public const string EXCEL_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             public const string PDF_MIME_TYPE = "application/pdf";
@@ -62,18 +62,18 @@ namespace FruitSysWeb.Constants
             public const int TOAST_DURATION_MS = 5000;
             public const int LOADING_DELAY_MS = 500;
             public const int REFRESH_INTERVAL_MS = 30000; // 30 sekundi
-            
+
             // Progress bar settings
             public const int PROGRESS_ANIMATION_DURATION = 300;
-            
+
             // Table settings
             public const int MAX_TABLE_ROWS = 200;
             public const int PAGINATION_SIZE = 25;
-            
+
             // Chart settings
             public const int MAX_CHART_ITEMS = 10;
             public const int DEFAULT_CHART_HEIGHT = 350;
-            
+
             // Default colors for charts
             public static readonly List<string> ChartColors = new()
             {
@@ -87,17 +87,17 @@ namespace FruitSysWeb.Constants
         public static class Business
         {
             // Datumski opsezi
-            public const int DEFAULT_DATE_RANGE_DAYS = 30;
+            public const int DEFAULT_DATE_RANGE_DAYS = 7;
             public const int MAX_DATE_RANGE_DAYS = 365;
-            
+
             // Finansije
             public const decimal MIN_TRANSACTION_AMOUNT = 0.01m;
             public const decimal MAX_TRANSACTION_AMOUNT = 999999999.99m;
-            
+
             // Proizvodnja
             public const decimal MIN_PRODUCTION_QUANTITY = 0.001m;
             public const int MAX_WORK_ORDER_DAYS = 365;
-            
+
             // Validacija
             public const int MIN_NAME_LENGTH = 2;
             public const int MAX_NAME_LENGTH = 255;
@@ -110,7 +110,7 @@ namespace FruitSysWeb.Constants
             public const int COMMAND_TIMEOUT_SECONDS = 30;
             public const int MAX_QUERY_RESULTS = 10000;
             public const string DEFAULT_SORT_ORDER = "DESC";
-            
+
             // Connection settings
             public const int CONNECTION_POOL_SIZE = 50;
             public const bool USE_CONNECTION_POOLING = true;
@@ -122,7 +122,7 @@ namespace FruitSysWeb.Constants
             public const int DEFAULT_CACHE_DURATION_MINUTES = 15;
             public const int DROPDOWN_CACHE_DURATION_MINUTES = 60;
             public const int STATS_CACHE_DURATION_MINUTES = 5;
-            
+
             // Cache keys
             public const string ARTIKLI_CACHE_KEY = "artikli_all";
             public const string KOMITENTI_CACHE_KEY = "komitenti_all";
@@ -137,13 +137,13 @@ namespace FruitSysWeb.Constants
             public const string INTEGER_FORMAT = "N0";
             public const string CURRENCY_FORMAT = "C2";
             public const string PERCENTAGE_FORMAT = "P1";
-            
+
             // Datumi
             public const string DATE_FORMAT = "dd.MM.yyyy";
             public const string DATETIME_FORMAT = "dd.MM.yyyy HH:mm";
             public const string TIME_FORMAT = "HH:mm";
             public const string MONTH_YEAR_FORMAT = "MM/yyyy";
-            
+
             // File naming
             public const string EXPORT_TIMESTAMP_FORMAT = "yyyyMMdd_HHmmss";
         }
@@ -155,7 +155,7 @@ namespace FruitSysWeb.Constants
             public const string PHONE_PATTERN = @"^[\d\s\-\+\(\)]+$";
             public const string POSTAL_CODE_PATTERN = @"^\d{5}$";
             public const string TAX_ID_PATTERN = @"^\d{8,9}$";
-            
+
             // Numerička validacija
             public const decimal MIN_DECIMAL_VALUE = -999999999.99m;
             public const decimal MAX_DECIMAL_VALUE = 999999999.99m;
@@ -169,7 +169,7 @@ namespace FruitSysWeb.Constants
             public const string VALIDATION_ERROR = "Podaci nisu validni. Proverite unos.";
             public const string PERMISSION_ERROR = "Nemate dozvolu za ovu akciju.";
             public const string NOT_FOUND_ERROR = "Traženi podaci nisu pronađeni.";
-            
+
             public const string EXPORT_TOO_LARGE = "Previše podataka za export. Filtrirajte rezultate.";
             public const string INVALID_DATE_RANGE = "Nevaljan datumski opseg.";
             public const string DUPLICATE_ENTRY = "Ovaj unos već postoji.";
@@ -243,10 +243,10 @@ namespace FruitSysWeb.Constants
         {
             if (!odDatum.HasValue || !doDatum.HasValue)
                 return true; // Null values are OK
-                
+
             if (odDatum > doDatum)
                 return false;
-                
+
             var daysDiff = (doDatum.Value - odDatum.Value).TotalDays;
             return daysDiff <= Business.MAX_DATE_RANGE_DAYS;
         }
