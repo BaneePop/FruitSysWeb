@@ -1,0 +1,191 @@
+/* ========================================
+   CHART BOJE I STILOVI - DARK THEME
+   ======================================== */
+
+/* Chart.js globalne boje za dark theme */
+:root {
+    /* Chart palette - principale boje */
+    --chart-color-1: #60a5fa;  /* Plava */
+    --chart-color-2: #f87171;  /* Crvena */
+    --chart-color-3: #fb923c;  /* Narandžasta */
+    --chart-color-4: #2dd4bf;  /* Tirkiz */
+    --chart-color-5: #a78bfa;  /* Ljubičasta */
+    --chart-color-6: #34d399;  /* Zelena */
+    --chart-color-7: #fbbf24;  /* Žuta */
+    --chart-color-8: #f472b6;  /* Pink */
+    
+    /* Chart palette - svetlije varijante */
+    --chart-color-1-light: #93c5fd;
+    --chart-color-2-light: #fca5a5;
+    --chart-color-3-light: #fdba74;
+    --chart-color-4-light: #5eead4;
+    --chart-color-5-light: #c4b5fd;
+    --chart-color-6-light: #6ee7b7;
+    --chart-color-7-light: #fcd34d;
+    --chart-color-8-light: #f9a8d4;
+    
+    /* Chart backgrounds sa alpha */
+    --chart-bg-1: rgba(96, 165, 250, 0.2);
+    --chart-bg-2: rgba(248, 113, 113, 0.2);
+    --chart-bg-3: rgba(251, 146, 60, 0.2);
+    --chart-bg-4: rgba(45, 212, 191, 0.2);
+    --chart-bg-5: rgba(167, 139, 250, 0.2);
+    --chart-bg-6: rgba(52, 211, 153, 0.2);
+}
+
+/* ApexCharts specifično - Dark Theme Override */
+.apexcharts-canvas {
+    background: transparent !important;
+}
+
+.apexcharts-legend-text {
+    color: var(--text-primary) !important;
+    font-family: var(--font-primary) !important;
+}
+
+.apexcharts-text {
+    fill: var(--text-secondary) !important;
+    font-family: var(--font-primary) !important;
+}
+
+.apexcharts-gridline {
+    stroke: var(--border-color) !important;
+}
+
+.apexcharts-xaxis-label,
+.apexcharts-yaxis-label {
+    fill: var(--text-secondary) !important;
+}
+
+.apexcharts-tooltip {
+    background: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.apexcharts-tooltip-title {
+    background: var(--bg-secondary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    font-family: var(--font-primary) !important;
+}
+
+.apexcharts-tooltip-series-group {
+    color: var(--text-primary) !important;
+}
+
+/* Chart container sa gradijensom */
+.chart-wrapper {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 1.5rem;
+}
+
+.chart-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-title i {
+    color: var(--accent-blue);
+}
+
+/* Chart legend custom styling */
+.custom-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+/* Loading state za charts */
+.chart-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 41, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    z-index: 10;
+}
+
+.chart-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--accent-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Chart data labels */
+.chart-data-label {
+    font-family: var(--font-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    fill: var(--text-primary);
+}
+
+/* Responsive chart adjustments */
+@media (max-width: 768px) {
+    .chart-wrapper {
+        padding: 1rem;
+    }
+    
+    .chart-title {
+        font-size: 1rem;
+    }
+    
+    .custom-legend {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* ========================================
+   CHART HELPER CLASSES
+   ======================================== */
+
+/* Chart color utilities */
+.chart-primary { color: var(--chart-color-1); }
+.chart-danger { color: var(--chart-color-2); }
+.chart-warning { color: var(--chart-color-3); }
+.chart-info { color: var(--chart-color-4); }
+.chart-purple { color: var(--chart-color-5); }
+.chart-success { color: var(--chart-color-6); }
+
+/* Chart background utilities */
+.chart-bg-primary { background-color: var(--chart-bg-1); }
+.chart-bg-danger { background-color: var(--chart-bg-2); }
+.chart-bg-warning { background-color: var(--chart-bg-3); }
+.chart-bg-info { background-color: var(--chart-bg-4); }
+.chart-bg-purple { background-color: var(--chart-bg-5); }
+.chart-bg-success { background-color: var(--chart-bg-6); }
