@@ -32,6 +32,9 @@ namespace FruitSysWeb.Models
 
         public long? ArtikalPrvaKlasifikacijaID { get; set; }
 
+        [Display(Name = "Magacin ID")]
+        public int? ArtikalMagacinId { get; set; }
+
         [Display(Name = "Količina")]
         public decimal Kolicina { get; set; }
 

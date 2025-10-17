@@ -11,10 +11,12 @@ namespace FruitSysWeb.Models
         public string BrojEvidencije { get; set; } = string.Empty;
         public string VrstaProizvoda { get; set; } = string.Empty;
         public string ProizvodniProces { get; set; } = string.Empty;
+        public string RadniProces { get; set; } = string.Empty;
         public string Smenovoda { get; set; } = string.Empty;
         public decimal RadniSati { get; set; }
         public decimal Kolicina { get; set; }
         public decimal Efikasnost { get; set; }
+        public decimal CenaKostanjaDirektanRad { get; set; }
         public string Status { get; set; } = string.Empty;
 
         // Helper properties za UI

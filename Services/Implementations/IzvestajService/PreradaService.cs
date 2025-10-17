@@ -138,19 +138,21 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             {
                 var sql = new StringBuilder();
                 sql.Append(@"
-                    SELECT 
+                    SELECT
                         er.Sifra as BrojEvidencije,
                         COALESCE(a.Naziv, 'Nepoznato') as VrstaProizvoda,
                         COALESCE(pp.Naziv, 'Nepoznato') as ProizvodniProces,
+                        COALESCE(rp.Naziv, 'Nepoznato') as RadniProces,
                         COALESCE(k.Naziv, 'Nepoznato') as Smenovoda,
                         SUM(er.BrojRadnika) as BrojRadnika,
                         er.BrojRadnihSati as RadniSati,
                         COALESCE(vpp.Kolicina, 0) as Kolicina,
-                        CASE 
+                        CASE
                             WHEN er.BrojRadnihSati > 0 THEN (vpp.Kolicina / er.BrojRadnihSati) * 100
-                            ELSE 0 
+                            ELSE 0
                         END as Efikasnost,
-                        CASE 
+                        er.CenaKostanjaDirektanRad,
+                        CASE
                             WHEN rn.DokumentStatus = 2 THEN 'Otvoren'
                             WHEN rn.DokumentStatus = 3 THEN 'Zaključen'
                             WHEN rn.DokumentStatus = 4 THEN 'Storno'
@@ -163,6 +165,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     LEFT JOIN vPreradaPregled vpp ON rn.ID = vpp.RadniNalogID
                     LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
                     LEFT JOIN ProizvodniProces pp ON er.ProizvodniProcesID = pp.ID
+                    LEFT JOIN RadniProces rp ON er.RadniProcesID = rp.ID
                     WHERE er.Obrisan = 0
                       AND rn.Aktivno = 1
                       AND a.MagacinID = 6

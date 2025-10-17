@@ -105,7 +105,33 @@
                                     </a></li>
                                 </ul>
                             </li>
-                             <!-- 1. PROMET Dropdown -->
+
+                            <!-- 4. TROŠKOVI Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-receipt-cutoff me-1"></i>Troškovi
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/troskovihome">
+                                        <i class="bi bi-house-door me-2"></i>Troškovi početna
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/troskovi-proizvodnje">
+                                        <i class="bi bi-gear-wide-connected me-2"></i>Troškovi proizvodnje
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/troskovi-radne-snage">
+                                        <i class="bi bi-people-fill me-2"></i>Troškovi radne snage
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/troskovi-ambalaze">
+                                        <i class="bi bi-box-seam me-2"></i>Troškovi ambalaze
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/troskovi-poslovanja">
+                                        <i class="bi bi-briefcase me-2"></i>Troškovi poslovanja
+                                    </a></li>
+                                </ul>
+                            </li>
+
+                             <!-- 5. PROMET Dropdown -->
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-gear-wide-connected me-1"></i>Promet
@@ -253,6 +279,36 @@
         <div class="nav-item px-3 ms-3">
             <NavLink class="nav-link" href="lager-proizvodnje">
                 <span class="bi bi-gear-wide-connected" aria-hidden="true"></span> Lager proizvodnje
+            </NavLink>
+        </div>
+
+        <!-- Troškovi Section -->
+        <div class="nav-item px-3">
+            <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">TROŠKOVI</div>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="troskovihome">
+                <span class="bi bi-house-door" aria-hidden="true"></span> Troškovi početna
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link disabled" href="#">
+                <span class="bi bi-people-fill text-muted" aria-hidden="true"></span> <small class="text-muted">Troškovi rada</small>
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link disabled" href="#">
+                <span class="bi bi-box-seam text-muted" aria-hidden="true"></span> <small class="text-muted">Troškovi materijala</small>
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link disabled" href="#">
+                <span class="bi bi-lightning-charge text-muted" aria-hidden="true"></span> <small class="text-muted">Režijski troškovi</small>
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link disabled" href="#">
+                <span class="bi bi-truck text-muted" aria-hidden="true"></span> <small class="text-muted">Troškovi transporta</small>
             </NavLink>
         </div>
 

@@ -18,8 +18,11 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
+                // OPTIMIZOVANO: Koristi Otpremnica i OtpremnicaStavka za isporuke
+                // UgovorProdaja.Aktivno = 1 (aktivan ugovor)
+                // Sabira isporuke iz otpremnica po UgovorID (ne razdvaja po artiklu)
                 var sql = @"
-                    SELECT 
+                    SELECT
                         up.ID as UgovorID,
                         up.Sifra as BrojUgovora,
                         k.Naziv as Komitent,
@@ -28,36 +31,27 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         ups.ArtikalID,
                         ups.Kolicina as UgovorenaKolicina,
                         COALESCE(ups.JedinicnaCenaEur, 0) as JedinicnaCenaEur,
-                        COALESCE((
-                            SELECT SUM(rn.Kolicina) 
-                            FROM RadniNalog rn 
-                            WHERE rn.UgovorProdajaID = up.ID 
-                            AND rn.DokumentStatus = 3  -- SAMO ZAVRŠENI RADNI NALOZI
-                            AND rn.Aktivno = 1
-                        ), 0) as Isporuceno,
-                        (ups.Kolicina - COALESCE((
-                            SELECT SUM(rn.Kolicina) 
-                            FROM RadniNalog rn 
-                            WHERE rn.UgovorProdajaID = up.ID 
-                            AND rn.DokumentStatus = 3  -- SAMO ZAVRŠENI RADNI NALOZI
-                            AND rn.Aktivno = 1
-                        ), 0)) as PreostalaKolicina,
+                        COALESCE(isporuke.Isporuceno, 0) as Isporuceno,
+                        (ups.Kolicina - COALESCE(isporuke.Isporuceno, 0)) as PreostalaKolicina,
                         up.DokumentStatus,
                         up.Datum as DatumUgovora
                     FROM UgovorProdaja up
                     INNER JOIN UgovorProdajaStavka ups ON up.ID = ups.UgovorProdajaID
                     INNER JOIN Komitent k ON up.KomitentID = k.ID
                     INNER JOIN Artikal a ON ups.ArtikalID = a.ID
-                    WHERE up.DokumentStatus = 2  -- SAMO AKTIVNI UGOVORI
-                      AND up.Aktivno = 1
-                      AND (ups.Kolicina - COALESCE((
-                            SELECT SUM(rn.Kolicina) 
-                            FROM RadniNalog rn 
-                            WHERE rn.UgovorProdajaID = up.ID 
-                            AND rn.DokumentStatus = 3
-                            AND rn.Aktivno = 1
-                        ), 0)) > 0  -- SAMO NEPOTPUNO ISPORUČENI
-                    ORDER BY up.Datum DESC
+                    LEFT JOIN (
+                        SELECT
+                            o.UgovorID,
+                            SUM(os.Kolicina) as Isporuceno
+                        FROM Otpremnica o
+                        INNER JOIN OtpremnicaStavka os ON o.ID = os.OtpremnicaID
+                        WHERE o.DokumentStatus = 3
+                        GROUP BY o.UgovorID
+                    ) isporuke ON up.ID = isporuke.UgovorID
+                    WHERE up.Aktivno = 1
+                      AND up.DokumentStatus = 2
+                      AND (ups.Kolicina - COALESCE(isporuke.Isporuceno, 0)) > 0
+                    ORDER BY up.Datum DESC, up.Sifra, a.Naziv
                 ";
 
                 var rezultat = await _databaseService.QueryAsync<UgovorModel>(sql);
@@ -74,8 +68,9 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
+                // OPTIMIZOVANO: Koristi Otpremnica i OtpremnicaStavka za isporuke
                 var sql = new StringBuilder(@"
-                    SELECT 
+                    SELECT
                         up.ID as UgovorID,
                         up.Sifra as BrojUgovora,
                         k.Naziv as Komitent,
@@ -84,35 +79,26 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         ups.ArtikalID,
                         ups.Kolicina as UgovorenaKolicina,
                         COALESCE(ups.JedinicnaCenaEur, 0) as JedinicnaCenaEur,
-                        COALESCE((
-                            SELECT SUM(rn.Kolicina) 
-                            FROM RadniNalog rn 
-                            WHERE rn.UgovorProdajaID = up.ID 
-                            AND rn.DokumentStatus = 3  -- SAMO ZAVRŠENI RADNI NALOZI
-                            AND rn.Aktivno = 1
-                        ), 0) as Isporuceno,
-                        (ups.Kolicina - COALESCE((
-                            SELECT SUM(rn.Kolicina) 
-                            FROM RadniNalog rn 
-                            WHERE rn.UgovorProdajaID = up.ID 
-                            AND rn.DokumentStatus = 3
-                            AND rn.Aktivno = 1
-                        ), 0)) as PreostalaKolicina,
+                        COALESCE(isporuke.Isporuceno, 0) as Isporuceno,
+                        (ups.Kolicina - COALESCE(isporuke.Isporuceno, 0)) as PreostalaKolicina,
                         up.DokumentStatus,
                         up.Datum as DatumUgovora
                     FROM UgovorProdaja up
                     INNER JOIN UgovorProdajaStavka ups ON up.ID = ups.UgovorProdajaID
                     INNER JOIN Komitent k ON up.KomitentID = k.ID
                     INNER JOIN Artikal a ON ups.ArtikalID = a.ID
-                    WHERE up.DokumentStatus = 2  -- SAMO AKTIVNI UGOVORI
-                      AND up.Aktivno = 1
-                      AND (ups.Kolicina - COALESCE((
-                            SELECT SUM(rn.Kolicina) 
-                            FROM RadniNalog rn 
-                            WHERE rn.UgovorProdajaID = up.ID 
-                            AND rn.DokumentStatus = 3
-                            AND rn.Aktivno = 1
-                        ), 0)) > 0  -- SAMO NEPOTPUNO ISPORUČENI
+                    LEFT JOIN (
+                        SELECT
+                            o.UgovorID,
+                            SUM(os.Kolicina) as Isporuceno
+                        FROM Otpremnica o
+                        INNER JOIN OtpremnicaStavka os ON o.ID = os.OtpremnicaID
+                        WHERE o.DokumentStatus = 3
+                        GROUP BY o.UgovorID
+                    ) isporuke ON up.ID = isporuke.UgovorID
+                    WHERE up.Aktivno = 1
+                      AND up.DokumentStatus = 2
+                      AND (ups.Kolicina - COALESCE(isporuke.Isporuceno, 0)) > 0
                 ");
 
                 var parameters = new Dictionary<string, object>();
@@ -131,14 +117,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     parameters.Add("@Artikal", $"%{filterRequest.Pakovanje}%");
                 }
 
-                // Filtriranje po broju ugovora
-                /* if (!string.IsNullOrEmpty(filterRequest.SearchTerm))
-                {
-                    sql.Append(" AND up.Sifra LIKE @BrojUgovora");
-                    parameters.Add("@BrojUgovora", $"%{filterRequest.SearchTerm}%");
-                } */
-
-                sql.Append(" ORDER BY up.Datum DESC");
+                sql.Append(" ORDER BY up.Datum DESC, up.Sifra, a.Naziv");
 
                 var rezultat = await _databaseService.QueryAsync<UgovorModel>(sql.ToString(), parameters);
                 return rezultat.ToList();
@@ -154,19 +133,23 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
+                // OPTIMIZOVANO: Koristi Otpremnica i OtpremnicaStavka za isporuke
                 var sql = @"
-                    SELECT COALESCE(SUM(ups.Kolicina * COALESCE(ups.JedinicnaCenaEur, 0)), 0) as UkupnaVrednost
+                    SELECT COALESCE(SUM((ups.Kolicina - COALESCE(isporuke.Isporuceno, 0)) * COALESCE(ups.JedinicnaCenaEur, 0)), 0) as UkupnaVrednost
                     FROM UgovorProdaja up
                     INNER JOIN UgovorProdajaStavka ups ON up.ID = ups.UgovorProdajaID
-                    WHERE up.DokumentStatus = 2
-                      AND up.Aktivno = 1
-                      AND (ups.Kolicina - COALESCE((
-                            SELECT SUM(rn.Kolicina) 
-                            FROM RadniNalog rn 
-                            WHERE rn.UgovorProdajaID = up.ID 
-                            AND rn.DokumentStatus = 3
-                            AND rn.Aktivno = 1
-                        ), 0)) > 0
+                    LEFT JOIN (
+                        SELECT
+                            o.UgovorID,
+                            SUM(os.Kolicina) as Isporuceno
+                        FROM Otpremnica o
+                        INNER JOIN OtpremnicaStavka os ON o.ID = os.OtpremnicaID
+                        WHERE o.DokumentStatus = 3
+                        GROUP BY o.UgovorID
+                    ) isporuke ON up.ID = isporuke.UgovorID
+                    WHERE up.Aktivno = 1
+                      AND up.DokumentStatus = 2
+                      AND (ups.Kolicina - COALESCE(isporuke.Isporuceno, 0)) > 0
                 ";
 
                 var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql);
@@ -179,35 +162,36 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
         }
 
-        // Dodatna metoda za detalje radnih naloga po ugovoru
-        public async Task<List<RadniNalogModel>> UcitajRadneNalogePoUgovoru(long ugovorId)
+        // Dodatna metoda za detalje otpremnica po ugovoru
+        public async Task<List<OtpremnicaDetaljiModel>> UcitajOtpremnicePoUgovoru(long ugovorId)
         {
             try
             {
                 var sql = @"
-                    SELECT 
-                        rn.ID,
-                        rn.Sifra as BrojNaloga,
-                        rn.Datum as DatumPocetka,
-                        rn.DokumentStatus,
-                        rn.Kolicina,
+                    SELECT
+                        o.ID,
+                        o.Sifra as BrojOtpremnice,
+                        o.Datum,
+                        o.DokumentStatus,
+                        os.Kolicina,
                         a.Naziv as Artikal,
                         k.Naziv as Komitent
-                    FROM RadniNalog rn
-                    INNER JOIN Artikal a ON rn.ArtikalID = a.ID
-                    INNER JOIN Komitent k ON rn.KomitentID = k.ID
-                    WHERE rn.UgovorProdajaID = @UgovorId
-                      AND rn.Aktivno = 1
-                    ORDER BY rn.Datum DESC
+                    FROM Otpremnica o
+                    INNER JOIN OtpremnicaStavka os ON o.ID = os.OtpremnicaID
+                    INNER JOIN Artikal a ON os.ArtikalID = a.ID
+                    INNER JOIN Komitent k ON o.KomitentID = k.ID
+                    WHERE o.UgovorID = @UgovorId
+                      AND o.DokumentStatus = 3
+                    ORDER BY o.Datum DESC
                 ";
 
-                var rezultat = await _databaseService.QueryAsync<RadniNalogModel>(sql, new { UgovorId = ugovorId });
+                var rezultat = await _databaseService.QueryAsync<OtpremnicaDetaljiModel>(sql, new { UgovorId = ugovorId });
                 return rezultat.ToList();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju radnih naloga za ugovor: {ex.Message}");
-                return new List<RadniNalogModel>();
+                Console.WriteLine($"Greška pri učitavanju otpremnica za ugovor: {ex.Message}");
+                return new List<OtpremnicaDetaljiModel>();
             }
         }
     }

@@ -1,0 +1,486 @@
+@page "/troskovihome"
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Models
+@using FruitSysWeb.Constants
+
+@inject NavigationManager NavigationManager
+@inject IFinansijeService FinansijeService
+@inject IPreradaService PreradaService
+@inject ITypeMappingService TypeMapping
+@inject IJSRuntime JSRuntime
+@inject ILogger<TroskoviHome> Logger
+
+<style>
+    .troskovi-header {
+        background: linear-gradient(135deg, #1a2332, #232d3f);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid #374151;
+    }
+
+    .section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .section-card {
+        background: #1a2332;
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+        border-left: 4px solid #3e6b1f;
+        cursor: pointer;
+        border: 1px solid #374151;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .section-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 20px rgba(62, 107, 31, 0.4);
+        border-left-color: #28a745;
+    }
+
+    .chart-row {
+        margin-bottom: 2rem;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="troskovi-header p-4">
+        <h1 class="text-white mb-0">
+            <i class="bi bi-cash-stack me-3"></i>Troškovi i Rashodi
+        </h1>
+        <p class="text-white-50 mb-0 mt-2">Pregled troškova, rashoda i izvešta po sezonama</p>
+    </div>
+
+    <!-- Navigation Cards -->
+    <div class="section-grid">
+        <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-proizvodnje")'>
+            <i class="bi bi-gear-wide-connected fs-1 text-success"></i>
+            <div class="text-start">
+                <h5 class="text-white mb-0">Troškovi</h5>
+                <h6 class="text-white mb-0">Proizvodnje</h6>
+            </div>
+        </div>
+
+        <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-radne-snage")'>
+            <i class="bi bi-people-fill fs-1 text-success"></i>
+            <div class="text-start">
+                <h5 class="text-white mb-0">Troškovi</h5>
+                <h6 class="text-white mb-0">Radne Snage</h6>
+            </div>
+        </div>
+
+        <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-ambalaze")'>
+            <i class="bi bi-box-seam fs-1 text-success"></i>
+            <div class="text-start">
+                <h5 class="text-white mb-0">Troškovi</h5>
+                <h6 class="text-white mb-0">Ambalaze</h6>
+            </div>
+        </div>
+
+        <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-poslovanja")'>
+            <i class="bi bi-briefcase fs-1 text-success"></i>
+            <div class="text-start">
+                <h5 class="text-white mb-0">Troškovi</h5>
+                <h6 class="text-white mb-0">Poslovanja</h6>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Učitavanje...</span>
+            </div>
+            <p class="mt-2 text-muted">Učitavam podatke...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Row 1: Troškovi Ambalaze -->
+        <div class="chart-row">
+            <ApexBarChart
+                Title="Troškovi Ambalaze (Od Početka Sezone)"
+                Icon="bi bi-box-seam"
+                SeriesName="Troškovi"
+                Unit="RSD"
+                Color="#28a745"
+                Data="@TroskoviAmbalaze"
+                IsLoading="@IsLoadingAmbalaza"
+                HasError="@HasErrorAmbalaza"
+                ShowSummary="true"
+                OnRefresh="@RefreshAmbalaza" />
+        </div>
+
+        <!-- Row 2: Trošak po Radnom Danu i Broj Radnika -->
+        <div class="row chart-row">
+            <div class="col-lg-6 mb-3">
+                <ApexBarChart
+                    Title="Trošak po Radnom Danu (Poslednjih 7 Dana)"
+                    Icon="bi bi-cash-coin"
+                    SeriesName="Trošak"
+                    Unit="RSD"
+                    Color="#ffc107"
+                    Data="@TrosakPoRadnomDanu"
+                    IsLoading="@IsLoadingTrosakDanu"
+                    HasError="@HasErrorTrosakDanu"
+                    ShowSummary="true"
+                    OnRefresh="@RefreshTrosakDanu" />
+            </div>
+            <div class="col-lg-6 mb-3">
+                <ApexBarChart
+                    Title="Broj Radnika po Danima (Poslednjih 7 Dana)"
+                    Icon="bi bi-people"
+                    SeriesName="Broj Radnika"
+                    Unit="radnika"
+                    Color="#20c997"
+                    Data="@BrojRadnikaPoDanima"
+                    IsLoading="@IsLoadingRadnici"
+                    HasError="@HasErrorRadnici"
+                    ShowSummary="true"
+                    OnRefresh="@RefreshRadnici" />
+            </div>
+        </div>
+
+        <!-- Row 3: Troškovi po Smeni -->
+        <div class="chart-row">
+            <ApexBarChart
+                Title="Troškovi po Smeni (Zadnjih 14 Smena)"
+                Icon="bi bi-calendar-check"
+                SeriesName="Troškovi"
+                Unit="RSD"
+                Color="#dc3545"
+                Data="@TroskoviPoSmeni"
+                IsLoading="@IsLoadingSmene"
+                HasError="@HasErrorSmene"
+                ShowSummary="true"
+                OnRefresh="@RefreshSmene" />
+        </div>
+
+        <!-- Row 4: Troškovi po RN -->
+        <div class="chart-row">
+            <ApexBarChart
+                Title="Troškovi po Radnom Nalogu (Zadnjih 7 RN)"
+                Icon="bi bi-file-earmark-text"
+                SeriesName="Troškovi"
+                Unit="RSD"
+                Color="#3e6b1f"
+                Data="@TroskoviPoRN"
+                IsLoading="@IsLoadingRN"
+                HasError="@HasErrorRN"
+                ShowSummary="true"
+                OnRefresh="@RefreshRN" />
+        </div>
+    }
+</div>
+
+@code {
+    // Loading States
+    private bool IsLoading = true;
+    private bool IsLoadingAmbalaza = false;
+    private bool IsLoadingTrosakDanu = false;
+    private bool IsLoadingRadnici = false;
+    private bool IsLoadingSmene = false;
+    private bool IsLoadingRN = false;
+
+    // Error States
+    private bool HasErrorAmbalaza = false;
+    private bool HasErrorTrosakDanu = false;
+    private bool HasErrorRadnici = false;
+    private bool HasErrorSmene = false;
+    private bool HasErrorRN = false;
+
+    // Chart Data
+    private List<ChartDataPoint>? TroskoviAmbalaze;
+    private List<ChartDataPoint>? TrosakPoRadnomDanu;
+    private List<ChartDataPoint>? BrojRadnikaPoDanima;
+    private List<ChartDataPoint>? TroskoviPoSmeni;
+    private List<ChartDataPoint>? TroskoviPoRN;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAllCharts();
+    }
+
+    private async Task RefreshAllCharts()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        await Task.WhenAll(
+            RefreshAmbalaza(),
+            RefreshTrosakDanu(),
+            RefreshRadnici(),
+            RefreshSmene(),
+            RefreshRN()
+        );
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    // Chart 1: Troškovi Ambalaze (Kutije, Kese, Repromaterijal)
+    private async Task RefreshAmbalaza()
+    {
+        if (IsLoadingAmbalaza) return;
+
+        IsLoadingAmbalaza = true;
+        HasErrorAmbalaza = false;
+        StateHasChanged();
+
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = SezonaConstants.GetPocetakTrenutneSezone(),
+                DoDatum = SezonaConstants.GetKrajTrenutneSezone()
+            };
+
+            var allFinansije = await FinansijeService.UcitajFinansijskiIzvestaj(filter);
+
+            // Grupisanje po tipu ambalaze
+            var kutije = allFinansije
+                .Where(x => x.ArtikalMagacinId == 4 && x.Potrazuje > 0)
+                .Where(x => x.Artikal != null && (x.Artikal.ToLower().Contains("kutija") || x.Artikal.ToLower().Contains("karton")))
+                .Sum(x => x.Potrazuje);
+
+            var kese = allFinansije
+                .Where(x => x.ArtikalMagacinId == 4 && x.Potrazuje > 0)
+                .Where(x => x.Artikal != null && (x.Artikal.ToLower().Contains("kesa") || x.Artikal.ToLower().Contains("vreca") ||
+                       x.Artikal.ToLower().Contains("džak") || x.Artikal.ToLower().Contains("dzak")))
+                .Sum(x => x.Potrazuje);
+
+            var repromaterijal = allFinansije
+                .Where(x => x.ArtikalMagacinId == 9 && x.Potrazuje > 0)
+                .Sum(x => x.Potrazuje);
+
+            var ambalazaDict = new Dictionary<string, decimal>
+            {
+                { "Kutije", kutije },
+                { "Kese", kese },
+                { "Repromaterijal", repromaterijal }
+            };
+
+            TroskoviAmbalaze = ChartDataHelper.FromDictionary(ambalazaDict, 3);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading troskovi ambalaze");
+            HasErrorAmbalaza = true;
+            TroskoviAmbalaze = ChartDataHelper.GetMockData("Ambalaza", 3);
+        }
+        finally
+        {
+            IsLoadingAmbalaza = false;
+            StateHasChanged();
+        }
+    }
+
+    // Chart 2: Trošak po Radnom Danu (7 dana)
+    private async Task RefreshTrosakDanu()
+    {
+        if (IsLoadingTrosakDanu) return;
+
+        IsLoadingTrosakDanu = true;
+        HasErrorTrosakDanu = false;
+        StateHasChanged();
+
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-7),
+                DoDatum = DateTime.Now
+            };
+
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            var trosakPoDanuDict = smene
+                .Where(s => s.Datum.HasValue)
+                .GroupBy(s => s.Datum!.Value.Date)
+                .Select(g => new
+                {
+                    Datum = g.Key,
+                    Trosak = g.Sum(s => s.TrosakPoRadnomNalogu)
+                })
+                .OrderBy(x => x.Datum)
+                .ToDictionary(
+                    x => x.Datum.ToString("dd.MM"),
+                    x => (decimal)x.Trosak
+                );
+
+            TrosakPoRadnomDanu = ChartDataHelper.FromDictionary(trosakPoDanuDict, 7);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading trosak po danu");
+            HasErrorTrosakDanu = true;
+            TrosakPoRadnomDanu = ChartDataHelper.GetMockData("Datum", 7);
+        }
+        finally
+        {
+            IsLoadingTrosakDanu = false;
+            StateHasChanged();
+        }
+    }
+
+    // Chart 3: Broj Radnika po Danima (7 dana)
+    private async Task RefreshRadnici()
+    {
+        if (IsLoadingRadnici) return;
+
+        IsLoadingRadnici = true;
+        HasErrorRadnici = false;
+        StateHasChanged();
+
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-7),
+                DoDatum = DateTime.Now
+            };
+
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            var radniciPoDanimaDict = smene
+                .Where(s => s.Datum.HasValue)
+                .GroupBy(s => s.Datum!.Value.Date)
+                .Select(g => new
+                {
+                    Datum = g.Key,
+                    BrojRadnika = Math.Round(g.Sum(s => s.BrojRadnihSati) / 8m, 0, MidpointRounding.AwayFromZero)
+                })
+                .OrderBy(x => x.Datum)
+                .ToDictionary(
+                    x => x.Datum.ToString("dd.MM"),
+                    x => (decimal)x.BrojRadnika
+                );
+
+            BrojRadnikaPoDanima = ChartDataHelper.FromDictionary(radniciPoDanimaDict, 7);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading broj radnika");
+            HasErrorRadnici = true;
+            BrojRadnikaPoDanima = ChartDataHelper.GetMockData("Datum", 7);
+        }
+        finally
+        {
+            IsLoadingRadnici = false;
+            StateHasChanged();
+        }
+    }
+
+    // Chart 4: Troškovi po Smeni (14 smena)
+    private async Task RefreshSmene()
+    {
+        if (IsLoadingSmene) return;
+
+        IsLoadingSmene = true;
+        HasErrorSmene = false;
+        StateHasChanged();
+
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-30), // Uzmi dovoljno dana da imamo 14 smena
+                DoDatum = DateTime.Now
+            };
+
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            var troskoviPoSmeniDict = smene
+                .Where(s => !string.IsNullOrEmpty(s.BrojIzvestaja))
+                .GroupBy(s => s.BrojIzvestaja)
+                .Select(g => new
+                {
+                    BrojIzvestaja = g.Key,
+                    Troskovi = g.Sum(x => x.TrosakPoRadnomNalogu),
+                    SortKey = g.Key.Replace("SI-", "").Replace("/", "")
+                })
+                .OrderByDescending(x => x.SortKey)
+                .Take(14)
+                .ToDictionary(x => x.BrojIzvestaja, x => (decimal)x.Troskovi);
+
+            TroskoviPoSmeni = ChartDataHelper.FromDictionary(troskoviPoSmeniDict, 14);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading troskovi po smeni");
+            HasErrorSmene = true;
+            TroskoviPoSmeni = ChartDataHelper.GetMockData("Smena", 14);
+        }
+        finally
+        {
+            IsLoadingSmene = false;
+            StateHasChanged();
+        }
+    }
+
+    // Chart 5: Troškovi po RN (7 RN)
+    private async Task RefreshRN()
+    {
+        if (IsLoadingRN) return;
+
+        IsLoadingRN = true;
+        HasErrorRN = false;
+        StateHasChanged();
+
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-30), // Uzmi dovoljno dana
+                DoDatum = DateTime.Now,
+                DokumentStatus = 3 // Završeni
+            };
+
+            var radniNalozi = await PreradaService.UcitajRadniNalogIzvestaj(filter);
+
+            var troskoviPoRNDict = radniNalozi
+                .Where(rn => !string.IsNullOrEmpty(rn.RadniNalog))
+                .GroupBy(rn => rn.RadniNalog)
+                .Select(g => new
+                {
+                    RadniNalog = g.Key,
+                    Troskovi = g.Sum(rn => rn.TrosakPoRadnomNalogu),
+                    BrojNaloga = g.Key.Split('-').LastOrDefault() ?? "0000"
+                })
+                .OrderByDescending(x => x.BrojNaloga)
+                .Take(7)
+                .ToDictionary(x => x.RadniNalog, x => (decimal)x.Troskovi);
+
+            TroskoviPoRN = ChartDataHelper.FromDictionary(troskoviPoRNDict, 7);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading troskovi po RN");
+            HasErrorRN = true;
+            TroskoviPoRN = ChartDataHelper.GetMockData("RN", 7);
+        }
+        finally
+        {
+            IsLoadingRN = false;
+            StateHasChanged();
+        }
+    }
+}
