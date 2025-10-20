@@ -25,6 +25,35 @@ namespace FruitSysWeb.Components.Charts
         }
     }
 
+    /// <summary>
+    /// Predstavlja jednu seriju podataka za multi-series chart
+    /// </summary>
+    public class ChartSeriesData
+    {
+        public string Name { get; set; } = "";
+        public List<ChartDataPoint> Data { get; set; } = new();
+        public string? Color { get; set; }
+
+        // Dodatni podaci za summary prikaz
+        public decimal TotalKolicina { get; set; }
+        public decimal TotalVrednost { get; set; }
+
+        public ChartSeriesData() { }
+
+        public ChartSeriesData(string name, List<ChartDataPoint> data)
+        {
+            Name = name;
+            Data = data;
+        }
+
+        public ChartSeriesData(string name, List<ChartDataPoint> data, string color)
+        {
+            Name = name;
+            Data = data;
+            Color = color;
+        }
+    }
+
     public static class ChartDataHelper
     {
         /// <summary>
@@ -107,6 +136,73 @@ namespace FruitSysWeb.Components.Charts
             }
 
             return topItems;
+        }
+
+        /// <summary>
+        /// Određuje boju prema vrsti voća u nazivu
+        /// </summary>
+        public static string GetFruitColor(string label)
+        {
+            var labelLower = label.ToLower();
+
+            if (labelLower.Contains("malina")) return "#DC143C"; // Crimson - crvena
+            if (labelLower.Contains("kupina")) return "#000000"; // Crna
+
+            // Šljiva - uključuje sve sorte šljiva
+            if (labelLower.Contains("šljiva") || labelLower.Contains("sljiva") ||
+                labelLower.Contains("stenley") || labelLower.Contains("stanley") ||
+                labelLower.Contains("čačanka") || labelLower.Contains("cacanka") ||
+                labelLower.Contains("požegača") || labelLower.Contains("pozegaca") ||
+                labelLower.Contains("pžegača") || labelLower.Contains("pzegaca"))
+            {
+                return "#0000FF"; // Plava
+            }
+
+            if (labelLower.Contains("višnja") || labelLower.Contains("visnja")) return "#8B0000"; // DarkRed - bordo
+            if (labelLower.Contains("borovnica")) return "#FF6B6B"; // LightCoral - svetlo crvena
+            if (labelLower.Contains("kajsija")) return "#FF8C00"; // DarkOrange - narandžasta
+
+            return "#28a745"; // Default zelena
+        }
+
+        /// <summary>
+        /// Dodaje boje prema vrsti voća u nazivu
+        /// </summary>
+        public static List<ChartDataPoint> WithFruitColors(List<ChartDataPoint> data)
+        {
+            foreach (var item in data)
+            {
+                item.Color = GetFruitColor(item.Label);
+            }
+            return data;
+        }
+
+        /// <summary>
+        /// Mapira naziv artikla na glavnu vrstu voća (Malina, Kupina, Šljiva, itd.)
+        /// </summary>
+        public static string MapToFruitType(string artikalNaziv)
+        {
+            var nazivLower = artikalNaziv.ToLower();
+
+            if (nazivLower.Contains("malina")) return "Malina";
+            if (nazivLower.Contains("kupina")) return "Kupina";
+
+            // Šljiva - sve sorte
+            if (nazivLower.Contains("šljiva") || nazivLower.Contains("sljiva") ||
+                nazivLower.Contains("stenley") || nazivLower.Contains("stanley") ||
+                nazivLower.Contains("čačanka") || nazivLower.Contains("cacanka") ||
+                nazivLower.Contains("požegača") || nazivLower.Contains("pozegaca") ||
+                nazivLower.Contains("pžegača") || nazivLower.Contains("pzegaca"))
+            {
+                return "Šljiva";
+            }
+
+            if (nazivLower.Contains("višnja") || nazivLower.Contains("visnja")) return "Višnja";
+            if (nazivLower.Contains("borovnica")) return "Borovnica";
+            if (nazivLower.Contains("kajsija")) return "Kajsija";
+            if (nazivLower.Contains("jagoda")) return "Jagoda";
+
+            return "Ostalo";
         }
 
         /// <summary>

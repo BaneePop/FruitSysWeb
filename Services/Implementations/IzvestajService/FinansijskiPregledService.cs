@@ -2,6 +2,7 @@ using Dapper;
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Core;
 using FruitSysWeb.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService;
 
@@ -11,10 +12,13 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService;
 public class FinansijskiPregledService : IFinansijskiPregledService
 {
     private readonly DatabaseService _db;
+        private readonly ILogger<FinansijskiPregledService> _logger;
 
-    public FinansijskiPregledService(DatabaseService db)
+    public FinansijskiPregledService(DatabaseService db,
+            ILogger<FinansijskiPregledService> logger)
     {
         _db = db;
+            _logger = logger;
     }
 
     /// <summary>
@@ -39,14 +43,14 @@ public class FinansijskiPregledService : IFinansijskiPregledService
                 }
             }
 
-            Console.WriteLine($"Učitano {rezultat.Count} vrsta voća za roba na zalihama");
+            _logger.LogInformation($"Učitano {rezultat.Count} vrsta voća za roba na zalihama");
 
             return rezultat;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greška u UcitajRobuNaZalihama: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            _logger.LogError(ex, "Greška u UcitajRobuNaZalihama");
+            _logger.LogInformation($"Stack trace: {ex.StackTrace}");
             throw;
         }
     }
@@ -217,7 +221,7 @@ public class FinansijskiPregledService : IFinansijskiPregledService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greška u IzracunajLagerVrednostIzKalkulacije za {vrstaVoca}: {ex.Message}");
+            _logger.LogError(ex, "Greška u IzracunajLagerVrednostIzKalkulacije za {VrstaVoca}", vrstaVoca);
             return 0;
         }
     }
@@ -325,7 +329,7 @@ public class FinansijskiPregledService : IFinansijskiPregledService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greška u UcitajObracunOtkupa: {ex.Message}");
+            _logger.LogError(ex, "Greška u UcitajObracunOtkupa");
             throw;
         }
     }
@@ -421,7 +425,7 @@ public class FinansijskiPregledService : IFinansijskiPregledService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greška u UcitajObracunSvaRoba: {ex.Message}");
+            _logger.LogError(ex, "Greška u UcitajObracunSvaRoba");
             throw;
         }
     }
@@ -445,7 +449,7 @@ public class FinansijskiPregledService : IFinansijskiPregledService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greška u IzracunajProsecnuCenu: {ex.Message}");
+            _logger.LogError(ex, "Greška u IzracunajProsecnuCenu");
             return 0;
         }
     }

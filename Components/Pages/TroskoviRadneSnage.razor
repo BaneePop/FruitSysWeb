@@ -35,37 +35,22 @@
         </div>
     </div>
 
-    <!-- Row 1: Broj radnika po danima -->
+    <!-- Row 1: Kombinovani chart - Broj radnika i Troškovi po danima -->
     <div class="row mb-4">
         <div class="col-12 mb-3">
-            <ApexBarChart
-                Title="Broj Radnika po Danima (Poslednjih 30 Dana)"
-                Icon="bi bi-people"
-                SeriesName="Broj Radnika"
-                Unit="radnika"
-                Color="#20c997"
-                Data="@BrojRadnikaPoDanima"
-                IsLoading="@IsLoadingRadniciPoDanima"
-                HasError="@HasErrorRadniciPoDanima"
+            <ApexMultiLineChart
+                Title="Broj Radnika i Troškovi po Danima (Poslednjih 30 Dana)"
+                Icon="bi bi-graph-up"
+                Series1Name="Broj Radnika"
+                Series2Name="Troškovi"
+                Unit1="radnika"
+                Unit2="RSD"
+                Series1Data="@BrojRadnikaPoDanima"
+                Series2Data="@TrosakPoRadnomDanu"
+                IsLoading="@(IsLoadingRadniciPoDanima || IsLoadingTrosakPoDanu)"
+                HasError="@(HasErrorRadniciPoDanima || HasErrorTrosakPoDanu)"
                 ShowSummary="true"
-                OnRefresh="@RefreshRadniciPoDanima" />
-        </div>
-    </div>
-
-    <!-- Row 2: Trošak po radnom danu -->
-    <div class="row mb-4">
-        <div class="col-12 mb-3">
-            <ApexBarChart
-                Title="Trošak po Radnom Danu (Poslednjih 30 Dana)"
-                Icon="bi bi-cash-coin"
-                SeriesName="Trošak"
-                Unit="RSD"
-                Color="#ffc107"
-                Data="@TrosakPoRadnomDanu"
-                IsLoading="@IsLoadingTrosakPoDanu"
-                HasError="@HasErrorTrosakPoDanu"
-                ShowSummary="true"
-                OnRefresh="@RefreshTrosakPoRadnomDanu" />
+                OnRefresh="@RefreshKombinovanePodatke" />
         </div>
     </div>
 
@@ -95,7 +80,6 @@
                         Icon=""
                         SeriesName="Radni Sati"
                         Unit="h"
-                        Color="#3e6b1f"
                         Data="@RadniSatiPoRN"
                         IsLoading="@IsLoadingRadniSatiRN"
                         HasError="@HasErrorRadniSatiRN"
@@ -129,7 +113,6 @@
                         Icon=""
                         SeriesName="Broj Radnika"
                         Unit="radnika"
-                        Color="#20c997"
                         Data="@BrojRadnikaPoRN"
                         IsLoading="@IsLoadingRadnikaPoRN"
                         HasError="@HasErrorRadnikaPoRN"
@@ -148,7 +131,6 @@
                 Icon="bi bi-box-seam"
                 SeriesName="Troškovi"
                 Unit="RSD"
-                Color="#28a745"
                 Data="@TroskoviPoGotovomProizvodu"
                 IsLoading="@IsLoadingGotovProizvod"
                 HasError="@HasErrorGotovProizvod"
@@ -246,6 +228,14 @@
         _ = Task.WhenAll(
             RefreshRadniSatiPoRN(),
             RefreshBrojRadnikaPoRN()
+        );
+    }
+
+    private async Task RefreshKombinovanePodatke()
+    {
+        await Task.WhenAll(
+            RefreshRadniciPoDanima(),
+            RefreshTrosakPoRadnomDanu()
         );
     }
 

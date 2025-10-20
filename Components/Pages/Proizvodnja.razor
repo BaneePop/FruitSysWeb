@@ -318,10 +318,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var (startDate, endDate) = SystemConstants.GetDefaultDateRange();
-        filterRequest.OdDatum = startDate;
-        filterRequest.DoDatum = endDate;
-        
+        // OPTIMIZACIJA: Učitaj samo zadnjih 7 dana umesto celog perioda od juna
+        filterRequest.OdDatum = DateTime.Now.AddDays(-7);
+        filterRequest.DoDatum = DateTime.Now;
+
         await UcitajListeZaFiltriranje();
         await UcitajPodatke();
     }

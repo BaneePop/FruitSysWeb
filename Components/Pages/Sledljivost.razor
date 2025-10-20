@@ -1,0 +1,1373 @@
+@page "/sledljivost"
+@using FruitSysWeb.Models.Sledljivost
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Constants
+
+@inject ISledljivostService SledljivostService
+@inject ITypeMappingService TypeMapping
+@inject IExportService ExportService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Sledljivost Robe - FruitSysWeb</PageTitle>
+
+<main class="container-fluid mt-4" id="main-content" role="main">
+    <!-- Header -->
+    <header class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="bi bi-diagram-3 me-2" aria-hidden="true"></i>Sledljivost Robe
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Upstream i Downstream sledljivost dokumenata
+                    </p>
+                </div>
+                @if (sledljivostData != null)
+                {
+                    <div class="btn-group" role="group" aria-label="Export opcije">
+                        <button class="btn btn-success" @onclick="ExportToExcel" aria-label="Exportuj u Excel format">
+                            <i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i>Excel
+                        </button>
+                        <button class="btn btn-danger" @onclick="ExportToPdf" aria-label="Exportuj u PDF format">
+                            <i class="bi bi-file-earmark-pdf me-2" aria-hidden="true"></i>PDF
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Section -->
+    <div class="row mb-4">
+        <div class="col-md-8 col-lg-6 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <!-- Tip pretrage -->
+                    <label class="form-label fw-bold mb-3">
+                        <i class="bi bi-funnel me-2" aria-hidden="true"></i>Tip pretrage
+                    </label>
+                    <div class="btn-group w-100 mb-3" role="group" aria-label="Tip pretrage">
+                        <input type="radio" class="btn-check" name="tipPretrage" id="radniNalogRadio" value="RadniNalog"
+                               checked="@(tipPretrage == "RadniNalog")" @onchange='() => tipPretrage = "RadniNalog"'>
+                        <label class="btn btn-outline-primary" for="radniNalogRadio">
+                            <i class="bi bi-file-earmark-text me-2" aria-hidden="true"></i>
+                            <strong>UPSTREAM</strong> - Radni Nalog
+                            <br><small class="text-muted">Nabavka → Proizvodnja → Prodaja</small>
+                        </label>
+
+                        <input type="radio" class="btn-check" name="tipPretrage" id="paletniListRadio" value="PaletniList"
+                               checked="@(tipPretrage == "PaletniList")" @onchange='() => tipPretrage = "PaletniList"'>
+                        <label class="btn btn-outline-success" for="paletniListRadio">
+                            <i class="bi bi-box-seam me-2" aria-hidden="true"></i>
+                            <strong>DOWNSTREAM</strong> - Paletni List
+                            <br><small class="text-muted">Gotov proizvod → Sirovina</small>
+                        </label>
+                    </div>
+
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-search me-2" aria-hidden="true"></i>Unesite šifru dokumenta
+                    </label>
+                    <div class="input-group input-group-lg">
+                        <input type="text"
+                               class="form-control"
+                               placeholder="@(tipPretrage == "RadniNalog" ? "RN-25-0192" : "P-251011-002")"
+                               @bind="searchSifra"
+                               @bind:event="oninput"
+                               @onkeydown="OnSearchKeyDown"
+                               list="sifre-list" />
+                        <button class="btn btn-primary" @onclick="PretraziSledljivost" disabled="@ucitavanje">
+                            @if (ucitavanje)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-search me-2" aria-hidden="true"></i>
+                            }
+                            Pretraži
+                        </button>
+                    </div>
+
+                    <!-- Autocomplete Datalist -->
+                    @if (autocompleteRezultati?.Any() == true)
+                    {
+                        <datalist id="sifre-list">
+                            @foreach (var rezultat in autocompleteRezultati)
+                            {
+                                <option value="@rezultat.Sifra">@rezultat.Opis</option>
+                            }
+                        </datalist>
+                    }
+
+                    <small class="text-muted mt-2 d-block">
+                        <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                        Primer: RN-25-0192 (Radni Nalog) ili P-251011-002 (Paletni List)
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    @if (ucitavanje)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Učitavanje...</span>
+            </div>
+            <p class="mt-3 text-muted">Učitavam sledljivost...</p>
+        </div>
+    }
+
+    <!-- Error Message -->
+    @if (!string.IsNullOrEmpty(errorPoruka))
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
+            @errorPoruka
+            <button type="button" class="btn-close" @onclick="() => errorPoruka = null"></button>
+        </div>
+    }
+
+    <!-- Results -->
+    @if (sledljivostData != null && !ucitavanje)
+    {
+        <div class="row">
+            <div class="col-12">
+                <!-- Header Info Card -->
+                <div class="card shadow-sm mb-4 border-primary">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h4 class="mb-2">
+                                    @if (sledljivostData.TipDokumenta == "RadniNalog")
+                                    {
+                                        <i class="bi bi-clipboard-check text-primary me-2" aria-hidden="true"></i>
+                                        <span>Radni Nalog: </span>
+                                        <span class="badge @GetStatusBadgeClass(sledljivostData.RadniNalog?.DokumentStatus ?? 0)">
+                                            @sledljivostData.RadniNalog?.Sifra
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-box-seam text-success me-2" aria-hidden="true"></i>
+                                        <span>Paletni List: </span>
+                                        <strong>@sledljivostData.Sifra</strong>
+                                    }
+                                </h4>
+                                @if (sledljivostData.RadniNalog != null)
+                                {
+                                    <div class="text-muted">
+                                        <i class="bi bi-person me-1" aria-hidden="true"></i>
+                                        Kupac: <strong>@sledljivostData.RadniNalog.KomitentNaziv</strong>
+                                        @if (sledljivostData.RadniNalog.Kolicina.HasValue)
+                                        {
+                                            <span class="ms-3">
+                                                <i class="bi bi-box me-1" aria-hidden="true"></i>
+                                                @TypeMapping.FormatDecimal(sledljivostData.RadniNalog.Kolicina.Value) kg
+                                            </span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(sledljivostData.RadniNalog.LotNaloga))
+                                        {
+                                            <span class="ms-3">
+                                                <i class="bi bi-tag me-1" aria-hidden="true"></i>
+                                                Lot: @sledljivostData.RadniNalog.LotNaloga
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div class="col-md-4 text-end">
+                                @if (sledljivostData.RadniNalog?.Datum != null)
+                                {
+                                    <div class="text-muted">
+                                        <i class="bi bi-calendar3 me-1" aria-hidden="true"></i>
+                                        @TypeMapping.FormatDate(sledljivostData.RadniNalog.Datum.Value)
+                                    </div>
+                                }
+                                <div class="mt-2">
+                                    <span class="badge bg-info">
+                                        @sledljivostData.RadniNalog?.StatusNaziv
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sledljivost Diagram -->
+                <div class="row">
+                    <!-- UPSTREAM (Leva strana) -->
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-arrow-left-circle me-2" aria-hidden="true"></i>
+                                    @if (tipPretrage == "PaletniList")
+                                    {
+                                        <text>LEVA - Nabavka sirovine</text>
+                                    }
+                                    else
+                                    {
+                                        <text>UPSTREAM - Nabavka</text>
+                                    }
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Prijemnice - za oba režima -->
+                                @if (tipPretrage != "PaletniList")
+                                {
+                                    <!-- UPSTREAM režim (RN-) - Prijemnice -->
+                                @if (sledljivostData.Prijemnice?.Any() == true)
+                                {
+                                    <div class="mb-4">
+                                        <h6 class="text-muted mb-3">
+                                            <i class="bi bi-truck me-2" aria-hidden="true"></i>Prijemnice
+                                            <span class="badge bg-secondary ms-2">@sledljivostData.Prijemnice.Count</span>
+                                        </h6>
+                                        @foreach (var prijemnica in sledljivostData.Prijemnice)
+                                        {
+                                            var prijemnicaKey = $"prijemnica_{prijemnica.ID}";
+                                            var isExpanded = IsSectionExpanded(prijemnicaKey);
+                                            
+                                            <div class="card mb-2 border-start border-danger border-3 expandable-card">
+                                                <div class="card-body py-2 cursor-pointer" @onclick="() => ToggleSection(prijemnicaKey)">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div class="flex-grow-1">
+                                                            <i class="bi @(isExpanded ? "bi-chevron-down" : "bi-chevron-right") me-2 text-primary"></i>
+                                                            <strong>@prijemnica.Sifra</strong>
+                                                            @if (prijemnica.Datum.HasValue)
+                                                            {
+                                                                <span class="text-muted ms-2">
+                                                                    (@TypeMapping.FormatDate(prijemnica.Datum.Value))
+                                                                </span>
+                                                            }
+                                                            <br />
+                                                            <small class="text-muted ms-4">
+                                                                <i class="bi bi-person me-1" aria-hidden="true"></i>
+                                                                Dobavljač: @prijemnica.KomitentNaziv
+                                                            </small>
+                                                            @if (!string.IsNullOrEmpty(prijemnica.Otpremnica))
+                                                            {
+                                                                <br />
+                                                                <small class="text-muted ms-4">
+                                                                    <i class="bi bi-file-text me-1" aria-hidden="true"></i>
+                                                                    Otpremnica: @prijemnica.Otpremnica
+                                                                </small>
+                                                            }
+                                                        </div>
+                                                        <span class="badge @GetStatusBadgeClass(prijemnica.DokumentStatus ?? 0)">
+                                                            @prijemnica.StatusNaziv
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Expandable Paletni Listovi za ovu prijemnicu -->
+                                                @if (isExpanded)
+                                                {
+                                                    <div class="card-footer bg-light border-top expandable-content">
+                                                        @{
+                                                            var paleteZaPrijemnicu = sledljivostData.PaletniListoviUlaz?
+                                                                .Where(pl => pl.PrijemnicaStavkaID.HasValue &&
+                                                                            !string.IsNullOrEmpty(pl.PrijemnicaSifra) &&
+                                                                            pl.PrijemnicaSifra == prijemnica.Sifra)
+                                                                .ToList() ?? new List<PaletniListDetalji>();
+                                                        }
+                                                        
+                                                        @if (paleteZaPrijemnicu.Any())
+                                                        {
+                                                            <small class="text-muted d-block mb-2">
+                                                                <strong>Paletni Listovi (@paleteZaPrijemnicu.Count):</strong>
+                                                            </small>
+                                                            @foreach (var pl in paleteZaPrijemnicu)
+                                                            {
+                                                                <div class="paletni-list-item p-2 mb-1 bg-white rounded border"
+                                                                     title="@GetPaletniListTooltip(pl)"
+                                                                     @onmouseover="() => ShowTooltip(pl)"
+                                                                     @onmouseout="HideTooltip">
+                                                                    <small>
+                                                                        <i class="bi bi-box-seam text-warning me-1" aria-hidden="true"></i>
+                                                                        <strong>@pl.Sifra</strong>
+                                                                        <span class="badge bg-secondary ms-2" style="font-size: 0.7rem;">@pl.TipPaletnogLista</span>
+                                                                        <br />
+                                                                        <span class="text-muted ms-3">
+                                                                            @pl.ArtikalNaziv
+                                                                            @if (pl.Tezina.HasValue)
+                                                                            {
+                                                                                <span> - @TypeMapping.FormatDecimal(pl.Tezina.Value) kg</span>
+                                                                            }
+                                                                        </span>
+                                                                        @if (!string.IsNullOrEmpty(pl.LotDobavljaca))
+                                                                        {
+                                                                            <br />
+                                                                            <span class="text-muted ms-3">
+                                                                                <i class="bi bi-tag me-1" aria-hidden="true"></i>
+                                                                                Lot: @pl.LotDobavljaca
+                                                                            </span>
+                                                                        }
+                                                                        @if (pl.PovezaniPaletniListoviIDs?.Any() == true)
+                                                                        {
+                                                                            <br />
+                                                                            <span class="text-info ms-3" style="font-size: 0.75rem;">
+                                                                                <i class="bi bi-link-45deg me-1" aria-hidden="true"></i>
+                                                                                Povezano: @pl.PovezaniPaletniListoviIDs.Count
+                                                                            </span>
+                                                                        }
+                                                                    </small>
+                                                                </div>
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            <small class="text-muted">Nema povezanih paletnih listova</small>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                <!-- Evidencije Rada -->
+                                @if (sledljivostData.EvidencijeRada?.Any() == true)
+                                {
+                                    <div class="mb-4">
+                                        <h6 class="text-muted mb-3">
+                                            <i class="bi bi-clipboard-data me-2" aria-hidden="true"></i>Evidencije Rada
+                                            <span class="badge bg-secondary ms-2">@sledljivostData.EvidencijeRada.Count</span>
+                                        </h6>
+                                        @foreach (var er in sledljivostData.EvidencijeRada)
+                                        {
+                                            var evidencijaKey = $"evidencija_{er.ID}";
+                                            var isExpanded = IsSectionExpanded(evidencijaKey);
+                                            
+                                            <div class="card mb-2 border-start border-primary border-3 expandable-card">
+                                                <div class="card-body py-2 cursor-pointer" @onclick="() => ToggleSection(evidencijaKey)">
+                                                    <div>
+                                                        <i class="bi @(isExpanded ? "bi-chevron-down" : "bi-chevron-right") me-2 text-primary"></i>
+                                                        <strong>@er.Sifra</strong>
+                                                        @if (er.Datum.HasValue)
+                                                        {
+                                                            <span class="text-muted ms-2">
+                                                                (@TypeMapping.FormatDate(er.Datum.Value))
+                                                            </span>
+                                                        }
+                                                        <span class="badge @GetSmenaBadgeClass(er.Smena ?? 0) ms-2">
+                                                            Evidencija
+                                                        </span>
+                                                        <br />
+                                                        @if (!string.IsNullOrEmpty(er.SmenskiIzvestajSifra))
+                                                        {
+                                                            <small class="text-muted ms-4">
+                                                                <i class="bi bi-file-text me-1" aria-hidden="true"></i>
+                                                                Smenski Izveštaj: @er.SmenskiIzvestajSifra
+                                                            </small>
+                                                        }
+                                                        @if (er.BrojRadnihSati.HasValue)
+                                                        {
+                                                            <br />
+                                                            <small class="text-muted ms-4">
+                                                                <i class="bi bi-clock me-1" aria-hidden="true"></i>
+                                                                @TypeMapping.FormatDecimal(er.BrojRadnihSati.Value) sati
+                                                            </small>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Expandable Paletni Listovi za ovu evidenciju -->
+                                                @if (isExpanded)
+                                                {
+                                                    <div class="card-footer bg-light border-top expandable-content">
+                                                        @{
+                                                            // Filtriraj po UtroseniPaletniListoviIDs listi (dozvoljava duplikate)
+                                                            var paleteZaEvidenciju = sledljivostData.PaletniListoviUlaz?
+                                                                .Where(pl => er.UtroseniPaletniListoviIDs.Contains(pl.ID))
+                                                                .ToList() ?? new List<PaletniListDetalji>();
+                                                        }
+                                                        
+                                                        @if (paleteZaEvidenciju.Any())
+                                                        {
+                                                            <small class="text-muted d-block mb-2">
+                                                                <strong>Utrošeni Paletni Listovi (@paleteZaEvidenciju.Count):</strong>
+                                                            </small>
+                                                            @foreach (var pl in paleteZaEvidenciju)
+                                                            {
+                                                                <div class="paletni-list-item p-2 mb-1 bg-white rounded border"
+                                                                     title="@GetPaletniListTooltip(pl)"
+                                                                     @onmouseover="() => ShowTooltip(pl)"
+                                                                     @onmouseout="HideTooltip">
+                                                                    <small>
+                                                                        <i class="bi bi-box-seam text-warning me-1" aria-hidden="true"></i>
+                                                                        <strong>@pl.Sifra</strong>
+                                                                        <span class="badge bg-secondary ms-2" style="font-size: 0.7rem;">@pl.TipPaletnogLista</span>
+                                                                        <br />
+                                                                        <span class="text-muted ms-3">
+                                                                            @pl.ArtikalNaziv
+                                                                            @if (pl.Tezina.HasValue)
+                                                                            {
+                                                                                <span> - @TypeMapping.FormatDecimal(pl.Tezina.Value) kg</span>
+                                                                            }
+                                                                        </span>
+                                                                        @if (pl.PovezaniPaletniListoviIDs?.Any() == true)
+                                                                        {
+                                                                            <br />
+                                                                            <span class="text-info ms-3" style="font-size: 0.75rem;">
+                                                                                <i class="bi bi-link-45deg me-1" aria-hidden="true"></i>
+                                                                                Povezano: @pl.PovezaniPaletniListoviIDs.Count
+                                                                            </span>
+                                                                        }
+                                                                    </small>
+                                                                </div>
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            <small class="text-muted">Nema povezanih paletnih listova</small>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                }
+                                else
+                                {
+                                    <!-- DOWNSTREAM režim (P-) - Prijemnice i Evidencije Rada -->
+                                    @if (sledljivostData.Prijemnice?.Any() == true)
+                                    {
+                                        <div class="mb-4">
+                                            <h6 class="text-muted mb-3">
+                                                <i class="bi bi-truck me-2" aria-hidden="true"></i>Prijemnice sirovine
+                                                <span class="badge bg-secondary ms-2">@sledljivostData.Prijemnice.Count</span>
+                                            </h6>
+                                            @foreach (var prijemnica in sledljivostData.Prijemnice)
+                                            {
+                                                var prijemnicaKeyLeft = $"prijemnica_left_{prijemnica.ID}";
+                                                var isExpandedLeft = IsSectionExpanded(prijemnicaKeyLeft);
+
+                                                <div class="card mb-2 border-start border-danger border-3 expandable-card">
+                                                    <div class="card-body py-2 cursor-pointer" @onclick="() => ToggleSection(prijemnicaKeyLeft)">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div class="flex-grow-1">
+                                                                <i class="bi @(isExpandedLeft ? "bi-chevron-down" : "bi-chevron-right") me-2 text-primary"></i>
+                                                                <strong>@prijemnica.Sifra</strong>
+                                                                @if (prijemnica.Datum.HasValue)
+                                                                {
+                                                                    <span class="text-muted ms-2">
+                                                                        (@TypeMapping.FormatDate(prijemnica.Datum.Value))
+                                                                    </span>
+                                                                }
+                                                                <br />
+                                                                <small class="text-muted ms-4">
+                                                                    <i class="bi bi-person me-1" aria-hidden="true"></i>
+                                                                    Dobavljač: @prijemnica.KomitentNaziv
+                                                                </small>
+                                                            </div>
+                                                            <span class="badge @GetStatusBadgeClass(prijemnica.DokumentStatus ?? 0)">
+                                                                @prijemnica.StatusNaziv
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    @if (isExpandedLeft)
+                                                    {
+                                                        <div class="card-footer bg-light border-top expandable-content">
+                                                            @{
+                                                                var paleteZaPrijemnicu = sledljivostData.PaletniListoviUlaz?
+                                                                    .Where(pl => pl.PrijemnicaStavkaID.HasValue &&
+                                                                                !string.IsNullOrEmpty(pl.PrijemnicaSifra) &&
+                                                                                pl.PrijemnicaSifra == prijemnica.Sifra)
+                                                                    .ToList() ?? new List<PaletniListDetalji>();
+                                                            }
+
+                                                            @if (paleteZaPrijemnicu.Any())
+                                                            {
+                                                                <small class="text-muted d-block mb-2">
+                                                                    <strong>Paletni Listovi (@paleteZaPrijemnicu.Count):</strong>
+                                                                </small>
+                                                                @foreach (var pl in paleteZaPrijemnicu)
+                                                                {
+                                                                    <div class="paletni-list-item p-2 mb-1 bg-white rounded border"
+                                                                         title="@GetPaletniListTooltip(pl)">
+                                                                        <small>
+                                                                            <i class="bi bi-box-seam text-warning me-1" aria-hidden="true"></i>
+                                                                            <strong>@pl.Sifra</strong>
+                                                                            <span class="badge bg-secondary ms-2" style="font-size: 0.7rem;">@pl.TipPaletnogLista</span>
+                                                                            <br />
+                                                                            <span class="text-muted ms-3">
+                                                                                @pl.ArtikalNaziv
+                                                                                @if (pl.Tezina.HasValue)
+                                                                                {
+                                                                                    <span> - @TypeMapping.FormatDecimal(pl.Tezina.Value) kg</span>
+                                                                                }
+                                                                            </span>
+                                                                        </small>
+                                                                    </div>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                <small class="text-muted">Nema povezanih paletnih listova</small>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+
+                                    <!-- Evidencije Rada -->
+                                    @if (sledljivostData.EvidencijeRada?.Any() == true)
+                                    {
+                                        <div class="mb-4">
+                                            <h6 class="text-muted mb-3">
+                                                <i class="bi bi-clipboard-data me-2" aria-hidden="true"></i>Evidencije Rada
+                                                <span class="badge bg-secondary ms-2">@sledljivostData.EvidencijeRada.Count</span>
+                                            </h6>
+                                            @foreach (var er in sledljivostData.EvidencijeRada)
+                                            {
+                                                var evidencijaKeyLeft = $"evidencija_left_{er.ID}";
+                                                var isExpandedLeft = IsSectionExpanded(evidencijaKeyLeft);
+
+                                                <div class="card mb-2 border-start border-primary border-3 expandable-card">
+                                                    <div class="card-body py-2 cursor-pointer" @onclick="() => ToggleSection(evidencijaKeyLeft)">
+                                                        <div>
+                                                            <i class="bi @(isExpandedLeft ? "bi-chevron-down" : "bi-chevron-right") me-2 text-primary"></i>
+                                                            <strong>@er.Sifra</strong>
+                                                            @if (er.Datum.HasValue)
+                                                            {
+                                                                <span class="text-muted ms-2">
+                                                                    (@TypeMapping.FormatDate(er.Datum.Value))
+                                                                </span>
+                                                            }
+                                                            <span class="badge @GetSmenaBadgeClass(er.Smena ?? 0) ms-2">
+                                                                Evidencija
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    @if (isExpandedLeft)
+                                                    {
+                                                        <div class="card-footer bg-light border-top expandable-content">
+                                                            @{
+                                                                var paleteZaEvidenciju = sledljivostData.PaletniListoviUlaz?
+                                                                    .Where(pl => er.UtroseniPaletniListoviIDs.Contains(pl.ID))
+                                                                    .ToList() ?? new List<PaletniListDetalji>();
+                                                            }
+
+                                                            @if (paleteZaEvidenciju.Any())
+                                                            {
+                                                                <small class="text-muted d-block mb-2">
+                                                                    <strong>Utrošeni Paletni Listovi (@paleteZaEvidenciju.Count):</strong>
+                                                                </small>
+                                                                @foreach (var pl in paleteZaEvidenciju)
+                                                                {
+                                                                    <div class="paletni-list-item p-2 mb-1 bg-white rounded border"
+                                                                         title="@GetPaletniListTooltip(pl)">
+                                                                        <small>
+                                                                            <i class="bi bi-box-seam text-warning me-1" aria-hidden="true"></i>
+                                                                            <strong>@pl.Sifra</strong>
+                                                                            <span class="badge bg-secondary ms-2" style="font-size: 0.7rem;">@pl.TipPaletnogLista</span>
+                                                                            <br />
+                                                                            <span class="text-muted ms-3">
+                                                                                @pl.ArtikalNaziv
+                                                                                @if (pl.Tezina.HasValue)
+                                                                                {
+                                                                                    <span> - @TypeMapping.FormatDecimal(pl.Tezina.Value) kg</span>
+                                                                                }
+                                                                            </span>
+                                                                        </small>
+                                                                    </div>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                <small class="text-muted">Nema povezanih paletnih listova</small>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                }
+
+                                <!-- Empty state -->
+                                @if (tipPretrage != "PaletniList")
+                                {
+                                    @if (sledljivostData.Prijemnice?.Any() != true &&
+                                         sledljivostData.EvidencijeRada?.Any() != true)
+                                    {
+                                        <div class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox" aria-hidden="true" style="font-size: 3rem;"></i>
+                                            <p class="mt-2">Nema upstream podataka</p>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    @if (sledljivostData.Prijemnice?.Any() != true &&
+                                         sledljivostData.EvidencijeRada?.Any() != true)
+                                    {
+                                        <div class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox" aria-hidden="true" style="font-size: 3rem;"></i>
+                                            <p class="mt-2">Nema podataka o nabavci</p>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DOWNSTREAM (Desna strana) -->
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-arrow-right-circle me-2" aria-hidden="true"></i>
+                                    @if (tipPretrage == "PaletniList")
+                                    {
+                                        <text>DESNA - Radni Nalog i Prodaja</text>
+                                    }
+                                    else
+                                    {
+                                        <text>DOWNSTREAM - Prodaja</text>
+                                    }
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- U DOWNSTREAM režimu (P-), prikaži Radni Nalog + Otpremnice -->
+                                @if (tipPretrage == "PaletniList")
+                                {
+                                    <!-- Radni Nalog -->
+                                    @if (sledljivostData.RadniNalog != null)
+                                    {
+                                        <div class="mb-4">
+                                            <h6 class="text-muted mb-3">
+                                                <i class="bi bi-clipboard-check me-2" aria-hidden="true"></i>Radni Nalog
+                                            </h6>
+                                            <div class="card mb-2 border-start border-primary border-3">
+                                                <div class="card-body py-2">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div class="flex-grow-1">
+                                                            <strong>@sledljivostData.RadniNalog.Sifra</strong>
+                                                            @if (sledljivostData.RadniNalog.Datum.HasValue)
+                                                            {
+                                                                <span class="text-muted ms-2">
+                                                                    (@TypeMapping.FormatDate(sledljivostData.RadniNalog.Datum.Value))
+                                                                </span>
+                                                            }
+                                                            <br />
+                                                            <small class="text-muted ms-4">
+                                                                <i class="bi bi-person me-1" aria-hidden="true"></i>
+                                                                Kupac: @sledljivostData.RadniNalog.KomitentNaziv
+                                                            </small>
+                                                            @if (sledljivostData.RadniNalog.Kolicina.HasValue)
+                                                            {
+                                                                <br />
+                                                                <small class="text-muted ms-4">
+                                                                    <i class="bi bi-box me-1" aria-hidden="true"></i>
+                                                                    @TypeMapping.FormatDecimal(sledljivostData.RadniNalog.Kolicina.Value) kg
+                                                                </small>
+                                                            }
+                                                        </div>
+                                                        <span class="badge @GetStatusBadgeClass(sledljivostData.RadniNalog.DokumentStatus ?? 0)">
+                                                            @sledljivostData.RadniNalog.StatusNaziv
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    <!-- Otpremnice sa paletnim listovima -->
+                                    @if (sledljivostData.Otpremnice?.Any() == true)
+                                    {
+                                        <div class="mb-4">
+                                            <h6 class="text-muted mb-3">
+                                                <i class="bi bi-truck me-2" aria-hidden="true"></i>Otpremnice
+                                                <span class="badge bg-secondary ms-2">@sledljivostData.Otpremnice.Count</span>
+                                            </h6>
+                                            @foreach (var otpremnica in sledljivostData.Otpremnice)
+                                            {
+                                                var otpremnicaKeyDown = $"otpremnica_down_{otpremnica.ID}";
+                                                var isExpandedDown = IsSectionExpanded(otpremnicaKeyDown);
+
+                                                <div class="card mb-2 border-start border-success border-3 expandable-card">
+                                                    <div class="card-body py-2 cursor-pointer" @onclick="() => ToggleSection(otpremnicaKeyDown)">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div class="flex-grow-1">
+                                                                <i class="bi @(isExpandedDown ? "bi-chevron-down" : "bi-chevron-right") me-2 text-success"></i>
+                                                                <strong>@otpremnica.Sifra</strong>
+                                                                @if (otpremnica.Datum.HasValue)
+                                                                {
+                                                                    <span class="text-muted ms-2">
+                                                                        (@TypeMapping.FormatDate(otpremnica.Datum.Value))
+                                                                    </span>
+                                                                }
+                                                                <br />
+                                                                <small class="text-muted ms-4">
+                                                                    <i class="bi bi-person me-1" aria-hidden="true"></i>
+                                                                    Kupac: @otpremnica.KomitentNaziv
+                                                                </small>
+                                                                @if (sledljivostData.RadniNalog != null)
+                                                                {
+                                                                    <br />
+                                                                    <small class="text-muted ms-4">
+                                                                        <i class="bi bi-clipboard-check me-1" aria-hidden="true"></i>
+                                                                        Radni Nalog: @sledljivostData.RadniNalog.Sifra
+                                                                    </small>
+                                                                }
+                                                            </div>
+                                                            <span class="badge @GetStatusBadgeClass(otpremnica.DokumentStatus ?? 0)">
+                                                                @otpremnica.StatusNaziv
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Expandable Paletni Listovi za ovu otpremnicu -->
+                                                    @if (isExpandedDown)
+                                                    {
+                                                        <div class="card-footer bg-light border-top expandable-content">
+                                                            @{
+                                                                // Glavni paletni list (P-) koji je prodan
+                                                                var paleteZaOtpremnicu = sledljivostData.PaletniListoviIzlaz?
+                                                                    .Where(pl => !string.IsNullOrEmpty(pl.Sifra) &&
+                                                                                pl.Sifra.StartsWith("P-", StringComparison.OrdinalIgnoreCase))
+                                                                    .ToList() ?? new List<PaletniListDetalji>();
+                                                            }
+
+                                                            @if (paleteZaOtpremnicu.Any())
+                                                            {
+                                                                <small class="text-muted d-block mb-2">
+                                                                    <strong>Paletni Listovi (@paleteZaOtpremnicu.Count):</strong>
+                                                                </small>
+                                                                @foreach (var pl in paleteZaOtpremnicu)
+                                                                {
+                                                                    <div class="paletni-list-item p-2 mb-1 bg-white rounded border"
+                                                                         title="@GetPaletniListTooltip(pl)">
+                                                                        <small>
+                                                                            <i class="bi bi-box-seam text-success me-1" aria-hidden="true"></i>
+                                                                            <strong>@pl.Sifra</strong>
+                                                                            <span class="badge bg-success ms-2" style="font-size: 0.7rem;">@pl.TipPaletnogLista</span>
+                                                                            <br />
+                                                                            <span class="text-muted ms-3">
+                                                                                @pl.ArtikalNaziv
+                                                                                @if (pl.Tezina.HasValue)
+                                                                                {
+                                                                                    <span> - @TypeMapping.FormatDecimal(pl.Tezina.Value) kg</span>
+                                                                                }
+                                                                            </span>
+                                                                        </small>
+                                                                    </div>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                <small class="text-muted">Nema povezanih paletnih listova</small>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <!-- UPSTREAM režim (RN-) - Otpremnice -->
+                                    @if (sledljivostData.Otpremnice?.Any() == true)
+                                    {
+                                        <div class="mb-4">
+                                            <h6 class="text-muted mb-3">
+                                                <i class="bi bi-truck me-2" aria-hidden="true"></i>Otpremnice
+                                                <span class="badge bg-secondary ms-2">@sledljivostData.Otpremnice.Count</span>
+                                            </h6>
+                                            @foreach (var otpremnica in sledljivostData.Otpremnice)
+                                        {
+                                            var otpremnicaKey = $"otpremnica_{otpremnica.ID}";
+                                            var isExpanded = IsSectionExpanded(otpremnicaKey);
+                                            
+                                            <div class="card mb-2 border-start border-success border-3 expandable-card">
+                                                <div class="card-body py-2 cursor-pointer" @onclick="() => ToggleSection(otpremnicaKey)">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div class="flex-grow-1">
+                                                            <i class="bi @(isExpanded ? "bi-chevron-down" : "bi-chevron-right") me-2 text-success"></i>
+                                                            <strong>@otpremnica.Sifra</strong>
+                                                            @if (otpremnica.Datum.HasValue)
+                                                            {
+                                                                <span class="text-muted ms-2">
+                                                                    (@TypeMapping.FormatDate(otpremnica.Datum.Value))
+                                                                </span>
+                                                            }
+                                                            <br />
+                                                            <small class="text-muted ms-4">
+                                                                <i class="bi bi-person me-1" aria-hidden="true"></i>
+                                                                Kupac: @otpremnica.KomitentNaziv
+                                                            </small>
+                                                            @if (!string.IsNullOrEmpty(otpremnica.Vozilo))
+                                                            {
+                                                                <br />
+                                                                <small class="text-muted ms-4">
+                                                                    <i class="bi bi-truck me-1" aria-hidden="true"></i>
+                                                                    Vozilo: @otpremnica.Vozilo
+                                                                </small>
+                                                            }
+                                                        </div>
+                                                        <span class="badge @GetStatusBadgeClass(otpremnica.DokumentStatus ?? 0)">
+                                                            @otpremnica.StatusNaziv
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Expandable Paletni Listovi za ovu otpremnicu -->
+                                                @if (isExpanded)
+                                                {
+                                                    <div class="card-footer bg-light border-top expandable-content">
+                                                        @{
+                                                            // Prvo pokušaj naći paletne listove povezane preko OtpremnicaStavka
+                                                            var paleteZaOtpremnicu = sledljivostData.PaletniListoviIzlaz?
+                                                                .Where(pl => pl.OtpremnicaStavkaID.HasValue &&
+                                                                            !string.IsNullOrEmpty(pl.OtpremnicaSifra) &&
+                                                                            pl.OtpremnicaSifra == otpremnica.Sifra &&
+                                                                            pl.ArtikalMagacinID == 6) // Samo Gotova roba
+                                                                .ToList() ?? new List<PaletniListDetalji>();
+
+                                                            // Ako nema povezanih preko stavki, prikaži SVE gotove proizvode (MagacinID = 6)
+                                                            if (!paleteZaOtpremnicu.Any())
+                                                            {
+                                                                paleteZaOtpremnicu = sledljivostData.PaletniListoviIzlaz?
+                                                                    .Where(pl => !string.IsNullOrEmpty(pl.Sifra) &&
+                                                                                pl.Sifra.StartsWith("P-", StringComparison.OrdinalIgnoreCase) &&
+                                                                                pl.ArtikalMagacinID == 6) // Samo Gotova roba
+                                                                    .ToList() ?? new List<PaletniListDetalji>();
+                                                            }
+                                                        }
+                                                        
+                                                        @if (paleteZaOtpremnicu.Any())
+                                                        {
+                                                            <small class="text-muted d-block mb-2">
+                                                                <strong>Paletni Listovi (@paleteZaOtpremnicu.Count):</strong>
+                                                            </small>
+                                                            @foreach (var pl in paleteZaOtpremnicu)
+                                                            {
+                                                                <div class="paletni-list-item p-2 mb-1 bg-white rounded border"
+                                                                     title="@GetPaletniListTooltip(pl)"
+                                                                     @onmouseover="() => ShowTooltip(pl)"
+                                                                     @onmouseout="HideTooltip">
+                                                                    <small>
+                                                                        <i class="bi bi-box-seam text-success me-1" aria-hidden="true"></i>
+                                                                        <strong>@pl.Sifra</strong>
+                                                                        <span class="badge bg-success ms-2" style="font-size: 0.7rem;">@pl.TipPaletnogLista</span>
+                                                                        <br />
+                                                                        <span class="text-muted ms-3">
+                                                                            @pl.ArtikalNaziv
+                                                                            @if (pl.Tezina.HasValue)
+                                                                            {
+                                                                                <span> - @TypeMapping.FormatDecimal(pl.Tezina.Value) kg</span>
+                                                                            }
+                                                                        </span>
+                                                                        @if (!string.IsNullOrEmpty(pl.PakovanjeNaziv))
+                                                                        {
+                                                                            <br />
+                                                                            <span class="text-muted ms-3">
+                                                                                <i class="bi bi-archive me-1" aria-hidden="true"></i>
+                                                                                Pakovanje: @pl.PakovanjeNaziv
+                                                                            </span>
+                                                                        }
+                                                                        @if (pl.PovezaniPaletniListoviIDs?.Any() == true)
+                                                                        {
+                                                                            <br />
+                                                                            <span class="text-info ms-3" style="font-size: 0.75rem;">
+                                                                                <i class="bi bi-link-45deg me-1" aria-hidden="true"></i>
+                                                                                Povezano: @pl.PovezaniPaletniListoviIDs.Count
+                                                                            </span>
+                                                                        }
+                                                                    </small>
+                                                                </div>
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            <small class="text-muted">Nema povezanih paletnih listova</small>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                }
+
+                                <!-- Empty state -->
+                                @if (tipPretrage == "PaletniList")
+                                {
+                                    @if (sledljivostData.RadniNalog == null &&
+                                         sledljivostData.EvidencijeRada?.Any() != true &&
+                                         sledljivostData.Otpremnice?.Any() != true)
+                                    {
+                                        <div class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox" aria-hidden="true" style="font-size: 3rem;"></i>
+                                            <p class="mt-2">Nema podataka o proizvodnji</p>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    @if (sledljivostData.PaletniListoviIzlaz?.Any() != true &&
+                                         sledljivostData.Otpremnice?.Any() != true)
+                                    {
+                                        <div class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox" aria-hidden="true" style="font-size: 3rem;"></i>
+                                            <p class="mt-2">Nema downstream podataka</p>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Statistics -->
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="card shadow-sm text-center">
+                            <div class="card-body">
+                                <i class="bi bi-truck text-danger" aria-hidden="true" style="font-size: 2rem;"></i>
+                                <h4 class="mt-2 mb-0">@(sledljivostData.Prijemnice?.Count ?? 0)</h4>
+                                <small class="text-muted">Prijemnice</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm text-center">
+                            <div class="card-body">
+                                <i class="bi bi-box-seam text-warning" aria-hidden="true" style="font-size: 2rem;"></i>
+                                <h4 class="mt-2 mb-0">@(sledljivostData.PaletniListoviUlaz?.Count ?? 0)</h4>
+                                <small class="text-muted">Paletni Listovi (Ulaz)</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm text-center">
+                            <div class="card-body">
+                                <i class="bi bi-box-seam text-success" aria-hidden="true" style="font-size: 2rem;"></i>
+                                <h4 class="mt-2 mb-0">@(sledljivostData.PaletniListoviIzlaz?.Count ?? 0)</h4>
+                                <small class="text-muted">Paletni Listovi (Izlaz)</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm text-center">
+                            <div class="card-body">
+                                <i class="bi bi-truck text-success" aria-hidden="true" style="font-size: 2rem;"></i>
+                                <h4 class="mt-2 mb-0">@(sledljivostData.Otpremnice?.Count ?? 0)</h4>
+                                <small class="text-muted">Otpremnice</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</main>
+
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+    }
+    
+    .expandable-card {
+        transition: all 0.3s ease;
+    }
+    
+    .expandable-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .expandable-content {
+        animation: slideDown 0.3s ease-out;
+    }
+    
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            max-height: 0;
+        }
+        to {
+            opacity: 1;
+            max-height: 500px;
+        }
+    }
+    
+    .paletni-list-item {
+        transition: all 0.2s ease;
+        cursor: help;
+    }
+    
+    .paletni-list-item:hover {
+        background-color: #f8f9fa !important;
+        border-color: #007bff !important;
+        transform: translateX(3px);
+    }
+</style>
+
+@code {
+    // Data properties
+    private SledljivostModel? sledljivostData;
+    private List<DokumentSearchResultModel>? autocompleteRezultati;
+
+    // UI state
+    private string? searchSifra;
+    private bool ucitavanje = false;
+    private string? errorPoruka;
+    private string tipPretrage = "RadniNalog"; // Default: UPSTREAM
+
+    // Expandable state - prati koje su sekcije otvorene
+    private HashSet<string> expandedSections = new HashSet<string>();
+
+    // Tooltip state
+    private PaletniListDetalji? currentTooltipPaletniList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Učitaj početne autocomplete podatke
+        await UcitajAutocomplete("");
+    }
+
+    /// <summary>
+    /// Pretraga sledljivosti po unetoj šifri
+    /// </summary>
+    private async Task PretraziSledljivost()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(searchSifra))
+            {
+                errorPoruka = "Molimo unesite šifru dokumenta.";
+                return;
+            }
+
+            ucitavanje = true;
+            errorPoruka = null;
+            sledljivostData = null;
+            expandedSections.Clear(); // Reset expanded sections
+            StateHasChanged();
+
+            // Pozovi odgovarajuću metodu u zavisnosti od tipa pretrage
+            if (tipPretrage == "RadniNalog")
+            {
+                // UPSTREAM - Radni Nalog
+                sledljivostData = await SledljivostService.UcitajSledljivost(searchSifra);
+            }
+            else if (tipPretrage == "PaletniList")
+            {
+                // DOWNSTREAM - Paletni List gotove robe
+                sledljivostData = await SledljivostService.UcitajSledljivostPoPaletnomListu(searchSifra);
+            }
+
+            if (sledljivostData == null)
+            {
+                errorPoruka = $"Dokument sa šifrom '{searchSifra}' nije pronađen.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri pretrazi: {ex.Message}");
+            errorPoruka = "Došlo je do greške pri pretrazi. Molimo pokušajte ponovo.";
+        }
+        finally
+        {
+            ucitavanje = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Učitava autocomplete rezultate
+    /// </summary>
+    private async Task UcitajAutocomplete(string searchTerm)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 2)
+            {
+                autocompleteRezultati = new List<DokumentSearchResultModel>();
+                return;
+            }
+
+            autocompleteRezultati = await SledljivostService.PretraziDokumente(searchTerm, 10);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri autocomplete: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Handler za Enter key u search input-u
+    /// </summary>
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await PretraziSledljivost();
+        }
+        else
+        {
+            // Trigger autocomplete after typing
+            await UcitajAutocomplete(searchSifra ?? "");
+        }
+    }
+
+    /// <summary>
+    /// Export u Excel sa hipervezama
+    /// </summary>
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            if (sledljivostData == null || string.IsNullOrWhiteSpace(sledljivostData.Sifra)) return;
+
+            byte[] excelData;
+            string fileName;
+
+            // Detektuj tip pretrage i pozovi odgovarajući servis
+            if (tipPretrage == "RadniNalog")
+            {
+                // UPSTREAM Excel
+                excelData = await SledljivostService.GenerisiUpstreamExcel(sledljivostData.Sifra);
+                fileName = TypeMapping.GenerateExportFileName($"Sledljivost_UPSTREAM_{sledljivostData.Sifra}", ".xlsx");
+            }
+            else
+            {
+                // DOWNSTREAM Excel
+                excelData = await SledljivostService.GenerisiDownstreamExcel(sledljivostData.Sifra);
+                fileName = TypeMapping.GenerateExportFileName($"Sledljivost_DOWNSTREAM_{sledljivostData.Sifra}", ".xlsx");
+            }
+
+            await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri Excel exportu: {ex.Message}");
+            errorPoruka = $"Greška pri exportu Excel-a: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Export u PDF
+    /// </summary>
+    private async Task ExportToPdf()
+    {
+        try
+        {
+            if (sledljivostData == null || string.IsNullOrWhiteSpace(sledljivostData.Sifra)) return;
+
+            byte[] pdfData;
+            string fileName;
+
+            // Detektuj tip pretrage i pozovi odgovarajući servis
+            if (tipPretrage == "RadniNalog")
+            {
+                // UPSTREAM PDF
+                pdfData = await SledljivostService.GenerisiUpstreamPdf(sledljivostData.Sifra);
+                fileName = TypeMapping.GenerateExportFileName($"Sledljivost_UPSTREAM_{sledljivostData.Sifra}", ".pdf");
+            }
+            else
+            {
+                // DOWNSTREAM PDF
+                pdfData = await SledljivostService.GenerisiDownstreamPdf(sledljivostData.Sifra);
+                fileName = TypeMapping.GenerateExportFileName($"Sledljivost_DOWNSTREAM_{sledljivostData.Sifra}", ".pdf");
+            }
+
+            await DownloadFile(pdfData, fileName, "application/pdf");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri PDF exportu: {ex.Message}");
+            errorPoruka = $"Greška pri exportu PDF-a: {ex.Message}";
+        }
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
+    }
+
+    // Helper metode
+    private string GetStatusBadgeClass(int status)
+    {
+        return status switch
+        {
+            2 => "bg-primary", // Otvoren
+            3 => "bg-success", // Zaključen
+            4 => "bg-danger",  // Storno
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetSmenaBadgeClass(int smena)
+    {
+        return smena switch
+        {
+            1 => "bg-primary",
+            2 => "bg-success",
+            3 => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+    
+    /// <summary>
+    /// Toggle expand/collapse za sekciju
+    /// </summary>
+    private void ToggleSection(string sectionId)
+    {
+        if (expandedSections.Contains(sectionId))
+        {
+            expandedSections.Remove(sectionId);
+        }
+        else
+        {
+            expandedSections.Add(sectionId);
+        }
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Provera da li je sekcija expandovana
+    /// </summary>
+    private bool IsSectionExpanded(string sectionId)
+    {
+        return expandedSections.Contains(sectionId);
+    }
+    
+    /// <summary>
+    /// Generiše tooltip tekst za paletni list sa svim povezanim šiframa
+    /// </summary>
+    private string GetPaletniListTooltip(PaletniListDetalji pl)
+    {
+        var tooltip = new System.Text.StringBuilder();
+        tooltip.AppendLine($"Paletni List: {pl.Sifra}");
+        tooltip.AppendLine($"Tip: {pl.TipPaletnogLista}");
+        tooltip.AppendLine($"Artikal: {pl.ArtikalNaziv}");
+
+        if (pl.Tezina.HasValue)
+            tooltip.AppendLine($"Težina: {TypeMapping.FormatDecimal(pl.Tezina.Value)} kg");
+
+        tooltip.AppendLine("");
+
+        // UPSTREAM veze
+        if (!string.IsNullOrEmpty(pl.PrijemnicaSifra) ||
+            !string.IsNullOrEmpty(pl.LotDobavljaca) ||
+            !string.IsNullOrEmpty(pl.OtpremnicaDobavljaca))
+        {
+            tooltip.AppendLine("UPSTREAM (Nabavka):");
+
+            if (!string.IsNullOrEmpty(pl.PrijemnicaSifra))
+                tooltip.AppendLine($"  • Prijemnica: {pl.PrijemnicaSifra}");
+
+            if (!string.IsNullOrEmpty(pl.LotDobavljaca))
+                tooltip.AppendLine($"  • Lot Dobavljača: {pl.LotDobavljaca}");
+
+            if (!string.IsNullOrEmpty(pl.OtpremnicaDobavljaca))
+                tooltip.AppendLine($"  • Otpremnica Dobavljača: {pl.OtpremnicaDobavljaca}");
+
+            tooltip.AppendLine("");
+        }
+
+        // Proizvodnja (prikaži i pojedinačne i LISTU)
+        if (!string.IsNullOrEmpty(pl.EvidencijaRadaSifra) ||
+            !string.IsNullOrEmpty(pl.SmenskiIzvestajSifra) ||
+            !string.IsNullOrEmpty(pl.RadniNalogSifra) ||
+            pl.KoriscenUEvidencijama?.Any() == true ||
+            pl.KoriscenUSmenama?.Any() == true ||
+            pl.KoriscenURadnimNalozima?.Any() == true)
+        {
+            tooltip.AppendLine("Proizvodnja:");
+
+            // Prikaži pojedinačnu vezu (iz PaletniList tabele)
+            if (!string.IsNullOrEmpty(pl.EvidencijaRadaSifra))
+                tooltip.AppendLine($"  • Evidencija Rada: {pl.EvidencijaRadaSifra}");
+
+            if (!string.IsNullOrEmpty(pl.SmenskiIzvestajSifra))
+                tooltip.AppendLine($"  • Smenski Izveštaj: {pl.SmenskiIzvestajSifra}");
+
+            if (!string.IsNullOrEmpty(pl.RadniNalogSifra))
+                tooltip.AppendLine($"  • Radni Nalog: {pl.RadniNalogSifra}");
+
+            // Prikaži SVE evidencije gde je korišćen (iz EvidencijaRada_UtroseniPaletniListovi)
+            if (pl.KoriscenUEvidencijama?.Any() == true)
+            {
+                tooltip.AppendLine($"  • Korišćen u Evidencijama ({pl.KoriscenUEvidencijama.Count}):");
+                foreach (var evidencija in pl.KoriscenUEvidencijama)
+                {
+                    tooltip.AppendLine($"    - {evidencija}");
+                }
+            }
+
+            if (pl.KoriscenUSmenama?.Any() == true)
+            {
+                tooltip.AppendLine($"  • Korišćen u Smenama ({pl.KoriscenUSmenama.Count}):");
+                foreach (var smena in pl.KoriscenUSmenama)
+                {
+                    tooltip.AppendLine($"    - {smena}");
+                }
+            }
+
+            if (pl.KoriscenURadnimNalozima?.Any() == true)
+            {
+                tooltip.AppendLine($"  • Korišćen u Radnim Nalozima ({pl.KoriscenURadnimNalozima.Count}):");
+                foreach (var nalog in pl.KoriscenURadnimNalozima)
+                {
+                    tooltip.AppendLine($"    - {nalog}");
+                }
+            }
+
+            tooltip.AppendLine("");
+        }
+
+        // DOWNSTREAM veze
+        if (!string.IsNullOrEmpty(pl.OtpremnicaSifra))
+        {
+            tooltip.AppendLine("DOWNSTREAM (Prodaja):");
+            tooltip.AppendLine($"  • Otpremnica: {pl.OtpremnicaSifra}");
+            tooltip.AppendLine("");
+        }
+
+        // Ručno povezani paletni listovi
+        if (pl.PovezaniPaletniListoviSifre?.Any() == true)
+        {
+            tooltip.AppendLine($"Ručno povezano ({pl.PovezaniPaletniListoviSifre.Count} PL):");
+            foreach (var plSifra in pl.PovezaniPaletniListoviSifre)
+            {
+                tooltip.AppendLine($"  • {plSifra}");
+            }
+        }
+
+        return tooltip.ToString();
+    }
+    
+    /// <summary>
+    /// Prikazuje tooltip za paletni list
+    /// </summary>
+    private void ShowTooltip(PaletniListDetalji pl)
+    {
+        currentTooltipPaletniList = pl;
+        StateHasChanged();
+    }
+    
+    /// <summary>
+    /// Sakriva tooltip
+    /// </summary>
+    private void HideTooltip()
+    {
+        currentTooltipPaletniList = null;
+        StateHasChanged();
+    }
+}

@@ -15,67 +15,7 @@
 @inject IJSRuntime JSRuntime
 @inject ILogger<TroskoviProizvodnje> Logger
 
-<style>
-    .troskovi-header {
-        background: linear-gradient(135deg, #1a2332, #232d3f);
-        border-radius: 12px;
-        margin-bottom: 2rem;
-        border: 1px solid #374151;
-    }
-
-    .tab-buttons {
-        display: flex;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .tab-button {
-        padding: 0.5rem 1rem;
-        border: 1px solid #3e6b1f;
-        background: #1a2332;
-        color: #e5e7eb;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .tab-button:hover {
-        background: #3e6b1f;
-        color: white;
-    }
-
-    .tab-button.active {
-        background: #3e6b1f;
-        color: white;
-        font-weight: bold;
-    }
-
-    .spin {
-        animation: spin 1s linear infinite;
-    }
-
-    @@keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-
-    .sezona-info {
-        background: rgba(62, 107, 31, 0.1);
-        border-left: 4px solid #3e6b1f;
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-    }
-
-    .sezona-badge {
-        background: #3e6b1f;
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 16px;
-        font-weight: bold;
-        font-size: 0.9rem;
-    }
-</style>
+@* All styles moved to wwwroot/css/shared-components.css *@
 
 <!-- Header -->
 <div class="troskovi-header text-white py-4 mb-4">
@@ -113,24 +53,22 @@
     <div class="row mb-4">
         <div class="col-lg-6 mb-3">
             <ApexBarChart
-                Title="Troškovi po RN - Zadnjih 20 Završenih"
+                Title="Troškovi po RN - Zadnjih 10 Završenih"
                 Icon="bi bi-clipboard-check"
                 SeriesName="Troškovi"
                 Unit="RSD"
-                Color="#3e6b1f"
-                Data="@TroskoviPoRN_Zadnjih20"
-                IsLoading="@IsLoadingRN20"
-                HasError="@HasErrorRN20"
+                Data="@TroskoviPoRN_Zadnjih10"
+                IsLoading="@IsLoadingRN10"
+                HasError="@HasErrorRN10"
                 ShowSummary="true"
-                OnRefresh="@RefreshRN_Zadnjih20" />
+                OnRefresh="@RefreshRN_Zadnjih10" />
         </div>
         <div class="col-lg-6 mb-3">
             <ApexBarChart
-                Title="Troškovi po RN - 20 Najskupljih (Od Početka Sezone)"
+                Title="Troškovi po RN - 10 Najskupljih (Od Početka Sezone)"
                 Icon="bi bi-graph-up-arrow"
                 SeriesName="Troškovi"
                 Unit="RSD"
-                Color="#2d5016"
                 Data="@TroskoviPoRN_NajskupljiSezona"
                 IsLoading="@IsLoadingRNNajskuplji"
                 HasError="@HasErrorRNNajskuplji"
@@ -147,7 +85,6 @@
                 Icon="bi bi-clock-history"
                 SeriesName="Troškovi"
                 Unit="RSD"
-                Color="#28a745"
                 Data="@TroskoviPoSmeni_Zadnjih20"
                 IsLoading="@IsLoadingSmena20"
                 HasError="@HasErrorSmena20"
@@ -160,7 +97,6 @@
                 Icon="bi bi-exclamation-diamond"
                 SeriesName="Troškovi"
                 Unit="RSD"
-                Color="#20c997"
                 Data="@TroskoviPoSmeni_NajskupljiSezona"
                 IsLoading="@IsLoadingSmenaNajskuplji"
                 HasError="@HasErrorSmenaNajskuplji"
@@ -194,7 +130,6 @@
                         Icon=""
                         SeriesName="Troškovi"
                         Unit="RSD"
-                        Color="#3e6b1f"
                         Data="@TroskoviPoProcesima"
                         IsLoading="@IsLoadingProcesi"
                         HasError="@HasErrorProcesi"
@@ -226,7 +161,6 @@
                         Icon=""
                         SeriesName="Troškovi"
                         Unit="RSD"
-                        Color="#2d5016"
                         Data="@TroskoviPoRadnimProcesima"
                         IsLoading="@IsLoadingRadniProcesi"
                         HasError="@HasErrorRadniProcesi"
@@ -249,7 +183,7 @@
 
 @code {
     // Chart Data
-    private List<ChartDataPoint>? TroskoviPoRN_Zadnjih20;
+    private List<ChartDataPoint>? TroskoviPoRN_Zadnjih10;
     private List<ChartDataPoint>? TroskoviPoRN_NajskupljiSezona;
     private List<ChartDataPoint>? TroskoviPoSmeni_Zadnjih20;
     private List<ChartDataPoint>? TroskoviPoSmeni_NajskupljiSezona;
@@ -257,7 +191,7 @@
     private List<ChartDataPoint>? TroskoviPoRadnimProcesima;
 
     // Loading States
-    private bool IsLoadingRN20 = false;
+    private bool IsLoadingRN10 = false;
     private bool IsLoadingRNNajskuplji = false;
     private bool IsLoadingSmena20 = false;
     private bool IsLoadingSmenaNajskuplji = false;
@@ -266,7 +200,7 @@
     private bool IsRefreshing = false;
 
     // Error States
-    private bool HasErrorRN20 = false;
+    private bool HasErrorRN10 = false;
     private bool HasErrorRNNajskuplji = false;
     private bool HasErrorSmena20 = false;
     private bool HasErrorSmenaNajskuplji = false;
@@ -292,7 +226,7 @@
         try
         {
             await Task.WhenAll(
-                RefreshRN_Zadnjih20(),
+                RefreshRN_Zadnjih10(),
                 RefreshRN_NajskupljiSezona(),
                 RefreshSmena_Zadnjih20(),
                 RefreshSmena_NajskupljiSezona(),
@@ -311,19 +245,19 @@
         }
     }
 
-    private async Task RefreshRN_Zadnjih20()
+    private async Task RefreshRN_Zadnjih10()
     {
-        if (IsLoadingRN20) return;
+        if (IsLoadingRN10) return;
 
-        IsLoadingRN20 = true;
-        HasErrorRN20 = false;
+        IsLoadingRN10 = true;
+        HasErrorRN10 = false;
         StateHasChanged();
 
         try
         {
             await Task.Delay(100);
 
-            // Učitaj zadnjih 20 završenih radnih naloga
+            // Učitaj zadnjih 10 završenih radnih naloga
             var filter = new FilterRequest
             {
                 DokumentStatus = 3, // Završeni
@@ -333,34 +267,40 @@
             var radniNalozi = await PreradaService.UcitajRadniNalogIzvestaj(filter);
 
             // Grupisati po RadniNalog i sabrati troškove - sortirati po poslednja 4 broja (RN-25-0259 -> 0259)
-            var troskoviDict = radniNalozi
+            var grupisaniPodaci = radniNalozi
                 .Where(rn => !string.IsNullOrEmpty(rn.RadniNalog))
                 .GroupBy(rn => rn.RadniNalog)
                 .Select(g => new
                 {
                     RadniNalog = g.Key,
+                    VrstaArtikla = g.First().VrstaArtikla ?? "",
                     UkupnoTroskovi = g.Sum(x => x.TrosakPoRadnomNalogu),
                     // Izvući poslednja 4 broja iz RN-25-0259
                     BrojNaloga = g.Key.Split('-').LastOrDefault() ?? "0000"
                 })
                 .OrderByDescending(x => x.BrojNaloga)
-                .Take(20)
-                .ToDictionary(
-                    x => x.RadniNalog,
-                    x => (decimal)x.UkupnoTroskovi
-                );
+                .Take(10)
+                .ToList();
 
-            TroskoviPoRN_Zadnjih20 = ChartDataHelper.FromDictionary(troskoviDict, 20);
+            // Kreirati ChartDataPoint sa VrstaArtikla u labelu
+            TroskoviPoRN_Zadnjih10 = grupisaniPodaci
+                .Select(x => new ChartDataPoint
+                {
+                    Label = $"{x.VrstaArtikla} ({x.RadniNalog})",
+                    Value = x.UkupnoTroskovi,
+                    Color = ChartDataHelper.GetFruitColor(x.VrstaArtikla)
+                })
+                .ToList();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error loading RN zadnjih 20");
-            HasErrorRN20 = true;
-            TroskoviPoRN_Zadnjih20 = ChartDataHelper.GetMockData("RN", 20);
+            Logger.LogError(ex, "Error loading RN zadnjih 10");
+            HasErrorRN10 = true;
+            TroskoviPoRN_Zadnjih10 = ChartDataHelper.GetMockData("RN", 10);
         }
         finally
         {
-            IsLoadingRN20 = false;
+            IsLoadingRN10 = false;
             StateHasChanged();
         }
     }
@@ -387,29 +327,35 @@
 
             var radniNalozi = await PreradaService.UcitajRadniNalogIzvestaj(filter);
 
-            var troskoviDict = radniNalozi
+            var grupisaniPodaci = radniNalozi
                 .Where(rn => !string.IsNullOrEmpty(rn.RadniNalog))
                 .GroupBy(rn => rn.RadniNalog)
                 .Select(g => new
                 {
                     RadniNalog = g.Key,
+                    VrstaArtikla = g.First().VrstaArtikla ?? "",
                     UkupnoTroskovi = g.Sum(rn => rn.TrosakPoRadnomNalogu)
                 })
                 .OrderByDescending(x => x.UkupnoTroskovi)
-                .Take(20)
+                .Take(10)
                 .OrderBy(x => x.UkupnoTroskovi)
-                .ToDictionary(
-                    x => x.RadniNalog,
-                    x => (decimal)x.UkupnoTroskovi
-                );
+                .ToList();
 
-            TroskoviPoRN_NajskupljiSezona = ChartDataHelper.FromDictionary(troskoviDict, 20);
+            // Kreirati ChartDataPoint sa VrstaArtikla u labelu
+            TroskoviPoRN_NajskupljiSezona = grupisaniPodaci
+                .Select(x => new ChartDataPoint
+                {
+                    Label = $"{x.VrstaArtikla} ({x.RadniNalog})",
+                    Value = x.UkupnoTroskovi,
+                    Color = ChartDataHelper.GetFruitColor(x.VrstaArtikla)
+                })
+                .ToList();
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error loading RN najskuplji");
             HasErrorRNNajskuplji = true;
-            TroskoviPoRN_NajskupljiSezona = ChartDataHelper.GetMockData("RN", 20);
+            TroskoviPoRN_NajskupljiSezona = ChartDataHelper.GetMockData("RN", 10);
         }
         finally
         {

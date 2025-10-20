@@ -121,7 +121,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 var rezultat = await _databaseService.QueryAsync<RadniNalogIzvestajModel>(sql, parameters);
 
                 Console.WriteLine($"✅ SQL završen, dobijeno {rezultat?.Count() ?? 0} AGREGIRANIH redova");
-                return rezultat.ToList();
+                return rezultat?.ToList() ?? new List<RadniNalogIzvestajModel>();
             }
             catch (Exception ex)
             {
@@ -164,8 +164,9 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     LEFT JOIN Komitent k ON si.PoslovodjaID = k.ID
                     LEFT JOIN vPreradaPregled vpp ON rn.ID = vpp.RadniNalogID
                     LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
-                    LEFT JOIN ProizvodniProces pp ON er.ProizvodniProcesID = pp.ID
                     LEFT JOIN RadniProces rp ON er.RadniProcesID = rp.ID
+                    LEFT JOIN RadniProcesToProizvodniProces rppp ON rp.ID = rppp.RadniProcesID
+                    LEFT JOIN ProizvodniProces pp ON rppp.ProizvodniProcesID = pp.ID
                     WHERE er.Obrisan = 0
                       AND rn.Aktivno = 1
                       AND a.MagacinID = 6
@@ -301,18 +302,21 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 Console.WriteLine("🔍 Učitavam smenske izveštaje...");
 
                 var sql = @"
-            SELECT 
+            SELECT
                 si.Broj as BrojIzvestaja,
                 si.Datum,
-                pp.Naziv as ProizvodniProces,
                 SUM(er.BrojRadnihSati) as BrojRadnihSati,
-                SUM(er.BrojRadnika) as BrojRadnika,
-                SUM(er.CenaKostanjaDirektanRad) as TrosakPoRadnomNalogu
+                ROUND(SUM(er.BrojRadnihSati) / 8, 0) as BrojRadnika,
+                SUM(er.CenaKostanjaDirektanRad) as TrosakPoRadnomNalogu,
+                si.PoslovodjaID,
+                r.ImePrezime as RadnikImePrezime,
+                COALESCE(pp.Naziv, 'Nepoznato') as ProizvodniProces
             FROM SmenskiIzvestaj si
             INNER JOIN EvidencijaRada er ON si.ID = er.SmenskiIzvestajID AND er.Obrisan = 0
-            INNER JOIN RadniNalog rn ON er.RadniNalogID = rn.ID
-            INNER JOIN RadniProcesToProizvodniProces rppp ON er.RadniProcesID = rppp.RadniProcesID
-            INNER JOIN ProizvodniProces pp ON rppp.ProizvodniProcesID = pp.ID
+            LEFT JOIN Radnik r ON si.PoslovodjaID = r.ID
+            LEFT JOIN RadniProces rp ON er.RadniProcesID = rp.ID
+            LEFT JOIN RadniProcesToProizvodniProces rppp ON rp.ID = rppp.RadniProcesID
+            LEFT JOIN ProizvodniProces pp ON rppp.ProizvodniProcesID = pp.ID
             WHERE si.Broj IS NOT NULL
                 AND er.Obrisan = 0
                 AND er.DokumentStatus = 3
@@ -338,30 +342,18 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     parameters.Add("@SmenskiIzvestaj", $"%{filter.SmenskiIzvestaj}%");
                 }
 
-                if (filter.ProizvodniProcesId.HasValue)
-                {
-                    sql += " AND pp.ID = @ProizvodniProcesId";
-                    parameters.Add("@ProizvodniProcesId", filter.ProizvodniProcesId.Value);
-                }
-
-                if (filter.RadniProcesId.HasValue)
-                {
-                    sql += " AND er.RadniProcesID = @RadniProcesId";
-                    parameters.Add("@RadniProcesId", filter.RadniProcesId.Value);
-                }
-
                 sql += " AND si.Datum >= DATE_SUB(NOW(), INTERVAL 6 MONTH)";
 
-                // GROUP BY po si.ID (umesto si.Broj) + rn.ID (umesto rn.Sifra) + pp.ID
+                // GROUP BY samo po smeni za TroskoviHome (jedan red po smeni)
                 sql += @"
-            GROUP BY si.ID, rn.ID, pp.ID
+            GROUP BY si.ID, si.Broj, si.Datum, si.PoslovodjaID, r.ImePrezime, pp.Naziv
             HAVING SUM(er.BrojRadnihSati) > 0
-            ORDER BY si.Datum DESC, si.Broj, pp.Naziv 
+            ORDER BY si.Datum DESC, si.Broj
             LIMIT 200";
 
                 var result = await _databaseService.QueryAsync<SmenskiIzvestajModel>(sql, parameters);
                 Console.WriteLine($"✅ Dobijeno {result?.Count() ?? 0} redova");
-                return result.ToList();
+                return result?.ToList() ?? new List<SmenskiIzvestajModel>();
             }
             catch (Exception ex)
             {
@@ -441,7 +433,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 var rezultat = await _databaseService.QueryAsync<RadniProcesModel>(sql);
                 Console.WriteLine($"✅ Učitano {rezultat?.Count() ?? 0} korišćenih proizvodnih procesa");
-                return rezultat.ToList();
+                return rezultat?.ToList() ?? new List<RadniProcesModel>();
             }
             catch (Exception ex)
             {
@@ -471,7 +463,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 var rezultat = await _databaseService.QueryAsync<ProizvodniProcesModel>(sql);
                 Console.WriteLine($"✅ Učitano {rezultat?.Count() ?? 0} korišćenih proizvodnih procesa");
-                return rezultat.ToList();
+                return rezultat?.ToList() ?? new List<ProizvodniProcesModel>();
             }
             catch (Exception ex)
             {
@@ -1081,7 +1073,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 var rezultat = await _databaseService.QueryAsync<NajavljeniUtovarModel>(sql);
 
                 Console.WriteLine($"✅ Učitano {rezultat?.Count() ?? 0} najavljenih utovara");
-                return rezultat.ToList();
+                return rezultat?.ToList() ?? new List<NajavljeniUtovarModel>();
             }
             catch (Exception ex)
             {

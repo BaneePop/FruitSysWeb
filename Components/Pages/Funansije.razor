@@ -131,46 +131,7 @@
                             </div>
                         </div>
                     </div>
-                    
-                    @if (filterRequest.ImaAktivneFiltre())
-                    {
-                        <div class="row mt-2">
-                            <div class="col-12">
-                                <div class="alert alert-info small">
-                                    <strong>Aktivni filteri:</strong> @filterRequest.GetAktivneFiltereOpis()
-                                </div>
-                            </div>
-                        </div>
-                    }
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- REFACTORED Statistics Cards sa TypeMapping formatiranjem -->
-    <div class="row mb-4 financial-section">
-        <div class="col-md-3">
-            <div class="dashboard-card">
-                <h6 class="text-muted">Ukupno Potražuje</h6>
-                <h4 class="@TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(UkupnoPotrazuje) RSD</h4>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="dashboard-card">
-                <h6 class="text-muted">Ukupno Duguje</h6>
-                <h4 class="@TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(UkupnoDuguje) RSD</h4>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="dashboard-card">
-                <h6 class="text-muted">Saldo (Potražuje - Duguje)</h6>
-                <h4 class="@TypeMapping.GetSaldoBadgeClass(UkupnoSaldo)">@TypeMapping.FormatDecimal(UkupnoSaldo) RSD</h4>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="dashboard-card">
-                <h6 class="text-muted">Broj Stavki</h6>
-                <h4 class="text-primary">@TypeMapping.FormatInteger(podaci?.Count ?? 0)</h4>
             </div>
         </div>
     </div>

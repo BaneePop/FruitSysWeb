@@ -64,3 +64,5 @@ implementacija_*.md
 *.temp
 
 .fakepublish/
+
+.fake

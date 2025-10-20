@@ -4,13 +4,17 @@ using QuestPDF.Infrastructure;
 using ClosedXML.Excel;
 using FruitSysWeb.Services.Interfaces;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations.ExportService
 {
     public class SimpleExportService : IExportService
     {
-        public SimpleExportService()
+        private readonly ILogger<SimpleExportService> _logger;
+
+        public SimpleExportService(ILogger<SimpleExportService> logger)
         {
+            _logger = logger;
             // Licenciranje za QuestPDF - IMPORTANT FIX
             QuestPDF.Settings.License = LicenseType.Community;
         }
@@ -59,7 +63,7 @@ namespace FruitSysWeb.Services.Implementations.ExportService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri exportu u Excel: {ex.Message}");
+                _logger.LogError(ex, "Greška pri exportu u Excel");
                 throw new Exception($"Greška pri kreiranju Excel fajla: {ex.Message}");
             }
         }
@@ -185,8 +189,8 @@ namespace FruitSysWeb.Services.Implementations.ExportService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri exportu u PDF: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                _logger.LogError(ex, "Greška pri exportu u PDF");
+                _logger.LogInformation($"Stack trace: {ex.StackTrace}");
                 throw new Exception($"Greška pri kreiranju PDF fajla: {ex.Message}");
             }
         }
@@ -225,7 +229,7 @@ namespace FruitSysWeb.Services.Implementations.ExportService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri exportu u CSV: {ex.Message}");
+                _logger.LogError(ex, "Greška pri exportu u CSV");
                 throw new Exception($"Greška pri kreiranju CSV fajla: {ex.Message}");
             }
         }
@@ -283,7 +287,7 @@ namespace FruitSysWeb.Services.Implementations.ExportService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"PDF test failed: {ex.Message}");
+                _logger.LogInformation($"PDF test failed: {ex.Message}");
                 return false;
             }
         }

@@ -36,57 +36,6 @@
         </div>
     </div>
 
-    <!-- Statistics Cards -->
-    @if (statistikeData != null)
-    {
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-primary mb-2">
-                            <i class="bi bi-journals"></i>
-                        </div>
-                        <h3 class="text-primary mb-1">@TypeMapping.FormatDecimal(statistikeData["UkupnoIzvestaja"])</h3>
-                        <p class="text-muted mb-0">Smenski izveštaji</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-success mb-2">
-                            <i class="bi bi-clock-history"></i>
-                        </div>
-                        <h3 class="text-success mb-1">@TypeMapping.FormatDecimal(statistikeData["UkupnoSati"])</h3>
-                        <p class="text-muted mb-0">Ukupno sati</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-info mb-2">
-                            <i class="bi bi-gear-wide"></i>
-                        </div>
-                        <h3 class="text-info mb-1">@TypeMapping.FormatDecimal(statistikeData["UkupnoRadnika"])</h3>
-                        <p class="text-muted mb-0">Broj radnika</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-warning mb-2">
-                            <i class="bi bi-currency-exchange"></i>
-                        </div>
-                        <h3 class="text-warning mb-1">@TypeMapping.FormatCurrency(statistikeData["ProsecanTrosak"])</h3>
-                        <p class="text-muted mb-0">Prosečan trošak</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-
     <!-- Filters -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-light">
@@ -95,24 +44,22 @@
             </h5>
         </div>
         <div class="card-body">
-            <div class="row g-3">
-                <!-- Datum filteri -->
-                <div class="col-md-3">
-                    <label class="form-label">Od datuma</label>
-                    <input type="date" class="form-control" 
-                           value="@(filterRequest.OdDatum?.ToString("yyyy-MM-dd"))" 
+            <!-- Prvi red - svi filteri -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-2">
+                    <label class="form-label"><i class="bi bi-calendar3 me-1"></i>Od datuma</label>
+                    <input type="date" class="form-control"
+                           value="@(filterRequest.OdDatum?.ToString("yyyy-MM-dd"))"
                            @onchange="OnOdDatumChanged" />
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Do datuma</label>
-                    <input type="date" class="form-control" 
-                           value="@(filterRequest.DoDatum?.ToString("yyyy-MM-dd"))" 
+                <div class="col-md-2">
+                    <label class="form-label"><i class="bi bi-calendar3 me-1"></i>Do datuma</label>
+                    <input type="date" class="form-control"
+                           value="@(filterRequest.DoDatum?.ToString("yyyy-MM-dd"))"
                            @onchange="OnDoDatumChanged" />
                 </div>
-
-                <!-- Smenski izveštaj filter -->
                 <div class="col-md-3">
-                    <label class="form-label">Smenski izveštaj</label>
+                    <label class="form-label"><i class="bi bi-journal-text me-1"></i>Smenski izveštaj</label>
                     <select class="form-select" @bind="filterRequest.SmenskiIzvestaj">
                         <option value="">Svi izveštaji</option>
                         @if (smenskiIzvestajiLista != null)
@@ -124,10 +71,8 @@
                         }
                     </select>
                 </div>
-
-                <!-- Proizvodni proces filter -->
-                <div class="col-md-3">
-                    <label class="form-label">Proizvodni proces</label>
+                <div class="col-md-2">
+                    <label class="form-label"><i class="bi bi-gear-wide me-1"></i>Proizvodni proces</label>
                     <select class="form-select" @bind="filterRequest.ProizvodniProcesId" @bind:after="OnProizvodniProcesChanged">
                         <option value="">Svi procesi</option>
                         @if (proizvodniProcesiLista != null)
@@ -139,10 +84,8 @@
                         }
                     </select>
                 </div>
-
-                <!-- Radni proces filter -->
                 <div class="col-md-3">
-                    <label class="form-label">Filter radnog procesa</label>
+                    <label class="form-label"><i class="bi bi-gear me-1"></i>Radni proces</label>
                     <select class="form-select" @bind="filterRequest.RadniProcesId">
                         <option value="">Svi radni procesi</option>
                         @if (radniProcesiLista != null)
@@ -153,15 +96,17 @@
                             }
                         }
                     </select>
-                    <small class="text-muted">Filtrira evidencije pre agregacije</small>
                 </div>
+            </div>
 
-                <!-- Action buttons -->
-                <div class="col-md-6"></div>
-                <div class="col-md-3">
-                    <label class="form-label">&nbsp;</label>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-primary w-100" @onclick="UcitajPodatke">
+            <!-- Drugi red - info i dugmad -->
+            <div class="row">
+                <div class="col-md-8">
+                    <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Radni proces filtrira evidencije pre agregacije</small>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button class="btn btn-primary" @onclick="UcitajPodatke">
                             <i class="bi bi-search me-1"></i>Pretraži
                         </button>
                         <button class="btn btn-outline-secondary" @onclick="ResetFilter">
@@ -264,7 +209,6 @@
 
 @code {
     private List<SmenskiIzvestajModel>? smenskiData;
-    private Dictionary<string, decimal>? statistikeData;
     private List<string>? smenskiIzvestajiLista;
     private List<ProizvodniProcesModel>? proizvodniProcesiLista;
     private List<RadniProcesModel>? radniProcesiLista;
@@ -272,10 +216,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var (startDate, endDate) = SystemConstants.GetDefaultDateRange();
+        // OPTIMIZACIJA: Učitaj samo zadnjih 7 dana umesto celog perioda
         filterRequest.OdDatum = DateTime.Now.AddDays(-7);
-        filterRequest.DoDatum = endDate;
-        
+        filterRequest.DoDatum = DateTime.Now;
+
         await UcitajListeZaFiltriranje();
         await UcitajPodatke();
     }
@@ -330,14 +274,12 @@
         try
         {
             smenskiData = await PreradaService.UcitajSmenskeIzvestaje(filterRequest);
-            statistikeData = await PreradaService.UcitajStatistikePoSmenskimIzvestajima(filterRequest);
             StateHasChanged();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Greška pri učitavanju smenskih podataka: {ex.Message}");
             smenskiData = new List<SmenskiIzvestajModel>();
-            statistikeData = new Dictionary<string, decimal>();
             StateHasChanged();
         }
     }

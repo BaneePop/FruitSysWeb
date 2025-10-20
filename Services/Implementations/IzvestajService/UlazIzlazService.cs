@@ -1,17 +1,22 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Models.Requests;
+using FruitSysWeb.Services.Core;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService
 {
-    public class UlazIzlazService : IUlazIzlazService
+    public class UlazIzlazService : BaseService, IUlazIzlazService
     {
         private readonly DatabaseService _databaseService;
+        private readonly ILogger<UlazIzlazService> _logger;
 
-        public UlazIzlazService(DatabaseService databaseService)
+        public UlazIzlazService(DatabaseService databaseService,
+            ILogger<UlazIzlazService> logger)
         {
             _databaseService = databaseService;
+            _logger = logger;
         }
 
         #region Faktura metode
@@ -20,9 +25,9 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
-                    SELECT 
+                    SELECT
                         f.ID,
                         f.Sifra,
                         f.Datum,
@@ -46,35 +51,19 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     LEFT JOIN Komitent k ON f.KomitentID = k.ID
                     WHERE f.Aktivno = 1");
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND f.Datum >= @odDatum");
-                }
+                var parameters = CreateParameters();
 
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND f.Datum <= @doDatum");
-                }
-
-                if (filterRequest.KomitentId.HasValue)
-                {
-                    sql.Append(" AND f.KomitentID = @komitentId");
-                }
+                // Apply date and komitent filters using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "f.Datum");
+                ApplyKomitentFilter(sql, parameters, filterRequest, "f.KomitentID");
 
                 sql.Append(" ORDER BY f.Datum DESC");
-
-                var parameters = new
-                {
-                    odDatum = filterRequest.OdDatum,
-                    doDatum = filterRequest.DoDatum,
-                    komitentId = filterRequest.KomitentId
-                };
 
                 return (await _databaseService.QueryAsync<FakturaModel>(sql.ToString(), parameters)).ToList();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajSveFakture: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajSveFakture");
                 return new List<FakturaModel>();
             }
         }
@@ -113,7 +102,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajFakturuPoId: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajFakturuPoId");
                 return null;
             }
         }
@@ -153,7 +142,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajFakturePoKomitentu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajFakturePoKomitentu");
                 return new List<FakturaModel>();
             }
         }
@@ -193,7 +182,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajFakturePoDatumu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajFakturePoDatumu");
                 return new List<FakturaModel>();
             }
         }
@@ -233,7 +222,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajFakturePoStatusu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajFakturePoStatusu");
                 return new List<FakturaModel>();
             }
         }
@@ -261,7 +250,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT 
                         ol.ID,
@@ -282,19 +271,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     WHERE ol.Aktivno = 1
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(ol.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(ol.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "ol.Datum");
 
                 if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
                 {
@@ -315,7 +295,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajSveOtkupneListove: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajSveOtkupneListove");
                 return new List<OtkupniListModel>();
             }
         }
@@ -347,7 +327,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtkupniListPoId: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtkupniListPoId");
                 return null;
             }
         }
@@ -380,7 +360,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtkupneListovePoKomitentu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtkupneListovePoKomitentu");
                 return new List<OtkupniListModel>();
             }
         }
@@ -413,7 +393,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtkupneListovePoDatumu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtkupneListovePoDatumu");
                 return new List<OtkupniListModel>();
             }
         }
@@ -446,7 +426,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtkupneListovePoStatusu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtkupneListovePoStatusu");
                 return new List<OtkupniListModel>();
             }
         }
@@ -479,7 +459,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtkupneListovePoOtkupnomMestu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtkupneListovePoOtkupnomMestu");
                 return new List<OtkupniListModel>();
             }
         }
@@ -512,7 +492,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajIsplaceneOtkupneListove: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajIsplaceneOtkupneListove");
                 return new List<OtkupniListModel>();
             }
         }
@@ -545,7 +525,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajNeisplaceneOtkupneListove: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajNeisplaceneOtkupneListove");
                 return new List<OtkupniListModel>();
             }
         }
@@ -558,7 +538,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT 
                         p.ID,
@@ -575,19 +555,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     WHERE p.Aktivno = 1
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(p.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(p.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "p.Datum");
 
                 if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
                 {
@@ -608,7 +579,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajSvePrijemnice: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajSvePrijemnice");
                 return new List<PrijemnicaModel>();
             }
         }
@@ -638,7 +609,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajPrijemnicuPoId: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajPrijemnicuPoId");
                 return null;
             }
         }
@@ -669,7 +640,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajPrijemnicePoKomitentu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajPrijemnicePoKomitentu");
                 return new List<PrijemnicaModel>();
             }
         }
@@ -700,7 +671,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajPrijemnicePoDatumu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajPrijemnicePoDatumu");
                 return new List<PrijemnicaModel>();
             }
         }
@@ -731,7 +702,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajPrijemnicePoStatusu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajPrijemnicePoStatusu");
                 return new List<PrijemnicaModel>();
             }
         }
@@ -762,7 +733,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajPrijemnicePoMagacinu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajPrijemnicePoMagacinu");
                 return new List<PrijemnicaModel>();
             }
         }
@@ -793,7 +764,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajPrijemnicePoTipuPrijema: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajPrijemnicePoTipuPrijema");
                 return new List<PrijemnicaModel>();
             }
         }
@@ -824,7 +795,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajPrijemniceZaKontrolu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajPrijemniceZaKontrolu");
                 return new List<PrijemnicaModel>();
             }
         }
@@ -855,7 +826,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajReklamiranePrijemnice: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajReklamiranePrijemnice");
                 return new List<PrijemnicaModel>();
             }
         }
@@ -868,7 +839,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT 
                         o.ID,
@@ -885,19 +856,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     WHERE o.Aktivno = 1
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(o.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(o.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "o.Datum");
 
                 if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
                 {
@@ -918,7 +880,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajSveOtpremnice: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajSveOtpremnice");
                 return new List<OtpremnicaModel>();
             }
         }
@@ -948,7 +910,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtpremnicuPoId: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtpremnicuPoId");
                 return null;
             }
         }
@@ -979,7 +941,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtpremnicePoKomitentu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtpremnicePoKomitentu");
                 return new List<OtpremnicaModel>();
             }
         }
@@ -1010,7 +972,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtpremnicePoDatumu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtpremnicePoDatumu");
                 return new List<OtpremnicaModel>();
             }
         }
@@ -1041,7 +1003,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtpremnicePoStatusu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtpremnicePoStatusu");
                 return new List<OtpremnicaModel>();
             }
         }
@@ -1072,7 +1034,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtpremnicePoMagacinu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtpremnicePoMagacinu");
                 return new List<OtpremnicaModel>();
             }
         }
@@ -1103,7 +1065,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajOtpremnicePoTipu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajOtpremnicePoTipu");
                 return new List<OtpremnicaModel>();
             }
         }
@@ -1134,7 +1096,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajIzvozneOtpremnice: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajIzvozneOtpremnice");
                 return new List<OtpremnicaModel>();
             }
         }
@@ -1165,7 +1127,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajTranzitneOtpremnice: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajTranzitneOtpremnice");
                 return new List<OtpremnicaModel>();
             }
         }
@@ -1200,7 +1162,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajStatistikuPoKomitentima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajStatistikuPoKomitentima");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -1230,7 +1192,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajStatistikuPoMagacinima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajStatistikuPoMagacinima");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -1262,7 +1224,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajStatistikuPoStatusima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajStatistikuPoStatusima");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -1292,7 +1254,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajStatistikuPoMesecima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajStatistikuPoMesecima");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -1301,7 +1263,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT COALESCE(SUM(f.Bruto), 0) as UkupnaVrednost
                     FROM Faktura f
@@ -1309,26 +1271,17 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                       AND f.DokumentStatus = 3
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(f.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(f.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "f.Datum");
 
                 var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql.ToString(), parameters);
                 return rezultat;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnuVrednostFaktura: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnuVrednostFaktura");
                 return 0;
             }
         }
@@ -1337,7 +1290,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT COALESCE(SUM(ol.IznosUkupno), 0) as UkupnaVrednost
                     FROM OtkupniList ol
@@ -1345,26 +1298,17 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                       AND ol.DokumentStatus = 3
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(ol.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(ol.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "ol.Datum");
 
                 var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql.ToString(), parameters);
                 return rezultat;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnuVrednostOtkupnihListova: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnuVrednostOtkupnihListova");
                 return 0;
             }
         }
@@ -1391,7 +1335,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupanBrojDokumenata: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupanBrojDokumenata");
                 return 0;
             }
         }
@@ -1422,7 +1366,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajTopKomitentePoVrednosti: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajTopKomitentePoVrednosti");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -1453,7 +1397,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajTopMagacinePoKolicini: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajTopMagacinePoKolicini");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -1473,7 +1417,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnuKolicinu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnuKolicinu");
                 return 0;
             }
         }
@@ -1497,7 +1441,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnuVrednost: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnuVrednost");
                 return 0;
             }
         }
@@ -1524,7 +1468,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajBrojOtvorenihDokumenata: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajBrojOtvorenihDokumenata");
                 return 0;
             }
         }
@@ -1551,7 +1495,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajBrojZakljucenihDokumenata: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajBrojZakljucenihDokumenata");
                 return 0;
             }
         }
@@ -1578,7 +1522,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajBrojStornoDokumenata: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajBrojStornoDokumenata");
                 return 0;
             }
         }

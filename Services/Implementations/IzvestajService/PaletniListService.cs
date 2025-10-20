@@ -1,13 +1,14 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Models.Requests;
+using FruitSysWeb.Services.Core;
 using Dapper;
 using System.Text;
 using System.Data.SqlTypes;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService
 {
-    public class PaletniListService : IPaletniListService
+    public class PaletniListService : BaseService, IPaletniListService
     {
         private readonly DatabaseService _databaseService;
         private readonly ILogger<PaletniListService> _logger;
@@ -35,15 +36,14 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
         /// <summary>
         /// Učitava prijeme za period
-        /// ✅ ISPRAVKA: Anonymous object umesto Dictionary
+        /// ✅ REFACTORED: Using BaseService helper methods
         /// </summary>
         public async Task<List<PaletniListModel>> UcitajPrijemeZaPeriod(FilterRequest filterRequest)
         {
             try
             {
-                var sql = new StringBuilder();
-                sql.Append(@"
-                    SELECT 
+                var sql = CreateSqlBuilder(@"
+                    SELECT
                         pl.ID,
                         pl.Sifra,
                         pl.Tezina,
@@ -65,37 +65,14 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                       AND a.MagacinID IN (2, 3, 5)
                 ");
 
-                // ✅ ISPRAVKA: Koristim dynamic object za parametre
-                object? parameters = null;
+                var parameters = CreateParameters();
 
-                // Date filters with 4-hour offset for working day
-                if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue)
-                {
-                    var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
-                    var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
-                    
-                    sql.Append(" AND pl.DatumKreiranja >= @OdDatum");
-                    sql.Append(" AND pl.DatumKreiranja < @DoDatum");
-                    
-                    parameters = new { 
-                        OdDatum = adjustedOdDatum,
-                        DoDatum = adjustedDoDatum
-                    };
-                }
-                else if (filterRequest.OdDatum.HasValue)
-                {
-                    var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
-                    sql.Append(" AND pl.DatumKreiranja >= @OdDatum");
-                    
-                    parameters = new { OdDatum = adjustedOdDatum };
-                }
-                else if (filterRequest.DoDatum.HasValue)
-                {
-                    var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
-                    sql.Append(" AND pl.DatumKreiranja < @DoDatum");
-                    
-                    parameters = new { DoDatum = adjustedDoDatum };
-                }
+                // Apply date filter with 4-hour offset for working day
+                ApplyDateFilterWithOffset(sql, parameters, filterRequest,
+                    dateColumnName: "pl.DatumKreiranja",
+                    odDatumHourOffset: 4,
+                    doDatumHourOffset: 4,
+                    doDatumDayOffset: 1);
 
                 sql.Append(" ORDER BY pl.DatumKreiranja DESC");
 
@@ -129,15 +106,14 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
         /// <summary>
         /// Učitava statistiku prijema po voću u periodu
-        /// ✅ ISPRAVKA: Anonymous object umesto Dictionary
+        /// ✅ REFACTORED: Using BaseService helper methods
         /// </summary>
         public async Task<List<PrijemStatistikaModel>> UcitajStatistikuPrijemaPoVocuPeriod(FilterRequest filterRequest)
         {
             try
             {
-                var sql = new StringBuilder();
-                sql.Append(@"
-                    SELECT 
+                var sql = CreateSqlBuilder(@"
+                    SELECT
                         a.Naziv as Voce,
                         SUM(pl.Tezina) as UkupnaKolicina,
                         COUNT(DISTINCT pl.ID) as BrojPrijema
@@ -147,36 +123,14 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                       AND a.MagacinID IN (2, 3, 5)
                 ");
 
-                // ✅ ISPRAVKA: Dynamic object za parametre
-                object? parameters = null;
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue)
-                {
-                    var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
-                    var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
-                    
-                    sql.Append(" AND pl.DatumKreiranja >= @OdDatum");
-                    sql.Append(" AND pl.DatumKreiranja < @DoDatum");
-                    
-                    parameters = new { 
-                        OdDatum = adjustedOdDatum,
-                        DoDatum = adjustedDoDatum
-                    };
-                }
-                else if (filterRequest.OdDatum.HasValue)
-                {
-                    var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
-                    sql.Append(" AND pl.DatumKreiranja >= @OdDatum");
-                    
-                    parameters = new { OdDatum = adjustedOdDatum };
-                }
-                else if (filterRequest.DoDatum.HasValue)
-                {
-                    var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
-                    sql.Append(" AND pl.DatumKreiranja < @DoDatum");
-                    
-                    parameters = new { DoDatum = adjustedDoDatum };
-                }
+                // Apply date filter with 4-hour offset
+                ApplyDateFilterWithOffset(sql, parameters, filterRequest,
+                    dateColumnName: "pl.DatumKreiranja",
+                    odDatumHourOffset: 4,
+                    doDatumHourOffset: 4,
+                    doDatumDayOffset: 1);
 
                 sql.Append(@"
                     GROUP BY a.ID, a.Naziv
@@ -228,7 +182,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT 
                         COALESCE(k.Naziv, 'Nepoznat dobavljač') as Dobavljac,
@@ -311,7 +265,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT COALESCE(SUM(pl.Tezina), 0)
                     FROM PaletniList pl
@@ -320,36 +274,14 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                       AND a.MagacinID IN (2, 3, 5)
                 ");
 
-                // ✅ ISPRAVKA: Dynamic object
-                object? parameters = null;
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue)
-                {
-                    var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
-                    var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
-                    
-                    sql.Append(" AND pl.DatumKreiranja >= @OdDatum");
-                    sql.Append(" AND pl.DatumKreiranja < @DoDatum");
-                    
-                    parameters = new { 
-                        OdDatum = adjustedOdDatum,
-                        DoDatum = adjustedDoDatum
-                    };
-                }
-                else if (filterRequest.OdDatum.HasValue)
-                {
-                    var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
-                    sql.Append(" AND pl.DatumKreiranja >= @OdDatum");
-                    
-                    parameters = new { OdDatum = adjustedOdDatum };
-                }
-                else if (filterRequest.DoDatum.HasValue)
-                {
-                    var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
-                    sql.Append(" AND pl.DatumKreiranja < @DoDatum");
-                    
-                    parameters = new { DoDatum = adjustedDoDatum };
-                }
+                // Apply date filter with 4-hour offset
+                ApplyDateFilterWithOffset(sql, parameters, filterRequest,
+                    dateColumnName: "pl.DatumKreiranja",
+                    odDatumHourOffset: 4,
+                    doDatumHourOffset: 4,
+                    doDatumDayOffset: 1);
 
                 return await _databaseService.ExecuteScalarAsync<decimal>(
                     sql.ToString(),
@@ -543,7 +475,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT COUNT(*)
                     FROM PaletniList pl
@@ -552,36 +484,14 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                       AND a.MagacinID IN (2, 3, 5)
                 ");
 
-                // ✅ ISPRAVKA: Dynamic object
-                object? parameters = null;
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue)
-                {
-                    var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
-                    var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
-                    
-                    sql.Append(" AND pl.DatumKreiranja >= @OdDatum");
-                    sql.Append(" AND pl.DatumKreiranja < @DoDatum");
-                    
-                    parameters = new { 
-                        OdDatum = adjustedOdDatum,
-                        DoDatum = adjustedDoDatum
-                    };
-                }
-                else if (filterRequest.OdDatum.HasValue)
-                {
-                    var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
-                    sql.Append(" AND pl.DatumKreiranja >= @OdDatum");
-                    
-                    parameters = new { OdDatum = adjustedOdDatum };
-                }
-                else if (filterRequest.DoDatum.HasValue)
-                {
-                    var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
-                    sql.Append(" AND pl.DatumKreiranja < @DoDatum");
-                    
-                    parameters = new { DoDatum = adjustedDoDatum };
-                }
+                // Apply date filter with 4-hour offset
+                ApplyDateFilterWithOffset(sql, parameters, filterRequest,
+                    dateColumnName: "pl.DatumKreiranja",
+                    odDatumHourOffset: 4,
+                    doDatumHourOffset: 4,
+                    doDatumDayOffset: 1);
 
                 return await _databaseService.ExecuteScalarAsync<int>(
                     sql.ToString(),

@@ -21,6 +21,7 @@ namespace FruitSysWeb.Extensions
 
             // NOVO: Core services - centralizovani mapiranje i helpers
             services.AddScoped<ITypeMappingService, TypeMappingService>();
+            services.AddSingleton<CacheService>();  // Singleton for shared cache
 
             // Core services
             services.AddScoped<IProizvodnjaService, ProizvodnjaService>();
@@ -37,6 +38,11 @@ namespace FruitSysWeb.Extensions
             
             // NOVO: PaletniList servis za real-time prijem
             services.AddScoped<IPaletniListService, PaletniListService>();
+            
+            // NOVO: Sledljivost servisi
+            services.AddScoped<ISledljivostService, SledljivostService>();
+            services.AddScoped<SledljivostPdfService>();
+            services.AddScoped<SledljivostExcelService>();
 
             return services;
         }

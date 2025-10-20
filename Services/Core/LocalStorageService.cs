@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.JSInterop;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Core
 {
@@ -14,10 +15,12 @@ namespace FruitSysWeb.Services.Core
     public class LocalStorageService : ILocalStorageService
     {
         private readonly IJSRuntime _jsRuntime;
+        private readonly ILogger<LocalStorageService> _logger;
 
-        public LocalStorageService(IJSRuntime jsRuntime)
+        public LocalStorageService(IJSRuntime jsRuntime, ILogger<LocalStorageService> logger)
         {
             _jsRuntime = jsRuntime;
+            _logger = logger;
         }
 
         public async Task<T?> GetItemAsync<T>(string key)
@@ -33,7 +36,7 @@ namespace FruitSysWeb.Services.Core
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju iz LocalStorage: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju iz LocalStorage");
                 return default;
             }
         }
@@ -47,7 +50,7 @@ namespace FruitSysWeb.Services.Core
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri čuvanju u LocalStorage: {ex.Message}");
+                _logger.LogError(ex, "Greška pri čuvanju u LocalStorage");
             }
         }
 
@@ -59,7 +62,7 @@ namespace FruitSysWeb.Services.Core
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri brisanju iz LocalStorage: {ex.Message}");
+                _logger.LogError(ex, "Greška pri brisanju iz LocalStorage");
             }
         }
 
@@ -71,7 +74,7 @@ namespace FruitSysWeb.Services.Core
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri čišćenju LocalStorage: {ex.Message}");
+                _logger.LogError(ex, "Greška pri čišćenju LocalStorage");
             }
         }
     }

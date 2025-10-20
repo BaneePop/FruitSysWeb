@@ -3,6 +3,7 @@ using FruitSysWeb.Models;
 using FruitSysWeb.Services.Core;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Models.Requests;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService;
 
@@ -12,10 +13,13 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService;
 public class BrziPregledService : IBrziPregledService
 {
     private readonly DatabaseService _db;
+        private readonly ILogger<BrziPregledService> _logger;
 
-    public BrziPregledService(DatabaseService db)
+    public BrziPregledService(DatabaseService db,
+            ILogger<BrziPregledService> logger)
     {
         _db = db;
+            _logger = logger;
     }
 
     public Task SacuvajKonfiguraciju(BrziPregledKonfiguracija config)
@@ -40,14 +44,14 @@ public class BrziPregledService : IBrziPregledService
         {
             if (komitentIds == null || !komitentIds.Any())
             {
-                Console.WriteLine("⚠️ UcitajBrziPregledDobavljaca: Nema izabranih komitenata");
+                _logger.LogInformation("⚠️ UcitajBrziPregledDobavljaca: Nema izabranih komitenata");
                 return new List<BrziPregledStavka>();
             }
 
             var odDatum = filter.OdDatum ?? new DateTime(2025, 6, 1);
             var doDatum = filter.DoDatum ?? DateTime.Now;
 
-            Console.WriteLine($"🔍 UcitajBrziPregledDobavljaca: {komitentIds.Count} komitenata");
+            _logger.LogInformation($"🔍 UcitajBrziPregledDobavljaca: {komitentIds.Count} komitenata");
 
             var sql = @"
                 SELECT 
@@ -83,13 +87,13 @@ public class BrziPregledService : IBrziPregledService
             var rezultat = await _db.QueryAsync<BrziPregledStavka>(sql, parameters);
             var lista = rezultat?.ToList() ?? new List<BrziPregledStavka>();
 
-            Console.WriteLine($"✅ Učitano {lista.Count} dobavljača");
+            _logger.LogInformation($"✅ Učitano {lista.Count} dobavljača");
 
             return lista;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Greška u UcitajBrziPregledDobavljaca: {ex.Message}");
+            _logger.LogInformation($"❌ Greška u UcitajBrziPregledDobavljaca: {ex.Message}");
             return new List<BrziPregledStavka>();
         }
     }
@@ -104,14 +108,14 @@ public class BrziPregledService : IBrziPregledService
         {
             if (komitentIds == null || !komitentIds.Any())
             {
-                Console.WriteLine("⚠️ UcitajBrziPregledKupaca: Nema izabranih komitenata");
+                _logger.LogInformation("⚠️ UcitajBrziPregledKupaca: Nema izabranih komitenata");
                 return new List<BrziPregledStavka>();
             }
 
             var odDatum = filter.OdDatum ?? new DateTime(2025, 6, 1);
             var doDatum = filter.DoDatum ?? DateTime.Now;
 
-            Console.WriteLine($"🔍 UcitajBrziPregledKupaca: {komitentIds.Count} komitenata");
+            _logger.LogInformation($"🔍 UcitajBrziPregledKupaca: {komitentIds.Count} komitenata");
 
             var sql = @"
                 SELECT 
@@ -147,13 +151,13 @@ public class BrziPregledService : IBrziPregledService
             var rezultat = await _db.QueryAsync<BrziPregledStavka>(sql, parameters);
             var lista = rezultat?.ToList() ?? new List<BrziPregledStavka>();
 
-            Console.WriteLine($"✅ Učitano {lista.Count} kupaca");
+            _logger.LogInformation($"✅ Učitano {lista.Count} kupaca");
 
             return lista;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Greška u UcitajBrziPregledKupaca: {ex.Message}");
+            _logger.LogInformation($"❌ Greška u UcitajBrziPregledKupaca: {ex.Message}");
             return new List<BrziPregledStavka>();
         }
     }
@@ -169,14 +173,14 @@ public class BrziPregledService : IBrziPregledService
         {
             if (artikliPoVrstama == null || !artikliPoVrstama.Any())
             {
-                Console.WriteLine("⚠️ UcitajRobaNaZalihama: Nema izabranih artikala");
+                _logger.LogInformation("⚠️ UcitajRobaNaZalihama: Nema izabranih artikala");
                 return new List<RobaZaliheStavka>();
             }
 
             var odDatum = filter.OdDatum ?? new DateTime(2025, 6, 1);
             var doDatum = filter.DoDatum ?? DateTime.Now;
 
-            Console.WriteLine($"🔍 UcitajRobaNaZalihama: {artikliPoVrstama.Count} vrsta voća");
+            _logger.LogInformation($"🔍 UcitajRobaNaZalihama: {artikliPoVrstama.Count} vrsta voća");
 
             var rezultat = new List<RobaZaliheStavka>();
 
@@ -200,11 +204,11 @@ public class BrziPregledService : IBrziPregledService
 
             if (!sviArtikliIds.Any())
             {
-                Console.WriteLine("⚠️ Nema artikala za učitavanje");
+                _logger.LogInformation("⚠️ Nema artikala za učitavanje");
                 return rezultat;
             }
 
-            Console.WriteLine($"📦 Batch učitavanje za {sviArtikliIds.Count} ukupno artikala");
+            _logger.LogInformation($"📦 Batch učitavanje za {sviArtikliIds.Count} ukupno artikala");
 
             // ✨ BATCH SQL 1: Nabavka za SVE artikle odjednom
             var sqlNabavka = @"
@@ -274,7 +278,7 @@ public class BrziPregledService : IBrziPregledService
             var lagerDict = lagerTask.Result
                 .ToDictionary(x => (long)x.ArtikalID, x => (decimal)x.Kolicina);
 
-            Console.WriteLine($"✅ Batch podaci učitani: Nabavka={nabavkaDict.Count}, Prodaja={prodajaDict.Count}, Lager={lagerDict.Count}");
+            _logger.LogInformation($"✅ Batch podaci učitani: Nabavka={nabavkaDict.Count}, Prodaja={prodajaDict.Count}, Lager={lagerDict.Count}");
 
             // Grupisanje po vrstama voća
             foreach (var vrsta in artikliPoVrstama.Where(x => x.Value.Any()))
@@ -313,19 +317,19 @@ public class BrziPregledService : IBrziPregledService
                     stavka.LagerVrednost = stavka.LagerKg * cena;
                 }
 
-                Console.WriteLine($"  ✅ {vrsta.Key}: Nabavka={stavka.NabavkaKg:N2}kg, Prodaja={stavka.ProdajaKg:N2}kg, Lager={stavka.LagerKg:N2}kg");
+                _logger.LogInformation($"  ✅ {vrsta.Key}: Nabavka={stavka.NabavkaKg:N2}kg, Prodaja={stavka.ProdajaKg:N2}kg, Lager={stavka.LagerKg:N2}kg");
 
                 rezultat.Add(stavka);
             }
 
-            Console.WriteLine($"✅ Ukupno učitano {rezultat.Count} vrsta voća");
+            _logger.LogInformation($"✅ Ukupno učitano {rezultat.Count} vrsta voća");
 
             return rezultat;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Greška u UcitajRobaNaZalihama: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            _logger.LogInformation($"❌ Greška u UcitajRobaNaZalihama: {ex.Message}");
+            _logger.LogInformation($"Stack trace: {ex.StackTrace}");
             return new List<RobaZaliheStavka>();
         }
     }
@@ -352,8 +356,303 @@ public class BrziPregledService : IBrziPregledService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Greška u UcitajCenuIzKalkulacije: {ex.Message}");
+            _logger.LogInformation($"❌ Greška u UcitajCenuIzKalkulacije: {ex.Message}");
             return 0;
+        }
+    }
+
+    /// <summary>
+    /// Učitava nabavku po danima i po vrsti voća za zadnjih 30 dana
+    /// Filtrira artikle sa MagacinID (2, 3, 5, 6)
+    /// </summary>
+    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajNabavkuPoDanimaPoVociAsync()
+    {
+        try
+        {
+            var doDatum = DateTime.Now;
+            var odDatum = doDatum.AddDays(-30);
+
+            _logger.LogInformation($"🔍 UcitajNabavkuPoDanimaPoVoci: {odDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}");
+
+            // SQL query: Nabavka (KL- dokumenti) grupisan po datumu i vrsti artikla
+            var sql = @"
+                SELECT
+                    DATE(fm.Datum) as Datum,
+                    COALESCE(a.Naziv, 'Nepoznato') as VrstaVoca,
+                    COALESCE(SUM(ABS(fm.Kolicina)), 0) as Kolicina,
+                    COALESCE(SUM(fm.Potrazuje), 0) as Vrednost
+                FROM vPrometFinansijev9 fm
+                INNER JOIN Artikal a ON fm.ArtikalID = a.ID
+                WHERE fm.Dokument LIKE 'KL-%'
+                  AND fm.Datum >= @OdDatum
+                  AND fm.Datum <= @DoDatum
+                  AND fm.DokumentStatus != 2
+                  AND fm.DokumentStatus != 4
+                  AND a.MagacinID IN (2, 3, 5, 6)
+                GROUP BY DATE(fm.Datum), a.Naziv
+                ORDER BY Datum ASC, a.Naziv";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@OdDatum", odDatum);
+            parameters.Add("@DoDatum", doDatum);
+
+            var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
+
+            // Grupisanje po vrsti voća koristeći MapToFruitType
+            // Dictionary<VrstaVoca, Dictionary<Datum, (Kolicina, Vrednost)>>
+            var podaciPoVoci = new Dictionary<string, Dictionary<string, (decimal Kolicina, decimal Vrednost)>>();
+
+            foreach (var red in rezultat)
+            {
+                string artikalNaziv = red.VrstaVoca ?? "Nepoznato";
+                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapToFruitType(artikalNaziv);
+                string datum = ((DateTime)red.Datum).ToString("dd.MM");
+                decimal kolicina = red.Kolicina;
+                decimal vrednost = red.Vrednost;
+
+                if (!podaciPoVoci.ContainsKey(vrstaVoca))
+                {
+                    podaciPoVoci[vrstaVoca] = new Dictionary<string, (decimal, decimal)>();
+                }
+
+                // Saberi vrednosti ako već postoji taj datum
+                if (podaciPoVoci[vrstaVoca].ContainsKey(datum))
+                {
+                    var postojeci = podaciPoVoci[vrstaVoca][datum];
+                    podaciPoVoci[vrstaVoca][datum] = (postojeci.Kolicina + kolicina, postojeci.Vrednost + vrednost);
+                }
+                else
+                {
+                    podaciPoVoci[vrstaVoca][datum] = (kolicina, vrednost);
+                }
+            }
+
+            // Konvertuj u stari format (samo količina za chart)
+            var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
+            foreach (var voce in podaciPoVoci)
+            {
+                rezultatDict[voce.Key] = new Dictionary<string, decimal>();
+                foreach (var datum in voce.Value)
+                {
+                    rezultatDict[voce.Key][datum.Key] = datum.Value.Kolicina; // Vraćamo količinu, ne vrednost
+                }
+            }
+
+            _logger.LogInformation($"✅ Učitano {rezultatDict.Count} vrsta voća za nabavku");
+
+            return rezultatDict;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation($"❌ Greška u UcitajNabavkuPoDanimaPoVoci: {ex.Message}");
+            return new Dictionary<string, Dictionary<string, decimal>>();
+        }
+    }
+
+    /// <summary>
+    /// Učitava prodaju po danima i po vrsti voća za zadnjih 30 dana
+    /// Filtrira artikle sa MagacinID (2, 3, 5, 6)
+    /// </summary>
+    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajProdajuPoDanimaPoVociAsync()
+    {
+        try
+        {
+            var doDatum = DateTime.Now;
+            var odDatum = doDatum.AddDays(-30);
+
+            _logger.LogInformation($"🔍 UcitajProdajuPoDanimaPoVoci: {odDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}");
+
+            // SQL query: Prodaja (FK- dokumenti) grupisan po datumu i vrsti artikla
+            var sql = @"
+                SELECT
+                    DATE(fm.Datum) as Datum,
+                    COALESCE(a.Naziv, 'Nepoznato') as VrstaVoca,
+                    COALESCE(SUM(ABS(fm.Kolicina)), 0) as Kolicina,
+                    COALESCE(SUM(fm.Duguje), 0) as Vrednost
+                FROM vPrometFinansijev9 fm
+                INNER JOIN Artikal a ON fm.ArtikalID = a.ID
+                WHERE fm.Dokument LIKE 'FK-%'
+                  AND fm.Datum >= @OdDatum
+                  AND fm.Datum <= @DoDatum
+                  AND fm.DokumentStatus != 2
+                  AND fm.DokumentStatus != 4
+                  AND a.MagacinID IN (2, 3, 5, 6)
+                GROUP BY DATE(fm.Datum), a.Naziv
+                ORDER BY Datum ASC, a.Naziv";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@OdDatum", odDatum);
+            parameters.Add("@DoDatum", doDatum);
+
+            var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
+
+            // Grupisanje po vrsti voća koristeći MapToFruitType
+            var podaciPoVoci = new Dictionary<string, Dictionary<string, (decimal Kolicina, decimal Vrednost)>>();
+
+            foreach (var red in rezultat)
+            {
+                string artikalNaziv = red.VrstaVoca ?? "Nepoznato";
+                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapToFruitType(artikalNaziv);
+                string datum = ((DateTime)red.Datum).ToString("dd.MM");
+                decimal kolicina = red.Kolicina;
+                decimal vrednost = red.Vrednost;
+
+                if (!podaciPoVoci.ContainsKey(vrstaVoca))
+                {
+                    podaciPoVoci[vrstaVoca] = new Dictionary<string, (decimal, decimal)>();
+                }
+
+                // Saberi vrednosti ako već postoji taj datum
+                if (podaciPoVoci[vrstaVoca].ContainsKey(datum))
+                {
+                    var postojeci = podaciPoVoci[vrstaVoca][datum];
+                    podaciPoVoci[vrstaVoca][datum] = (postojeci.Kolicina + kolicina, postojeci.Vrednost + vrednost);
+                }
+                else
+                {
+                    podaciPoVoci[vrstaVoca][datum] = (kolicina, vrednost);
+                }
+            }
+
+            // Konvertuj u stari format (samo količina za chart)
+            var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
+            foreach (var voce in podaciPoVoci)
+            {
+                rezultatDict[voce.Key] = new Dictionary<string, decimal>();
+                foreach (var datum in voce.Value)
+                {
+                    rezultatDict[voce.Key][datum.Key] = datum.Value.Kolicina; // Vraćamo količinu, ne vrednost
+                }
+            }
+
+            _logger.LogInformation($"✅ Učitano {rezultatDict.Count} vrsta voća za prodaju");
+
+            return rezultatDict;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation($"❌ Greška u UcitajProdajuPoDanimaPoVoci: {ex.Message}");
+            return new Dictionary<string, Dictionary<string, decimal>>();
+        }
+    }
+
+    /// <summary>
+    /// Učitava ukupne vrednosti (količina i vrednost) za nabavku po vrsti voća za zadnjih 30 dana
+    /// </summary>
+    public async Task<Dictionary<string, (decimal Kolicina, decimal Vrednost)>> UcitajUkupneVrednostiNabavkeAsync()
+    {
+        try
+        {
+            var doDatum = DateTime.Now;
+            var odDatum = doDatum.AddDays(-30);
+
+            var sql = @"
+                SELECT
+                    COALESCE(a.Naziv, 'Nepoznato') as ArtikalNaziv,
+                    COALESCE(SUM(ABS(fm.Kolicina)), 0) as Kolicina,
+                    COALESCE(SUM(fm.Potrazuje), 0) as Vrednost
+                FROM vPrometFinansijev9 fm
+                INNER JOIN Artikal a ON fm.ArtikalID = a.ID
+                WHERE fm.Dokument LIKE 'KL-%'
+                  AND fm.Datum >= @OdDatum
+                  AND fm.Datum <= @DoDatum
+                  AND fm.DokumentStatus != 2
+                  AND fm.DokumentStatus != 4
+                  AND a.MagacinID IN (2, 3, 5, 6)
+                GROUP BY a.Naziv";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@OdDatum", odDatum);
+            parameters.Add("@DoDatum", doDatum);
+
+            var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
+
+            var ukupnoPoVoci = new Dictionary<string, (decimal Kolicina, decimal Vrednost)>();
+
+            foreach (var red in rezultat)
+            {
+                string artikalNaziv = red.ArtikalNaziv ?? "Nepoznato";
+                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapToFruitType(artikalNaziv);
+                decimal kolicina = red.Kolicina;
+                decimal vrednost = red.Vrednost;
+
+                if (ukupnoPoVoci.ContainsKey(vrstaVoca))
+                {
+                    var postojeci = ukupnoPoVoci[vrstaVoca];
+                    ukupnoPoVoci[vrstaVoca] = (postojeci.Kolicina + kolicina, postojeci.Vrednost + vrednost);
+                }
+                else
+                {
+                    ukupnoPoVoci[vrstaVoca] = (kolicina, vrednost);
+                }
+            }
+
+            return ukupnoPoVoci;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation($"❌ Greška u UcitajUkupneVrednostiNabavke: {ex.Message}");
+            return new Dictionary<string, (decimal, decimal)>();
+        }
+    }
+
+    /// <summary>
+    /// Učitava ukupne vrednosti (količina i vrednost) za prodaju po vrsti voća za zadnjih 30 dana
+    /// </summary>
+    public async Task<Dictionary<string, (decimal Kolicina, decimal Vrednost)>> UcitajUkupneVrednostiProdajeAsync()
+    {
+        try
+        {
+            var doDatum = DateTime.Now;
+            var odDatum = doDatum.AddDays(-30);
+
+            var sql = @"
+                SELECT
+                    COALESCE(a.Naziv, 'Nepoznato') as ArtikalNaziv,
+                    COALESCE(SUM(ABS(fm.Kolicina)), 0) as Kolicina,
+                    COALESCE(SUM(fm.Duguje), 0) as Vrednost
+                FROM vPrometFinansijev9 fm
+                INNER JOIN Artikal a ON fm.ArtikalID = a.ID
+                WHERE fm.Dokument LIKE 'FK-%'
+                  AND fm.Datum >= @OdDatum
+                  AND fm.Datum <= @DoDatum
+                  AND fm.DokumentStatus != 2
+                  AND fm.DokumentStatus != 4
+                  AND a.MagacinID IN (2, 3, 5, 6)
+                GROUP BY a.Naziv";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@OdDatum", odDatum);
+            parameters.Add("@DoDatum", doDatum);
+
+            var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
+
+            var ukupnoPoVoci = new Dictionary<string, (decimal Kolicina, decimal Vrednost)>();
+
+            foreach (var red in rezultat)
+            {
+                string artikalNaziv = red.ArtikalNaziv ?? "Nepoznato";
+                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapToFruitType(artikalNaziv);
+                decimal kolicina = red.Kolicina;
+                decimal vrednost = red.Vrednost;
+
+                if (ukupnoPoVoci.ContainsKey(vrstaVoca))
+                {
+                    var postojeci = ukupnoPoVoci[vrstaVoca];
+                    ukupnoPoVoci[vrstaVoca] = (postojeci.Kolicina + kolicina, postojeci.Vrednost + vrednost);
+                }
+                else
+                {
+                    ukupnoPoVoci[vrstaVoca] = (kolicina, vrednost);
+                }
+            }
+
+            return ukupnoPoVoci;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation($"❌ Greška u UcitajUkupneVrednostiProdaje: {ex.Message}");
+            return new Dictionary<string, (decimal, decimal)>();
         }
     }
 }

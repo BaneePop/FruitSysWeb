@@ -10,6 +10,8 @@ namespace FruitSysWeb.Models
         public decimal BrojRadnihSati { get; set; }
         public decimal TrosakPoRadnomNalogu { get; set; }
         public decimal ProcenatIskoriscenja { get; set; }
+        public int? PoslovodjaID { get; set; }
+        public string? RadnikImePrezime { get; set; }
 
 
 

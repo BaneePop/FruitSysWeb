@@ -2,16 +2,20 @@ using FruitSysWeb.Models;
 using FruitSysWeb.Services.Models.Requests;
 using System.Text;
 using FruitSysWeb.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService
 {
     public class MagacinLagerService : IMagacinLagerService
     {
         private readonly DatabaseService _databaseService;
+        private readonly ILogger<MagacinLagerService> _logger;
 
-        public MagacinLagerService(DatabaseService databaseService)
+        public MagacinLagerService(DatabaseService databaseService,
+            ILogger<MagacinLagerService> logger)
         {
             _databaseService = databaseService;
+            _logger = logger;
         }
 
         // ============================================
@@ -69,7 +73,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju strukture kutija: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju strukture kutija");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -107,7 +111,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju strukture kesa: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju strukture kesa");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -143,7 +147,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju lager stanja: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju lager stanja");
                 return new List<MagacinLagerModel>();
             }
         }
@@ -225,7 +229,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju lager stanja sa filterima: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju lager stanja sa filterima");
                 return new List<MagacinLagerModel>();
             }
         }
@@ -252,7 +256,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju liste pakovanja: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju liste pakovanja");
                 return new List<string>();
             }
         }
@@ -282,7 +286,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju lager proizvodnje: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju lager proizvodnje");
                 return new List<RadniNalogLagerModel>();
             }
         }
@@ -313,7 +317,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju radnih naloga lager: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju radnih naloga lager");
                 return new List<RadniNalogLagerModel>();
             }
         }
@@ -346,7 +350,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju lager stanja po artiklu: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju lager stanja po artiklu");
                 return new List<MagacinLagerModel>();
             }
         }
@@ -384,7 +388,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju lager stanja po MagacinID: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju lager stanja po MagacinID");
                 return new List<MagacinLagerModel>();
             }
         }
@@ -420,7 +424,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju ukupne vrednosti lager: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju ukupne vrednosti lager");
                 return 0;
             }
         }
@@ -458,7 +462,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju lager stanja sa filterom: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju lager stanja sa filterom");
                 return new List<MagacinLagerModel>();
             }
         }
@@ -491,7 +495,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju lager stanja po lotu: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju lager stanja po lotu");
                 return new List<MagacinLagerModel>();
             }
         }
@@ -522,7 +526,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju otvorenih radnih naloga: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju otvorenih radnih naloga");
                 return new List<RadniNalogLagerModel>();
             }
         }
@@ -552,7 +556,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju radnih naloga po statusu: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju radnih naloga po statusu");
                 return new List<RadniNalogLagerModel>();
             }
         }
@@ -584,7 +588,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju artikala ispod minimuma: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju artikala ispod minimuma");
                 return new List<MagacinLagerModel>();
             }
         }
@@ -623,7 +627,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju statistika lagera: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju statistika lagera");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -666,7 +670,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju strukture sirovina: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju strukture sirovina");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -706,7 +710,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju strukture gotovih proizvoda: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju strukture gotovih proizvoda");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -773,7 +777,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju sirovina: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju sirovina");
                 return new List<MagacinLagerModel>();
             }
         }
@@ -837,7 +841,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju poluproizvoda: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju poluproizvoda");
                 return new List<MagacinLagerModel>();
             }
         }
@@ -914,7 +918,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju kutija: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju kutija");
                 return new List<MagacinLagerModel>();
             }
         }
@@ -998,7 +1002,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju kesa: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju kesa");
                 return new List<MagacinLagerModel>();
             }
         }

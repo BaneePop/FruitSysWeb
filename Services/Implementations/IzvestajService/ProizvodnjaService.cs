@@ -1,24 +1,29 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Models.Requests;
+using FruitSysWeb.Services.Core;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService
 {
-    public class ProizvodnjaService : IProizvodnjaService
+    public class ProizvodnjaService : BaseService, IProizvodnjaService
     {
         private readonly DatabaseService _databaseService;
+        private readonly ILogger<ProizvodnjaService> _logger;
 
-        public ProizvodnjaService(DatabaseService databaseService)
+        public ProizvodnjaService(DatabaseService databaseService,
+            ILogger<ProizvodnjaService> logger)
         {
             _databaseService = databaseService;
+            _logger = logger;
         }
 
         public async Task<List<ProizvodnjaModel>> UcitajIzvestajProizvodnje(FilterRequest filterRequest)
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                 SELECT 
                     rn.DatumPocetka as Datum,
@@ -66,19 +71,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumPocetka");
 
                 if (!string.IsNullOrWhiteSpace(filterRequest.RadniNalog))
                 {
@@ -105,7 +101,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajIzvestajProizvodnje: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajIzvestajProizvodnje");
                 throw;
             }
         }
@@ -114,7 +110,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT COALESCE(SUM(vpp.Kolicina), 0) as UkupnaKolicina
                     FROM vPreradaPregled vpp
@@ -124,26 +120,17 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                       AND a.Aktivno = 1
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumPocetka");
 
                 var rezultat = await _databaseService.ExecuteScalarAsync<decimal>(sql.ToString(), parameters);
                 return rezultat;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnuProizvodnju: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnuProizvodnju");
                 return 0;
             }
         }
@@ -167,7 +154,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajGotoveProizvodePoslednjihDana: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajGotoveProizvodePoslednjihDana");
                 return 0;
             }
         }
@@ -176,7 +163,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
         SELECT 
         COALESCE(k.Naziv, vpp.Komitent, 'Nepoznato') as Komitent,
@@ -192,19 +179,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
           AND vpp.Komitent != ''
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumPocetka");
 
                 sql.Append(@"
                 GROUP BY COALESCE(k.ID, vpp.KomitentID), COALESCE(k.Naziv, vpp.Komitent)
@@ -222,7 +200,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajTopKupcePoKilogramima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajTopKupcePoKilogramima");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -231,7 +209,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
         SELECT 
         COALESCE(k.Naziv, vrp.Komitent, 'Nepoznato') as Komitent,
@@ -247,19 +225,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
           AND vrp.Komitent != ''
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(vrp.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(vrp.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "vrp.Datum");
 
                 sql.Append(@"
                 GROUP BY COALESCE(k.ID, vrp.KomitentID), COALESCE(k.Naziv, vrp.Komitent)
@@ -277,7 +246,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajTopDobavljacePoKilogramima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajTopDobavljacePoKilogramima");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -286,7 +255,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT 
                         CASE 
@@ -303,19 +272,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumPocetka");
 
                 sql.Append(@"
                     GROUP BY BaseArtikal
@@ -331,7 +291,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajProizvodnjuPoArtiklima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajProizvodnjuPoArtiklima");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -340,26 +300,17 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT DISTINCT rn.Sifra
                     FROM RadniNalog rn
                     WHERE rn.Aktivno = 1 AND rn.Sifra IS NOT NULL AND rn.Sifra != ''
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumPocetka");
 
                 sql.Append(" ORDER BY rn.Sifra DESC");
 
@@ -368,7 +319,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajListuRadnihNaloga: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajListuRadnihNaloga");
                 return new List<string>();
             }
         }
@@ -388,7 +339,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajBrojAktivnihNaloga: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajBrojAktivnihNaloga");
                 return 0;
             }
         }
@@ -397,7 +348,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT 
                         COALESCE(vpp.Komitent, 'Nepoznato') as Komitent,
@@ -411,19 +362,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     AND vpp.Komitent != ''
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumPocetka");
 
                 sql.Append(@"
                     GROUP BY vpp.Komitent, vpp.KomitentID
@@ -441,7 +383,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajProizvodnjuPoKomitentima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajProizvodnjuPoKomitentima");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -450,7 +392,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT 
                         a.MagacinID as Tip,
@@ -462,19 +404,10 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                       AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumPocetka");
 
                 sql.Append(@"
                     GROUP BY a.MagacinID
@@ -491,7 +424,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajProizvodnjuPoTipovima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajProizvodnjuPoTipovima");
                 return new Dictionary<int, decimal>();
             }
         }
@@ -500,7 +433,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = new StringBuilder();
+                var sql = CreateSqlBuilder();
                 sql.Append(@"
                     SELECT 
                         rn.DatumPocetka as Datum,
@@ -519,31 +452,25 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     AND EXISTS (SELECT 1 FROM Artikal a WHERE a.ID = vpp.ArtikalID AND a.Aktivno = 1)
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
+                // Apply date filter using BaseService
+                ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumPocetka");
 
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(rn.DatumPocetka) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
-
-                sql.Append($@"
+                sql.Append(@"
                     ORDER BY vpp.Kolicina DESC
-                    LIMIT {brojNaloga}
+                    LIMIT @BrojNaloga
                 ");
+
+                // Add LIMIT parameter safely
+                parameters.Add("@BrojNaloga", brojNaloga);
 
                 var rezultat = await _databaseService.QueryAsync<ProizvodnjaModel>(sql.ToString(), parameters);
                 return rezultat.ToList();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajNajproduktivnijeNaloge: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajNajproduktivnijeNaloge");
                 return new List<ProizvodnjaModel>();
             }
         }

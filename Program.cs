@@ -7,8 +7,32 @@ using FruitSysWeb.Extensions; // DODATO: Extension methods
 using ApexCharts;
 using FruitSysWeb.Services.Core;
 using FruitSysWeb.Components.Layout;
+using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+// Configure Serilog BEFORE creating the builder
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.Hosting.Lifetime", Serilog.Events.LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
+    .WriteTo.File(
+        path: "Logs/fruitsys-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,
+        fileSizeLimitBytes: 10485760, // 10 MB
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
+
+try
+{
+    Log.Information("Starting FruitSysWeb application");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    // Add Serilog to the builder
+    builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddRazorPages();
@@ -38,10 +62,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 //     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
 //         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
-// DODATO: Logging konfigurisanje
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
+// Serilog is already configured via builder.Host.UseSerilog() above
+// No need for manual logging configuration here
 builder.Services.AddRazorComponents().AddInteractiveServerComponents()
     .AddCircuitOptions(options =>
     {
@@ -106,28 +128,38 @@ app.MapRazorPages();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
-// DODANO: Test servisa na startup (opciono)
-using (var scope = app.Services.CreateScope())
-{
-    try
+    // DODATO: Test servisa na startup (opciono)
+    using (var scope = app.Services.CreateScope())
     {
-        var dbService = scope.ServiceProvider.GetRequiredService<DatabaseService>();
-        Console.WriteLine("Database service registered successfully");
-
-        var exportService = scope.ServiceProvider.GetRequiredService<IExportService>();
-        if (exportService is FruitSysWeb.Services.Implementations.ExportService.SimpleExportService simpleExportService)
+        try
         {
-            var pdfTest = simpleExportService.TestPdfGeneration();
-            Console.WriteLine($"PDF generation test: {(pdfTest ? "PASSED" : "FAILED")}");
+            var dbService = scope.ServiceProvider.GetRequiredService<DatabaseService>();
+            Log.Information("Database service registered successfully");
+
+            var exportService = scope.ServiceProvider.GetRequiredService<IExportService>();
+            if (exportService is FruitSysWeb.Services.Implementations.ExportService.SimpleExportService simpleExportService)
+            {
+                var pdfTest = simpleExportService.TestPdfGeneration();
+                Log.Information("PDF generation test: {TestResult}", pdfTest ? "PASSED" : "FAILED");
+            }
+
+            var dashboardService = scope.ServiceProvider.GetRequiredService<IDashboardService>();
+            Log.Information("Dashboard service registered successfully");
         }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Service registration test failed");
+        }
+    }
 
-        var dashboardService = scope.ServiceProvider.GetRequiredService<IDashboardService>();
-        Console.WriteLine("Dashboard service registered successfully");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Service registration test failed: {ex.Message}");
-    }
+    app.Run();
+    Log.Information("FruitSysWeb application stopped cleanly");
 }
-
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

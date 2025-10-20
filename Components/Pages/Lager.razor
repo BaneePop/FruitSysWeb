@@ -93,14 +93,22 @@
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="card border-info">
-                        <div class="card-header bg-info text-white">
+                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-funnel me-2"></i>Filteri pretrage
                             </h5>
+                            <div class="btn-group">
+                                <button class="btn btn-success btn-sm" @onclick="ExportToExcel" disabled="@(lagerStanje?.Count == 0)">
+                                    <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                                </button>
+                                <button class="btn btn-danger btn-sm" @onclick="ExportToPdf" disabled="@(lagerStanje?.Count == 0)">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-3 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label class="form-label fw-bold">Tip artikla:</label>
                                     <select class="form-select" @bind="filterRequest.Tip">
                                         @foreach(var option in TypeMapping.GetMagacinDropdownOptions())
@@ -110,99 +118,14 @@
                                     </select>
                                 </div>
 
-                                <div class="col-md-3 mb-3">
-                                    <label class="form-label fw-bold">Pakovanje:</label>
-                                    <select class="form-select" @bind="filterRequest.Pakovanje">
-                                        <option value="">Sva pakovanja</option>
-                                        @if (pakovanjeLista != null)
-                                        {
-                                            @foreach (var pakovanje in pakovanjeLista)
-                                            {
-                                                <option value="@pakovanje">@pakovanje</option>
-                                            }
-                                        }
-                                    </select>
-                                </div>
-
-                                <div class="col-md-3 mb-3">
-                                    <label class="form-label fw-bold">Brzi filteri:</label>
-                                    <div class="btn-group-vertical d-grid gap-1">
-                                        @foreach(var quickFilter in TypeMapping.GetMagacinQuickFilters())
-                                        {
-                                            <button class="btn @(GetQuickFilterButtonClass(quickFilter)) btn-sm" 
-                                                    @onclick="() => ToggleQuickFilter(quickFilter)">
-                                                <i class="@quickFilter.Icon me-1"></i>@quickFilter.Label
-                                            </button>
-                                        }
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3 mb-3 d-flex align-items-end">
-                                    <div class="d-flex flex-column gap-2 w-100">
-                                        <button class="btn btn-info" @onclick="UcitajPodatke">
+                                <div class="col-md-2 mb-3 d-flex align-items-end">
+                                    <div class="d-flex gap-2 w-100">
+                                        <button class="btn btn-info w-100" @onclick="UcitajPodatke">
                                             <i class="bi bi-search me-2"></i>Filtriraj
                                         </button>
-                                        <button class="btn btn-outline-secondary" @onclick="ResetujFiltere">
-                                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
-                                        </button>
-                                        <div class="btn-group">
-                                            <button class="btn btn-success btn-sm" @onclick="ExportToExcel" disabled="@(lagerStanje?.Count == 0)">
-                                                <i class="bi bi-file-earmark-excel me-1"></i>Excel
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" @onclick="ExportToPdf" disabled="@(lagerStanje?.Count == 0)">
-                                                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
-
-                            @if (filterRequest.ImaAktivneFiltre())
-                            {
-                                <div class="row mt-2">
-                                    <div class="col-12">
-                                        <div class="alert alert-info small">
-                                            <strong>Aktivni filteri:</strong> @filterRequest.GetAktivneFiltereOpis()
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Statistics Cards - REFAKTORISANE sa TypeMapping -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body text-center">
-                            <h5>Ukupno artikala</h5>
-                            <h3>@(lagerStanje?.Count ?? 0)</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-success text-white">
-                        <div class="card-body text-center">
-                            <h5>Roba u kg</h5>
-                            <h3>@TypeMapping.FormatDecimal(GetRobaUKilogramima())</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-warning text-dark">
-                        <div class="card-body text-center">
-                            <h5>Uslužni lager</h5>
-                            <h3>@TypeMapping.FormatDecimal(GetUsluzniLager())</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-info text-white">
-                        <div class="card-body text-center">
-                            <h5>PoluProizvodi</h5>
-                            <h3>@TypeMapping.FormatDecimal(GetPoluproizvodi())</h3>
                         </div>
                     </div>
                 </div>
@@ -256,11 +179,8 @@
                                                 
                                                 <tr class="@stockClass">
                                                     <td>
-                                                        @{
-                                                            string? magacinDisplayName = TypeMapping.GetMagacinDisplayName(item.MagacinID);
-                                                        }
-                                                        <span class="badge @TypeMapping.GetMagacinBadgeClass(item.MagacinID) artikal-tip-badge">
-                                                            @magacinDisplayName
+                                                        <span class="badge bg-secondary artikal-tip-badge">
+                                                            @item.TipArtikla
                                                         </span>
                                                     </td>
                                                     <td>

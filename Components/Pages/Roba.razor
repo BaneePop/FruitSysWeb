@@ -74,40 +74,16 @@
     <div class="tab-content" id="robaTabContent">
         <!-- SIROVINE TAB -->
         <div class="tab-pane fade show active" id="sirovine" role="tabpanel">
-            <!-- Filter Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card border-danger">
-                        <div class="card-header bg-danger text-white">
-                            <h5 class="card-title mb-0">
-                                <i class="bi bi-funnel me-2"></i>Filteri pretrage
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3 d-flex align-items-end">
-                                    <div class="d-flex flex-column gap-2 w-100">
-                                        <button class="btn btn-danger" @onclick="UcitajSirovine">
-                                            <i class="bi bi-search me-2"></i>Osvježi podatke
-                                        </button>
-                                        <button class="btn btn-outline-secondary" @onclick="ResetujFiltere">
-                                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6 mb-3 d-flex align-items-end">
-                                    <div class="btn-group w-100">
-                                        <button class="btn btn-success" @onclick="ExportToExcel" disabled="@(sirovineStanje?.Count == 0)">
-                                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
-                                        </button>
-                                        <button class="btn btn-danger" @onclick="ExportToPdf" disabled="@(sirovineStanje?.Count == 0)">
-                                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <!-- Export Buttons -->
+            <div class="row mb-3">
+                <div class="col-12 text-end">
+                    <div class="btn-group">
+                        <button class="btn btn-success btn-sm" @onclick="ExportToExcel" disabled="@(sirovineStanje?.Count == 0)">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                        </button>
+                        <button class="btn btn-danger btn-sm" @onclick="ExportToPdf" disabled="@(sirovineStanje?.Count == 0)">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                        </button>
                     </div>
                 </div>
             </div>
@@ -208,40 +184,16 @@
 
         <!-- POLUPROIZVODI TAB -->
         <div class="tab-pane fade" id="poluproizvodi" role="tabpanel">
-            <!-- Filter Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card border-secondary">
-                        <div class="card-header bg-secondary text-white">
-                            <h5 class="card-title mb-0">
-                                <i class="bi bi-funnel me-2"></i>Filteri pretrage
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3 d-flex align-items-end">
-                                    <div class="d-flex flex-column gap-2 w-100">
-                                        <button class="btn btn-secondary text-white" @onclick="UcitajPoluproizvode">
-                                            <i class="bi bi-search me-2"></i>Osvježi podatke
-                                        </button>
-                                        <button class="btn btn-outline-secondary" @onclick="ResetujFiltere">
-                                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6 mb-3 d-flex align-items-end">
-                                    <div class="btn-group w-100">
-                                        <button class="btn btn-success" @onclick="ExportToExcelPoluproizvodi" disabled="@(poluproizvodiStanje?.Count == 0)">
-                                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
-                                        </button>
-                                        <button class="btn btn-danger" @onclick="ExportToPdfPoluproizvodi" disabled="@(poluproizvodiStanje?.Count == 0)">
-                                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <!-- Export Buttons -->
+            <div class="row mb-3">
+                <div class="col-12 text-end">
+                    <div class="btn-group">
+                        <button class="btn btn-success btn-sm" @onclick="ExportToExcelPoluproizvodi" disabled="@(poluproizvodiStanje?.Count == 0)">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                        </button>
+                        <button class="btn btn-danger btn-sm" @onclick="ExportToPdfPoluproizvodi" disabled="@(poluproizvodiStanje?.Count == 0)">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                        </button>
                     </div>
                 </div>
             </div>

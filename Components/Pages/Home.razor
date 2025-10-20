@@ -15,146 +15,85 @@
 @inject NavigationManager NavigationManager
 @inject ITypeMappingService TypeMapping
 @inject IPreradaService PreradaService
+@inject IBrziPregledService BrziPregledService
 
 <style>
     .main-header {
-        background: linear-gradient(135deg, #1a2332, #232d3f, #2a3441);
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
         border-radius: 15px;
         margin-bottom: 2.5rem;
         box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        border: 1px solid #374151;
+        border: 1px solid #0b5ed7;
     }
     
     .section-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 2rem;
-        margin-bottom: 2.5rem;
-    }
-    
-    .main-section {
-        background: #1a2332;
-        border-radius: 15px;
-        padding: 2.5rem;
-        text-align: center;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        border: 1px solid #374151;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .main-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(90deg, #198754, #20c997);
-        transform: scaleX(0);
-        transform-origin: left;
-        transition: transform 0.4s ease;
-    }
-
-    .main-section:hover::before {
-        transform: scaleX(1);
-    }
-    
-    .main-section:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 15px 40px rgba(0,0,0,0.2);
-    }
-    
-    .section-icon-main {
-        font-size: 4rem;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1rem;
         margin-bottom: 2rem;
-        background: linear-gradient(135deg, #198754, #20c997);
-        background-clip: text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+    }
+
+    .section-card {
+        background: #1a2332;
+        border-radius: 10px;
+        padding: 1.25rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+        border-left: 4px solid #198754;
+        cursor: pointer;
+        border: 1px solid #374151;
+    }
+
+    .section-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        border-left-color: #20c997;
+    }
+
+    .section-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        color: #198754;
         transition: all 0.3s ease;
     }
 
-    .main-section:hover .section-icon-main {
+    .section-card:hover .section-icon {
+        color: #20c997;
         transform: scale(1.1);
     }
-    
-    .section-title-main {
-        font-weight: 800;
-        color: #e5e7eb;
-        margin-bottom: 1rem;
-        font-size: 1.5rem;
-    }
-    
-    .section-description-main {
-        color: #9ca3af;
-        margin-bottom: 2rem;
-        line-height: 1.7;
-        font-size: 1.05rem;
-    }
-    
-    .section-features-main {
-        list-style: none;
-        padding: 0;
-        text-align: left;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
-    }
-    
-    .section-features-main li {
-        padding: 0.4rem 0;
-        color: #9ca3af;
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-    }
-    
-    .section-features-main li i {
-        color: #198754;
-        margin-right: 0.7rem;
-        font-size: 1rem;
-    }
 
-    .welcome-text {
-        text-align: center;
-        margin-bottom: 2rem;
-        padding: 1.5rem;
-        background: linear-gradient(135deg, rgba(25, 135, 84, 0.05), rgba(32, 201, 151, 0.05));
-        border-radius: 12px;
-        border: 1px solid rgba(25, 135, 84, 0.1);
-    }
-
-    .welcome-title {
-        font-size: 1.3rem;
-        font-weight: 600;
+    .section-title {
+        font-weight: 700;
         color: #e5e7eb;
         margin-bottom: 0.5rem;
+        font-size: 1.1rem;
     }
 
-    .welcome-subtitle {
+    .section-description {
         color: #9ca3af;
-        font-size: 1rem;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        margin: 0;
+    }
+
+    @@media (max-width: 1200px) {
+        .section-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
     }
 
     @@media (max-width: 768px) {
         .section-grid {
             grid-template-columns: 1fr;
-            gap: 1.5rem;
+            gap: 1rem;
         }
 
-        .section-features-main {
-            grid-template-columns: 1fr;
-        }
-
-        .main-section {
+        .section-card {
             padding: 1.5rem;
         }
 
-        .section-icon-main {
-            font-size: 3rem;
+        .section-icon {
+            font-size: 2.5rem;
         }
     }
 </style>
@@ -165,9 +104,9 @@
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h1 class="display-5 mb-2 fw-bold">
-                    <i class="bi bi-speedometer2 me-3"></i>FruitSysWeb Dashboard
+                    FruitSysWeb
                 </h1>
-                <p class="lead mb-0">Integrisani sistem za upravljanje voćnom proizvodnjom</p>
+                <p class="lead mb-0">Integrisani sistem za upravljanje proizvodnjom voća</p>
             </div>
             <div class="col-md-4 text-end">
                 <div class="text-white-50">
@@ -179,88 +118,71 @@
 </div>
 
 <div class="container-fluid">
-    <!-- Welcome Section -->
-    <div class="welcome-text">
-        <div class="welcome-title">Dobrodošli u FruitSysWeb</div>
-        <div class="welcome-subtitle">Izaberite sekciju za nastavak rada sa sistemom</div>
-    </div>
-
     <!-- Main Sections -->
     <div class="section-grid">
         <!-- 1. Prerada Home -->
-        <div class="main-section" @onclick="@(() => NavigateTo("/preradahome"))">
-            <div class="section-icon-main">
-                <i class="bi bi-gear-wide-connected"></i>
+        <div class="section-card" @onclick="@(() => NavigateTo("/preradahome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-gear-wide-connected"></i>
+                </div>
+                <h3 class="section-title">Prerada</h3>
+                <p class="section-description">
+                    Upravljanje proizvodnim procesima, radnim nalozima i smenskim izveštajima
+                </p>
             </div>
-            <h3 class="section-title-main">Prerada</h3>
-            <p class="section-description-main">
-                Upravljanje proizvodnim procesima, radnim nalozima i smenskim izveštajima
-            </p>
-            <ul class="section-features-main">
-                <li><i class="bi bi-check-circle"></i>Proizvodnja</li>
-                <li><i class="bi bi-check-circle"></i>Lager proizvodnje</li>
-                <li><i class="bi bi-check-circle"></i>Radni nalozi</li>
-                <li><i class="bi bi-check-circle"></i>Smenski izveštaji</li>
-                <li><i class="bi bi-check-circle"></i>Evidencija rada</li>
-                <li><i class="bi bi-check-circle"></i>Efikasnost procesa</li>
-            </ul>
         </div>
 
         <!-- 2. Finansije Home -->
-        <div class="main-section" @onclick="@(() => NavigateTo("/finansijehome"))">
-            <div class="section-icon-main">
-                <i class="bi bi-cash-stack"></i>
+        <div class="section-card" @onclick="@(() => NavigateTo("/finansijehome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <h3 class="section-title">Promet i Finansije</h3>
+                <p class="section-description">
+                    Centralizirano upravljanje finansijskim tokovima i prometom
+                </p>
             </div>
-            <h3 class="section-title-main">Promet i Finansije</h3>
-            <p class="section-description-main">
-                Centralizirano upravljanje finansijskim tokovima i prometom
-            </p>
-            <ul class="section-features-main">
-                <li><i class="bi bi-check-circle"></i>Finansijski pregledi</li>
-                <li><i class="bi bi-check-circle"></i>Ulaz-Izlaz dokumenti</li>
-                <li><i class="bi bi-check-circle"></i>Saldo analiza</li>
-                <li><i class="bi bi-check-circle"></i>Top kupci/dobavljači</li>
-                <li><i class="bi bi-check-circle"></i>Mesečne analize</li>
-                <li><i class="bi bi-check-circle"></i>Export izveštaja</li>
-            </ul>
         </div>
 
         <!-- 3. Lager Home -->
-        <div class="main-section" @onclick="@(() => NavigateTo("/lagerhome"))">
-            <div class="section-icon-main">
-                <i class="bi bi-boxes"></i>
+        <div class="section-card" @onclick="@(() => NavigateTo("/lagerhome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-boxes"></i>
+                </div>
+                <h3 class="section-title">Lager</h3>
+                <p class="section-description">
+                    Upravljanje magacinskim operacijama i zalihama sirovina i gotovih proizvoda
+                </p>
             </div>
-            <h3 class="section-title-main">Lager</h3>
-            <p class="section-description-main">
-                Upravljanje magacinskim operacijama i zalihama sirovina i gotovih proizvoda
-            </p>
-            <ul class="section-features-main">
-                <li><i class="bi bi-check-circle"></i>Magacin lager</li>
-                <li><i class="bi bi-check-circle"></i>Lager proizvodnje</li>
-                <li><i class="bi bi-check-circle"></i>Stanje sirovina</li>
-                <li><i class="bi bi-check-circle"></i>Gotovi proizvodi</li>
-                <li><i class="bi bi-check-circle"></i>Ambalažni materijal</li>
-                <li><i class="bi bi-check-circle"></i>Status indikatori</li>
-            </ul>
         </div>
 
         <!-- 4. Troškovi Home -->
-        <div class="main-section" @onclick="@(() => NavigateTo("/troskovihome"))">
-            <div class="section-icon-main">
-                <i class="bi bi-receipt-cutoff"></i>
+        <div class="section-card" @onclick="@(() => NavigateTo("/troskovihome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-receipt-cutoff"></i>
+                </div>
+                <h3 class="section-title">Troškovi i Rashodi</h3>
+                <p class="section-description">
+                    Praćenje troškova, rashoda i operativnih pokazatelja po kategorijama
+                </p>
             </div>
-            <h3 class="section-title-main">Troškovi i Rashodi</h3>
-            <p class="section-description-main">
-                Praćenje troškova, rashoda i operativnih pokazatelja po kategorijama
-            </p>
-            <ul class="section-features-main">
-                <li><i class="bi bi-check-circle"></i>Troškovi rada</li>
-                <li><i class="bi bi-check-circle"></i>Troškovi materijala</li>
-                <li><i class="bi bi-check-circle"></i>Režijski troškovi</li>
-                <li><i class="bi bi-check-circle"></i>Troškovi transporta</li>
-                <li><i class="bi bi-check-circle"></i>Mesečne analize</li>
-                <li><i class="bi bi-check-circle"></i>Export izveštaja</li>
-            </ul>
+        </div>
+
+        <!-- 5. Promet Home -->
+        <div class="section-card" @onclick="@(() => NavigateTo("/promethome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-arrow-left-right"></i>
+                </div>
+                <h3 class="section-title">Promet</h3>
+                <p class="section-description">
+                    Upravljanje nabavkom, prodajom i izveštajima o prometu robe
+                </p>
+            </div>
         </div>
     </div>
 
@@ -352,6 +274,39 @@
         </div>
     </div>
 
+    <!-- Nabavka i Prodaja Charts - Poslednjih 30 Dana -->
+    <div class="row mt-4 mb-4">
+        <!-- Nabavka Chart -->
+        <div class="col-md-6 mb-3">
+            <ApexMultiSeriesLineChart
+                Title="Nabavka po Vrsti Voća (Poslednjih 30 Dana)"
+                Icon="bi bi-cart-plus"
+                SeriesData="@nabavkaSeriesData"
+                Unit="kg"
+                IsWeight="true"
+                IsLoading="@isLoadingNabavka"
+                HasError="@hasErrorNabavka"
+                ShowSummary="true"
+                Height="450"
+                OnRefresh="@UcitajNabavkuPodatke" />
+        </div>
+
+        <!-- Prodaja Chart -->
+        <div class="col-md-6 mb-3">
+            <ApexMultiSeriesLineChart
+                Title="Prodaja po Vrsti Voća (Poslednjih 30 Dana)"
+                Icon="bi bi-cart-check"
+                SeriesData="@prodajaSeriesData"
+                Unit="kg"
+                IsWeight="true"
+                IsLoading="@isLoadingProdaja"
+                HasError="@hasErrorProdaja"
+                ShowSummary="true"
+                Height="450"
+                OnRefresh="@UcitajProdajuPodatke" />
+        </div>
+    </div>
+
     <!-- Charts Section (Existing Dashboard Analytics) -->
     <div class="row mt-4">
         <div class="col-12">
@@ -372,9 +327,23 @@
 @code {
     private List<NajavljeniUtovarModel>? najavljeniUtovari;
 
+    // Nabavka chart data
+    private List<FruitSysWeb.Components.Charts.ChartSeriesData> nabavkaSeriesData = new();
+    private bool isLoadingNabavka = true;
+    private bool hasErrorNabavka = false;
+
+    // Prodaja chart data
+    private List<FruitSysWeb.Components.Charts.ChartSeriesData> prodajaSeriesData = new();
+    private bool isLoadingProdaja = true;
+    private bool hasErrorProdaja = false;
+
     protected override async Task OnInitializedAsync()
     {
-        await UcitajNajavljeneUtovare();
+        await Task.WhenAll(
+            UcitajNajavljeneUtovare(),
+            UcitajNabavkuPodatke(),
+            UcitajProdajuPodatke()
+        );
     }
 
     private async Task UcitajNajavljeneUtovare()
@@ -388,6 +357,104 @@
         {
             Console.WriteLine($"Greška pri učitavanju najavljenih utovara: {ex.Message}");
             najavljeniUtovari = new List<NajavljeniUtovarModel>();
+        }
+    }
+
+    private async Task UcitajNabavkuPodatke()
+    {
+        try
+        {
+            isLoadingNabavka = true;
+            hasErrorNabavka = false;
+            StateHasChanged();
+
+            // Učitaj podatke po danima (za chart) i ukupne vrednosti (za summary)
+            var podaciTask = BrziPregledService.UcitajNabavkuPoDanimaPoVociAsync();
+            var ukupnoTask = BrziPregledService.UcitajUkupneVrednostiNabavkeAsync();
+
+            await Task.WhenAll(podaciTask, ukupnoTask);
+
+            var podaci = await podaciTask;
+            var ukupno = await ukupnoTask;
+
+            // Konvertuj Dictionary<VrstaVoca, Dictionary<Datum, Kolicina>> u ChartSeriesData
+            nabavkaSeriesData = podaci
+                .Select(voce => new FruitSysWeb.Components.Charts.ChartSeriesData
+                {
+                    Name = voce.Key,
+                    Data = voce.Value
+                        .Select(datum => new FruitSysWeb.Components.Charts.ChartDataPoint
+                        {
+                            Label = datum.Key, // "dd.MM" format
+                            Value = datum.Value // Količina
+                        })
+                        .ToList(),
+                    Color = FruitSysWeb.Components.Charts.ChartDataHelper.GetFruitColor(voce.Key),
+                    TotalKolicina = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Kolicina : 0,
+                    TotalVrednost = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Vrednost : 0
+                })
+                .ToList();
+
+            isLoadingNabavka = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Greška pri učitavanju nabavke: {ex.Message}");
+            hasErrorNabavka = true;
+            isLoadingNabavka = false;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task UcitajProdajuPodatke()
+    {
+        try
+        {
+            isLoadingProdaja = true;
+            hasErrorProdaja = false;
+            StateHasChanged();
+
+            // Učitaj podatke po danima (za chart) i ukupne vrednosti (za summary)
+            var podaciTask = BrziPregledService.UcitajProdajuPoDanimaPoVociAsync();
+            var ukupnoTask = BrziPregledService.UcitajUkupneVrednostiProdajeAsync();
+
+            await Task.WhenAll(podaciTask, ukupnoTask);
+
+            var podaci = await podaciTask;
+            var ukupno = await ukupnoTask;
+
+            // Konvertuj Dictionary<VrstaVoca, Dictionary<Datum, Kolicina>> u ChartSeriesData
+            prodajaSeriesData = podaci
+                .Select(voce => new FruitSysWeb.Components.Charts.ChartSeriesData
+                {
+                    Name = voce.Key,
+                    Data = voce.Value
+                        .Select(datum => new FruitSysWeb.Components.Charts.ChartDataPoint
+                        {
+                            Label = datum.Key, // "dd.MM" format
+                            Value = datum.Value // Količina
+                        })
+                        .ToList(),
+                    Color = FruitSysWeb.Components.Charts.ChartDataHelper.GetFruitColor(voce.Key),
+                    TotalKolicina = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Kolicina : 0,
+                    TotalVrednost = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Vrednost : 0
+                })
+                .ToList();
+
+            isLoadingProdaja = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Greška pri učitavanju prodaje: {ex.Message}");
+            hasErrorProdaja = true;
+            isLoadingProdaja = false;
+        }
+        finally
+        {
+            StateHasChanged();
         }
     }
 

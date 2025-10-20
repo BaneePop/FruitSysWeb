@@ -1,0 +1,221 @@
+@using ApexCharts
+@using FruitSysWeb.Models.Common
+
+<div class="card" style="background: #1a2332; border: 1px solid #374151;">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background: #232d3f; border-bottom: 1px solid #374151;">
+        <h5 class="mb-0 text-white">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <i class="@Icon me-2"></i>
+            }
+            @Title
+        </h5>
+        @if (!IsLoading && !HasError && OnRefresh.HasDelegate)
+        {
+            <button class="btn btn-sm btn-outline-light" @onclick="OnRefresh">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        }
+    </div>
+    <div class="card-body">
+        @if (IsLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Učitavanje...</span>
+                </div>
+                <p class="mt-3 text-white-50">Učitavanje podataka...</p>
+            </div>
+        }
+        else if (HasError)
+        {
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Greška pri učitavanju podataka
+            </div>
+        }
+        else if (SeriesData == null || !SeriesData.Any())
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <p class="mt-3 text-muted">Nema podataka za prikaz</p>
+            </div>
+        }
+        else
+        {
+            <ApexChart TItem="ChartDataPoint"
+                       Options="@ChartOptions"
+                       Height="@Height">
+                @foreach (var series in SeriesData)
+                {
+                    <ApexPointSeries TItem="ChartDataPoint"
+                                     Items="@series.Data"
+                                     Name="@series.Name"
+                                     SeriesType="SeriesType.Line"
+                                     XValue="@(e => e.Label)"
+                                     YAggregate="@(e => e.Sum(x => x.Value))"
+                                     OrderBy="@(e => e.X)" />
+                }
+            </ApexChart>
+
+            @if (ShowSummary && SeriesData.Any())
+            {
+                var ukupnaKolicina = SeriesData.Sum(s => s.TotalKolicina);
+                var ukupnaVrednost = SeriesData.Sum(s => s.TotalVrednost);
+
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="p-3 rounded" style="background: linear-gradient(135deg, #232d3f, #2a3441); border: 1px solid #374151;">
+                            <div class="text-white">
+                                @foreach (var series in SeriesData)
+                                {
+                                    <div class="mb-2 pb-2" style="border-bottom: 1px solid #374151;">
+                                        <strong>@series.Name</strong> @series.TotalKolicina.ToString("N2") kg Vrednost @series.TotalVrednost.ToString("N2") RSD
+                                    </div>
+                                }
+                                <div class="mt-2 pt-2" style="border-top: 2px solid #4b5563;">
+                                    <strong>Ukupno</strong> @ukupnaKolicina.ToString("N2") kg Vrednost @ukupnaVrednost.ToString("N2") RSD
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Chart";
+    [Parameter] public string Icon { get; set; } = "bi bi-bar-chart";
+    [Parameter] public List<ChartSeriesData> SeriesData { get; set; } = new();
+    [Parameter] public string Unit { get; set; } = "";
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public bool ShowSummary { get; set; } = true;
+    [Parameter] public int Height { get; set; } = 400;
+    [Parameter] public EventCallback OnRefresh { get; set; }
+
+    /// <summary>
+    /// Definiše da li je vrednost u kilogramima (formatira kao "1.234,56 kg")
+    /// ili novac (formatira kao "1.234,56 RSD")
+    /// </summary>
+    [Parameter] public bool IsWeight { get; set; } = false;
+
+    private ApexChartOptions<ChartDataPoint> ChartOptions => new()
+    {
+        Theme = new Theme
+        {
+            Mode = Mode.Dark,
+            Palette = PaletteType.Palette2
+        },
+        Chart = new Chart
+        {
+            Type = ChartType.Line,
+            Height = Height,
+            Background = "transparent",
+            ForeColor = "#e5e7eb",
+            Toolbar = new Toolbar { Show = true },
+            Zoom = new Zoom { Enabled = true }
+        },
+        Colors = GetSeriesColors(),
+        Stroke = new Stroke
+        {
+            Curve = Curve.Smooth,
+            Width = 3
+        },
+        Markers = new Markers
+        {
+            Size = 5
+        },
+        Xaxis = new XAxis
+        {
+            Labels = new XAxisLabels
+            {
+                Style = new AxisLabelStyle
+                {
+                    Colors = "#9ca3af"
+                },
+                Rotate = -45,
+                RotateAlways = false
+            }
+        },
+        Yaxis = new List<YAxis>
+        {
+            new YAxis
+            {
+                Title = new AxisTitle
+                {
+                    Text = Unit,
+                    Style = new AxisTitleStyle { Color = "#9ca3af" }
+                },
+                Labels = new YAxisLabels
+                {
+                    Style = new AxisLabelStyle { Colors = "#9ca3af" },
+                    Formatter = @"function(value) {
+                        if (value == null) return '0';
+                        return value.toLocaleString('sr-RS', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }"
+                }
+            }
+        },
+        Grid = new Grid
+        {
+            BorderColor = "#374151",
+            StrokeDashArray = 4
+        },
+        Tooltip = new ApexCharts.Tooltip
+        {
+            Enabled = true,
+            Shared = true,
+            Intersect = false,
+            Y = new TooltipY
+            {
+                Formatter = IsWeight
+                    ? @"function(value) {
+                        if (value == null) return '0 kg';
+                        return value.toLocaleString('sr-RS', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kg';
+                    }"
+                    : @"function(value) {
+                        if (value == null) return '0 RSD';
+                        return value.toLocaleString('sr-RS', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' RSD';
+                    }"
+            }
+        },
+        Legend = new Legend
+        {
+            Position = LegendPosition.Top,
+            HorizontalAlign = Align.Center,
+            FontSize = "14px",
+            Labels = new LegendLabels
+            {
+                Colors = "#e5e7eb"
+            }
+        }
+    };
+
+    private List<string> GetSeriesColors()
+    {
+        // Koristi boje iz SeriesData ako su postavljene, inače default
+        if (SeriesData != null && SeriesData.Any())
+        {
+            return SeriesData
+                .Select(s => !string.IsNullOrEmpty(s.Color) ? s.Color : "#28a745")
+                .ToList();
+        }
+
+        return new List<string> { "#28a745" }; // Default zelena
+    }
+
+    private string FormatValue(decimal value)
+    {
+        if (IsWeight)
+        {
+            return $"{value:N2} kg";
+        }
+        else
+        {
+            return $"{value:N2} RSD";
+        }
+    }
+}

@@ -3,6 +3,7 @@ using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services;
 using FruitSysWeb.Services.Models.Requests;
 using FruitSysWeb.Components.Shared.Filters;
+using Microsoft.Extensions.Logging;
 
 
 namespace FruitSysWeb.Services
@@ -10,10 +11,12 @@ namespace FruitSysWeb.Services
     public class KomitentService : IKomitentService
     {
         private readonly DatabaseService _databaseService;
+        private readonly ILogger<KomitentService> _logger;
 
-        public KomitentService(DatabaseService databaseService)
+        public KomitentService(DatabaseService databaseService, ILogger<KomitentService> logger)
         {
             _databaseService = databaseService;
+            _logger = logger;
         }
 
         public async Task<List<Komitent>> UcitajSveKomitente()
@@ -35,7 +38,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju komitenata: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju komitenata");
                 return new List<Komitent>();
             }
         }
@@ -58,7 +61,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju komitenta: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju komitenta");
                 return null;
             }
         }
@@ -83,7 +86,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri pretrazi komitenata: {ex.Message}");
+                _logger.LogError(ex, "Greška pri pretrazi komitenata");
                 return new List<Komitent>();
             }
         }
@@ -116,7 +119,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju komitenata po tipu: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju komitenata po tipu");
                 return new List<Komitent>();
             }
         }
@@ -162,7 +165,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju komitenata po pretrazi i tipu: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju komitenata po pretrazi i tipu");
                 return new List<Komitent>();
             }
         }
@@ -184,12 +187,12 @@ namespace FruitSysWeb.Services
                 ";
 
                 var rezultat = await _databaseService.QueryAsync<Komitent>(sql);
-                Console.WriteLine($"DEBUG: Učitano {rezultat.Count()} komitenata koji imaju radne naloge");
+                _logger.LogInformation($"DEBUG: Učitano {rezultat.Count()} komitenata koji imaju radne naloge");
                 return rezultat.ToList();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju komitenata sa radnim nalozima: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju komitenata sa radnim nalozima");
                 return new List<Komitent>();
             }
         }

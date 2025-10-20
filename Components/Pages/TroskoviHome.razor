@@ -114,64 +114,210 @@
     }
     else
     {
-        <!-- Row 1: Troškovi Ambalaze -->
-        <div class="chart-row">
-            <ApexBarChart
-                Title="Troškovi Ambalaze (Od Početka Sezone)"
-                Icon="bi bi-box-seam"
-                SeriesName="Troškovi"
-                Unit="RSD"
-                Color="#28a745"
-                Data="@TroskoviAmbalaze"
-                IsLoading="@IsLoadingAmbalaza"
-                HasError="@HasErrorAmbalaza"
-                ShowSummary="true"
-                OnRefresh="@RefreshAmbalaza" />
-        </div>
-
-        <!-- Row 2: Trošak po Radnom Danu i Broj Radnika -->
+        <!-- Row 1: Pregled po Danu (levo) i Troškovi Ambalaze (desno) -->
         <div class="row chart-row">
-            <div class="col-lg-6 mb-3">
-                <ApexBarChart
-                    Title="Trošak po Radnom Danu (Poslednjih 7 Dana)"
-                    Icon="bi bi-cash-coin"
-                    SeriesName="Trošak"
-                    Unit="RSD"
-                    Color="#ffc107"
-                    Data="@TrosakPoRadnomDanu"
-                    IsLoading="@IsLoadingTrosakDanu"
-                    HasError="@HasErrorTrosakDanu"
-                    ShowSummary="true"
-                    OnRefresh="@RefreshTrosakDanu" />
+            <!-- Levo: Pregled po Radnom Danu -->
+            <div class="col-md-6">
+                <div class="card" style="background: #1a2332; border: 1px solid #374151;">
+                    <div class="card-header" style="background: #232d3f; border-bottom: 1px solid #374151;">
+                        <h5 class="mb-0 text-white">
+                            <i class="bi bi-calendar-week me-2"></i>Pregled po Radnom Danu (Poslednjih 7 Dana)
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                    @if (TrosakPoRadnomDanu != null && TrosakPoRadnomDanu.Any() && BrojRadnikaPoDanima != null && BrojRadnikaPoDanima.Any())
+                    {
+                        // Spajanje podataka po datumu
+                        var kombinovaniPodaci = TrosakPoRadnomDanu
+                            .Join(BrojRadnikaPoDanima,
+                                trosak => trosak.Label,
+                                radnici => radnici.Label,
+                                (trosak, radnici) => new
+                                {
+                                    Datum = trosak.Label,
+                                    BrojRadnika = radnici.Value,
+                                    TrosakPoDanu = trosak.Value,
+                                    TrosakPoRadniku = radnici.Value > 0 ? trosak.Value / radnici.Value : 0
+                                })
+                            .OrderBy(x => x.Datum)
+                            .ToList();
+
+                        // Izračunaj min/max za bojenje
+                        var minTrosakPoRadniku = kombinovaniPodaci.Any() ? kombinovaniPodaci.Min(x => x.TrosakPoRadniku) : 0;
+                        var maxTrosakPoRadniku = kombinovaniPodaci.Any() ? kombinovaniPodaci.Max(x => x.TrosakPoRadniku) : 0;
+
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" style="color: #e5e7eb;">
+                                <thead style="background: #232d3f;">
+                                    <tr>
+                                        <th class="text-white">Datum</th>
+                                        <th class="text-end text-white">Broj Radnika</th>
+                                        <th class="text-end text-white">Trošak po Radniku (RSD)</th>
+                                        <th class="text-end text-white">Trošak po Danu (RSD)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in kombinovaniPodaci)
+                                    {
+                                        // Odredi boju za Trošak po Radniku
+                                        var colorClass = "";
+                                        if (item.TrosakPoRadniku == maxTrosakPoRadniku)
+                                        {
+                                            colorClass = "text-danger"; // Najskuplji - crveno
+                                        }
+                                        else if (item.TrosakPoRadniku == minTrosakPoRadniku)
+                                        {
+                                            colorClass = "text-success"; // Najjeftiniji - zeleno
+                                        }
+                                        else
+                                        {
+                                            colorClass = "text-white"; // Ostali - belo
+                                        }
+
+                                        <tr style="border-bottom: 1px solid #374151;">
+                                            <td>@item.Datum</td>
+                                            <td class="text-end">@item.BrojRadnika.ToString("0")</td>
+                                            <td class="text-end fw-bold @colorClass">@TypeMapping.FormatDecimal(item.TrosakPoRadniku)</td>
+                                            <td class="text-end">@TypeMapping.FormatDecimal(item.TrosakPoDanu)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot style="background: #232d3f; border-top: 2px solid #374151;">
+                                    <tr>
+                                        <th class="text-white">PROSEK:</th>
+                                        <th class="text-end text-info">@kombinovaniPodaci.Average(x => x.BrojRadnika).ToString("0.0")</th>
+                                        <th class="text-end text-warning">@TypeMapping.FormatDecimal(kombinovaniPodaci.Average(x => x.TrosakPoRadniku))</th>
+                                        <th class="text-end text-success">@TypeMapping.FormatDecimal(kombinovaniPodaci.Sum(x => x.TrosakPoDanu))</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-info-circle fs-3 mb-2"></i>
+                            <p>Nema podataka za prikaz</p>
+                        </div>
+                    }
+                    </div>
+                </div>
             </div>
-            <div class="col-lg-6 mb-3">
+
+            <!-- Desno: Troškovi Ambalaze -->
+            <div class="col-md-6">
                 <ApexBarChart
-                    Title="Broj Radnika po Danima (Poslednjih 7 Dana)"
-                    Icon="bi bi-people"
-                    SeriesName="Broj Radnika"
-                    Unit="radnika"
-                    Color="#20c997"
-                    Data="@BrojRadnikaPoDanima"
-                    IsLoading="@IsLoadingRadnici"
-                    HasError="@HasErrorRadnici"
+                    Title="Troškovi Ambalaze (Od Početka Sezone)"
+                    Icon="bi bi-box-seam"
+                    SeriesName="Troškovi"
+                    Unit="RSD"
+                    Data="@TroskoviAmbalaze"
+                    IsLoading="@IsLoadingAmbalaza"
+                    HasError="@HasErrorAmbalaza"
                     ShowSummary="true"
-                    OnRefresh="@RefreshRadnici" />
+                    OnRefresh="@RefreshAmbalaza" />
             </div>
         </div>
 
-        <!-- Row 3: Troškovi po Smeni -->
+        <!-- Row 2: Troškovi po Smeni - Tabela -->
         <div class="chart-row">
-            <ApexBarChart
-                Title="Troškovi po Smeni (Zadnjih 14 Smena)"
-                Icon="bi bi-calendar-check"
-                SeriesName="Troškovi"
-                Unit="RSD"
-                Color="#dc3545"
-                Data="@TroskoviPoSmeni"
-                IsLoading="@IsLoadingSmene"
-                HasError="@HasErrorSmene"
-                ShowSummary="true"
-                OnRefresh="@RefreshSmene" />
+            <div class="card" style="background: #1a2332; border: 1px solid #374151;">
+                <div class="card-header" style="background: #232d3f; border-bottom: 1px solid #374151;">
+                    <h5 class="mb-0 text-white">
+                        <i class="bi bi-calendar-check me-2"></i>Troškovi po Smeni (Zadnjih 14 Smena)
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (SmeneRawData != null && SmeneRawData.Any())
+                    {
+                        // Priprema podataka direktno iz sirovih podataka
+                        var smeneZaPrikaz = SmeneRawData
+                            .Select(s =>
+                            {
+                                var brojSmene = s.BrojIzvestaja.Contains("/1") ? "Prva" : s.BrojIzvestaja.Contains("/2") ? "Druga" : "N/A";
+
+                                return new
+                                {
+                                    Datum = s.Datum ?? DateTime.MinValue,
+                                    Smena = brojSmene,
+                                    Poslovodja = s.RadnikImePrezime ?? "N/A",
+                                    BrojRadnika = s.BrojRadnika,
+                                    Iznos = s.TrosakPoRadnomNalogu
+                                };
+                            })
+                            .OrderByDescending(x => x.Datum)
+                            .ToList();
+
+                        // Sortiranje za bojenje - top 3 najskuplje i top 3 najjeftinije
+                        var sortiranoPoIznosu = smeneZaPrikaz.OrderByDescending(x => x.Iznos).ToList();
+                        var top3Najskuplje = sortiranoPoIznosu.Take(3).ToList();
+                        var top3Najjeftinije = sortiranoPoIznosu.TakeLast(3).ToList();
+
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" style="color: #e5e7eb;">
+                                <thead style="background: #232d3f;">
+                                    <tr>
+                                        <th class="text-white">Datum</th>
+                                        <th class="text-white">Poslovođa</th>
+                                        <th class="text-white text-center">Smena</th>
+                                        <th class="text-end text-white">Broj Radnika</th>
+                                        <th class="text-end text-white">Iznos (RSD)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in smeneZaPrikaz)
+                                    {
+                                        // Određivanje boje za iznos
+                                        var colorStyle = "";
+                                        var index = top3Najskuplje.IndexOf(item);
+                                        if (index >= 0)
+                                        {
+                                            // Top 3 najskuplje - crvene nijanse (od najtamnije do svetlije)
+                                            var opacity = index == 0 ? "1.0" : index == 1 ? "0.7" : "0.4";
+                                            colorStyle = $"color: rgba(220, 53, 69, {opacity}); font-weight: bold;";
+                                        }
+                                        else
+                                        {
+                                            index = top3Najjeftinije.IndexOf(item);
+                                            if (index >= 0)
+                                            {
+                                                // Top 3 najjeftinije - zelene nijanse (od najtamnije do svetlije)
+                                                var opacity = index == 0 ? "0.4" : index == 1 ? "0.7" : "1.0";
+                                                colorStyle = $"color: rgba(25, 135, 84, {opacity}); font-weight: bold;";
+                                            }
+                                        }
+
+                                        <tr style="border-bottom: 1px solid #374151;">
+                                            <td>@item.Datum.ToString("dd.MM.yyyy")</td>
+                                            <td>@item.Poslovodja</td>
+                                            <td class="text-center">
+                                                <span class="badge @(item.Smena == "Prva" ? "bg-primary" : "bg-info")">
+                                                    @item.Smena
+                                                </span>
+                                            </td>
+                                            <td class="text-end">@item.BrojRadnika</td>
+                                            <td class="text-end fw-bold" style="@colorStyle">@TypeMapping.FormatDecimal(item.Iznos)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot style="background: #232d3f; border-top: 2px solid #374151;">
+                                    <tr>
+                                        <th colspan="4" class="text-white">UKUPNO:</th>
+                                        <th class="text-end text-success">@TypeMapping.FormatDecimal(smeneZaPrikaz.Sum(x => x.Iznos))</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-info-circle fs-3 mb-2"></i>
+                            <p>Nema podataka za prikaz</p>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
 
         <!-- Row 4: Troškovi po RN -->
@@ -181,7 +327,6 @@
                 Icon="bi bi-file-earmark-text"
                 SeriesName="Troškovi"
                 Unit="RSD"
-                Color="#3e6b1f"
                 Data="@TroskoviPoRN"
                 IsLoading="@IsLoadingRN"
                 HasError="@HasErrorRN"
@@ -202,9 +347,11 @@
 
     // Error States
     private bool HasErrorAmbalaza = false;
+#pragma warning disable CS0414 // Field is assigned but never used - used for future error handling
     private bool HasErrorTrosakDanu = false;
     private bool HasErrorRadnici = false;
     private bool HasErrorSmene = false;
+#pragma warning restore CS0414
     private bool HasErrorRN = false;
 
     // Chart Data
@@ -213,6 +360,9 @@
     private List<ChartDataPoint>? BrojRadnikaPoDanima;
     private List<ChartDataPoint>? TroskoviPoSmeni;
     private List<ChartDataPoint>? TroskoviPoRN;
+
+    // Raw Data za tabele
+    private List<SmenskiIzvestajModel>? SmeneRawData;
 
     protected override async Task OnInitializedAsync()
     {
@@ -408,8 +558,14 @@
 
             var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
 
-            var troskoviPoSmeniDict = smene
+            // Sačuvaj sirove podatke za tabelu
+            SmeneRawData = smene
                 .Where(s => !string.IsNullOrEmpty(s.BrojIzvestaja))
+                .OrderByDescending(s => s.BrojIzvestaja)
+                .Take(14)
+                .ToList();
+
+            var troskoviPoSmeniDict = SmeneRawData
                 .GroupBy(s => s.BrojIzvestaja)
                 .Select(g => new
                 {
@@ -418,7 +574,6 @@
                     SortKey = g.Key.Replace("SI-", "").Replace("/", "")
                 })
                 .OrderByDescending(x => x.SortKey)
-                .Take(14)
                 .ToDictionary(x => x.BrojIzvestaja, x => (decimal)x.Troskovi);
 
             TroskoviPoSmeni = ChartDataHelper.FromDictionary(troskoviPoSmeniDict, 14);

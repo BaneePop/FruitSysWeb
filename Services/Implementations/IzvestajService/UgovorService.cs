@@ -2,16 +2,20 @@ using FruitSysWeb.Models;
 using FruitSysWeb.Services.Models.Requests;
 using FruitSysWeb.Services.Interfaces;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService
 {
     public class UgovorService : IUgovorService
     {
         private readonly DatabaseService _databaseService;
+        private readonly ILogger<UgovorService> _logger;
 
-        public UgovorService(DatabaseService databaseService)
+        public UgovorService(DatabaseService databaseService,
+            ILogger<UgovorService> logger)
         {
             _databaseService = databaseService;
+            _logger = logger;
         }
 
         public async Task<List<UgovorModel>> UcitajAktivneUgovore()
@@ -59,7 +63,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju aktivnih ugovora: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju aktivnih ugovora");
                 return new List<UgovorModel>();
             }
         }
@@ -124,7 +128,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju ugovora sa filterima: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju ugovora sa filterima");
                 return new List<UgovorModel>();
             }
         }
@@ -157,7 +161,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju ukupne vrednosti ugovora: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju ukupne vrednosti ugovora");
                 return 0;
             }
         }
@@ -190,7 +194,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju otpremnica za ugovor: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju otpremnica za ugovor");
                 return new List<OtpremnicaDetaljiModel>();
             }
         }

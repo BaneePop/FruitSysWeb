@@ -1,26 +1,30 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Models.Requests;
+using FruitSysWeb.Services.Core;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService
 {
-    public class FinansijeService : IFinansijeService
+    public class FinansijeService : BaseService, IFinansijeService
     {
         private readonly DatabaseService _databaseService;
+        private readonly ILogger<FinansijeService> _logger;
 
-        public FinansijeService(DatabaseService databaseService)
+        public FinansijeService(DatabaseService databaseService,
+            ILogger<FinansijeService> logger)
         {
             _databaseService = databaseService;
+            _logger = logger;
         }
 
         public async Task<List<FinansijeModel>> UcitajFinansijskiIzvestaj(FilterRequest filterRequest)
         {
             try
             {
-                var sql = new StringBuilder();
-                sql.Append(@"
-                    SELECT 
+                var sql = CreateSqlBuilder(@"
+                    SELECT
                         fm.ID,
                         fm.KomitentID,
                         fm.Komitent,
@@ -58,40 +62,19 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         0 as JedinicaMereID,
                         0 as OtkupniArtikal
                     FROM vPrometFinansijev9 fm
-                    LEFT JOIN Artikal a ON fm.ArtikalID = a.ID  -- DODAJ OVO
-                    WHERE fm.DokumentStatus != 4 
+                    LEFT JOIN Artikal a ON fm.ArtikalID = a.ID
+                    WHERE fm.DokumentStatus != 4
                     AND fm.DokumentStatus != 2
-                    
+
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                // Datum filteri
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
-
-                // Komitent filter
-                if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
-                {
-                    sql.Append(" AND fm.KomitentID = @KomitentId");
-                    parameters.Add("@KomitentId", filterRequest.KomitentId.Value);
-                }
-
-                // Artikal filter
-                if (filterRequest.ArtikalId.HasValue && filterRequest.ArtikalId > 0)
-                {
-                    sql.Append(" AND fm.ArtikalID = @ArtikalId");
-                    parameters.Add("@ArtikalId", filterRequest.ArtikalId.Value);
-                }
+                // Apply common filters using BaseService helper method
+                ApplyCommonFilters(sql, parameters, filterRequest,
+                    dateColumnName: "fm.Datum",
+                    komitentColumnName: "fm.KomitentID",
+                    artikalColumnName: "fm.ArtikalID");
 
                 // POPRAVLJENO: Komitent tip filter - koristimo boolean kolone
                 if (!string.IsNullOrEmpty(filterRequest.KomitentTip))
@@ -151,7 +134,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajFinansijskiIzvestaj: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajFinansijskiIzvestaj");
                 throw;
             }
         }
@@ -218,7 +201,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnoSaldo: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnoSaldo");
                 return 0;
             }
         }
@@ -271,7 +254,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajTopKupce: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajTopKupce");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -324,7 +307,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajTopDobavljace: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajTopDobavljace");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -370,7 +353,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupanPromet: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupanPromet");
                 return 0;
             }
         }
@@ -405,7 +388,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnuZaradu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnuZaradu");
                 return 0;
             }
         }
@@ -453,7 +436,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnuZaduzenju: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnuZaduzenju");
                 return 0;
             }
         }
@@ -488,7 +471,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnoPotrazenost: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnoPotrazenost");
                 return 0;
             }
         }
@@ -516,7 +499,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajSaldoPoMesecima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajSaldoPoMesecima");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -533,28 +516,38 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             {
                 if (artikalIds == null || !artikalIds.Any())
                 {
-                    Console.WriteLine("Lista artikala je prazna!");
+                    _logger.LogInformation("Lista artikala je prazna!");
                     return new List<RobaNaZalihamaModel>();
                 }
 
                 var rezultat = new List<RobaNaZalihamaModel>();
-                var artikalIdsString = string.Join(",", artikalIds);
+
+                // Build parameterized IN clause (@ArtikalID0, @ArtikalID1, @ArtikalID2, ...)
+                var artikalIdParams = new List<string>();
+                var sharedParameters = new Dictionary<string, object>();
+                for (int i = 0; i < artikalIds.Count; i++)
+                {
+                    var paramName = $"@ArtikalID{i}";
+                    artikalIdParams.Add(paramName);
+                    sharedParameters.Add(paramName, artikalIds[i]);
+                }
+                var artikalIdsInClause = string.Join(",", artikalIdParams);
 
                 // === STEP 1: NABAVKA (KL- dokumenti) ===
                 var sqlNabavka = $@"
-                    SELECT 
+                    SELECT
                         vp.ArtikalID,
                         vp.Artikal,
                         SUM(ABS(vp.Kolicina)) as NabavkaKg,
                         SUM(ABS(vp.Potrazuje)) as NabavkaVrednost
                     FROM vPrometFinansijev9 vp
-                    WHERE vp.ArtikalID IN ({artikalIdsString})
+                    WHERE vp.ArtikalID IN ({artikalIdsInClause})
                       AND vp.Dokument LIKE 'KL-%'
                       AND vp.DokumentStatus != 4
                       AND vp.Cena > 0
                 ";
 
-                var parametersNabavka = new Dictionary<string, object>();
+                var parametersNabavka = new Dictionary<string, object>(sharedParameters);
                 if (odDatum.HasValue)
                 {
                     sqlNabavka += " AND DATE(vp.Datum) >= @OdDatum";
@@ -571,18 +564,18 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 // === STEP 2: PRODAJA (FK- dokumenti) ===
                 var sqlProdaja = $@"
-                    SELECT 
+                    SELECT
                         vp.ArtikalID,
                         SUM(ABS(vp.Kolicina)) as ProdajaKg,
                         SUM(ABS(vp.Duguje)) as ProdajaVrednost
                     FROM vPrometFinansijev9 vp
-                    WHERE vp.ArtikalID IN ({artikalIdsString})
+                    WHERE vp.ArtikalID IN ({artikalIdsInClause})
                       AND vp.Dokument LIKE 'FK-%'
                       AND vp.DokumentStatus != 4
                       AND vp.Cena > 0
                 ";
 
-                var parametersProdaja = new Dictionary<string, object>();
+                var parametersProdaja = new Dictionary<string, object>(sharedParameters);
                 if (odDatum.HasValue)
                 {
                     sqlProdaja += " AND DATE(vp.Datum) >= @OdDatum";
@@ -599,17 +592,17 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 // === STEP 3: LAGER + CENE ===
                 var sqlLager = $@"
-                    SELECT 
+                    SELECT
                         ml.ArtikalID,
                         SUM(ml.Kolicina) as LagerKg,
                         COALESCE(kac.BrutoCena, 0) as BrutoCena
                     FROM vwMagacinLager ml
                     LEFT JOIN KalkulacijaArtikalCena kac ON ml.ArtikalID = kac.ArtikalID
-                    WHERE ml.ArtikalID IN ({artikalIdsString})
+                    WHERE ml.ArtikalID IN ({artikalIdsInClause})
                     GROUP BY ml.ArtikalID, kac.BrutoCena
                 ";
 
-                var lagerData = await _databaseService.QueryAsync<dynamic>(sqlLager);
+                var lagerData = await _databaseService.QueryAsync<dynamic>(sqlLager, sharedParameters);
 
                 // === STEP 4: KOMBINOVANJE PODATAKA ===
                 foreach (var nabavka in nabavkaData)
@@ -642,13 +635,13 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     rezultat.Add(model);
                 }
 
-                Console.WriteLine($"Učitano {rezultat.Count} artikala za brzi pregled");
+                _logger.LogInformation($"Učitano {rezultat.Count} artikala za brzi pregled");
                 return rezultat;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajRobuNaZalihama: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                _logger.LogError(ex, "Greška u UcitajRobuNaZalihama");
+                _logger.LogInformation($"Stack trace: {ex.StackTrace}");
                 return new List<RobaNaZalihamaModel>();
             }
         }
@@ -714,7 +707,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         }
         catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajZbirnePodatkePoRadnomDanu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajZbirnePodatkePoRadnomDanu");
                 return new List<ZbirniFinansijeModel>();
             }
         }

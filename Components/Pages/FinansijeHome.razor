@@ -17,79 +17,7 @@
 @inject IJSRuntime JSRuntime
 @inject ILogger<FinansijeHome> Logger
 
-<style>
-    .finansije-header {
-        background: linear-gradient(135deg, #1a2332, #232d3f);
-        border-radius: 12px;
-        margin-bottom: 2rem;
-        border: 1px solid #374151;
-    }
-    
-    .section-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    .section-card {
-    background: #1a2332;
-    border-radius: 8px;
-    padding: 1rem 1.5rem;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: all 0.3s ease;
-    border-left: 4px solid #3e6b1f;
-    cursor: pointer;
-    border: 1px solid #374151;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    }
-
-    .section-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
-    border-left-color: #2d5016;
-    }
-
-    .section-icon {
-    font-size: 2rem;
-    margin-bottom: 0;
-    color: #3e6b1f;
-    }
-
-    .section-title {
-    font-weight: 600;
-    color: #e5e7eb;
-    margin-bottom: 0;
-    font-size: 1.1rem;
-    }
-
-    .section-card.future {
-        border-left-color: #6c757d;
-        opacity: 0.7;
-    }
-
-    .section-card.future .section-icon,
-    .section-card.future .section-features li i {
-        color: #6c757d;
-    }
-
-    .section-card.future .section-title {
-        color: #6c757d;
-    }
-
-    .spin {
-        animation: spin 1s linear infinite;
-    }
-
-    @@keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-</style>
+@* All styles moved to wwwroot/css/shared-components.css *@
 
 <!-- Header -->
 <div class="finansije-header text-white py-4 mb-4">
@@ -103,12 +31,12 @@
 
 <div class="container-fluid">
     <!-- Main Sections -->
-    <div class="section-grid">
+    <div class="section-grid" style="grid-template-columns: repeat(5, 1fr);">
         <div class="section-card active" @onclick="@(() => NavigateTo("/finansijski-pregled"))">
             <div class="section-icon">
                 <i class="bi bi-speedometer2"></i>
             </div>
-            <h4 class="section-title">Finansijski Pregled</h4>
+            <h4 class="section-title">Pregled Stanja</h4>
         </div>
 
         <div class="section-card active" @onclick="@(() => NavigateTo("/nabavka"))">
@@ -121,7 +49,7 @@
             <div class="section-icon">
                 <i class="bi bi-calculator"></i>
             </div>
-            <h4 class="section-title">ugovori</h4>
+            <h4 class="section-title">Ugovori</h4>
         </div>
         <div class="section-card active" @onclick="@(() => NavigateTo("/prodaja"))">
             <div class="section-icon">
@@ -133,7 +61,7 @@
             <div class="section-icon">
                 <i class="bi bi-calculator"></i>
             </div>
-            <h4 class="section-title">Finansije</h4>
+            <h4 class="section-title">Finansijski Pregled</h4>
         </div>
     </div>
 
@@ -211,7 +139,6 @@
                 Icon="bi bi-people"
                 SeriesName="Količina"
                 Unit="kg"
-                Color="#28a745"
                 Data="@TopKupciData"
                 IsLoading="@IsLoadingKupci"
                 HasError="@HasErrorKupci"
@@ -219,12 +146,11 @@
                 OnRefresh="@RefreshKupci" />
         </div>
         <div class="col-lg-6 mb-3">
-            <ApexBarChart 
+            <ApexBarChart
                 Title="Top 5 Dobavljača Sirovina"
                 Icon="bi bi-truck"
                 SeriesName="Količina"
                 Unit="kg"
-                Color="#dc3545"
                 Data="@TopDobavljaciData"
                 IsLoading="@IsLoadingDobavljaci"
                 HasError="@HasErrorDobavljaci"

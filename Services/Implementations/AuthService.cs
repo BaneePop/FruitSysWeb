@@ -4,6 +4,7 @@ using FruitSysWeb.Models;
 using FruitSysWeb.Services.Core;
 using FruitSysWeb.Services.Interfaces;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations
 {
@@ -11,12 +12,15 @@ namespace FruitSysWeb.Services.Implementations
     {
         private readonly DatabaseService _databaseService;
         private readonly ProtectedSessionStorage _sessionStorage;
+        private readonly ILogger<AuthService> _logger;
         private const string USER_KEY = "current_user";
 
-        public AuthService(DatabaseService databaseService, ProtectedSessionStorage sessionStorage)
+        public AuthService(DatabaseService databaseService, ProtectedSessionStorage sessionStorage,
+            ILogger<AuthService> logger)
         {
             _databaseService = databaseService;
             _sessionStorage = sessionStorage;
+            _logger = logger;
         }
 
         public async Task<LoginResponse> Login(LoginRequest request)
@@ -56,7 +60,7 @@ namespace FruitSysWeb.Services.Implementations
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri logovanju: {ex.Message}");
+                _logger.LogError(ex, "Greška pri logovanju");
                 return new LoginResponse { Success = false, Message = "Greška pri logovanju" };
             }
         }
@@ -69,7 +73,7 @@ namespace FruitSysWeb.Services.Implementations
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri odjavljivanju: {ex.Message}");
+                _logger.LogError(ex, "Greška pri odjavljivanju");
             }
         }
 

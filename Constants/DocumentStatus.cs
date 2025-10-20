@@ -19,8 +19,8 @@ namespace FruitSysWeb.Constants
         {
             { KREIRAN, "Kreiran" },
             { OTVOREN, "Otvoren" },
-            { ZATVOREN, "Zatvoren" },
-            { STORNO, "Storno" }            // ✅ ISPRAVKA: "Storno"
+            { ZATVOREN, "Zaključen" },       // ✅ ISPRAVKA: "Zaključen" umesto "Zatvoren"
+            { STORNO, "Storno" }
         };
 
         // BADGE CSS KLASE - Bootstrap badge stilovi

@@ -17,16 +17,10 @@
 
 <PageTitle>Izveštaj Prijem - Uživo</PageTitle>
 
+@* .spin animation moved to wwwroot/css/shared-components.css *@
+
 <style>
-    .spin {
-        animation: spin 1s linear infinite;
-    }
-
-    @@keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-
+    /* Stat card hover effect specific to this page */
     .stat-card {
         transition: all 0.3s ease;
     }
@@ -127,20 +121,6 @@
             </div>
         </div>
     </div>
-    @if (!string.IsNullOrEmpty(InitializationError))
-    {
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="alert alert-danger">
-                    <h5><i class="bi bi-exclamation-triangle"></i> Greška pri inicijalizaciji</h5>
-                    <p><strong>Poruka:</strong> @InitializationError</p>
-                    <p><strong>Vreme:</strong> @ErrorTimestamp</p>
-                    <pre class="mt-2">@ErrorDetails</pre>
-                    <p class="mb-0"><small>Proverite terminal za detaljne logove.</small></p>
-                </div>
-            </div>
-        </div>
-    }
 
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-3">
@@ -310,9 +290,6 @@
     private int CountdownSeconds = 60;
     private Timer? refreshTimer;
     private Timer? countdownTimer;
-    private string? InitializationError;
-    private DateTime? ErrorTimestamp;
-    private string? ErrorDetails;
 
     private DateTime? DatumOd { get; set; }
     private DateTime? DatumDo { get; set; }
