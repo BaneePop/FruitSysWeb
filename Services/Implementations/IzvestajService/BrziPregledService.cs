@@ -22,16 +22,79 @@ public class BrziPregledService : IBrziPregledService
             _logger = logger;
     }
 
-    public Task SacuvajKonfiguraciju(BrziPregledKonfiguracija config)
+    /// <summary>
+    /// Čuva globalnu konfiguraciju u JSON fajl (deli se između svih korisnika)
+    /// </summary>
+    public async Task SacuvajKonfiguraciju(BrziPregledKonfiguracija config)
     {
-        // localStorage handling je na client side preko JS
-        return Task.CompletedTask;
+        try
+        {
+            // Putanja do config foldera u publish direktorijumu
+            var configPath = Path.Combine(AppContext.BaseDirectory, "config", "brzi_pregled_config.json");
+
+            // Kreiraj direktorijum ako ne postoji
+            var configDir = Path.GetDirectoryName(configPath);
+            if (!string.IsNullOrEmpty(configDir) && !Directory.Exists(configDir))
+            {
+                Directory.CreateDirectory(configDir);
+            }
+
+            // Serializuj konfiguraciju u JSON
+            var json = System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            // Sačuvaj u fajl
+            await File.WriteAllTextAsync(configPath, json);
+
+            _logger.LogInformation($"✅ Konfiguracija sačuvana u {configPath}: {config.IzabraniDobavljaci.Count} dobavljača, {config.IzabraniKupci.Count} kupaca");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"❌ Greška pri čuvanju konfiguracije: {ex.Message}");
+            throw;
+        }
     }
 
-    public Task<BrziPregledKonfiguracija> UcitajKonfiguraciju()
+    /// <summary>
+    /// Učitava globalnu konfiguraciju iz JSON fajla (deli se između svih korisnika)
+    /// </summary>
+    public async Task<BrziPregledKonfiguracija> UcitajKonfiguraciju()
     {
-        // localStorage handling je na client side preko JS
-        return Task.FromResult(new BrziPregledKonfiguracija());
+        try
+        {
+            // Putanja do config foldera u publish direktorijumu
+            var configPath = Path.Combine(AppContext.BaseDirectory, "config", "brzi_pregled_config.json");
+
+            // Ako fajl ne postoji, vrati praznu konfiguraciju
+            if (!File.Exists(configPath))
+            {
+                _logger.LogWarning($"⚠️ Konfiguracija ne postoji na putanji {configPath}, vraćam praznu");
+                return new BrziPregledKonfiguracija();
+            }
+
+            // Učitaj JSON iz fajla
+            var json = await File.ReadAllTextAsync(configPath);
+
+            // Deserializuj JSON
+            var config = System.Text.Json.JsonSerializer.Deserialize<BrziPregledKonfiguracija>(json);
+
+            if (config == null)
+            {
+                _logger.LogWarning("⚠️ Deserijalizacija nije uspela, vraćam praznu konfiguraciju");
+                return new BrziPregledKonfiguracija();
+            }
+
+            _logger.LogInformation($"✅ Konfiguracija učitana iz {configPath}: {config.IzabraniDobavljaci.Count} dobavljača, {config.IzabraniKupci.Count} kupaca");
+
+            return config;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"❌ Greška pri učitavanju konfiguracije: {ex.Message}");
+            return new BrziPregledKonfiguracija();
+        }
     }
 
     /// <summary>

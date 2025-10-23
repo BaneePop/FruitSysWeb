@@ -1,0 +1,103 @@
+@page "/zabranjen-pristup"
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Zabranjen Pristup - FruitSysWeb</PageTitle>
+
+<style>
+    .zabranjen-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .zabranjen-card {
+        max-width: 600px;
+        text-align: center;
+        padding: 3rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+
+    .zabranjen-icon {
+        font-size: 8rem;
+        color: #dc3545;
+        margin-bottom: 2rem;
+    }
+
+    .zabranjen-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #dc3545;
+        margin-bottom: 1rem;
+    }
+
+    .zabranjen-text {
+        font-size: 1.1rem;
+        color: #6c757d;
+        margin-bottom: 2rem;
+    }
+
+    .zabranjen-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .zabranjen-info p {
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+</style>
+
+<div class="zabranjen-container">
+    <div class="zabranjen-card">
+        <i class="bi bi-shield-lock-fill zabranjen-icon"></i>
+
+        <h1 class="zabranjen-title">Zabranjen Pristup</h1>
+
+        <p class="zabranjen-text">
+            Nemate dozvolu za pristup ovoj stranici. Molimo kontaktirajte administratora sistema.
+        </p>
+
+        @if (currentUser != null)
+        {
+            <div class="zabranjen-info">
+                <p><strong>Korisnik:</strong> @currentUser.Ime</p>
+                <p><strong>Grupa:</strong> @currentUser.GrupaNaziv</p>
+            </div>
+        }
+
+        <div class="d-flex gap-3 justify-content-center">
+            <button class="btn btn-primary btn-lg" @onclick="NazadNaPocetnu">
+                <i class="bi bi-house-door me-2"></i>Početna Stranica
+            </button>
+            <button class="btn btn-outline-secondary btn-lg" @onclick="Nazad">
+                <i class="bi bi-arrow-left me-2"></i>Nazad
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private KorisnikModel? currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUser();
+    }
+
+    private async Task NazadNaPocetnu()
+    {
+        var pocetna = await AuthService.PocetnaStranica();
+        Navigation.NavigateTo(pocetna, forceLoad: true);
+    }
+
+    private void Nazad()
+    {
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+}

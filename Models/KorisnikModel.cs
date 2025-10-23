@@ -13,6 +13,14 @@ namespace FruitSysWeb.Models
         public long? RadnikID { get; set; }
         public long GrupaKorisnikaID { get; set; }
         public long? KomitentID { get; set; }
+
+        // Helper property - naziv grupe korisnika
+        public string? GrupaNaziv { get; set; }
+
+        // Helper methods - koriste IME korisnika umesto GrupaKorisnikaID
+        public bool ImaPuniPristup() => GrupaKorisnikaHelper.ImaPuniPristup(Ime);
+        public bool ImaOgraniceniPristup() => GrupaKorisnikaHelper.ImaOgraniceniPristup(Ime);
+        public bool ImaPristupStranici(string url) => GrupaKorisnikaHelper.ImaPristupStranici(Ime, url);
     }
 
     public class LoginRequest

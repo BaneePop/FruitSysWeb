@@ -175,6 +175,132 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         }
 
         /// <summary>
+        /// Helper metoda - učitava dobavljače za specifičnu klasifikaciju voća (Malina, Kupina, itd.)
+        /// </summary>
+        private async Task<List<PrijemPoDobavljacuModel>> UcitajDobavljacePoKlasifikaciji(string klasifikacija)
+        {
+            try
+            {
+                var sql = CreateSqlBuilder();
+                sql.Append(@"
+                    SELECT
+                        COALESCE(k.Naziv, 'Nepoznat dobavljač') as Dobavljac,
+                        SUM(pl.Tezina) as Kolicina,
+                        GROUP_CONCAT(DISTINCT a.Naziv ORDER BY a.Naziv SEPARATOR ', ') as Artikli
+                    FROM PaletniList pl
+                    LEFT JOIN Artikal a ON pl.ArtikalID = a.ID
+                    LEFT JOIN ArtikalKlasifikacija ak ON a.PrvaKlasifikacijaID = ak.ID
+                    LEFT JOIN Komitent k ON pl.KomitentID = k.ID
+                    WHERE pl.Sifra LIKE 'N-%'
+                      AND DATE(pl.DatumKreiranja) = @Danas
+                      AND ak.Naziv = @Klasifikacija
+                      AND a.MagacinID IN (2, 3, 5)
+                    GROUP BY k.ID, k.Naziv
+                    HAVING SUM(pl.Tezina) > 0
+                    ORDER BY Kolicina DESC
+                ");
+
+                var result = await _databaseService.QueryAsync<PrijemPoDobavljacuModel>(
+                    sql.ToString(),
+                    new {
+                        Klasifikacija = klasifikacija,
+                        Danas = DateTime.Today
+                    }
+                );
+
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Greška pri učitavanju dobavljača za klasifikaciju: {klasifikacija}");
+                return new List<PrijemPoDobavljacuModel>();
+            }
+        }
+
+        /// <summary>
+        /// Helper metoda - učitava dobavljače za specifičnu klasifikaciju voća u periodu
+        /// </summary>
+        private async Task<List<PrijemPoDobavljacuModel>> UcitajDobavljacePoKlasifikacijiPeriod(string klasifikacija, FilterRequest filterRequest)
+        {
+            try
+            {
+                var sql = CreateSqlBuilder();
+                sql.Append(@"
+                    SELECT
+                        COALESCE(k.Naziv, 'Nepoznat dobavljač') as Dobavljac,
+                        SUM(pl.Tezina) as Kolicina,
+                        GROUP_CONCAT(DISTINCT a.Naziv ORDER BY a.Naziv SEPARATOR ', ') as Artikli
+                    FROM PaletniList pl
+                    LEFT JOIN Artikal a ON pl.ArtikalID = a.ID
+                    LEFT JOIN ArtikalKlasifikacija ak ON a.PrvaKlasifikacijaID = ak.ID
+                    LEFT JOIN Komitent k ON pl.KomitentID = k.ID
+                    WHERE pl.Sifra LIKE 'N-%'
+                      AND ak.Naziv = @Klasifikacija
+                      AND a.MagacinID IN (2, 3, 5)
+                ");
+
+                object? parameters = null;
+
+                if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue)
+                {
+                    var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
+                    var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
+
+                    sql.Append(" AND pl.DatumKreiranja >= @OdDatum");
+                    sql.Append(" AND pl.DatumKreiranja < @DoDatum");
+
+                    parameters = new {
+                        Klasifikacija = klasifikacija,
+                        OdDatum = adjustedOdDatum,
+                        DoDatum = adjustedDoDatum
+                    };
+                }
+                else if (filterRequest.OdDatum.HasValue)
+                {
+                    var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
+                    sql.Append(" AND pl.DatumKreiranja >= @OdDatum");
+
+                    parameters = new {
+                        Klasifikacija = klasifikacija,
+                        OdDatum = adjustedOdDatum
+                    };
+                }
+                else if (filterRequest.DoDatum.HasValue)
+                {
+                    var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
+                    sql.Append(" AND pl.DatumKreiranja < @DoDatum");
+
+                    parameters = new {
+                        Klasifikacija = klasifikacija,
+                        DoDatum = adjustedDoDatum
+                    };
+                }
+                else
+                {
+                    parameters = new { Klasifikacija = klasifikacija };
+                }
+
+                sql.Append(@"
+                    GROUP BY k.ID, k.Naziv
+                    HAVING SUM(pl.Tezina) > 0
+                    ORDER BY Kolicina DESC
+                ");
+
+                var result = await _databaseService.QueryAsync<PrijemPoDobavljacuModel>(
+                    sql.ToString(),
+                    parameters
+                );
+
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Greška pri učitavanju dobavljača za klasifikaciju u periodu: {klasifikacija}");
+                return new List<PrijemPoDobavljacuModel>();
+            }
+        }
+
+        /// <summary>
         /// Helper metoda - učitava dobavljače za specifičnu vrstu voća u periodu
         /// ✅ ISPRAVKA: Anonymous object umesto Dictionary
         /// </summary>
@@ -303,15 +429,17 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
+                // Grupisanje po PrvaKlasifikacijaID (vrsta voća: Malina, Kupina, Višnja, itd.)
                 var sqlVoce = new StringBuilder();
                 sqlVoce.Append(@"
-                    SELECT DISTINCT a.Naziv as Voce
+                    SELECT DISTINCT ak.Naziv as Voce
                     FROM PaletniList pl
                     LEFT JOIN Artikal a ON pl.ArtikalID = a.ID
+                    LEFT JOIN ArtikalKlasifikacija ak ON a.PrvaKlasifikacijaID = ak.ID
                     LEFT JOIN Komitent k ON pl.KomitentID = k.ID
                     WHERE pl.Sifra LIKE 'N-%'
                       AND a.MagacinID IN (2, 3, 5)
-                      AND a.Naziv IS NOT NULL
+                      AND ak.Naziv IS NOT NULL
                 ");
 
                 // ✅ ISPRAVKA: Dynamic object
@@ -345,7 +473,18 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     parameters = new { DoDatum = adjustedDoDatum };
                 }
 
-                sqlVoce.Append(" ORDER BY a.Naziv");
+                sqlVoce.Append(@"
+                    ORDER BY
+                        CASE
+                            WHEN ak.Naziv LIKE '%Malina%' THEN 1
+                            WHEN ak.Naziv LIKE '%Kupina%' THEN 2
+                            WHEN ak.Naziv LIKE '%Višnja%' OR ak.Naziv LIKE '%Visnja%' THEN 3
+                            WHEN ak.Naziv LIKE '%Šljiva%' OR ak.Naziv LIKE '%Sljiva%' THEN 4
+                            WHEN ak.Naziv LIKE '%Borovnica%' THEN 5
+                            WHEN ak.Naziv LIKE '%Kajsija%' THEN 6
+                            WHEN ak.Naziv LIKE '%Jagoda%' THEN 7
+                            ELSE 8
+                        END, ak.Naziv");
 
                 var voceList = await _databaseService.QueryAsync<string>(
                     sqlVoce.ToString(),
@@ -356,7 +495,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 foreach (var voce in voceList)
                 {
-                    var dobavljaci = await UcitajDobavljacePoVocuPeriod(voce, filterRequest);
+                    var dobavljaci = await UcitajDobavljacePoKlasifikacijiPeriod(voce, filterRequest);
                     if (dobavljaci.Any())
                     {
                         rezultat[voce] = dobavljaci;
@@ -382,15 +521,27 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
+                // Grupisanje po PrvaKlasifikacijaID (vrsta voća: Malina, Kupina, Višnja, itd.)
                 var sqlVoce = @"
-                    SELECT DISTINCT a.Naziv as Voce
+                    SELECT DISTINCT ak.Naziv as Voce
                     FROM PaletniList pl
                     LEFT JOIN Artikal a ON pl.ArtikalID = a.ID
+                    LEFT JOIN ArtikalKlasifikacija ak ON a.PrvaKlasifikacijaID = ak.ID
                     WHERE pl.Sifra LIKE 'N-%'
                       AND DATE(pl.DatumKreiranja) = @Danas
-                      AND a.Naziv IS NOT NULL
+                      AND ak.Naziv IS NOT NULL
                       AND a.MagacinID IN (2, 3, 5)
-                    ORDER BY a.Naziv";
+                    ORDER BY
+                        CASE
+                            WHEN ak.Naziv LIKE '%Malina%' THEN 1
+                            WHEN ak.Naziv LIKE '%Kupina%' THEN 2
+                            WHEN ak.Naziv LIKE '%Višnja%' OR ak.Naziv LIKE '%Visnja%' THEN 3
+                            WHEN ak.Naziv LIKE '%Šljiva%' OR ak.Naziv LIKE '%Sljiva%' THEN 4
+                            WHEN ak.Naziv LIKE '%Borovnica%' THEN 5
+                            WHEN ak.Naziv LIKE '%Kajsija%' THEN 6
+                            WHEN ak.Naziv LIKE '%Jagoda%' THEN 7
+                            ELSE 8
+                        END, ak.Naziv";
 
                 var voceList = await _databaseService.QueryAsync<string>(
                     sqlVoce,
@@ -401,7 +552,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 foreach (var voce in voceList)
                 {
-                    var dobavljaci = await UcitajDobavljacePoVocu(voce);
+                    var dobavljaci = await UcitajDobavljacePoKlasifikaciji(voce);
                     if (dobavljaci.Any())
                     {
                         rezultat[voce] = dobavljaci;

@@ -396,10 +396,25 @@
                 return;
             }
 
+            // Definiši samo kolone koje se prikazuju u tabeli
+            var columns = new Dictionary<string, string>
+            {
+                { "Artikal", "Artikal" },
+                { "NabavkaKg", "Nabavka kg" },
+                { "NabavkaVrednost", "Nabavka RSD" },
+                { "ProdajaKg", "Prodaja kg" },
+                { "ProdajaVrednost", "Prodaja RSD" },
+                { "LagerKg", "Lager kg" },
+                { "LagerVrednost", "Lager Vrednost" },
+                { "RazlikaKg", "Razlika kg" },
+                { "Profit", "Profit" },
+                { "ProcentMarze", "% Marže" }
+            };
+
             var fileName = TypeMapping.GenerateExportFileName("RobaNaZalihama", ".xlsx");
-            var bytes = await ExportService.ExportToExcel(podatci, "Roba na Zalihama");
+            var bytes = ExportService.ExportToExcelWithColumns(podatci, columns);
             await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(bytes));
-            
+
             Console.WriteLine($"Export uspešan: {fileName}");
         }
         catch (Exception ex)

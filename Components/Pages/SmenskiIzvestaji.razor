@@ -320,7 +320,18 @@
         {
             if (smenskiData?.Any() == true)
             {
-                var excelData = ExportService.ExportToExcel(smenskiData);
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "BrojIzvestaja", "Smenski izveštaj" },
+                    { "Datum", "Datum" },
+                    { "ProizvodniProces", "Proizvodni procesi" },
+                    { "BrojRadnika", "Br. radnika" },
+                    { "BrojRadnihSati", "Sati" },
+                    { "TrosakPoRadnomNalogu", "Trošak" }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(smenskiData, columns);
                 var fileName = TypeMapping.GenerateExportFileName("smenski_izvestaji", ".xlsx");
                 await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             }
@@ -337,7 +348,18 @@
         {
             if (smenskiData?.Any() == true)
             {
-                var pdfData = ExportService.ExportToPdf(smenskiData);
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "BrojIzvestaja", "Smenski izveštaj" },
+                    { "Datum", "Datum" },
+                    { "ProizvodniProces", "Proizvodni procesi" },
+                    { "BrojRadnika", "Br. radnika" },
+                    { "BrojRadnihSati", "Sati" },
+                    { "TrosakPoRadnomNalogu", "Trošak" }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(smenskiData, columns);
                 var fileName = TypeMapping.GenerateExportFileName("smenski_izvestaji", ".pdf");
                 await DownloadFile(pdfData, fileName, "application/pdf");
             }

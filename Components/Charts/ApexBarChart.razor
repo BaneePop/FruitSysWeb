@@ -174,8 +174,17 @@
             },
             X = new TooltipX
             {
-                // Show full label in tooltip
-                Formatter = "function(val, opts) { var fullLabels = " + System.Text.Json.JsonSerializer.Serialize(Data?.Select(x => x.Label).ToList() ?? new List<string>()) + "; return fullLabels[opts.dataPointIndex] || val; }"
+                // Show article names from ExtraData if available, otherwise show supplier name
+                Formatter = "function(val, opts) { " +
+                    "var extraData = " + System.Text.Json.JsonSerializer.Serialize(Data?.Select(x => x.ExtraData?.ToString() ?? "").ToList() ?? new List<string>()) + "; " +
+                    "var fullLabels = " + System.Text.Json.JsonSerializer.Serialize(Data?.Select(x => x.Label).ToList() ?? new List<string>()) + "; " +
+                    "var articles = extraData[opts.dataPointIndex]; " +
+                    "if (articles && articles.length > 0) { " +
+                    "  return '<div><strong>' + fullLabels[opts.dataPointIndex] + '</strong><br/>' + articles + '</div>'; " +
+                    "} else { " +
+                    "  return fullLabels[opts.dataPointIndex] || val; " +
+                    "} " +
+                "}"
             }
         },
         Legend = new Legend

@@ -16,6 +16,7 @@
 @inject IBrziPregledService BrziPregledService
 @inject IJSRuntime JSRuntime
 @inject ILogger<FinansijeHome> Logger
+@inject IAuthService AuthService
 
 @* All styles moved to wwwroot/css/shared-components.css *@
 
@@ -32,19 +33,23 @@
 <div class="container-fluid">
     <!-- Main Sections -->
     <div class="section-grid">
-        <div class="section-card active" @onclick="@(() => NavigateTo("/nabavka"))">
-            <div class="section-icon">
-                <i class="bi bi-speedometer2"></i>
+        @if (currentUser?.ImaPuniPristup() ?? false)
+        {
+            <div class="section-card active" @onclick="@(() => NavigateTo("/nabavka"))">
+                <div class="section-icon">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                <h4 class="section-title">Nabavka</h4>
             </div>
-            <h4 class="section-title">Nabavka</h4>
-        </div>
 
-        <div class="section-card active" @onclick="@(() => NavigateTo("/prodaja"))">
-            <div class="section-icon">
-                <i class="bi bi-truck"></i>
+            <div class="section-card active" @onclick="@(() => NavigateTo("/prodaja"))">
+                <div class="section-icon">
+                    <i class="bi bi-truck"></i>
+                </div>
+                <h4 class="section-title">Prodaja</h4>
             </div>
-            <h4 class="section-title">Prodaja</h4>
-        </div>
+        }
+
         <div class="section-card" @onclick="@(() => NavigateTo("/izvestaj-prijem"))">
             <div class="section-icon">
                 <i class="bi bi-calculator"></i>
@@ -163,6 +168,8 @@
 </div>
 
 @code {
+    private KorisnikModel? currentUser;
+
     // Chart Data
     private List<ChartDataPoint>? TopKupciData;
     private List<ChartDataPoint>? TopDobavljaciData;
@@ -200,6 +207,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        currentUser = await AuthService.GetCurrentUser();
+
         await Task.WhenAll(
             RefreshCharts(),
             UcitajBrziPregled()

@@ -268,9 +268,9 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 var sql = @"
                     SELECT 
                         rnl.RadniNalogLager as BrojNaloga,
+                        rn.Kolicina as PotrebnaKolicina,
                         GROUP_CONCAT(DISTINCT rnl.Artikal SEPARATOR ', ') as Artikal,
                         SUM(rnl.Kolicina) as Kolicina,
-                        SUM(rn.Kolicina) as PotrebnaKolicina,
                         GROUP_CONCAT(DISTINCT rnl.Pakovanje SEPARATOR ', ') as Pakovanje,
                         MAX(rn.DokumentStatus) as DokumentStatus
                     FROM vwRadniNalogLager rnl

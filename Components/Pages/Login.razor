@@ -121,7 +121,8 @@
         // Proveri da li je već ulogovan
         if (await AuthService.IsAuthenticated())
         {
-            Navigation.NavigateTo("/");
+            var pocetnaStranica = await AuthService.PocetnaStranica();
+            Navigation.NavigateTo(pocetnaStranica);
         }
     }
 
@@ -135,9 +136,18 @@
 
             var response = await AuthService.Login(loginRequest);
 
-            if (response.Success)
+            if (response.Success && response.Korisnik != null)
             {
-                Navigation.NavigateTo("/", forceLoad: true);
+                // Debug - prikazi informacije o korisniku
+                Console.WriteLine($"🔑 Login success");
+                Console.WriteLine($"   - Korisnik: {response.Korisnik.Ime}");
+                Console.WriteLine($"   - GrupaKorisnikaID: {response.Korisnik.GrupaKorisnikaID}");
+                Console.WriteLine($"   - GrupaNaziv: {response.Korisnik.GrupaNaziv}");
+
+                // Odrediti početnu stranicu na osnovu IMENA korisnika
+                var pocetnaStranica = GrupaKorisnikaHelper.PocetnaStranica(response.Korisnik.Ime);
+                Console.WriteLine($"   - Redirect na: {pocetnaStranica}");
+                Navigation.NavigateTo(pocetnaStranica, forceLoad: true);
             }
             else
             {

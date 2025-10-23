@@ -12,5 +12,9 @@ namespace FruitSysWeb.Services.Interfaces
         // DODATO: Nove metode
         byte[] ExportToCsv<T>(IEnumerable<T> data);
         bool TestPdfGeneration();
+
+        // NOVO: Metode sa custom kolonama - omogućava export samo vidljivih kolona
+        byte[] ExportToExcelWithColumns<T>(IEnumerable<T> data, Dictionary<string, string> columns);
+        byte[] ExportToPdfWithColumns<T>(IEnumerable<T> data, Dictionary<string, string> columns);
     }
 }

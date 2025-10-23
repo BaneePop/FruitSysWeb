@@ -28,21 +28,26 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 Console.WriteLine("🚀 SQL UPIT - Učitavam radni nalog izveštaj AGREGIRANO PO SMENSKOM IZVEŠTAJU...");
 
                 var sql = @"
-                    SELECT 
+                    SELECT
                         MIN(er.ID) as ID,
                         MIN(er.Sifra) as SifraEvidencije,
                         COALESCE(rn.Sifra, 'N/A') as RadniNalog,
                         si.Datum,
                         si.DokumentStatus,
                         COALESCE(
-                            TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a.Naziv)),
+                            (SELECT TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a2.Naziv))
+                             FROM vPreradaPregled vpp2
+                             LEFT JOIN Artikal a2 ON vpp2.ArtikalID = a2.ID
+                             WHERE vpp2.RadniNalogID = rn.ID
+                               AND a2.MagacinID = 6
+                             LIMIT 1),
                             'Gotov proizvod'
                         ) as VrstaArtikla,
                         COALESCE(k.Naziv, 'Nepoznato') as Komitent,
-                        SUM(er.BrojRadnika) as BrojRadnika,
+                        MAX(er.BrojRadnika) as BrojRadnika,
                         SUM(er.BrojRadnihSati) as BrojRadnihSati,
                         SUM(er.CenaKostanjaDirektanRad) as TrosakPoRadnomNalogu,
-                        COALESCE(MAX(verm.Mnozilac) * 100, 75.0) as ProcenatIskoriscenja,
+                        COALESCE(MAX(verm.Mnozilac) * 100, 0) as ProcenatIskoriscenja,
                         er.RadniNalogID,
                         er.SmenskiIzvestajID,
                         MIN(er.RadniProcesID) as RadniProcesID,
@@ -61,15 +66,6 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     LEFT JOIN RadniNalog rn ON er.RadniNalogID = rn.ID
                     LEFT JOIN Komitent k ON rn.KomitentID = k.ID
                     LEFT JOIN vEvidencijaRadaPreradaMnozilac verm ON er.ID = verm.EvidencijaRadaID
-                    LEFT JOIN (
-                        SELECT DISTINCT 
-                            vpp.RadniNalogID, 
-                            TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a.Naziv)) as Naziv
-                        FROM vPreradaPregled vpp
-                        LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
-                        WHERE a.MagacinID = 6
-                        GROUP BY vpp.RadniNalogID, TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a.Naziv))
-                    ) a ON rn.ID = a.RadniNalogID
                     WHERE er.Obrisan = 0
                       AND er.DirektanRadObracunat = 1
                       AND rn.Aktivno = 1
@@ -111,9 +107,9 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 sql += " AND si.Datum >= DATE_SUB(NOW(), INTERVAL 6 MONTH)";
 
-                // ✅ KLJUČNO: GROUP BY po SmenskiIzvestajID i RadniNalogID
-                // ✅ VAZNO: Grupišemo po očišćenom nazivu artikla (bez + i -)
-                sql += " GROUP BY er.SmenskiIzvestajID, er.RadniNalogID, si.Datum, si.DokumentStatus, si.Broj, si.Smena, rn.Sifra, rn.KomitentID, k.Naziv, TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a.Naziv))";
+                // ✅ KLJUČNO: GROUP BY samo po SmenskiIzvestajID i RadniNalogID (bez artikla!)
+                // ✅ FIX: Uklonjen naziv artikla iz GROUP BY da ne duplira redove
+                sql += " GROUP BY er.SmenskiIzvestajID, er.RadniNalogID, si.Datum, si.DokumentStatus, si.Broj, si.Smena, rn.Sifra, rn.KomitentID, k.Naziv";
                 sql += " ORDER BY si.Datum DESC, si.Broj LIMIT 500";
 
                 Console.WriteLine($"🔍 Izvršavam SQL (agregacija po smenskom izveštaju)...");
@@ -1029,6 +1025,105 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     ["UkupanTrosak"] = 0,
                     ["ProsecanTrosak"] = 0
                 };
+            }
+        }
+
+        #endregion
+
+        #region PRETHODNA SMENA IZVEŠTAJ
+
+        /// <summary>
+        /// Učitava informacije o prethodnoj smeni (datum, broj smene, poslovođa)
+        /// </summary>
+        public async Task<PredhodnaSmenaInfo?> UcitajPredhodnuSmenuInfo()
+        {
+            try
+            {
+                Console.WriteLine("🔍 Učitavam info o prethodnoj smeni...");
+
+                var sql = @"
+                    SELECT
+                        si.Broj as BrojSmene,
+                        si.Datum,
+                        si.Smena,
+                        COALESCE(k.Naziv, 'Nepoznato') as Poslovodja
+                    FROM SmenskiIzvestaj si
+                    LEFT JOIN Komitent k ON si.PoslovodjaID = k.ID
+                    WHERE si.Broj IS NOT NULL
+                      AND si.DokumentStatus = 3
+                    ORDER BY si.Datum DESC, si.ID DESC
+                    LIMIT 1";
+
+                var rezultat = await _databaseService.QueryFirstOrDefaultAsync<PredhodnaSmenaInfo>(sql);
+
+                Console.WriteLine($"✅ Prethodna smena: {rezultat?.BrojSmene ?? "N/A"}");
+                return rezultat;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Greška pri učitavanju info o prethodnoj smeni: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Učitava radne naloge iz prethodne smene
+        /// Grupisan po RN, vrsti artikla i pakovanju
+        /// Bez ST- naloga (stalni nalozi)
+        /// Samo gotovi proizvodi (MagacinID = 6)
+        /// </summary>
+        public async Task<List<PredhodnaSmenaModel>> UcitajPredhodnuSmenu()
+        {
+            try
+            {
+                Console.WriteLine("🔍 Učitavam radne naloge iz prethodne smene...");
+
+                var sql = @"
+                    SELECT
+                        COALESCE(rn.Sifra, 'N/A') as RadniNalog,
+                        COALESCE(
+                            TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a.Naziv)),
+                            'Gotov proizvod'
+                        ) as VrstaArtikla,
+                        COALESCE(CAST(ai.Pakovanje AS CHAR), 'N/A') as Pakovanje,
+                        SUM(ABS(vpp.Kolicina)) as Kolicina,
+                        si.Datum as DatumSmene,
+                        si.Broj as BrojSmene,
+                        si.ID as SmenaID
+                    FROM SmenskiIzvestaj si
+                    INNER JOIN EvidencijaRada er ON si.ID = er.SmenskiIzvestajID
+                    LEFT JOIN RadniNalog rn ON er.RadniNalogID = rn.ID
+                    LEFT JOIN vPreradaPregled vpp ON rn.ID = vpp.RadniNalogID
+                    LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
+                    LEFT JOIN ArtikalInstanca ai ON vpp.ArtikalInstancaID = ai.ID
+                    WHERE si.Broj IS NOT NULL
+                      AND si.DokumentStatus = 3
+                      AND er.Obrisan = 0
+                      AND rn.Aktivno = 1
+                      AND rn.Sifra NOT LIKE 'ST-%'
+                      AND rn.Sifra IS NOT NULL
+                      AND a.MagacinID = 6
+                      AND vpp.Kolicina > 0
+                      AND si.ID = (
+                          SELECT ID
+                          FROM SmenskiIzvestaj
+                          WHERE Broj IS NOT NULL AND DokumentStatus = 3
+                          ORDER BY Datum DESC, ID DESC
+                          LIMIT 1
+                      )
+                    GROUP BY rn.Sifra, TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a.Naziv)), CAST(ai.Pakovanje AS CHAR), si.Datum, si.Broj, si.ID
+                    ORDER BY rn.Sifra, VrstaArtikla, Pakovanje";
+
+                var rezultat = await _databaseService.QueryAsync<PredhodnaSmenaModel>(sql);
+
+                Console.WriteLine($"✅ Učitano {rezultat?.Count() ?? 0} stavki iz prethodne smene");
+                return rezultat?.ToList() ?? new List<PredhodnaSmenaModel>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Greška pri učitavanju prethodne smene: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return new List<PredhodnaSmenaModel>();
             }
         }
 

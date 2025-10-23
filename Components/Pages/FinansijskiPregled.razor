@@ -7,7 +7,6 @@
 @inject IBrziPregledService BrziPregledService
 @inject ITypeMappingService TypeMapping
 @inject NavigationManager Navigation
-@inject IJSRuntime JSRuntime
 
 
 <PageTitle>Brzi Pregled - FruitSysWeb</PageTitle>
@@ -158,26 +157,18 @@
     {
         try
         {
-            Console.WriteLine("🔍 Učitavam konfiguraciju iz localStorage...");
-            
-            // Učitaj konfiguraciju iz localStorage (preko JS Interop)
-            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "brzi_pregled_config");
-            
-            if (string.IsNullOrEmpty(json))
-            {
-                Console.WriteLine("⚠️ localStorage je prazan - nema konfiguracije");
-                return;
-            }
-            
-            var config = JsonSerializer.Deserialize<BrziPregledKonfiguracija>(json);
-            
+            Console.WriteLine("🔍 Učitavam globalnu konfiguraciju iz baze...");
+
+            // ✅ Učitaj konfiguraciju iz baze podataka (globalno za sve korisnike)
+            var config = await BrziPregledService.UcitajKonfiguraciju();
+
             if (config == null)
             {
-                Console.WriteLine("❌ Deserijalizacija konfiguracije nije uspela");
+                Console.WriteLine("⚠️ Nema sačuvane konfiguracije");
                 return;
             }
-            
-            Console.WriteLine($"📦 Konfiguracija parsirana:");
+
+            Console.WriteLine($"📦 Konfiguracija učitana:");
             Console.WriteLine($"  - Dobavljači: {config.IzabraniDobavljaci?.Count ?? 0}");
             Console.WriteLine($"  - Kupci: {config.IzabraniKupci?.Count ?? 0}");
             Console.WriteLine($"  - Artikli po vrstama: {config.ArtikliPoVrstama?.Count ?? 0}");

@@ -17,7 +17,7 @@
         <div class="col-12">
             <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-3" aria-label="Glavna navigacija">
                 <div class="container-fluid">
-                    <a class="navbar-brand" href="/" aria-label="FruitSysWeb početna stranica">
+                    <a class="navbar-brand" href="@(ImaPuniPristup() ? "/" : "/home-ograniceni")" aria-label="FruitSysWeb početna stranica">
                         <img src="/FruitSysWeb_RESPONSIVE.png" alt="FruitSysWeb Logo" style="height: 40px; width: auto;" />
                     </a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigacija">
@@ -26,11 +26,14 @@
                     <div class="collapse navbar-collapse" id="navbarNav">
                         <ul class="navbar-nav me-auto">
                             <!-- Početna -->
-                            <li class="nav-item">
-                                <a class="nav-link" href="/">
-                                    <i class="bi bi-house me-1" aria-hidden="true"></i>Početna
-                                </a>
-                            </li>
+                            @if (ImaPuniPristup())
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/">
+                                        <i class="bi bi-house me-1" aria-hidden="true"></i>Početna
+                                    </a>
+                                </li>
+                            }
 
                             <!-- 1. PRERADA Dropdown -->
                             <li class="nav-item dropdown">
@@ -54,6 +57,9 @@
                                     <li><a class="dropdown-item" href="/smenski-izvestaji">
                                         <i class="bi bi-calendar3 me-2" aria-hidden="true"></i>Smenski izveštaji
                                     </a></li>
+                                    @* <li><a class="dropdown-item" href="/poslovodja">
+                                        <i class="bi bi-person-badge me-2" aria-hidden="true"></i>Poslovođa
+                                    </a></li> *@
                                     <li><a class="dropdown-item" href="/sledljivost">
                                         <i class="bi bi-diagram-3 me-2" aria-hidden="true"></i>Sledljivost
                                     </a></li>
@@ -61,33 +67,36 @@
                             </li>
 
                             <!-- 2. FINANSIJE Dropdown -->
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-cash-stack me-1" aria-hidden="true"></i>Finansije
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="/finansijehome">
-                                        <i class="bi bi-house-door me-2" aria-hidden="true"></i>Finansije početna
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <!-- ✅ NOVI LINKOVI -->
-                                    <li><a class="dropdown-item" href="/finansijski-pregled">
-                                        <i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>Pregled Stanja
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/ugovori">
-                                        <i class="bi bi-truck me-2" aria-hidden="true"></i>ugovori
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/nabavka">
-                                        <i class="bi bi-truck me-2" aria-hidden="true"></i>Nabavka
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/prodaja">
-                                        <i class="bi bi-cart-check me-2" aria-hidden="true"></i>Prodaja
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/finansije">
-                                        <i class="bi bi-calculator me-2" aria-hidden="true"></i>Finansijski pregledi
-                                    </a></li>
-                                </ul>
-                            </li>
+                            @if (ImaPuniPristup())
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-cash-stack me-1" aria-hidden="true"></i>Finansije
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="/finansijehome">
+                                            <i class="bi bi-house-door me-2" aria-hidden="true"></i>Finansije početna
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <!-- ✅ NOVI LINKOVI -->
+                                        <li><a class="dropdown-item" href="/finansijski-pregled">
+                                            <i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>Pregled Stanja
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/ugovori">
+                                            <i class="bi bi-truck me-2" aria-hidden="true"></i>ugovori
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/nabavka">
+                                            <i class="bi bi-truck me-2" aria-hidden="true"></i>Nabavka
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/prodaja">
+                                            <i class="bi bi-cart-check me-2" aria-hidden="true"></i>Prodaja
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/finansije">
+                                            <i class="bi bi-calculator me-2" aria-hidden="true"></i>Finansijski pregledi
+                                        </a></li>
+                                    </ul>
+                                </li>
+                            }
 
                             <!-- 3. LAGER Dropdown -->
                             <li class="nav-item dropdown">
@@ -130,12 +139,15 @@
                                     <li><a class="dropdown-item" href="/troskovi-radne-snage">
                                         <i class="bi bi-people-fill me-2" aria-hidden="true"></i>Troškovi radne snage
                                     </a></li>
-                                    <li><a class="dropdown-item" href="/troskovi-ambalaze">
-                                        <i class="bi bi-box-seam me-2" aria-hidden="true"></i>Troškovi ambalaze
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/troskovi-poslovanja">
-                                        <i class="bi bi-briefcase me-2" aria-hidden="true"></i>Troškovi poslovanja
-                                    </a></li>
+                                    @if (ImaPuniPristup())
+                                    {
+                                        <li><a class="dropdown-item" href="/troskovi-ambalaze">
+                                            <i class="bi bi-box-seam me-2" aria-hidden="true"></i>Troškovi ambalaze
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/troskovi-poslovanja">
+                                            <i class="bi bi-briefcase me-2" aria-hidden="true"></i>Troškovi poslovanja
+                                        </a></li>
+                                    }
                                 </ul>
                             </li>
 
@@ -149,12 +161,15 @@
                                         <i class="bi bi-house-door me-2" aria-hidden="true"></i>Promet početna
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/nabavka">
-                                        <i class="bi bi-truck me-2" aria-hidden="true"></i>Nabavka
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/prodaja">
-                                        <i class="bi bi-cart-check me-2" aria-hidden="true"></i>Prodaja
-                                    </a></li>
+                                    @if (ImaPuniPristup())
+                                    {
+                                        <li><a class="dropdown-item" href="/nabavka">
+                                            <i class="bi bi-truck me-2" aria-hidden="true"></i>Nabavka
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/prodaja">
+                                            <i class="bi bi-cart-check me-2" aria-hidden="true"></i>Prodaja
+                                        </a></li>
+                                    }
                                     <li><a class="dropdown-item" href="/izvestaj-prijem">
                                         <i class="bi bi-gear-wide-connected me-2" aria-hidden="true"></i>Izvestaj Prijem
                                     </a></li>
@@ -236,6 +251,11 @@
                 <span class="bi bi-calendar3" aria-hidden="true"></span> Smenski izveštaji
             </NavLink>
         </div>
+        @* <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="poslovodja">
+                <span class="bi bi-person-badge" aria-hidden="true"></span> Poslovođa
+            </NavLink>
+        </div> *@
 
         <!-- Finansije Section -->
         <div class="nav-item px-3">
@@ -423,6 +443,13 @@
         try
         {
             currentUser = await AuthService.GetCurrentUser();
+
+            // Debug logging
+            if (currentUser != null)
+            {
+                Console.WriteLine($"NavMenu - Korisnik: {currentUser.Ime}, GrupaID: {currentUser.GrupaKorisnikaID}, Grupa: {currentUser.GrupaNaziv}");
+                Console.WriteLine($"NavMenu - Puni pristup: {currentUser.ImaPuniPristup()}, Ograničeni: {currentUser.ImaOgraniceniPristup()}");
+            }
         }
         catch (Exception ex)
         {
@@ -446,5 +473,24 @@
         {
             Console.WriteLine($"Greška pri odjavi: {ex.Message}");
         }
+    }
+
+    // Helper metoda za proveru pristupa
+    private bool ImaPristup(string url)
+    {
+        if (currentUser == null) return false;
+        return currentUser.ImaPristupStranici(url);
+    }
+
+    // Provera da li korisnik ima puni pristup
+    private bool ImaPuniPristup()
+    {
+        return currentUser?.ImaPuniPristup() ?? false;
+    }
+
+    // Provera da li korisnik ima ograničeni pristup
+    private bool ImaOgraniceniPristup()
+    {
+        return currentUser?.ImaOgraniceniPristup() ?? false;
     }
 }

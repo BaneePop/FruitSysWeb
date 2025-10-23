@@ -466,7 +466,18 @@
     {
         try
         {
-            var excelData = ExportService.ExportToExcel(podaci);
+            // Definiši samo kolone koje se prikazuju u tabeli
+            var columns = new Dictionary<string, string>
+            {
+                { "Datum", "Datum" },
+                { "RadniNalog", "Radni Nalog" },
+                { "Artikal", "Artikal" },
+                { "KolicinaRoba", "Količina Roba" },
+                { "GotovProizvod", "Gotov Proizvod" },
+                { "Komitent", "Komitent" }
+            };
+
+            var excelData = ExportService.ExportToExcelWithColumns(podaci, columns);
             var fileName = TypeMapping.GenerateExportFileName("proizvodnja", ".xlsx");
             await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         }
@@ -480,7 +491,18 @@
     {
         try
         {
-            var pdfData = ExportService.ExportToPdf(podaci);
+            // Definiši samo kolone koje se prikazuju u tabeli
+            var columns = new Dictionary<string, string>
+            {
+                { "Datum", "Datum" },
+                { "RadniNalog", "Radni Nalog" },
+                { "Artikal", "Artikal" },
+                { "KolicinaRoba", "Količina Roba" },
+                { "GotovProizvod", "Gotov Proizvod" },
+                { "Komitent", "Komitent" }
+            };
+
+            var pdfData = ExportService.ExportToPdfWithColumns(podaci, columns);
             var fileName = TypeMapping.GenerateExportFileName("proizvodnja", ".pdf");
             await DownloadFile(pdfData, fileName, "application/pdf");
         }

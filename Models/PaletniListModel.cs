@@ -74,5 +74,6 @@ namespace FruitSysWeb.Models
     {
         public string Dobavljac { get; set; } = string.Empty;
         public decimal Kolicina { get; set; }
+        public string? Artikli { get; set; } // Lista artikala odvojenih zarezom
     }
 }

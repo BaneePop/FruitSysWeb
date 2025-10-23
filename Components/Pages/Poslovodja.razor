@@ -1,4 +1,4 @@
-@page "/lager-proizvodnje"
+@page "/poslovodja"
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
 @using FruitSysWeb.Models
@@ -8,14 +8,15 @@
 @using FruitSysWeb.Services.Core
 @using FruitSysWeb.Constants
 @inject IMagacinLagerService LagerService
+@inject IPreradaService PreradaService
 @inject IExportService ExportService
 @inject ITypeMappingService TypeMapping
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 
 <style>
-    .lager-header {
-        background: linear-gradient(135deg, #3e6b1f, #2d5016);
+    .poslovodja-header {
+        background: linear-gradient(135deg, #1f3e6b, #16305d);
         border-radius: 12px;
         margin-bottom: 2rem;
     }
@@ -35,7 +36,7 @@
     }
 
     .table thead th {
-        background-color: #2d5016;
+        background-color: #16305d;
         color: white;
         font-weight: 600;
         border: none;
@@ -69,7 +70,7 @@
     .stat-value {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #2d5016;
+        color: #16305d;
     }
 
     .stat-label {
@@ -97,14 +98,14 @@
 </style>
 
 <!-- Header -->
-<div class="lager-header text-white py-4 mb-4">
+<div class="poslovodja-header text-white py-4 mb-4">
     <div class="container-fluid">
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h1 class="h2 mb-1">
-                    <i class="bi bi-gear-wide-connected me-2"></i>Lager Proizvodnje
+                    <i class="bi bi-person-badge me-2"></i>Poslovođa
                 </h1>
-                <p class="mb-0">Praćenje radnih naloga u toku i rezervisanih materijala</p>
+                <p class="mb-0">Pregled radnih naloga i izveštaja po poslovođama</p>
             </div>
             <div class="col-md-4 text-end">
                 <span class="badge bg-light text-dark fs-6">
@@ -123,10 +124,60 @@
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/">Početna</a></li>
-            <li class="breadcrumb-item"><a href="/lagerhome">Lager</a></li>
-            <li class="breadcrumb-item active">Lager Proizvodnje</li>
+            <li class="breadcrumb-item"><a href="/prerada">Prerada</a></li>
+            <li class="breadcrumb-item active">Poslovođa</li>
         </ol>
     </nav>
+
+    <!-- ✨ PRETHODNA SMENA IZVEŠTAJ -->
+    @if (predhodnaSmenaInfo != null && predhodnaSmena != null && predhodnaSmena.Any())
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>Prethodna Smena
+                    </h5>
+                    <div>
+                        <span class="badge bg-light text-dark">@predhodnaSmenaInfo.BrojSmene</span>
+                        <span class="badge bg-light text-dark ms-2">@predhodnaSmenaInfo.Datum?.ToString("dd.MM.yyyy")</span>
+                        <span class="badge bg-warning text-dark ms-2">Poslovođa: @predhodnaSmenaInfo.Poslovodja</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Radni Nalog</th>
+                                <th>Vrsta Artikla</th>
+                                <th>Pakovanje</th>
+                                <th class="text-end">Količina (kg)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var stavka in predhodnaSmena)
+                            {
+                                <tr>
+                                    <td><strong class="text-primary">@stavka.RadniNalog</strong></td>
+                                    <td>@stavka.VrstaArtikla</td>
+                                    <td><span class="badge bg-secondary">@stavka.Pakovanje</span></td>
+                                    <td class="text-end"><strong>@TypeMapping.FormatDecimal(stavka.Kolicina)</strong></td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-secondary">
+                            <tr>
+                                <th colspan="3" class="text-end">UKUPNO:</th>
+                                <th class="text-end">@TypeMapping.FormatDecimal(predhodnaSmena.Sum(x => x.Kolicina))</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- Statistics -->
     <div class="stats-row">
@@ -173,8 +224,8 @@
                 <button class="btn btn-outline-primary btn-sm" @onclick="RefreshData">
                     <i class="bi bi-arrow-clockwise me-1"></i>Osveži podatke
                 </button>
-                <button class="btn btn-outline-info btn-sm" @onclick="() => NavigateToLager()">
-                    <i class="bi bi-arrow-left me-1"></i>Povratak na Lager
+                <button class="btn btn-outline-info btn-sm" @onclick="() => NavigateToPrerada()">
+                    <i class="bi bi-arrow-left me-1"></i>Povratak na Preradu
                 </button>
                 <div class="ms-auto d-flex export-buttons">
                     <button class="btn btn-success btn-sm" @onclick="ExportToExcel" disabled="@(lagerProizvodnje?.Count == 0)">
@@ -206,15 +257,15 @@
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Učitavanje...</span>
                     </div>
-                    <p class="text-muted mt-2">Učitavanje podataka o lageru proizvodnje...</p>
+                    <p class="text-muted mt-2">Učitavanje podataka o poslovođama...</p>
                 </div>
             }
             else if (!lagerProizvodnje.Any())
             {
                 <div class="text-center py-5">
                     <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
-                    <h5 class="text-muted mt-3">Nema podataka o lageru proizvodnje</h5>
-                    <p class="text-muted">Trenutno nema aktivnih radnih naloga u proizvodnji.</p>
+                    <h5 class="text-muted mt-3">Nema podataka</h5>
+                    <p class="text-muted">Trenutno nema aktivnih radnih naloga.</p>
                     <button class="btn btn-primary mt-2" @onclick="RefreshData">
                         <i class="bi bi-arrow-clockwise me-1"></i>Pokušaj ponovo
                     </button>
@@ -239,7 +290,7 @@
                             @foreach (var item in lagerProizvodnje)
                             {
                                 var faliDoZavrsetka = item.PotrebnaKolicina - item.Kolicina;
-                                var procenatZavrsenosti = item.PotrebnaKolicina > 0 ? 
+                                var procenatZavrsenosti = item.PotrebnaKolicina > 0 ?
                                     Math.Round((item.Kolicina / item.PotrebnaKolicina) * 100, 1) : 0;
                                 var statusBadgeClass = GetStatusBadgeClass(procenatZavrsenosti);
                                 var progressBarClass = GetProgressBarClass(procenatZavrsenosti);
@@ -268,7 +319,7 @@
                                     <td class="text-center">
                                         <div class="progress-container">
                                             <div class="progress progress-mini">
-                                                <div class="progress-bar @progressBarClass" 
+                                                <div class="progress-bar @progressBarClass"
                                                      style="width: @(procenatZavrsenosti)%"></div>
                                             </div>
                                             <small class="fw-bold @statusBadgeClass">@(procenatZavrsenosti)%</small>
@@ -285,7 +336,7 @@
                                 <th class="text-end text-warning">@TypeMapping.FormatDecimal(lagerProizvodnje.Sum(x => Math.Max(0, x.PotrebnaKolicina - x.Kolicina)))</th>
                                 <th class="text-center">
                                     @{
-                                        var ukupnoProcenat = lagerProizvodnje.Sum(x => x.PotrebnaKolicina) > 0 ? 
+                                        var ukupnoProcenat = lagerProizvodnje.Sum(x => x.PotrebnaKolicina) > 0 ?
                                             Math.Round((lagerProizvodnje.Sum(x => x.Kolicina) / lagerProizvodnje.Sum(x => x.PotrebnaKolicina)) * 100, 1) : 0;
                                     }
                                     <strong class="@GetStatusBadgeClass(ukupnoProcenat)">@(ukupnoProcenat)%</strong>
@@ -301,45 +352,62 @@
 
 @code {
     private List<RadniNalogLagerModel>? lagerProizvodnje;
+    private PredhodnaSmenaInfo? predhodnaSmenaInfo;
+    private List<PredhodnaSmenaModel>? predhodnaSmena;
 
     protected override async Task OnInitializedAsync()
     {
-        await UcitajLagerProizvodnje();
+        await UcitajPodatke();
     }
 
-    private async Task UcitajLagerProizvodnje()
+    private async Task UcitajPodatke()
     {
         try
         {
-            Console.WriteLine("Učitavam lager proizvodnje podatke...");
-            lagerProizvodnje = await LagerService.UcitajLagerProizvodnje();
+            Console.WriteLine("Učitavam podatke za poslovođe...");
+
+            // Paralelno učitavanje
+            var lagerTask = LagerService.UcitajLagerProizvodnje();
+            var smenaInfoTask = PreradaService.UcitajPredhodnuSmenuInfo();
+            var smenaTask = PreradaService.UcitajPredhodnuSmenu();
+
+            await Task.WhenAll(lagerTask, smenaInfoTask, smenaTask);
+
+            lagerProizvodnje = lagerTask.Result;
+            predhodnaSmenaInfo = smenaInfoTask.Result;
+            predhodnaSmena = smenaTask.Result;
+
             Console.WriteLine($"Učitano {lagerProizvodnje?.Count ?? 0} radnih naloga");
+            Console.WriteLine($"Prethodna smena: {predhodnaSmenaInfo?.BrojSmene ?? "N/A"} - {predhodnaSmena?.Count ?? 0} stavki");
+
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greška pri učitavanju lager proizvodnje: {ex.Message}");
+            Console.WriteLine($"Greška pri učitavanju podataka: {ex.Message}");
             lagerProizvodnje = new List<RadniNalogLagerModel>();
+            predhodnaSmena = new List<PredhodnaSmenaModel>();
         }
     }
 
     private async Task RefreshData()
     {
         lagerProizvodnje = null;
+        predhodnaSmena = null;
+        predhodnaSmenaInfo = null;
         StateHasChanged();
-        await UcitajLagerProizvodnje();
+        await UcitajPodatke();
     }
 
-    private void NavigateToLager()
+    private void NavigateToPrerada()
     {
-        // Navigiraj na lager stranicu i aktiviraj proizvodnja tab
-        NavigationManager.NavigateTo("/lager");
+        NavigationManager.NavigateTo("/prerada");
     }
 
     private string GetStatusBadgeClass(decimal procenat) => procenat switch
     {
         >= 90 => "text-success",
-        >= 70 => "text-info", 
+        >= 70 => "text-info",
         >= 50 => "text-warning",
         _ => "text-danger"
     };
@@ -348,11 +416,11 @@
     {
         >= 90 => "bg-success",
         >= 70 => "bg-info",
-        >= 50 => "bg-warning", 
+        >= 50 => "bg-warning",
         _ => "bg-danger"
     };
 
-    // Export metode - kopirane iz Lager.razor
+    // Export metode
     private async Task ExportToExcel()
     {
         try
@@ -370,7 +438,7 @@
                 };
 
                 var excelData = ExportService.ExportToExcelWithColumns(lagerProizvodnje, columns);
-                var fileName = TypeMapping.GenerateExportFileName("lager_proizvodnje", SystemConstants.Export.EXCEL_EXTENSION);
+                var fileName = TypeMapping.GenerateExportFileName("poslovodja", SystemConstants.Export.EXCEL_EXTENSION);
                 await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
             }
         }
@@ -397,7 +465,7 @@
                 };
 
                 var pdfData = ExportService.ExportToPdfWithColumns(lagerProizvodnje, columns);
-                var fileName = TypeMapping.GenerateExportFileName("lager_proizvodnje", SystemConstants.Export.PDF_EXTENSION);
+                var fileName = TypeMapping.GenerateExportFileName("poslovodja", SystemConstants.Export.PDF_EXTENSION);
                 await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
             }
         }

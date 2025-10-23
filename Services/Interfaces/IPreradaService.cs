@@ -72,5 +72,9 @@ namespace FruitSysWeb.Services.Interfaces
         // Najavljeni utovari za dashboard
         Task<List<NajavljeniUtovarModel>> UcitajNajavljeneUtovare();
 
+        // Prethodna smena izveštaj
+        Task<PredhodnaSmenaInfo?> UcitajPredhodnuSmenuInfo();
+        Task<List<PredhodnaSmenaModel>> UcitajPredhodnuSmenu();
+
     }
 }

@@ -15,6 +15,7 @@
 @inject ITypeMappingService TypeMapping
 @inject IJSRuntime JSRuntime
 @inject ILogger<TroskoviHome> Logger
+@inject IAuthService AuthService
 
 <style>
     .troskovi-header {
@@ -85,21 +86,24 @@
             </div>
         </div>
 
-        <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-ambalaze")'>
-            <i class="bi bi-box-seam fs-1 text-success"></i>
-            <div class="text-start">
-                <h5 class="text-white mb-0">Troškovi</h5>
-                <h6 class="text-white mb-0">Ambalaze</h6>
+        @if (currentUser?.ImaPuniPristup() ?? false)
+        {
+            <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-ambalaze")'>
+                <i class="bi bi-box-seam fs-1 text-success"></i>
+                <div class="text-start">
+                    <h5 class="text-white mb-0">Troškovi</h5>
+                    <h6 class="text-white mb-0">Ambalaze</h6>
+                </div>
             </div>
-        </div>
 
-        <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-poslovanja")'>
-            <i class="bi bi-briefcase fs-1 text-success"></i>
-            <div class="text-start">
-                <h5 class="text-white mb-0">Troškovi</h5>
-                <h6 class="text-white mb-0">Poslovanja</h6>
+            <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-poslovanja")'>
+                <i class="bi bi-briefcase fs-1 text-success"></i>
+                <div class="text-start">
+                    <h5 class="text-white mb-0">Troškovi</h5>
+                    <h6 class="text-white mb-0">Poslovanja</h6>
+                </div>
             </div>
-        </div>
+        }
     </div>
 
     <!-- Chart Section -->
@@ -337,6 +341,8 @@
 </div>
 
 @code {
+    private KorisnikModel? currentUser;
+
     // Loading States
     private bool IsLoading = true;
     private bool IsLoadingAmbalaza = false;
@@ -366,6 +372,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        currentUser = await AuthService.GetCurrentUser();
         await RefreshAllCharts();
     }
 

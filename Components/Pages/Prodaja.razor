@@ -385,8 +385,20 @@
     {
         try
         {
-            var excelData = ExportService.ExportToExcel(podaci);
-            var fileName = SystemConstants.GenerateExportFileName("finansije", "xlsx");
+            // Definiši samo kolone koje se prikazuju u izveštaju
+            var columns = new Dictionary<string, string>
+            {
+                { "Datum", "Datum" },
+                { "Komitent", "Komitent" },
+                { "Dokument", "Dokument" },
+                { "Artikal", "Artikal" },
+                { "Kolicina", "Količina" },
+                { "Potrazuje", "Potražuje" },
+                { "Duguje", "Duguje" }
+            };
+
+            var excelData = ExportService.ExportToExcelWithColumns(podaci, columns);
+            var fileName = SystemConstants.GenerateExportFileName("prodaja", "xlsx");
             await DownloadFile(excelData, fileName, SystemConstants.ExcelMimeType);
         }
         catch (Exception ex)
@@ -399,8 +411,20 @@
     {
         try
         {
-            var pdfData = ExportService.ExportToPdf(podaci);
-            var fileName = SystemConstants.GenerateExportFileName("finansije", "pdf");
+            // Definiši samo kolone koje se prikazuju u izveštaju
+            var columns = new Dictionary<string, string>
+            {
+                { "Datum", "Datum" },
+                { "Komitent", "Komitent" },
+                { "Dokument", "Dokument" },
+                { "Artikal", "Artikal" },
+                { "Kolicina", "Količina" },
+                { "Potrazuje", "Potražuje" },
+                { "Duguje", "Duguje" }
+            };
+
+            var pdfData = ExportService.ExportToPdfWithColumns(podaci, columns);
+            var fileName = SystemConstants.GenerateExportFileName("prodaja", "pdf");
             await DownloadFile(pdfData, fileName, SystemConstants.PdfMimeType);
         }
         catch (Exception ex)

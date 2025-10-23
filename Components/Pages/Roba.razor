@@ -355,7 +355,14 @@
         {
             if (sirovineStanje != null && sirovineStanje.Any())
             {
-                var excelData = ExportService.ExportToExcel(sirovineStanje);
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "Artikal", "Artikal" },
+                    { "Kolicina", "Količina" }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(sirovineStanje, columns);
                 var fileName = TypeMapping.GenerateExportFileName("roba_sirovine", SystemConstants.Export.EXCEL_EXTENSION);
                 await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
             }
@@ -372,9 +379,16 @@
         {
             if (sirovineStanje != null && sirovineStanje.Any())
             {
-                var pdfData = ExportService.ExportToPdf(sirovineStanje);
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "Artikal", "Artikal" },
+                    { "Kolicina", "Količina" }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(sirovineStanje, columns);
                 var fileName = TypeMapping.GenerateExportFileName("roba_sirovine", SystemConstants.Export.PDF_EXTENSION);
-                await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_EXTENSION);
+                await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
             }
         }
         catch (Exception ex)
@@ -389,7 +403,14 @@
         {
             if (poluproizvodiStanje != null && poluproizvodiStanje.Any())
             {
-                var excelData = ExportService.ExportToExcel(poluproizvodiStanje);
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "Artikal", "Artikal" },
+                    { "Kolicina", "Količina" }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(poluproizvodiStanje, columns);
                 var fileName = TypeMapping.GenerateExportFileName("roba_poluproizvodi", SystemConstants.Export.EXCEL_EXTENSION);
                 await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
             }
@@ -406,9 +427,16 @@
         {
             if (poluproizvodiStanje != null && poluproizvodiStanje.Any())
             {
-                var pdfData = ExportService.ExportToPdf(poluproizvodiStanje);
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "Artikal", "Artikal" },
+                    { "Kolicina", "Količina" }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(poluproizvodiStanje, columns);
                 var fileName = TypeMapping.GenerateExportFileName("roba_poluproizvodi", SystemConstants.Export.PDF_EXTENSION);
-                await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_EXTENSION);
+                await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
             }
         }
         catch (Exception ex)

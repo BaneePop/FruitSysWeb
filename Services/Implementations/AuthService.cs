@@ -28,11 +28,13 @@ namespace FruitSysWeb.Services.Implementations
             try
             {
                 var sql = @"
-            SELECT 
-                ID, Ime, Lozinka, Seed, Administrator, Kreirano, Azurirano, 
-                Version, RadnikID, GrupaKorisnikaID, KomitentID
+            SELECT
+                k.ID, k.Ime, k.Lozinka, k.Seed, k.Administrator, k.Kreirano, k.Azurirano,
+                k.Version, k.RadnikID, k.GrupaKorisnikaID, k.KomitentID,
+                gk.Naziv as GrupaNaziv
             FROM Korisnik k
-            WHERE Ime = @Username
+            LEFT JOIN GrupaKorisnika gk ON k.GrupaKorisnikaID = gk.ID
+            WHERE k.Ime = @Username
             LIMIT 1
         ";
 
@@ -45,6 +47,9 @@ namespace FruitSysWeb.Services.Implementations
                 {
                     return new LoginResponse { Success = false, Message = "Korisničko ime ne postoji" };
                 }
+
+                // Debug logging
+                _logger.LogInformation($"🔍 Login - Korisnik: {korisnik.Ime}, GrupaKorisnikaID: {korisnik.GrupaKorisnikaID}, GrupaNaziv: {korisnik.GrupaNaziv}");
 
                 var hashedPassword = HashPassword(request.Password, korisnik.Seed);
                 
@@ -100,6 +105,28 @@ namespace FruitSysWeb.Services.Implementations
         {
             var user = await GetCurrentUser();
             return user?.Administrator ?? false;
+        }
+
+        public async Task<bool> ImaPristupStranici(string url)
+        {
+            var user = await GetCurrentUser();
+            if (user == null) return false;
+
+            return user.ImaPristupStranici(url);
+        }
+
+        public async Task<string> PocetnaStranica()
+        {
+            var user = await GetCurrentUser();
+            if (user == null)
+            {
+                _logger.LogWarning("❌ PocetnaStranica - Nema korisnika, redirect na /login");
+                return "/login";
+            }
+
+            var stranica = GrupaKorisnikaHelper.PocetnaStranica(user.Ime);
+            _logger.LogInformation($"✅ PocetnaStranica - Korisnik: {user.Ime}, Početna: {stranica}");
+            return stranica;
         }
 
         // TEST SVE VARIJANTE

@@ -12,7 +12,6 @@
 @inject IArtikalService ArtikalService
 @inject IArtikalKlasifikacijaService ArtikalKlasifikacijaService
 @inject NavigationManager Navigation
-@inject IJSRuntime JS
 
 <div class="container-fluid mt-4">
     <div class="row">
@@ -31,12 +30,12 @@
                 </div>
                 <div class="card-body">
                     
-                    @* Obaveštenje o automatskom čuvanju *@
-                    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-                        <i class="bi bi-info-circle-fill me-2" style="font-size: 1.5rem;"></i>
+                    @* Obaveštenje o globalnoj konfiguraciji *@
+                    <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+                        <i class="bi bi-people-fill me-2" style="font-size: 1.5rem;"></i>
                         <div>
-                            <strong>Automatsko čuvanje je aktivno!</strong><br/>
-                            <small>Svaka promena se automatski čuva. Ne morate klikati na "Sačuvaj" dugme.</small>
+                            <strong>Globalna konfiguracija!</strong><br/>
+                            <small>Sve promene se automatski čuvaju u bazu i važe za SVE korisnike programa.</small>
                         </div>
                     </div>
                     
@@ -412,41 +411,37 @@
     {
         try
         {
-            var json = await JS.InvokeAsync<string>("localStorage.getItem", "brzi_pregled_config");
-            
-            if (!string.IsNullOrEmpty(json))
+            // ✅ Učitaj iz baze podataka (globalna konfiguracija)
+            var config = await BrziPregledService.UcitajKonfiguraciju();
+
+            if (config != null)
             {
-                var config = JsonSerializer.Deserialize<BrziPregledKonfiguracija>(json);
-                
-                if (config != null)
+                // Dobavljači
+                for (int i = 0; i < 6 && i < config.IzabraniDobavljaci.Count; i++)
                 {
-                    // Dobavljači
-                    for (int i = 0; i < 6 && i < config.IzabraniDobavljaci.Count; i++)
+                    izabraniDobavljaci[i] = config.IzabraniDobavljaci[i];
+                }
+
+                // Kupci
+                for (int i = 0; i < 6 && i < config.IzabraniKupci.Count; i++)
+                {
+                    izabraniKupci[i] = config.IzabraniKupci[i];
+                }
+
+                // Artikli po vrstama
+                if (config.ArtikliPoVrstama != null)
+                {
+                    foreach (var vrsta in config.ArtikliPoVrstama)
                     {
-                        izabraniDobavljaci[i] = config.IzabraniDobavljaci[i];
-                    }
-                    
-                    // Kupci
-                    for (int i = 0; i < 6 && i < config.IzabraniKupci.Count; i++)
-                    {
-                        izabraniKupci[i] = config.IzabraniKupci[i];
-                    }
-                    
-                    // Artikli po vrstama
-                    if (config.ArtikliPoVrstama != null)
-                    {
-                        foreach (var vrsta in config.ArtikliPoVrstama)
+                        if (vrsta.Value.Any())
                         {
-                            if (vrsta.Value.Any())
-                            {
-                                izabraneVrste.Add(vrsta.Key);
-                                artikliPoVrstama[vrsta.Key] = vrsta.Value.ToList();
-                            }
+                            izabraneVrste.Add(vrsta.Key);
+                            artikliPoVrstama[vrsta.Key] = vrsta.Value.ToList();
                         }
                     }
-                    
-                    Console.WriteLine("✅ Konfiguracija automatski učitana iz localStorage");
                 }
+
+                Console.WriteLine("✅ Globalna konfiguracija učitana iz baze");
             }
         }
         catch (Exception ex)
@@ -493,7 +488,7 @@
         StateHasChanged();
     }
 
-    // ✅ NOVA METODA - Automatsko čuvanje bez obaveštenja
+    // ✅ NOVA METODA - Automatsko čuvanje u bazu (globalno za sve korisnike)
     private async Task AutomatskiSacuvajKonfiguraciju()
     {
         try
@@ -504,23 +499,23 @@
                     .Where(x => x.HasValue)
                     .Select(x => x!.Value)
                     .ToList(),
-                    
+
                 IzabraniKupci = izabraniKupci
                     .Where(x => x.HasValue)
                     .Select(x => x!.Value)
                     .ToList(),
-                    
+
                 ArtikliPoVrstama = artikliPoVrstama
                     .Where(x => x.Value.Any())
                     .ToDictionary(x => x.Key, x => x.Value)
             };
 
-            var json = JsonSerializer.Serialize(config);
-            await JS.InvokeVoidAsync("localStorage.setItem", "brzi_pregled_config", json);
-            
+            // ✅ Sačuvaj u bazu podataka (globalno za sve korisnike)
+            await BrziPregledService.SacuvajKonfiguraciju(config);
+
             poslednjeKuvanje = DateTime.Now;
-            
-            Console.WriteLine($"✅ Automatski sačuvano: {config.IzabraniDobavljaci.Count} dobavljača, {config.IzabraniKupci.Count} kupaca");
+
+            Console.WriteLine($"✅ Globalno sačuvano: {config.IzabraniDobavljaci.Count} dobavljača, {config.IzabraniKupci.Count} kupaca");
         }
         catch (Exception ex)
         {
@@ -536,10 +531,13 @@
         artikliPoVrstama = vrsteVoca.ToDictionary(v => v, v => new List<long>());
         pretragaArtikala = vrsteVoca.ToDictionary(v => v, v => "");
         poslednjeKuvanje = null;
-        
-        // Obriši iz localStorage
-        await JS.InvokeVoidAsync("localStorage.removeItem", "brzi_pregled_config");
-        
+
+        // Obriši iz baze podataka (globalno za sve korisnike)
+        var emptyConfig = new BrziPregledKonfiguracija();
+        await BrziPregledService.SacuvajKonfiguraciju(emptyConfig);
+
+        Console.WriteLine("✅ Konfiguracija resetovana (globalno)");
+
         StateHasChanged();
     }
 

@@ -380,7 +380,21 @@
         {
             if (radniNalogData?.Any() == true)
             {
-                var excelData = ExportService.ExportToExcel(radniNalogData);
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "RadniNalog", "Radni nalog" },
+                    { "BrojIzvestaja", "Smenski izveštaj" },
+                    { "Datum", "Datum" },
+                    { "Komitent", "Kupac" },
+                    { "VrstaArtikla", "Vrsta artikla" },
+                    { "BrojRadnika", "Br. radnika" },
+                    { "BrojRadnihSati", "Sati" },
+                    { "TrosakPoRadnomNalogu", "Trošak" },
+                    { "ProcenatIskoriscenja", "Procenat" }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(radniNalogData, columns);
                 var fileName = TypeMapping.GenerateExportFileName("radni_nalog", ".xlsx");
                 await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             }
@@ -397,7 +411,21 @@
         {
             if (radniNalogData?.Any() == true)
             {
-                var pdfData = ExportService.ExportToPdf(radniNalogData);
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "RadniNalog", "Radni nalog" },
+                    { "BrojIzvestaja", "Smenski izveštaj" },
+                    { "Datum", "Datum" },
+                    { "Komitent", "Kupac" },
+                    { "VrstaArtikla", "Vrsta artikla" },
+                    { "BrojRadnika", "Br. radnika" },
+                    { "BrojRadnihSati", "Sati" },
+                    { "TrosakPoRadnomNalogu", "Trošak" },
+                    { "ProcenatIskoriscenja", "Procenat" }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(radniNalogData, columns);
                 var fileName = TypeMapping.GenerateExportFileName("radni_nalog", ".pdf");
                 await DownloadFile(pdfData, fileName, "application/pdf");
             }

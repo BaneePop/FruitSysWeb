@@ -169,81 +169,90 @@
 
     @if (VoceChartData != null && VoceChartData.Any())
     {
-        foreach (var voce in VoceChartData)
+        var voceList = VoceChartData.ToList();
+        int i = 0;
+        while (i < voceList.Count)
         {
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">
-                                    <i class="bi bi-bar-chart"></i>
-                                    @voce.Key - Prijem po Dobavljačima
-                                </h5>
-                                <span class="badge bg-primary">
-                                    Ukupno: @TypeMapping.FormatDecimal(voce.Value.Sum(x => x.Value)) kg
-                                </span>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            @if (IsRefreshing)
-                            {
-                                <div class="text-center p-4">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Učitavam...</span>
-                                    </div>
-                                </div>
-                            }
-                            else
-                            {
-                                <ApexChart TItem="ChartDataPoint"
-                                           @key="@($"chart-{voce.Key}-{voce.Value.Count}")"
-                                           Title="@($"Dobavljači za {voce.Key}")"
-                                           Height="300"
-                                           Options="@GetChartOptions(voce.Key)">
-                                    <ApexPointSeries TItem="ChartDataPoint"
-                                                     Items="@voce.Value"
-                                                     Name="Količina"
-                                                     SeriesType="SeriesType.Bar"
-                                                     XValue="@(e => e.Label)"
-                                                     YValue="@(e => e.Value)" />
-                                </ApexChart>
+            var currentChart = voceList[i];
+            var currentHasMany = currentChart.Value.Count >= 5;
 
-                                <div class="mt-3 table-responsive">
-                                    <table class="table table-sm table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Dobavljač</th>
-                                                <th class="text-end">Količina (kg)</th>
-                                                <th class="text-end">% od Ukupno</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var dobavljac in voce.Value.OrderByDescending(x => x.Value))
-                                            {
-                                                var procenat = voce.Value.Sum(x => x.Value) > 0 ? 
-                                                    (dobavljac.Value / voce.Value.Sum(x => x.Value)) * 100 : 0;
-                                                <tr>
-                                                    <td>@dobavljac.Label</td>
-                                                    <td class="text-end">@TypeMapping.FormatDecimal(dobavljac.Value)</td>
-                                                    <td class="text-end">@procenat.ToString("F1")%</td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                        <tfoot>
-                                            <tr class="fw-bold">
-                                                <td>UKUPNO</td>
-                                                <td class="text-end">@TypeMapping.FormatDecimal(voce.Value.Sum(x => x.Value))</td>
-                                                <td class="text-end">100%</td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            }
-                        </div>
+            // Ako trenutni chart ima 5+ dobavljača, sam u redu
+            if (currentHasMany)
+            {
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <ApexBarChart
+                            Title="@($"{currentChart.Key} - Prijem po Dobavljačima")"
+                            Icon="bi bi-bar-chart"
+                            SeriesName="Količina"
+                            Unit="kg"
+                            Data="@currentChart.Value"
+                            IsLoading="@IsRefreshing"
+                            HasError="false"
+                            ShowSummary="true"
+                            OnRefresh="@UcitajPodatke" />
                     </div>
                 </div>
-            </div>
+                i++;
+            }
+            else
+            {
+                // Trenutni chart ima manje od 5 dobavljača
+                var nextIndex = i + 1;
+                var nextChart = nextIndex < voceList.Count ? (KeyValuePair<string, List<ChartDataPoint>>?)voceList[nextIndex] : null;
+                var nextHasMany = nextChart != null && nextChart.Value.Value.Count >= 5;
+
+                // Ako sledeći ne postoji ili ima 5+, trenutni sam u redu
+                if (nextChart == null || nextHasMany)
+                {
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <ApexBarChart
+                                Title="@($"{currentChart.Key} - Prijem po Dobavljačima")"
+                                Icon="bi bi-bar-chart"
+                                SeriesName="Količina"
+                                Unit="kg"
+                                Data="@currentChart.Value"
+                                IsLoading="@IsRefreshing"
+                                HasError="false"
+                                ShowSummary="true"
+                                OnRefresh="@UcitajPodatke" />
+                        </div>
+                    </div>
+                    i++;
+                }
+                else
+                {
+                    // Oba imaju manje od 5, stavi ih u isti red
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <ApexBarChart
+                                Title="@($"{currentChart.Key} - Prijem po Dobavljačima")"
+                                Icon="bi bi-bar-chart"
+                                SeriesName="Količina"
+                                Unit="kg"
+                                Data="@currentChart.Value"
+                                IsLoading="@IsRefreshing"
+                                HasError="false"
+                                ShowSummary="true"
+                                OnRefresh="@UcitajPodatke" />
+                        </div>
+                        <div class="col-md-6">
+                            <ApexBarChart
+                                Title="@($"{nextChart.Value.Key} - Prijem po Dobavljačima")"
+                                Icon="bi bi-bar-chart"
+                                SeriesName="Količina"
+                                Unit="kg"
+                                Data="@nextChart.Value.Value"
+                                IsLoading="@IsRefreshing"
+                                HasError="false"
+                                ShowSummary="true"
+                                OnRefresh="@UcitajPodatke" />
+                        </div>
+                    </div>
+                    i += 2;
+                }
+            }
         }
     }
     else if (IsRefreshing)
@@ -407,7 +416,12 @@
             {
                 VoceChartData = prijemData.ToDictionary(
                     kvp => kvp.Key,
-                    kvp => kvp.Value.Select(d => new ChartDataPoint(d.Dobavljac, d.Kolicina)).ToList()
+                    kvp => kvp.Value.Select(d => new ChartDataPoint
+                    {
+                        Label = d.Dobavljac,
+                        Value = d.Kolicina,
+                        ExtraData = d.Artikli // Artikli za tooltip
+                    }).ToList()
                 );
             }
             else
@@ -449,116 +463,4 @@
         }
     }
 
-    private ApexChartOptions<ChartDataPoint> GetChartOptions(string voce)
-    {
-        return new ApexChartOptions<ChartDataPoint>
-        {
-            Chart = new Chart
-            {
-                Type = ChartType.Bar,
-                Height = 300,
-                Toolbar = new Toolbar { Show = false }
-            },
-            Colors = new List<string> { GetColorForVoce(voce) },
-            PlotOptions = new PlotOptions
-            {
-                Bar = new PlotOptionsBar
-                {
-                    Horizontal = false,
-                    ColumnWidth = "65%",
-                    DataLabels = new PlotOptionsBarDataLabels
-                    {
-                        Position = BarDataLabelPosition.Bottom
-                    }
-                }
-            },
-            DataLabels = new DataLabels
-            {
-                Enabled = true,
-                OffsetY = -20,
-                Style = new DataLabelsStyle
-                {
-                    FontSize = "12px",
-                    Colors = new List<string> { "#304758" }
-                },
-                Formatter = "function(val) { return val.toFixed(1) + ' kg' }"
-            },
-            Stroke = new Stroke
-            {
-                Show = true,
-                Width = 2,
-                Colors = new List<string> { "transparent" }
-            },
-            Xaxis = new XAxis
-            {
-                Categories = VoceChartData?[voce].Select(x => x.Label).ToList() ?? new List<string>(),
-                Labels = new XAxisLabels
-                {
-                    Rotate = -45,
-                    RotateAlways = false,
-                    MaxHeight = 120
-                }
-            },
-            Yaxis = new List<YAxis>
-            {
-                new YAxis
-                {
-                    Title = new AxisTitle { Text = "Količina (kg)" },
-                    Labels = new YAxisLabels
-                    {
-                        Formatter = "function(val) { return val.toFixed(0) + ' kg' }"
-                    }
-                }
-            },
-            Fill = new Fill
-            {
-                Opacity = 1.0
-            },
-            Tooltip = new Tooltip
-            {
-                Y = new TooltipY
-                {
-                    Formatter = "function(val) { return val.toFixed(2) + ' kg' }"
-                }
-            },
-            Grid = new Grid
-            {
-                BorderColor = "#e7e7e7",
-                Row = new GridRow
-                {
-                    Colors = new List<string> { "#f3f3f3", "transparent" },
-                    Opacity = 0.5
-                }
-            }
-        };
-    }
-
-    /// <summary>
-    /// Returns a color hex code for the given fruit name to be used in charts.
-    /// </summary>
-    private string GetColorForVoce(string voce)
-    {
-        var colors = new Dictionary<string, string>
-        {
-            ["Višnja"] = "#3d0122",
-            ["Malina"] = "#ad1032",
-            ["Kupina"] = "#17040c",
-            ["Borovnica"] = "#4f3347",
-            ["Šljiva"] = "#2a2b69",
-            ["KUTIJA"] = "#28a745",
-            ["KESA"] = "#ffc107",
-            ["Paleta"] = "#fd7e14",
-            ["Folija"] = "#ff8c69",
-            ["Traka"] = "#dc143c"
-        };
-
-            foreach (var colorMapping in colors)
-                {
-                if (voce.Contains(colorMapping.Key, StringComparison.OrdinalIgnoreCase))
-                {
-                return colorMapping.Value;
-            }
-        }
-    return "#17a2b8";
-    }
 }

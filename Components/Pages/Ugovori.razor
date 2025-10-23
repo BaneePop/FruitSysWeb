@@ -397,7 +397,20 @@
         {
             if (ugovori != null && ugovori.Any())
             {
-                var excelData = ExportService.ExportToExcel(ugovori);
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "BrojUgovora", "Broj Ugovora" },
+                    { "Komitent", "Komitent" },
+                    { "Artikal", "Artikal" },
+                    { "UgovorenaKolicina", "Ugovorena Količina" },
+                    { "JedinicnaCenaEur", "Cena (EUR)" },
+                    { "Isporuceno", "Isporučeno" },
+                    { "PreostalaKolicina", "Preostalo" },
+                    { "DatumUgovora", "Datum Ugovora" }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(ugovori, columns);
                 var fileName = TypeMapping.GenerateExportFileName("aktivni_ugovori", SystemConstants.Export.EXCEL_EXTENSION);
                 await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
             }
@@ -414,7 +427,20 @@
         {
             if (ugovori != null && ugovori.Any())
             {
-                var pdfData = ExportService.ExportToPdf(ugovori);
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "BrojUgovora", "Broj Ugovora" },
+                    { "Komitent", "Komitent" },
+                    { "Artikal", "Artikal" },
+                    { "UgovorenaKolicina", "Ugovorena Količina" },
+                    { "JedinicnaCenaEur", "Cena (EUR)" },
+                    { "Isporuceno", "Isporučeno" },
+                    { "PreostalaKolicina", "Preostalo" },
+                    { "DatumUgovora", "Datum Ugovora" }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(ugovori, columns);
                 var fileName = TypeMapping.GenerateExportFileName("aktivni_ugovori", SystemConstants.Export.PDF_EXTENSION);
                 await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
             }
