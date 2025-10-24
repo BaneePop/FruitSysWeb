@@ -136,6 +136,15 @@ app.MapFallbackToPage("/_Host");
             var dbService = scope.ServiceProvider.GetRequiredService<DatabaseService>();
             Log.Information("Database service registered successfully");
 
+            // DEBUG: Učitaj sve grupe korisnika iz baze
+            var grupe = await dbService.QueryAsync<dynamic>("SELECT ID, Naziv FROM GrupaKorisnika ORDER BY ID");
+            Log.Information("=== GRUPE KORISNIKA IZ BAZE ===");
+            foreach (var grupa in grupe)
+            {
+                Log.Information($"ID: {grupa.ID}, Naziv: {grupa.Naziv}");
+            }
+            Log.Information("=== KRAJ GRUPA ===");
+
             var exportService = scope.ServiceProvider.GetRequiredService<IExportService>();
             if (exportService is FruitSysWeb.Services.Implementations.ExportService.SimpleExportService simpleExportService)
             {
