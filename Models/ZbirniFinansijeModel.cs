@@ -5,6 +5,7 @@ namespace FruitSysWeb.Models
         public DateTime Datum { get; set; }
         public string Komitent { get; set; } = string.Empty;
         public long? KomitentId { get; set; }
+        public string Artikal { get; set; } = string.Empty;
         public int BrojDokumenata { get; set; }
         public decimal UkupnaKolicina { get; set; }
         public decimal UkupnoPotrazuje { get; set; }

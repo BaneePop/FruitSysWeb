@@ -56,5 +56,11 @@ namespace FruitSysWeb.Services.Interfaces
         /// Generiše DOWNSTREAM Excel izveštaj sa hipervezama (Paletni List → Gde je prodat → Kako je proizveden → Odakle dolazi)
         /// </summary>
         Task<byte[]> GenerisiDownstreamExcel(string sifra);
+
+        /// <summary>
+        /// Generiše INTERAKTIVNI UPSTREAM PDF izveštaj sa bookmarks i hiperlinkovima (4 strane)
+        /// Strana 1: Pregled svih podataka | Strana 2: Dijagram proizvodnje | Strana 3: Dijagram nabavke | Strana 4: Dijagram prodaje
+        /// </summary>
+        Task<byte[]> GenerisiInteraktivniUpstreamPdf(string sifra);
     }
 }

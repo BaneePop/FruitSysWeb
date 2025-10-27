@@ -1,0 +1,707 @@
+/* ========================================
+   DARK THEME ENFORCER - JAKI OVERRIDE
+   Ovaj fajl forsira dark theme na sve elemente
+   ======================================== */
+
+/* 🌙 GLOBALNO - FORSIRA DARK POZADINU */
+html, body {
+    background-color: #0f1729 !important;
+    color: #e5e7eb !important;
+}
+
+/* 📋 TABELE - KOMPLETNO DARK */
+.table {
+    background-color: transparent !important;
+    color: #e5e7eb !important;
+}
+
+.table thead th {
+    background-color: #232d3f !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+}
+
+.table tbody {
+    background-color: #1a2332 !important;
+}
+
+.table tbody tr {
+    background-color: transparent !important;
+    border-bottom: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.table tbody tr:hover {
+    background-color: #2a3441 !important;
+}
+
+.table tbody td {
+    background-color: transparent !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.table-striped tbody tr:nth-of-type(even) {
+    background-color: transparent !important;
+}
+
+/* 🎯 NAVBAR - DARK UMESTO PLAVI */
+.navbar {
+    background: linear-gradient(135deg, #1a2332, #232d3f) !important;
+    border-bottom: 1px solid #374151 !important;
+}
+
+.navbar-brand {
+    color: #e5e7eb !important;
+}
+
+.navbar-nav .nav-link {
+    color: #9ca3af !important;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #e5e7eb !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.navbar-nav .nav-link.active {
+    color: #60a5fa !important;
+}
+
+.navbar-dark .navbar-toggler {
+    border-color: #374151 !important;
+}
+
+.navbar-dark .navbar-toggler-icon {
+    filter: invert(1) !important;
+}
+
+/* 🏠 DASHBOARD KARTICE - FORCE DARK */
+.card {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.card-header {
+    background-color: #232d3f !important;
+    border-bottom: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.card-body {
+    background-color: #1a2332 !important;
+    color: #e5e7eb !important;
+}
+
+.card-title {
+    color: #e5e7eb !important;
+}
+
+.card-text {
+    color: #9ca3af !important;
+}
+
+.dashboard-card {
+    background: #1a2332 !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #1a2332 0%, #232d3f 100%) !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+/* 🔍 BRZI FILTERI - DARK */
+.filter-section {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+    border-radius: 12px !important;
+    padding: 1.5rem !important;
+}
+
+.filter-card {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+/* Filter header-i */
+.card-header.bg-primary {
+    background: linear-gradient(135deg, #1a2332, #232d3f) !important;
+    border-bottom: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.card-header.bg-secondary {
+    background-color: #232d3f !important;
+    border-bottom: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+/* 📝 FORME - POTPUNO DARK */
+.form-control {
+    background-color: #232d3f !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.form-control:focus {
+    background-color: #2a3441 !important;
+    border-color: #3b82f6 !important;
+    color: #e5e7eb !important;
+}
+
+.form-control::placeholder {
+    color: #6b7280 !important;
+}
+
+.form-select {
+    background-color: #232d3f !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.form-select:focus {
+    background-color: #2a3441 !important;
+    border-color: #3b82f6 !important;
+    color: #e5e7eb !important;
+}
+
+.form-label {
+    color: #9ca3af !important;
+}
+
+/* 📊 SECTION HEADERS */
+.section-header {
+    color: #e5e7eb !important;
+    border-bottom: 2px solid #374151 !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #e5e7eb !important;
+}
+
+/* 🎨 BADGE OVERRIDE - Force Colors */
+.badge.bg-primary {
+    background-color: #3b82f6 !important;
+    color: white !important;
+}
+
+.badge.bg-success {
+    background-color: #10b981 !important;
+    color: white !important;
+}
+
+.badge.bg-danger {
+    background-color: #ef4444 !important;
+    color: white !important;
+}
+
+.badge.bg-warning {
+    background-color: #f59e0b !important;
+    color: white !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6b7280 !important;
+    color: white !important;
+}
+
+.badge.bg-info {
+    background-color: #2dd4bf !important;
+    color: white !important;
+}
+
+/* 🔘 BUTTONS - Dark Theme Override */
+.btn-primary {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+    color: white !important;
+}
+
+.btn-primary:hover {
+    background-color: #60a5fa !important;
+    border-color: #60a5fa !important;
+}
+
+.btn-success {
+    background-color: #10b981 !important;
+    border-color: #10b981 !important;
+    color: white !important;
+}
+
+.btn-success:hover {
+    background-color: #34d399 !important;
+    border-color: #34d399 !important;
+}
+
+.btn-danger {
+    background-color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: white !important;
+}
+
+.btn-secondary {
+    background-color: #232d3f !important;
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+/* 📦 DROPDOWN - Dark */
+.dropdown-menu {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+}
+
+.dropdown-item {
+    color: #e5e7eb !important;
+}
+
+.dropdown-item:hover {
+    background-color: #2a3441 !important;
+    color: #e5e7eb !important;
+}
+
+.dropdown-divider {
+    border-top-color: #374151 !important;
+}
+
+/* 🔍 FILTER ROW - Specific Dark */
+.row.mb-3 .card {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+}
+
+.row.mb-3 .card-body {
+    background-color: #1a2332 !important;
+}
+
+/* 📈 CHARTS - Background */
+.chart-container,
+.chart-wrapper {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+}
+
+/* 🎯 CONTAINERS & SECTIONS */
+.container,
+.container-fluid {
+    background-color: #0f1729 !important;
+}
+
+main,
+article {
+    background-color: #0f1729 !important;
+}
+
+/* ⚠️ ALERTS - Dark Version */
+.alert {
+    border: 1px solid !important;
+}
+
+.alert-success {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+    border-color: #10b981 !important;
+    color: #34d399 !important;
+}
+
+.alert-danger {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    border-color: #ef4444 !important;
+    color: #f87171 !important;
+}
+
+.alert-warning {
+    background-color: rgba(245, 158, 11, 0.1) !important;
+    border-color: #f59e0b !important;
+    color: #fbbf24 !important;
+}
+
+.alert-info {
+    background-color: rgba(45, 212, 191, 0.1) !important;
+    border-color: #2dd4bf !important;
+    color: #5eead4 !important;
+}
+
+/* 🔲 BORDERS - Global Dark */
+.border {
+    border-color: #374151 !important;
+}
+
+.border-top {
+    border-top-color: #374151 !important;
+}
+
+.border-bottom {
+    border-bottom-color: #374151 !important;
+}
+
+.border-start {
+    border-left-color: #374151 !important;
+}
+
+.border-end {
+    border-right-color: #374151 !important;
+}
+
+/* 📝 TEXT COLORS - Override */
+.text-muted {
+    color: #9ca3af !important;
+}
+
+.text-dark {
+    color: #e5e7eb !important;
+}
+
+.text-light {
+    color: #e5e7eb !important;
+}
+
+/* 🎨 BACKGROUND UTILITIES - Override */
+.bg-white {
+    background-color: #1a2332 !important;
+}
+
+.bg-light {
+    background-color: #1a2332 !important;
+}
+
+.bg-dark {
+    background-color: #232d3f !important;
+}
+
+/* 🔗 LINKS */
+a {
+    color: #60a5fa !important;
+}
+
+a:hover {
+    color: #93c5fd !important;
+}
+
+/* 📊 PROGRESS BAR - Dark */
+.progress {
+    background-color: #232d3f !important;
+}
+
+.progress-bar {
+    background-color: #3b82f6 !important;
+}
+
+/* 🎯 MODAL - Dark */
+.modal-content {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+}
+
+.modal-header {
+    background-color: #232d3f !important;
+    border-bottom: 1px solid #374151 !important;
+}
+
+.modal-body {
+    background-color: #1a2332 !important;
+    color: #e5e7eb !important;
+}
+
+.modal-footer {
+    background-color: #232d3f !important;
+    border-top: 1px solid #374151 !important;
+}
+
+/* 🔍 LIST GROUP - Dark */
+.list-group-item {
+    background-color: #1a2332 !important;
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.list-group-item:hover {
+    background-color: #2a3441 !important;
+}
+
+/* 📋 PAGINATION - Dark */
+.pagination .page-link {
+    background-color: #1a2332 !important;
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.pagination .page-link:hover {
+    background-color: #2a3441 !important;
+    border-color: #3b82f6 !important;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+}
+
+/* 🎨 BREADCRUMB - Dark */
+.breadcrumb {
+    background-color: #1a2332 !important;
+}
+
+.breadcrumb-item {
+    color: #9ca3af !important;
+}
+
+.breadcrumb-item.active {
+    color: #e5e7eb !important;
+}
+
+/* ✅ CHECKBOX & RADIO - Dark */
+.form-check-input {
+    background-color: #232d3f !important;
+    border-color: #374151 !important;
+}
+
+.form-check-input:checked {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+}
+
+.form-check-label {
+    color: #e5e7eb !important;
+}
+
+/* 🎯 INPUT GROUP - Dark */
+.input-group-text {
+    background-color: #232d3f !important;
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+/* 🔲 COLLAPSE - Dark */
+.collapse .card {
+    background-color: #1a2332 !important;
+}
+
+/* 📊 ACCORDION - Dark */
+.accordion-item {
+    background-color: #1a2332 !important;
+    border-color: #374151 !important;
+}
+
+.accordion-button {
+    background-color: #232d3f !important;
+    color: #e5e7eb !important;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #2a3441 !important;
+    color: #60a5fa !important;
+}
+
+.accordion-body {
+    background-color: #1a2332 !important;
+    color: #e5e7eb !important;
+}
+
+/* ========================================
+   💪 DODATNI ENFORCER - SALDO I INLINE STILOVI
+   ======================================== */
+
+/* 💰 SALDO TABELE - SPECIFIČNO DARK */
+.table.table-bordered {
+    background-color: #1a2332 !important;
+}
+
+.table.table-bordered td,
+.table.table-bordered th {
+    background-color: transparent !important;
+    border-color: #374151 !important;
+}
+
+.table.table-sm tbody {
+    background-color: #1a2332 !important;
+}
+
+.table.table-sm tbody tr {
+    background-color: transparent !important;
+}
+
+.table.table-sm tbody td {
+    background-color: transparent !important;
+    color: #e5e7eb !important;
+}
+
+/* FINANSIJE SPECIFIČNO */
+.table-responsive {
+    background-color: transparent !important;
+}
+
+.table-responsive .table {
+    background-color: #1a2332 !important;
+}
+
+.table-responsive .table tbody {
+    background-color: transparent !important;
+}
+
+.table-responsive .table tbody tr {
+    background-color: transparent !important;
+}
+
+.table-responsive .table tbody td {
+    background-color: transparent !important;
+    color: #e5e7eb !important;
+}
+
+/* 📊 STATS CARDS - OVERRIDE INLINE STYLES */
+.stats-card[style*="background"] {
+    background: linear-gradient(135deg, #1a2332 0%, #232d3f 100%) !important;
+    border: 1px solid #374151 !important;
+}
+
+/* Container fluid override */
+.container-fluid .card {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .card-header {
+    background-color: #232d3f !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .card-body {
+    background-color: #1a2332 !important;
+    color: #e5e7eb !important;
+}
+
+/* PAGE HEADER - DARK */
+.page-header {
+    background-color: #1a2332 !important;
+    border-bottom: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+/* ROW MB-3/MB-4 - Common header sections */
+.row.mb-3,
+.row.mb-4 {
+    background-color: transparent !important;
+}
+
+.row.mb-3 .col-12,
+.row.mb-4 .col-12 {
+    background-color: transparent !important;
+}
+
+.row.mb-3 h1,
+.row.mb-3 h2,
+.row.mb-3 h3,
+.row.mb-3 h4,
+.row.mb-4 h1,
+.row.mb-4 h2,
+.row.mb-4 h3,
+.row.mb-4 h4 {
+    color: #e5e7eb !important;
+}
+
+/* BILO KOJI DIV SA KLASOM 'd-flex' */
+.d-flex {
+    background-color: transparent !important;
+}
+
+/* STATISTICS ROW */
+.row.g-3 .col-md-3 .card,
+.row.g-3 .col-md-4 .card,
+.row.g-3 .col-md-6 .card {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+}
+
+/* ========================================
+   🔥 NUCLEAR OPTION - INLINE STYLE OVERRIDE
+   ======================================== */
+
+/* WHITE BACKGROUND OVERRIDE - NUCLEAR OPTION */
+div[style*="background-color: white"],
+div[style*="background-color: #fff"],
+div[style*="background-color: #ffffff"],
+div[style*="background: white"],
+div[style*="background: #fff"],
+table[style*="background-color: white"],
+table[style*="background: white"] {
+    background-color: #1a2332 !important;
+    background: #1a2332 !important;
+}
+
+/* INLINE GRADIENT OVERRIDE */
+div[style*="linear-gradient"][style*="#0f5132"],
+div[style*="linear-gradient"][style*="#198754"] {
+    background: linear-gradient(135deg, #1a2332 0%, #232d3f 100%) !important;
+}
+
+/* BILO KOJA TABELA SA BELOM POZADINOM */
+table[class*="table"] tbody tr[style*="background"] {
+    background-color: transparent !important;
+}
+
+table[class*="table"] tbody td[style*="background"] {
+    background-color: transparent !important;
+}
+
+/* PRIMARY/SUCCESS/DANGER BG OVERRIDES - Not buttons/badges */
+.bg-primary:not(.btn):not(.badge):not(.navbar) {
+    background-color: #232d3f !important;
+}
+
+.bg-success:not(.btn):not(.badge) {
+    background-color: #232d3f !important;
+}
+
+.bg-info:not(.btn):not(.badge) {
+    background-color: #232d3f !important;
+}
+
+/* JUMBOTRON / HEADER SECTIONS */
+.jumbotron {
+    background-color: #1a2332 !important;
+    color: #e5e7eb !important;
+}
+
+/* WELL / PANEL */
+.well,
+.panel {
+    background-color: #1a2332 !important;
+    border-color: #374151 !important;
+}
+
+/* HERO SECTION */
+.hero,
+.hero-section {
+    background-color: #1a2332 !important;
+}
+
+/* FEATURE BOXES */
+.feature-box,
+.info-box {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+}
+
+/* BILO KOJI SECTION ELEMENT */
+section {
+    background-color: transparent !important;
+}
+
+/* P TAGOVI SA POZADINOM */
+p[style*="background"] {
+    background-color: transparent !important;
+}
+
+/* ROW SA BILO KOJIM COL */
+.row .col,
+.row [class*="col-"] {
+    background-color: transparent !important;
+}

@@ -33,6 +33,12 @@
                         <button class="btn btn-danger" @onclick="ExportToPdf" aria-label="Exportuj u PDF format">
                             <i class="bi bi-file-earmark-pdf me-2" aria-hidden="true"></i>PDF
                         </button>
+                        @if (tipPretrage == "RadniNalog")
+                        {
+                            <button class="btn btn-warning" @onclick="ExportToInteraktivniPdf" aria-label="Exportuj u interaktivni PDF format">
+                                <i class="bi bi-file-earmark-pdf-fill me-2" aria-hidden="true"></i>PDF Interaktivni
+                            </button>
+                        }
                     </div>
                 }
             </div>
@@ -1192,6 +1198,25 @@
         {
             Console.WriteLine($"Greška pri PDF exportu: {ex.Message}");
             errorPoruka = $"Greška pri exportu PDF-a: {ex.Message}";
+        }
+    }
+
+    private async Task ExportToInteraktivniPdf()
+    {
+        try
+        {
+            if (sledljivostData == null || string.IsNullOrWhiteSpace(sledljivostData.Sifra)) return;
+
+            // Generiši interaktivni PDF samo za UPSTREAM (Radni Nalog)
+            var pdfData = await SledljivostService.GenerisiInteraktivniUpstreamPdf(sledljivostData.Sifra);
+            var fileName = TypeMapping.GenerateExportFileName($"Sledljivost_INTERAKTIVNI_{sledljivostData.Sifra}", ".pdf");
+
+            await DownloadFile(pdfData, fileName, "application/pdf");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri PDF exportu: {ex.Message}");
+            errorPoruka = $"Greška pri exportu interaktivnog PDF-a: {ex.Message}";
         }
     }
 

@@ -410,7 +410,17 @@
                     { "DatumUgovora", "Datum Ugovora" }
                 };
 
-                var excelData = ExportService.ExportToExcelWithColumns(ugovori, columns);
+                // Izračunaj totale - UKUPNO u EUR
+                var totals = new Dictionary<string, object>
+                {
+                    { "Artikal", "UKUPNO:" },
+                    { "UgovorenaKolicina", ugovori.Sum(x => x.UgovorenaKolicina) },
+                    { "JedinicnaCenaEur", $"{ugovori.Sum(x => x.UkupnaVrednostEur):N2} EUR" }, // EUR umesto DIN
+                    { "Isporuceno", ugovori.Sum(x => x.Isporuceno) },
+                    { "PreostalaKolicina", ugovori.Sum(x => x.PreostalaKolicina) }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(ugovori, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("aktivni_ugovori", SystemConstants.Export.EXCEL_EXTENSION);
                 await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
             }
@@ -440,7 +450,17 @@
                     { "DatumUgovora", "Datum Ugovora" }
                 };
 
-                var pdfData = ExportService.ExportToPdfWithColumns(ugovori, columns);
+                // Izračunaj totale - UKUPNO u EUR
+                var totals = new Dictionary<string, object>
+                {
+                    { "Artikal", "UKUPNO:" },
+                    { "UgovorenaKolicina", ugovori.Sum(x => x.UgovorenaKolicina) },
+                    { "JedinicnaCenaEur", $"{ugovori.Sum(x => x.UkupnaVrednostEur):N2} EUR" }, // EUR umesto DIN
+                    { "Isporuceno", ugovori.Sum(x => x.Isporuceno) },
+                    { "PreostalaKolicina", ugovori.Sum(x => x.PreostalaKolicina) }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(ugovori, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("aktivni_ugovori", SystemConstants.Export.PDF_EXTENSION);
                 await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
             }

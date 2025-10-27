@@ -16,5 +16,9 @@ namespace FruitSysWeb.Services.Interfaces
         // NOVO: Metode sa custom kolonama - omogućava export samo vidljivih kolona
         byte[] ExportToExcelWithColumns<T>(IEnumerable<T> data, Dictionary<string, string> columns);
         byte[] ExportToPdfWithColumns<T>(IEnumerable<T> data, Dictionary<string, string> columns);
+
+        // NOVO: Metode sa custom kolonama i totalima
+        byte[] ExportToExcelWithColumns<T>(IEnumerable<T> data, Dictionary<string, string> columns, Dictionary<string, object>? totals);
+        byte[] ExportToPdfWithColumns<T>(IEnumerable<T> data, Dictionary<string, string> columns, Dictionary<string, object>? totals);
     }
 }

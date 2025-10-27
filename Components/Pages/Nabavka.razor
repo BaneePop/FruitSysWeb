@@ -190,6 +190,7 @@
                                     {
                                         <th>Datum</th>
                                         <th>Komitent</th>
+                                        <th>Tip artikla</th>
                                         <th>Broj dokumenata</th>
                                         <th class="text-end">Ukupna količina</th>
                                         <th class="text-end">Ukupno potražuje</th>
@@ -217,6 +218,7 @@
                                             <tr>
                                                 <td>@TypeMapping.FormatDate(item.Datum)</td>
                                                 <td>@item.Komitent</td>
+                                                <td>@(int.TryParse(item.Artikal, out var magacinId) ? TypeMapping.GetMagacinDisplayName(magacinId) : item.Artikal)</td>
                                                 <td class="text-center">@item.BrojDokumenata</td>
                                                 <td class="text-end">@TypeMapping.FormatDecimal(item.UkupnaKolicina)</td>
                                                 <td class="text-end @TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(item.UkupnoPotrazuje)</td>
@@ -249,7 +251,7 @@
                                     <tr>
                                         @if (filterRequest.ZbirnoPoDatumu && zbirniPodaci != null)
                                         {
-                                            <th colspan="3" class="text-end">UKUPNO:</th>
+                                            <th colspan="4" class="text-end">UKUPNO:</th>
                                             <th class="text-end">@TypeMapping.FormatDecimal(zbirniPodaci.Sum(x => x.UkupnaKolicina))</th>
                                             <th class="text-end @TypeMapping.GetQuantityStatusClass("positive")">@TypeMapping.FormatDecimal(zbirniPodaci.Sum(x => x.UkupnoPotrazuje))</th>
                                             <th class="text-end @TypeMapping.GetQuantityStatusClass("negative")">@TypeMapping.FormatDecimal(zbirniPodaci.Sum(x => x.UkupnoDuguje))</th>

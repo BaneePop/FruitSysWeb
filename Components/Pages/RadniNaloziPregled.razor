@@ -27,10 +27,10 @@
                     </p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-success" onclick="() => ExportToExcel(\"RadniNalog\")">
+                    <button class="btn btn-outline-success" @onclick='() => ExportToExcel("RadniNalog")'>
                         <i class="bi bi-file-earmark-excel me-1"></i>Excel
                     </button>
-                    <button class="btn btn-outline-danger" onclick="() => ExportToPDF(\"RadniNalog\")">
+                    <button class="btn btn-outline-danger" @onclick='() => ExportToPDF("RadniNalog")'>
                         <i class="bi bi-file-earmark-pdf me-1"></i>PDF
                     </button>
                 </div>
@@ -373,7 +373,7 @@
         StateHasChanged();
     }
 
-    // Export funkcionalnosti - ISPRAVKA: kao u Proizvodnja.razor
+    // Export funkcionalnosti - sa totalima
     private async Task ExportToExcel(string tabName)
     {
         try
@@ -394,7 +394,17 @@
                     { "ProcenatIskoriscenja", "Procenat" }
                 };
 
-                var excelData = ExportService.ExportToExcelWithColumns(radniNalogData, columns);
+                // Izračunaj totale - isto kao u HTML tabeli
+                var totals = new Dictionary<string, object>
+                {
+                    { "VrstaArtikla", "UKUPNO:" },
+                    { "BrojRadnika", radniNalogData.Sum(x => x.BrojRadnika) },
+                    { "BrojRadnihSati", radniNalogData.Sum(x => x.BrojRadnihSati) },
+                    { "TrosakPoRadnomNalogu", radniNalogData.Sum(x => x.TrosakPoRadnomNalogu) },
+                    { "ProcenatIskoriscenja", radniNalogData.Any() ? radniNalogData.Average(x => x.ProcenatIskoriscenja) : 0 }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(radniNalogData, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("radni_nalog", ".xlsx");
                 await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             }
@@ -425,7 +435,17 @@
                     { "ProcenatIskoriscenja", "Procenat" }
                 };
 
-                var pdfData = ExportService.ExportToPdfWithColumns(radniNalogData, columns);
+                // Izračunaj totale - isto kao u HTML tabeli
+                var totals = new Dictionary<string, object>
+                {
+                    { "VrstaArtikla", "UKUPNO:" },
+                    { "BrojRadnika", radniNalogData.Sum(x => x.BrojRadnika) },
+                    { "BrojRadnihSati", radniNalogData.Sum(x => x.BrojRadnihSati) },
+                    { "TrosakPoRadnomNalogu", radniNalogData.Sum(x => x.TrosakPoRadnomNalogu) },
+                    { "ProcenatIskoriscenja", radniNalogData.Any() ? radniNalogData.Average(x => x.ProcenatIskoriscenja) : 0 }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(radniNalogData, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("radni_nalog", ".pdf");
                 await DownloadFile(pdfData, fileName, "application/pdf");
             }

@@ -651,16 +651,18 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
         var sql = new StringBuilder();
         sql.Append(@"
-            SELECT 
+            SELECT
                 DATE(DATE_SUB(vp.Datum, INTERVAL 4 HOUR)) as Datum,
                 k.ID as KomitentID,
                 k.Naziv as Komitent,
-                a.Naziv as Artikal,
-                SUM(vp.Kolicina) as Kolicina,
-                SUM(vp.Potrazuje) as Potrazuje,
-                SUM(vp.Duguje) as Duguje,
+                a.MagacinID as Artikal,
+                COUNT(DISTINCT vp.DokumentID) as BrojDokumenata,
+                SUM(vp.Kolicina) as UkupnaKolicina,
+                SUM(vp.Potrazuje) as UkupnoPotrazuje,
+                SUM(vp.Duguje) as UkupnoDuguje
             FROM vPrometFinansijev9 vp
             LEFT JOIN Komitent k ON vp.KomitentID = k.ID
+            LEFT JOIN Artikal a ON vp.ArtikalID = a.ID
             WHERE vp.DokumentStatus = 3
         ");
 
@@ -693,13 +695,25 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             parameters.Add("@KomitentTip", filterRequest.KomitentTip);
         }
 
+        if (filterRequest.ArtikalId.HasValue && filterRequest.ArtikalId > 0)
+        {
+            sql.Append(" AND vp.ArtikalID = @ArtikalId");
+            parameters.Add("@ArtikalId", filterRequest.ArtikalId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterRequest.Tip))
+        {
+            sql.Append(" AND a.MagacinID = @Tip");
+            parameters.Add("@Tip", filterRequest.Tip);
+        }
+
         // Isključi FK- i UP- dokumente
         sql.Append(" AND vp.DokumentID NOT LIKE 'FK-%'");
         sql.Append(" AND vp.DokumentID NOT LIKE 'UP-%'");
 
         sql.Append(@"
-            GROUP BY DATE(DATE_SUB(vp.Datum, INTERVAL 4 HOUR)), k.ID, k.Naziv, a.Naziv
-            ORDER BY Datum DESC, k.Naziv
+            GROUP BY DATE(DATE_SUB(vp.Datum, INTERVAL 4 HOUR)), k.ID, k.Naziv, a.MagacinID
+            ORDER BY Datum DESC, k.Naziv, a.MagacinID
         ");
 
         var rezultat = await _databaseService.QueryAsync<ZbirniFinansijeModel>(sql.ToString(), parameters);

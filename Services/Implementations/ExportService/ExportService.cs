@@ -384,6 +384,12 @@ namespace FruitSysWeb.Services.Implementations.ExportService
         // Dictionary key = property name, value = display name
         public byte[] ExportToExcelWithColumns<T>(IEnumerable<T> data, Dictionary<string, string> columns)
         {
+            return ExportToExcelWithColumns(data, columns, null);
+        }
+
+        // NOVO: Export sa custom kolonama i totalima
+        public byte[] ExportToExcelWithColumns<T>(IEnumerable<T> data, Dictionary<string, string> columns, Dictionary<string, object>? totals)
+        {
             try
             {
                 using var workbook = new XLWorkbook();
@@ -416,6 +422,22 @@ namespace FruitSysWeb.Services.Implementations.ExportService
                         row++;
                     }
 
+                    // Totals row (ako postoje totali)
+                    if (totals?.Any() == true)
+                    {
+                        for (int col = 0; col < properties.Count; col++)
+                        {
+                            var propName = properties[col].Name;
+                            if (totals.ContainsKey(propName))
+                            {
+                                var cell = worksheet.Cell(row, col + 1);
+                                cell.Value = FormatValue(totals[propName]);
+                                cell.Style.Font.Bold = true;
+                                cell.Style.Fill.BackgroundColor = XLColor.LightYellow;
+                            }
+                        }
+                    }
+
                     // Auto-fit columns
                     worksheet.ColumnsUsed().AdjustToContents();
                 }
@@ -432,6 +454,12 @@ namespace FruitSysWeb.Services.Implementations.ExportService
         }
 
         public byte[] ExportToPdfWithColumns<T>(IEnumerable<T> data, Dictionary<string, string> columns)
+        {
+            return ExportToPdfWithColumns(data, columns, null);
+        }
+
+        // NOVO: Export sa custom kolonama i totalima
+        public byte[] ExportToPdfWithColumns<T>(IEnumerable<T> data, Dictionary<string, string> columns, Dictionary<string, object>? totals)
         {
             try
             {
@@ -584,6 +612,43 @@ namespace FruitSysWeb.Services.Implementations.ExportService
                                         }
                                     }
                                     rowIndex++;
+                                }
+
+                                // TOTALS ROW (ako postoje totali)
+                                if (totals?.Any() == true)
+                                {
+                                    foreach (var property in properties)
+                                    {
+                                        var propName = property.Name;
+                                        var hasTotal = totals.ContainsKey(propName);
+                                        var value = hasTotal ? totals[propName] : null;
+                                        var formattedValue = FormatValue(value);
+                                        var isNumber = value is decimal or double or float or int or long;
+
+                                        var cell = table.Cell()
+                                            .Background(Colors.Yellow.Lighten3)
+                                            .BorderTop(1.5f)
+                                            .BorderColor(Colors.Grey.Darken1)
+                                            .PaddingVertical(8)
+                                            .PaddingHorizontal(10)
+                                            .AlignMiddle();
+
+                                        if (isNumber)
+                                        {
+                                            cell.AlignRight()
+                                                .Text(formattedValue)
+                                                .FontSize(10)
+                                                .Bold()
+                                                .FontColor(Colors.Grey.Darken3);
+                                        }
+                                        else
+                                        {
+                                            cell.Text(formattedValue)
+                                                .FontSize(10)
+                                                .Bold()
+                                                .FontColor(Colors.Grey.Darken3);
+                                        }
+                                    }
                                 }
                             });
 

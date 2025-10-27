@@ -15,17 +15,20 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         private readonly DatabaseService _databaseService;
         private readonly SledljivostPdfService _pdfService;
         private readonly SledljivostExcelService _excelService;
+        private readonly SledljivostInteraktivniPdfService _interaktivniPdfService;
         private readonly ILogger<SledljivostService> _logger;
 
         public SledljivostService(
             DatabaseService databaseService,
             SledljivostPdfService pdfService,
             SledljivostExcelService excelService,
+            SledljivostInteraktivniPdfService interaktivniPdfService,
             ILogger<SledljivostService> logger)
         {
             _databaseService = databaseService;
             _pdfService = pdfService;
             _excelService = excelService;
+            _interaktivniPdfService = interaktivniPdfService;
             _logger = logger;
         }
 
@@ -1601,6 +1604,19 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 throw new Exception($"Paletni list '{sifra}' nije pronađen.");
 
             return _excelService.GenerisiDownstreamExcel(sledljivost);
+        }
+
+        /// <summary>
+        /// Generiše INTERAKTIVNI UPSTREAM PDF izveštaj sa bookmarks i hiperlinkovima (4 strane)
+        /// Strana 1: Pregled svih podataka | Strana 2: Dijagram proizvodnje | Strana 3: Dijagram nabavke | Strana 4: Dijagram prodaje
+        /// </summary>
+        public async Task<byte[]> GenerisiInteraktivniUpstreamPdf(string sifra)
+        {
+            var sledljivost = await UcitajSledljivostPoRadnomNalogu(sifra);
+            if (sledljivost == null)
+                throw new Exception($"Radni nalog '{sifra}' nije pronađen.");
+
+            return _interaktivniPdfService.GenerisiInteraktivniUpstreamPdf(sledljivost);
         }
 
         #endregion

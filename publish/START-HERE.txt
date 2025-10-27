@@ -1,0 +1,145 @@
+================================================================================
+   FRUITSYS PRODUCTION DEPLOYMENT - POČNITE OVDE
+================================================================================
+
+🎯 PRVI PUT DEPLOY-UJETE APLIKACIJU?
+
+   Pratite ovaj redosled:
+
+   1. Pročitajte:     README.md
+   2. DNS Setup:      DNS-SETUP.md  
+   3. Deployment:     BRZI-START.md (brzo) ili DEPLOYMENT-UPUTSTVA.md (detaljno)
+
+================================================================================
+
+📁 ŠTA SE NALAZI U OVOM FOLDERU?
+
+   DOKUMENTACIJA:
+   ✓ README.md                   - Pregled paketa i system requirements
+   ✓ BRZI-START.md               - 3 koraka za deployment (5 minuta)
+   ✓ DEPLOYMENT-UPUTSTVA.md      - Kompletan vodič sa svim detaljima
+   ✓ DNS-SETUP.md                - Detaljno o DNS konfiguraciji
+   ✓ START-HERE.txt              - Ovaj fajl
+
+   AUTOMATIZACIJA:
+   ✓ deploy-to-server.ps1        - Automatski deployment na server
+   ✓ install-ssl.ps1             - Automatska instalacija SSL-a
+   ✓ update-app.ps1              - Update aplikacije na nove verzije
+
+   APLIKACIJA:
+   ✓ FruitSysWeb.dll + zavisnosti
+   ✓ appsettings.Production.json
+   ✓ web.config (IIS)
+   ✓ Logo.png
+
+================================================================================
+
+⚡ BRZI START (3 KORAKA)
+
+   1️⃣  Kopirajte ovaj folder na Windows 11 server
+   
+   2️⃣  Otvorite PowerShell kao Administrator:
+       
+       cd C:\putanja\do\ovog\foldera
+       Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+       .\deploy-to-server.ps1
+
+   3️⃣  Testirajte: http://localhost
+
+   Gotovo! 🎉
+
+================================================================================
+
+🔐 SSL SETUP (NAKON DNS PROPAGACIJE)
+
+   Kada DNS propagacija bude gotova (1-24h):
+
+   cd C:\putanja\do\ovog\foldera
+   .\install-ssl.ps1
+
+   Testirajte: https://www.fruitsys.rs
+
+================================================================================
+
+📋 PRE NEGO ŠTO POČNETE - CHECKLIST
+
+   Server Requirements:
+   [ ] Windows 11 računar
+   [ ] Stabilna internet konekcija
+   [ ] 4GB+ RAM
+
+   Softver (MORA biti instaliran PRE):
+   [ ] .NET 8 SDK ili Runtime
+   [ ] .NET 8 Hosting Bundle ⚠️ VAŽNO!
+       → https://dotnet.microsoft.com/download/dotnet/8.0
+       → "ASP.NET Core Runtime 8.0 - Windows Hosting Bundle"
+
+   Domen:
+   [ ] www.fruitsys.rs kupljen
+   [ ] DNS konfigurisan (pogledajte DNS-SETUP.md)
+
+================================================================================
+
+❓ ČESTA PITANJA
+
+   Q: Koliko vremena traje deployment?
+   A: 5-10 minuta (plus čekanje DNS propagacije)
+
+   Q: Da li mi treba server hosting?
+   A: Ne! Vaš Windows 11 računar će biti server.
+
+   Q: Šta je .NET Hosting Bundle i zašto mi treba?
+   A: To je komponenta koja omogućava IIS-u da pokreće .NET aplikacije.
+      BEZ OVOGA APLIKACIJA NEĆE RADITI!
+
+   Q: Koliko košta SSL sertifikat?
+   A: BESPLATNO! Koristimo Let's Encrypt i automatski se obnavlja.
+
+   Q: Da li će se aplikacija pokrenuti nakon restarta računara?
+   A: DA! Automatski je konfigurisano.
+
+   Q: Šta ako nešto ne radi?
+   A: Pogledajte sekciju TROUBLESHOOTING u DEPLOYMENT-UPUTSTVA.md
+
+================================================================================
+
+🆘 POMOĆ
+
+   Problem sa deployment-om?
+   → Pogledajte: DEPLOYMENT-UPUTSTVA.md → TROUBLESHOOTING
+
+   Problem sa DNS-om?
+   → Pogledajte: DNS-SETUP.md
+
+   Logovi aplikacije:
+   → C:\inetpub\wwwroot\FruitSys\Logs
+
+   Test da li .NET radi:
+   → PowerShell: dotnet --version
+
+================================================================================
+
+✅ DEPLOYMENT USPEŠAN? ČESTITAMO!
+
+   Vaša aplikacija je dostupna na:
+   → https://www.fruitsys.rs
+   → https://fruitsys.rs
+
+   Korisne komande:
+   → Restart: Restart-WebAppPool -Name "FruitSysAppPool"
+   → Status:  Get-WebAppPoolState -Name "FruitSysAppPool"
+   → Logovi:  Get-Content "C:\inetpub\wwwroot\FruitSys\Logs\*.log" -Tail 20
+
+================================================================================
+
+🎯 SLEDEĆI PUT (UPDATE APLIKACIJE):
+
+   Kada budete imali novu verziju:
+   
+   .\update-app.ps1 -NewVersionPath "C:\putanja\do\nove\verzije"
+
+================================================================================
+
+                          SREĆAN DEPLOYMENT! 🚀
+
+================================================================================

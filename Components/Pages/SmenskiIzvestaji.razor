@@ -331,7 +331,16 @@
                     { "TrosakPoRadnomNalogu", "Trošak" }
                 };
 
-                var excelData = ExportService.ExportToExcelWithColumns(smenskiData, columns);
+                // Izračunaj totale - isto kao u HTML tabeli
+                var totals = new Dictionary<string, object>
+                {
+                    { "ProizvodniProces", "UKUPNO:" },
+                    { "BrojRadnika", smenskiData.Sum(x => x.BrojRadnihSati / 8) }, // Broj radnika = ukupni sati / 8
+                    { "BrojRadnihSati", smenskiData.Sum(x => x.BrojRadnihSati) },
+                    { "TrosakPoRadnomNalogu", smenskiData.Sum(x => x.TrosakPoRadnomNalogu) }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(smenskiData, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("smenski_izvestaji", ".xlsx");
                 await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             }
@@ -359,7 +368,16 @@
                     { "TrosakPoRadnomNalogu", "Trošak" }
                 };
 
-                var pdfData = ExportService.ExportToPdfWithColumns(smenskiData, columns);
+                // Izračunaj totale - isto kao u HTML tabeli
+                var totals = new Dictionary<string, object>
+                {
+                    { "ProizvodniProces", "UKUPNO:" },
+                    { "BrojRadnika", smenskiData.Sum(x => x.BrojRadnihSati / 8) }, // Broj radnika = ukupni sati / 8
+                    { "BrojRadnihSati", smenskiData.Sum(x => x.BrojRadnihSati) },
+                    { "TrosakPoRadnomNalogu", smenskiData.Sum(x => x.TrosakPoRadnomNalogu) }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(smenskiData, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("smenski_izvestaji", ".pdf");
                 await DownloadFile(pdfData, fileName, "application/pdf");
             }

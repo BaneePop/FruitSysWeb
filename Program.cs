@@ -8,6 +8,7 @@ using ApexCharts;
 using FruitSysWeb.Services.Core;
 using FruitSysWeb.Components.Layout;
 using Serilog;
+using Microsoft.AspNetCore.HttpOverrides;
 
 // Configure Serilog BEFORE creating the builder
 Log.Logger = new LoggerConfiguration()
@@ -98,6 +99,12 @@ builder.Services.AddSession(options =>
 });
 
 var app = builder.Build();
+
+// Configure forwarded headers (za rad iza IIS reverse proxy-ja)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

@@ -43,6 +43,7 @@ namespace FruitSysWeb.Extensions
             services.AddScoped<ISledljivostService, SledljivostService>();
             services.AddScoped<SledljivostPdfService>();
             services.AddScoped<SledljivostExcelService>();
+            services.AddScoped<SledljivostInteraktivniPdfService>();
 
             return services;
         }
