@@ -35,11 +35,11 @@
     <div class="section-grid">
         @if (currentUser?.ImaPuniPristup() ?? false)
         {
-            <div class="section-card active" @onclick="@(() => NavigateTo("/nabavka"))">
+            <div class="section-card active" @onclick="@(() => NavigateTo("/nabavka-roba"))">
                 <div class="section-icon">
                     <i class="bi bi-truck"></i>
                 </div>
-                <h4 class="section-title">Nabavka</h4>
+                <h4 class="section-title">Nabavka Roba</h4>
             </div>
 
             <div class="section-card active" @onclick="@(() => NavigateTo("/prodaja-roba"))">
