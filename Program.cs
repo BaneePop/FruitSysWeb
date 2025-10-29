@@ -54,6 +54,7 @@ builder.Services.AddScoped<IBrziPregledService, BrziPregledService>();
 builder.Services.AddScoped<IUgovorService, UgovorService>();
 builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPovratnaAmbalazaService, PovratnaAmbalazaService>();
 
 
 

@@ -22,8 +22,6 @@ namespace FruitSysWeb.Models
         [Display(Name = "Datum kreiranja")]
         public DateTime? Kreirano { get; set; }
 
-        [Display(Name = "Tip naziv")]
-        public string AmbalazaTip => GetAmbalazaTip(MagacinID);
 
         // ✅ ISPRAVKA: Oba polja za kompatibilnost
         [Display(Name = "Aktivan")]
@@ -31,6 +29,18 @@ namespace FruitSysWeb.Models
 
         [Display(Name = "Aktivno")]
         public bool Aktivno => Aktivan == 1;
+
+        [Display(Name = "Prijemna ambalaža")]
+        public int? PrijemnaAmbalaza { get; set; }
+
+        [Display(Name = "Povratna ambalaža")]
+        public int? PovratnaAmbalaza { get; set; }
+
+        [Display(Name = "Tip ambalaže")]
+        public int? AmbalazaTip { get; set; }
+
+        [Display(Name = "Tip ambalaže naziv")]
+        public string AmbalazaTipNaziv => GetAmbalazaTipNaziv(AmbalazaTip ?? 0);
 
         private static string GetTipNaziv(int MagacinID)
         {
@@ -53,7 +63,7 @@ namespace FruitSysWeb.Models
             };
         }
 
-        private static string GetAmbalazaTip(int tip)
+        private static string GetAmbalazaTipNaziv(int tip)
         {
             return tip switch
             {
