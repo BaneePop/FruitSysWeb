@@ -25,10 +25,11 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 // OPTIMIZOVANO: Koristi Otpremnica i OtpremnicaStavka za isporuke
                 // UgovorProdaja.Aktivno = 1 (aktivan ugovor)
                 // Sabira isporuke iz otpremnica po UgovorID (ne razdvaja po artiklu)
+                // NAPOMENA: Koristi BrojUgovora (broj kupca) umesto Sifra (naš interni broj)
                 var sql = @"
                     SELECT
                         up.ID as UgovorID,
-                        up.Sifra as BrojUgovora,
+                        COALESCE(up.BrojUgovora, up.Sifra) as BrojUgovora,
                         k.Naziv as Komitent,
                         up.KomitentID,
                         a.Naziv as Artikal,
@@ -55,7 +56,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     WHERE up.Aktivno = 1
                       AND up.DokumentStatus = 2
                       AND (ups.Kolicina - COALESCE(isporuke.Isporuceno, 0)) > 0
-                    ORDER BY up.Datum DESC, up.Sifra, a.Naziv
+                    ORDER BY up.Datum DESC, COALESCE(up.BrojUgovora, up.Sifra), a.Naziv
                 ";
 
                 var rezultat = await _databaseService.QueryAsync<UgovorModel>(sql);
@@ -73,10 +74,11 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             try
             {
                 // OPTIMIZOVANO: Koristi Otpremnica i OtpremnicaStavka za isporuke
+                // NAPOMENA: Koristi BrojUgovora (broj kupca) umesto Sifra (naš interni broj)
                 var sql = new StringBuilder(@"
                     SELECT
                         up.ID as UgovorID,
-                        up.Sifra as BrojUgovora,
+                        COALESCE(up.BrojUgovora, up.Sifra) as BrojUgovora,
                         k.Naziv as Komitent,
                         up.KomitentID,
                         a.Naziv as Artikal,
@@ -121,7 +123,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     parameters.Add("@Artikal", $"%{filterRequest.Pakovanje}%");
                 }
 
-                sql.Append(" ORDER BY up.Datum DESC, up.Sifra, a.Naziv");
+                sql.Append(" ORDER BY up.Datum DESC, COALESCE(up.BrojUgovora, up.Sifra), a.Naziv");
 
                 var rezultat = await _databaseService.QueryAsync<UgovorModel>(sql.ToString(), parameters);
                 return rezultat.ToList();
