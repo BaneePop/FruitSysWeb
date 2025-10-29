@@ -35,8 +35,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 WHEN 10 THEN 'Đubriva'
                 WHEN 11 THEN 'Usl. Voće'
                 WHEN 12 THEN 'Usl. Meso'
-                WHEN 13 THEB 'Osnovna Sretstva'
-                ELSE CONCAT('MagacinID ', a.MagacinID)
+                WHEN 13 THEN 'Osnovna Sretstva'
             END AS CHAR(50))";
 
         // NOVE METODE za Kutije i Kese
