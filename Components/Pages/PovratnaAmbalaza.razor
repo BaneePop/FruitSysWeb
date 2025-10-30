@@ -17,12 +17,12 @@
 @inject ILogger<PovratnaAmbalaza> Logger
 
 <!-- Header -->
-<div class="bg-warning text-dark py-4 mb-4">
+<div class="py-4 mb-4">
     <div class="container-fluid">
         <h1 class="h2 mb-1">
             <i class="bi bi-arrow-repeat me-2"></i>Povratna Ambalaža - PVC Gajbe
         </h1>
-        <p class="mb-0">Praćenje prometa povratne PVC ambalaže</p>
+        <p class="mb-0 text-muted">Praćenje prometa povratne PVC ambalaže</p>
     </div>
 </div>
 
@@ -78,16 +78,16 @@
                 </div>
             </div>
 
-            <!-- Red 1: TOP DUŽNICI -->
+            <!-- Red 1: AMBALAŽU POTRAŽUJEMO -->
             <div class="row mb-3">
                 <div class="col-12">
-                    <h5 class="mb-3"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Top 5 Dužnika - Ko nama duguje PVC ambala žu</h5>
+                    <h5 class="mb-3"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Ambalažu Potražujemo</h5>
                 </div>
             </div>
             <div class="row mb-4">
                 <div class="col-lg-4 mb-3">
                     <ApexBarChart
-                        Title="Dužnici PVC 4/1"
+                        Title="4/1 Potražujemo"
                         Icon="bi bi-box-seam"
                         SeriesName="Duguje"
                         Unit="kom"
@@ -95,11 +95,11 @@
                         IsLoading="@IsLoadingDuznik41"
                         HasError="@HasErrorDuznik41"
                         ShowSummary="false"
-                        OnRefresh="@(() => UcitajDuznike("PVC 4/1"))" />
+                        OnRefresh="@UcitajChartove" />
                 </div>
                 <div class="col-lg-4 mb-3">
                     <ApexBarChart
-                        Title="Dužnici PVC 6/1"
+                        Title="6/1 Potražujemo"
                         Icon="bi bi-box-seam"
                         SeriesName="Duguje"
                         Unit="kom"
@@ -107,11 +107,11 @@
                         IsLoading="@IsLoadingDuznik61"
                         HasError="@HasErrorDuznik61"
                         ShowSummary="false"
-                        OnRefresh="@(() => UcitajDuznike("PVC 6/1"))" />
+                        OnRefresh="@UcitajChartove" />
                 </div>
                 <div class="col-lg-4 mb-3">
                     <ApexBarChart
-                        Title="Dužnici PVC 12/1 + 10/1"
+                        Title="10/1 i 12/1 Potražujemo"
                         Icon="bi bi-box-seam"
                         SeriesName="Duguje"
                         Unit="kom"
@@ -119,20 +119,20 @@
                         IsLoading="@IsLoadingDuznik1210"
                         HasError="@HasErrorDuznik1210"
                         ShowSummary="false"
-                        OnRefresh="@(() => UcitajDuznikeKombinovano())" />
+                        OnRefresh="@UcitajChartove" />
                 </div>
             </div>
 
             <!-- Red 2: KOME DUGUJEMO -->
             <div class="row mb-3">
                 <div class="col-12">
-                    <h5 class="mb-3"><i class="bi bi-arrow-left-circle text-info me-2"></i>Top 5 Kome Dugujemo - Ko od nas potražuje PVC ambalažu</h5>
+                    <h5 class="mb-3"><i class="bi bi-arrow-left-circle text-info me-2"></i>Kome Dugujemo PVC Ambalažu</h5>
                 </div>
             </div>
             <div class="row mb-4">
                 <div class="col-lg-4 mb-3">
                     <ApexBarChart
-                        Title="Kome dugujemo PVC 4/1"
+                        Title="4/1 Dugujemo"
                         Icon="bi bi-arrow-return-left"
                         SeriesName="Potražuje"
                         Unit="kom"
@@ -140,11 +140,11 @@
                         IsLoading="@IsLoadingPotrazuje41"
                         HasError="@HasErrorPotrazuje41"
                         ShowSummary="false"
-                        OnRefresh="@(() => UcitajPotrazujuce("PVC 4/1"))" />
+                        OnRefresh="@UcitajChartove" />
                 </div>
                 <div class="col-lg-4 mb-3">
                     <ApexBarChart
-                        Title="Kome dugujemo PVC 6/1"
+                        Title="6/1 Dugujemo"
                         Icon="bi bi-arrow-return-left"
                         SeriesName="Potražuje"
                         Unit="kom"
@@ -152,11 +152,11 @@
                         IsLoading="@IsLoadingPotrazuje61"
                         HasError="@HasErrorPotrazuje61"
                         ShowSummary="false"
-                        OnRefresh="@(() => UcitajPotrazujuce("PVC 6/1"))" />
+                        OnRefresh="@UcitajChartove" />
                 </div>
                 <div class="col-lg-4 mb-3">
                     <ApexBarChart
-                        Title="Kome dugujemo PVC 12/1 + 10/1"
+                        Title="PVC 10/1 i 12/1 Dugujemo"
                         Icon="bi bi-arrow-return-left"
                         SeriesName="Potražuje"
                         Unit="kom"
@@ -164,7 +164,7 @@
                         IsLoading="@IsLoadingPotrazuje1210"
                         HasError="@HasErrorPotrazuje1210"
                         ShowSummary="false"
-                        OnRefresh="@(() => UcitajPotrazujuceKombinovano())" />
+                        OnRefresh="@UcitajChartove" />
                 </div>
             </div>
 
@@ -256,6 +256,24 @@
                             </h5>
                         </div>
                         <div class="card-body">
+                            <!-- Brzi datumski filteri -->
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Brzi datum:</label>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" @onclick="PostaviPoslednjih7Dana">
+                                            <i class="bi bi-calendar-week me-1"></i>Poslednjih 7 dana
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" @onclick="PostaviPocetakSezone">
+                                            <i class="bi bi-calendar-event me-1"></i>Od početka sezone (01.06.2025)
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" @onclick="PostaviOdPocetka">
+                                            <i class="bi bi-calendar3 me-1"></i>Od početka (01.01.2023)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="row">
                                 <div class="col-md-2 mb-3">
                                     <label class="form-label fw-bold">Od datuma:</label>
@@ -438,6 +456,9 @@
     private bool IsLoadingCharts = false;
     private bool IsLoadingIzvestaj = false;
 
+    // Cache za agregirane podatke - JEDAN SQL upit!
+    private List<PovratnaAmbalazaAgregat> agregiraniPodaci = new();
+
     // Filter requests
     private FilterRequest filterCharts = new FilterRequest();
     private FilterRequest filterIzvestaj = new FilterRequest();
@@ -454,29 +475,48 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Default filter: od početka sezone (01.06 tekuće godine)
-        var pocetakSezone = new DateTime(DateTime.Now.Year, 6, 1);
+        // Default filter za Tab 1: od početka sezone (01.06.2025)
+        var pocetakSezone = new DateTime(2025, 6, 1);
         filterCharts.OdDatum = pocetakSezone;
         filterCharts.DoDatum = DateTime.Now;
 
-        filterIzvestaj.OdDatum = new DateTime(2023, 1, 1);
+        // Default filter za Tab 2: poslednjih 7 dana
+        filterIzvestaj.OdDatum = DateTime.Now.AddDays(-7);
         filterIzvestaj.DoDatum = DateTime.Now;
 
-        await UcitajListeZaFiltriranje();
-        await UcitajChartove();
+        await UcitajChartove();  // Prvo učitaj agregate
+        await UcitajListeZaFiltriranje();  // Pa onda filtriraj liste
     }
 
     private async Task UcitajListeZaFiltriranje()
     {
         try
         {
-            komitentiLista = await KomitentService.UcitajSveKomitente();
-
-            // Učitaj samo artikle koji su Gajbe (1) ili Kutije (3)
+            // Učitaj samo artikle koji su povratna PVC ambalaža (4 artikla)
             var sviArtikli = await ArtikalService.UcitajSveArtikle();
             artikliAmbalazaLista = sviArtikli
-                .Where(a => a.MagacinID == 4 && (a.AmbalazaTip == 1 || a.AmbalazaTip == 3))
+                .Where(a => a.Id == 206 || a.Id == 75 || a.Id == 79 || a.Id == 281)  // PVC 4/1, 6/1, 12/1, 10/1
                 .ToList();
+
+            // Učitaj samo komitente koji imaju transakcije sa PVC ambalažom
+            // Koristimo agregirane podatke koje već imamo učitane!
+            if (agregiraniPodaci.Any())
+            {
+                var komitentiSaAmbalazom = agregiraniPodaci
+                    .Select(a => a.KomitentID)
+                    .Distinct()
+                    .ToList();
+
+                var sviKomitenti = await KomitentService.UcitajSveKomitente();
+                komitentiLista = sviKomitenti
+                    .Where(k => komitentiSaAmbalazom.Contains(k.Id))
+                    .ToList();
+            }
+            else
+            {
+                // Ako još nemamo agregirane podatke, učitaj sve pa filtriraćemo kasnije
+                komitentiLista = await KomitentService.UcitajSveKomitente();
+            }
         }
         catch (Exception ex)
         {
@@ -491,17 +531,14 @@
 
         try
         {
+            // JEDAN SQL upit za SVE podatke!
+            agregiraniPodaci = await PovratnaAmbalazaService.UcitajSveAgregiraneAsync(filterCharts);
+
+            // Procesiranje podataka u paralelnim task-ovima (bez dodatnih SQL upita!)
             await Task.WhenAll(
-                UcitajDuznike("PVC 4/1"),
-                UcitajDuznike("PVC 6/1"),
-                UcitajDuznikeKombinovano(),
-                UcitajPotrazujuce("PVC 4/1"),
-                UcitajPotrazujuce("PVC 6/1"),
-                UcitajPotrazujuceKombinovano(),
-                UcitajStanje("PVC 4/1"),
-                UcitajStanje("PVC 6/1"),
-                UcitajStanje("PVC 12/1"),
-                UcitajStanje("PVC 10/1")
+                ProcesuirajDuznike(),
+                ProcesuirajPotrazujuce(),
+                ProcesuirajStanja()
             );
         }
         finally
@@ -511,193 +548,80 @@
         }
     }
 
-    private async Task UcitajDuznike(string tipFilter)
+    private Task ProcesuirajDuznike()
     {
-        if (tipFilter.Contains("4/1"))
-        {
-            IsLoadingDuznik41 = true;
-            HasErrorDuznik41 = false;
-        }
-        else if (tipFilter.Contains("6/1"))
-        {
-            IsLoadingDuznik61 = true;
-            HasErrorDuznik61 = false;
-        }
+        // PVC 4/1 dužnici
+        var duznici41 = agregiraniPodaci
+            .Where(a => a.ArtikalID == 206 && a.Duguje > 0)
+            .OrderByDescending(a => a.Duguje)
+            .Take(5)
+            .ToDictionary(a => a.Komitent, a => a.Duguje);
+        DuznikPvc41 = ChartDataHelper.FromDictionary(duznici41, 5);
 
-        StateHasChanged();
+        // PVC 6/1 dužnici
+        var duznici61 = agregiraniPodaci
+            .Where(a => a.ArtikalID == 75 && a.Duguje > 0)
+            .OrderByDescending(a => a.Duguje)
+            .Take(5)
+            .ToDictionary(a => a.Komitent, a => a.Duguje);
+        DuznikPvc61 = ChartDataHelper.FromDictionary(duznici61, 5);
 
-        try
-        {
-            var data = await PovratnaAmbalazaService.UcitajTopDuznikeAsync(tipFilter, filterCharts);
-            var chartData = ChartDataHelper.FromDictionary(data, 5);
+        // PVC 12/1 + 10/1 dužnici (kombinovano)
+        var duznici1210 = agregiraniPodaci
+            .Where(a => (a.ArtikalID == 79 || a.ArtikalID == 281) && a.Duguje > 0)
+            .GroupBy(a => new { a.KomitentID, a.Komitent })
+            .Select(g => new { g.Key.Komitent, Duguje = g.Sum(x => x.Duguje) })
+            .OrderByDescending(a => a.Duguje)
+            .Take(5)
+            .ToDictionary(a => a.Komitent, a => a.Duguje);
+        DuznikPvc1210 = ChartDataHelper.FromDictionary(duznici1210, 5);
 
-            if (tipFilter.Contains("4/1"))
-                DuznikPvc41 = chartData;
-            else if (tipFilter.Contains("6/1"))
-                DuznikPvc61 = chartData;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Greška pri učitavanju dužnika za {Tip}", tipFilter);
-
-            if (tipFilter.Contains("4/1"))
-            {
-                HasErrorDuznik41 = true;
-                DuznikPvc41 = ChartDataHelper.GetMockData("Komitent", 5);
-            }
-            else if (tipFilter.Contains("6/1"))
-            {
-                HasErrorDuznik61 = true;
-                DuznikPvc61 = ChartDataHelper.GetMockData("Komitent", 5);
-            }
-        }
-        finally
-        {
-            if (tipFilter.Contains("4/1"))
-                IsLoadingDuznik41 = false;
-            else if (tipFilter.Contains("6/1"))
-                IsLoadingDuznik61 = false;
-
-            StateHasChanged();
-        }
+        return Task.CompletedTask;
     }
 
-    private async Task UcitajDuznikeKombinovano()
+    private Task ProcesuirajPotrazujuce()
     {
-        IsLoadingDuznik1210 = true;
-        HasErrorDuznik1210 = false;
-        StateHasChanged();
+        // PVC 4/1 potražujuće
+        var potrazuje41 = agregiraniPodaci
+            .Where(a => a.ArtikalID == 206 && a.Potrazuje > 0)
+            .OrderByDescending(a => a.Potrazuje)
+            .Take(5)
+            .ToDictionary(a => a.Komitent, a => a.Potrazuje);
+        PotrazujePvc41 = ChartDataHelper.FromDictionary(potrazuje41, 5);
 
-        try
-        {
-            var data121 = await PovratnaAmbalazaService.UcitajTopDuznikeAsync("PVC 12/1", filterCharts);
-            var data101 = await PovratnaAmbalazaService.UcitajTopDuznikeAsync("PVC 10/1", filterCharts);
+        // PVC 6/1 potražujuće
+        var potrazuje61 = agregiraniPodaci
+            .Where(a => a.ArtikalID == 75 && a.Potrazuje > 0)
+            .OrderByDescending(a => a.Potrazuje)
+            .Take(5)
+            .ToDictionary(a => a.Komitent, a => a.Potrazuje);
+        PotrazujePvc61 = ChartDataHelper.FromDictionary(potrazuje61, 5);
 
-            // Kombinuj rezultate
-            var combined = new Dictionary<string, decimal>();
-            foreach (var item in data121)
-            {
-                if (combined.ContainsKey(item.Key))
-                    combined[item.Key] += item.Value;
-                else
-                    combined[item.Key] = item.Value;
-            }
-            foreach (var item in data101)
-            {
-                if (combined.ContainsKey(item.Key))
-                    combined[item.Key] += item.Value;
-                else
-                    combined[item.Key] = item.Value;
-            }
+        // PVC 12/1 + 10/1 potražujuće (kombinovano)
+        var potrazuje1210 = agregiraniPodaci
+            .Where(a => (a.ArtikalID == 79 || a.ArtikalID == 281) && a.Potrazuje > 0)
+            .GroupBy(a => new { a.KomitentID, a.Komitent })
+            .Select(g => new { g.Key.Komitent, Potrazuje = g.Sum(x => x.Potrazuje) })
+            .OrderByDescending(a => a.Potrazuje)
+            .Take(5)
+            .ToDictionary(a => a.Komitent, a => a.Potrazuje);
+        PotrazujePvc1210 = ChartDataHelper.FromDictionary(potrazuje1210, 5);
 
-            DuznikPvc1210 = ChartDataHelper.FromDictionary(combined, 5);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Greška pri učitavanju kombinovanih dužnika");
-            HasErrorDuznik1210 = true;
-            DuznikPvc1210 = ChartDataHelper.GetMockData("Komitent", 5);
-        }
-        finally
-        {
-            IsLoadingDuznik1210 = false;
-            StateHasChanged();
-        }
+        return Task.CompletedTask;
     }
 
-    private async Task UcitajPotrazujuce(string tipFilter)
+    private async Task ProcesuirajStanja()
     {
-        if (tipFilter.Contains("4/1"))
-        {
-            IsLoadingPotrazuje41 = true;
-            HasErrorPotrazuje41 = false;
-        }
-        else if (tipFilter.Contains("6/1"))
-        {
-            IsLoadingPotrazuje61 = true;
-            HasErrorPotrazuje61 = false;
-        }
-
-        StateHasChanged();
-
-        try
-        {
-            var data = await PovratnaAmbalazaService.UcitajTopPotrazujuceAsync(tipFilter, filterCharts);
-            var chartData = ChartDataHelper.FromDictionary(data, 5);
-
-            if (tipFilter.Contains("4/1"))
-                PotrazujePvc41 = chartData;
-            else if (tipFilter.Contains("6/1"))
-                PotrazujePvc61 = chartData;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Greška pri učitavanju potražujućih za {Tip}", tipFilter);
-
-            if (tipFilter.Contains("4/1"))
-            {
-                HasErrorPotrazuje41 = true;
-                PotrazujePvc41 = ChartDataHelper.GetMockData("Komitent", 5);
-            }
-            else if (tipFilter.Contains("6/1"))
-            {
-                HasErrorPotrazuje61 = true;
-                PotrazujePvc61 = ChartDataHelper.GetMockData("Komitent", 5);
-            }
-        }
-        finally
-        {
-            if (tipFilter.Contains("4/1"))
-                IsLoadingPotrazuje41 = false;
-            else if (tipFilter.Contains("6/1"))
-                IsLoadingPotrazuje61 = false;
-
-            StateHasChanged();
-        }
+        // Stanja učitavamo iz vwMagacinLager (trenutno stanje)
+        await Task.WhenAll(
+            UcitajStanje("PVC 4/1"),
+            UcitajStanje("PVC 6/1"),
+            UcitajStanje("PVC 12/1"),
+            UcitajStanje("PVC 10/1")
+        );
     }
 
-    private async Task UcitajPotrazujuceKombinovano()
-    {
-        IsLoadingPotrazuje1210 = true;
-        HasErrorPotrazuje1210 = false;
-        StateHasChanged();
-
-        try
-        {
-            var data121 = await PovratnaAmbalazaService.UcitajTopPotrazujuceAsync("PVC 12/1", filterCharts);
-            var data101 = await PovratnaAmbalazaService.UcitajTopPotrazujuceAsync("PVC 10/1", filterCharts);
-
-            // Kombinuj rezultate
-            var combined = new Dictionary<string, decimal>();
-            foreach (var item in data121)
-            {
-                if (combined.ContainsKey(item.Key))
-                    combined[item.Key] += item.Value;
-                else
-                    combined[item.Key] = item.Value;
-            }
-            foreach (var item in data101)
-            {
-                if (combined.ContainsKey(item.Key))
-                    combined[item.Key] += item.Value;
-                else
-                    combined[item.Key] = item.Value;
-            }
-
-            PotrazujePvc1210 = ChartDataHelper.FromDictionary(combined, 5);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Greška pri učitavanju kombinovanih potražujućih");
-            HasErrorPotrazuje1210 = true;
-            PotrazujePvc1210 = ChartDataHelper.GetMockData("Komitent", 5);
-        }
-        finally
-        {
-            IsLoadingPotrazuje1210 = false;
-            StateHasChanged();
-        }
-    }
+    // Stare metode uklonjene - sad sve radimo iz cache-a agregiranih podataka!
 
     private async Task UcitajStanje(string tipFilter)
     {
@@ -804,6 +728,28 @@
             OdDatum = new DateTime(2023, 1, 1),
             DoDatum = DateTime.Now
         };
+        await UcitajIzvestaj();
+    }
+
+    // Brzi datumski filteri za Tab 2
+    private async Task PostaviPoslednjih7Dana()
+    {
+        filterIzvestaj.OdDatum = DateTime.Now.AddDays(-7);
+        filterIzvestaj.DoDatum = DateTime.Now;
+        await UcitajIzvestaj();
+    }
+
+    private async Task PostaviPocetakSezone()
+    {
+        filterIzvestaj.OdDatum = new DateTime(2025, 6, 1);
+        filterIzvestaj.DoDatum = DateTime.Now;
+        await UcitajIzvestaj();
+    }
+
+    private async Task PostaviOdPocetka()
+    {
+        filterIzvestaj.OdDatum = new DateTime(2023, 1, 1);
+        filterIzvestaj.DoDatum = DateTime.Now;
         await UcitajIzvestaj();
     }
 

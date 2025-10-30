@@ -2,6 +2,28 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FruitSysWeb.Models
 {
+    /// <summary>
+    /// Agregat za jedan Komitent + Artikal (za cache)
+    /// </summary>
+    public class PovratnaAmbalazaAgregat
+    {
+        public long KomitentID { get; set; }
+        public string Komitent { get; set; } = string.Empty;
+        public long ArtikalID { get; set; }
+        public decimal UkupnoUlaz { get; set; }
+        public decimal UkupnoIzlaz { get; set; }
+
+        /// <summary>
+        /// Stanje = Ulaz - Izlaz
+        /// Ako je pozitivno - ONI NAM DUGUJU (mi smo im dali više)
+        /// Ako je negativno - MI NJIMA DUGUJEMO (oni su nam dali više)
+        /// </summary>
+        public decimal Stanje => UkupnoIzlaz - UkupnoUlaz;
+
+        public decimal Duguje => Stanje > 0 ? Stanje : 0;
+        public decimal Potrazuje => Stanje < 0 ? Math.Abs(Stanje) : 0;
+    }
+
     public class PovratnaAmbalazaModel
     {
         [Display(Name = "Datum")]

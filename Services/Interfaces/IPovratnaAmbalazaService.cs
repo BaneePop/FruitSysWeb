@@ -6,20 +6,11 @@ namespace FruitSysWeb.Services.Interfaces
     public interface IPovratnaAmbalazaService
     {
         /// <summary>
-        /// Učitava top 5 dužnika za određeni tip PVC ambalaže
+        /// Učitava SVE podatke o PVC ambalaži jednim upitom
         /// </summary>
-        /// <param name="tipAmbalazeFilter">Filter naziva (npr. "PVC 4/1", "PVC 6/1")</param>
-        /// <param name="filterRequest">Dodatni filteri (datum)</param>
-        /// <returns>Dictionary sa komitentom i količinom dugovanja</returns>
-        Task<Dictionary<string, decimal>> UcitajTopDuznikeAsync(string tipAmbalazeFilter, FilterRequest filterRequest);
-
-        /// <summary>
-        /// Učitava top 5 komitenata kojima mi dugujemo (potražuju od nas)
-        /// </summary>
-        /// <param name="tipAmbalazeFilter">Filter naziva (npr. "PVC 4/1", "PVC 6/1")</param>
-        /// <param name="filterRequest">Dodatni filteri (datum)</param>
-        /// <returns>Dictionary sa komitentom i količinom potraživ anja</returns>
-        Task<Dictionary<string, decimal>> UcitajTopPotrazujuceAsync(string tipAmbalazeFilter, FilterRequest filterRequest);
+        /// <param name="filterRequest">Datum filteri</param>
+        /// <returns>Agregirani podaci po komitentima i artiklima</returns>
+        Task<List<PovratnaAmbalazaAgregat>> UcitajSveAgregiraneAsync(FilterRequest filterRequest);
 
         /// <summary>
         /// Učitava stanje na lageru za određeni tip PVC ambalaže
