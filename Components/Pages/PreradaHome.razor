@@ -12,6 +12,7 @@
 @inject NavigationManager NavigationManager
 @inject IProizvodnjaService ProizvodnjaService
 @inject IMagacinLagerService LagerService
+@inject IPreradaService PreradaService
 @inject ITypeMappingService TypeMapping
 @inject ILogger<PreradaHome> Logger
 
@@ -78,6 +79,40 @@
                     @(IsRefreshing ? "Osvežavam..." : "Osveži")
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Troškovi Charts - Radna Snaga i Radni Nalozi -->
+    <div class="row mb-4">
+        <!-- Chart 1: Broj Radnika i Troškovi po Danima -->
+        <div class="col-lg-6 mb-3">
+            <ApexMultiLineChart
+                Title="Broj Radnika i Troškovi po Danima (Poslednjih 30 Dana)"
+                Icon="bi bi-graph-up"
+                Series1Name="Broj Radnika"
+                Series2Name="Troškovi"
+                Unit1="radnika"
+                Unit2="RSD"
+                Series1Data="@BrojRadnikaPoDanima"
+                Series2Data="@TrosakPoRadnomDanu"
+                IsLoading="@(IsLoadingRadniciPoDanima || IsLoadingTrosakPoDanu)"
+                HasError="@(HasErrorRadniciPoDanima || HasErrorTrosakPoDanu)"
+                ShowSummary="true"
+                OnRefresh="@RefreshKombinovanePodatke" />
+        </div>
+
+        <!-- Chart 2: Troškovi po RN - Zadnjih 10 Završenih -->
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart
+                Title="Troškovi po RN - Zadnjih 10 Završenih"
+                Icon="bi bi-clipboard-check"
+                SeriesName="Troškovi"
+                Unit="RSD"
+                Data="@TroskoviPoRN_Zadnjih10"
+                IsLoading="@IsLoadingRN10"
+                HasError="@HasErrorRN10"
+                ShowSummary="true"
+                OnRefresh="@RefreshRN_Zadnjih10" />
         </div>
     </div>
 
@@ -231,6 +266,9 @@
     private List<ChartDataPoint>? GotoviProizvodiData;
     private List<ChartDataPoint>? KutijeData;
     private List<ChartDataPoint>? KesaData;
+    private List<ChartDataPoint>? BrojRadnikaPoDanima;
+    private List<ChartDataPoint>? TrosakPoRadnomDanu;
+    private List<ChartDataPoint>? TroskoviPoRN_Zadnjih10;
 
     // Proizvodnja Top 10
     private Dictionary<string, decimal>? proizvodnjaPoArtiklima;
@@ -241,6 +279,9 @@
     private bool IsLoadingGotovi = false;
     private bool IsLoadingKutije = false;
     private bool IsLoadingKesa = false;
+    private bool IsLoadingRadniciPoDanima = false;
+    private bool IsLoadingTrosakPoDanu = false;
+    private bool IsLoadingRN10 = false;
     private bool IsRefreshing = false;
 
     // Error States
@@ -248,6 +289,9 @@
     private bool HasErrorGotovi = false;
     private bool HasErrorKutije = false;
     private bool HasErrorKesa = false;
+    private bool HasErrorRadniciPoDanima = false;
+    private bool HasErrorTrosakPoDanu = false;
+    private bool HasErrorRN10 = false;
 
     private FilterRequest proizvodnjFilter => new FilterRequest
     {
@@ -268,6 +312,9 @@
         try
         {
             await Task.WhenAll(
+                RefreshRadniciPoDanima(),
+                RefreshTrosakPoRadnomDanu(),
+                RefreshRN_Zadnjih10(),
                 RefreshSirovine(),
                 RefreshGotovi(),
                 RefreshKutije(),
@@ -408,6 +455,184 @@
         finally
         {
             IsLoadingKesa = false;
+            StateHasChanged();
+        }
+    }
+
+    // Combined refresh for both Radnici and Trosak charts
+    private async Task RefreshKombinovanePodatke()
+    {
+        await Task.WhenAll(
+            RefreshRadniciPoDanima(),
+            RefreshTrosakPoRadnomDanu()
+        );
+    }
+
+    // Chart: Broj radnika po danima (30 dana)
+    private async Task RefreshRadniciPoDanima()
+    {
+        if (IsLoadingRadniciPoDanima) return;
+
+        IsLoadingRadniciPoDanima = true;
+        HasErrorRadniciPoDanima = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(150);
+
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-30),
+                DoDatum = DateTime.Now
+            };
+
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            // Grupisanje po datumu i računanje broja radnika (radni sati / 8), zaokruženo
+            var radniciPoDanimaList = smene
+                .Where(s => s.Datum.HasValue)
+                .GroupBy(s => s.Datum!.Value.Date)
+                .Select(g => new
+                {
+                    Datum = g.Key,
+                    BrojRadnika = Math.Round(g.Sum(s => s.BrojRadnihSati) / 8m, 0, MidpointRounding.AwayFromZero)
+                })
+                .OrderBy(x => x.Datum)
+                .ToList();
+
+            var radniciPoDanimaDict = radniciPoDanimaList
+                .ToDictionary(
+                    x => x.Datum.ToString("dd.MM"),
+                    x => (decimal)x.BrojRadnika
+                );
+
+            BrojRadnikaPoDanima = ChartDataHelper.FromDictionary(radniciPoDanimaDict, 30);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading radnici po danima");
+            HasErrorRadniciPoDanima = true;
+            BrojRadnikaPoDanima = ChartDataHelper.GetMockData("Datum", 30);
+        }
+        finally
+        {
+            IsLoadingRadniciPoDanima = false;
+            StateHasChanged();
+        }
+    }
+
+    // Chart: Trošak po radnom danu (30 dana)
+    private async Task RefreshTrosakPoRadnomDanu()
+    {
+        if (IsLoadingTrosakPoDanu) return;
+
+        IsLoadingTrosakPoDanu = true;
+        HasErrorTrosakPoDanu = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(160);
+
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-30),
+                DoDatum = DateTime.Now
+            };
+
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            // Grupisanje po datumu i sumiranje troškova
+            var trosakPoDanuList = smene
+                .Where(s => s.Datum.HasValue)
+                .GroupBy(s => s.Datum!.Value.Date)
+                .Select(g => new
+                {
+                    Datum = g.Key,
+                    Trosak = g.Sum(s => s.TrosakPoRadnomNalogu)
+                })
+                .OrderBy(x => x.Datum)
+                .ToList();
+
+            var trosakPoDanuDict = trosakPoDanuList
+                .ToDictionary(
+                    x => x.Datum.ToString("dd.MM"),
+                    x => (decimal)x.Trosak
+                );
+
+            TrosakPoRadnomDanu = ChartDataHelper.FromDictionary(trosakPoDanuDict, 30);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading trosak po danu");
+            HasErrorTrosakPoDanu = true;
+            TrosakPoRadnomDanu = ChartDataHelper.GetMockData("Datum", 30);
+        }
+        finally
+        {
+            IsLoadingTrosakPoDanu = false;
+            StateHasChanged();
+        }
+    }
+
+    // Chart: Troškovi po RN - Zadnjih 10 Završenih
+    private async Task RefreshRN_Zadnjih10()
+    {
+        if (IsLoadingRN10) return;
+
+        IsLoadingRN10 = true;
+        HasErrorRN10 = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(100);
+
+            // Učitaj zadnjih 10 završenih radnih naloga
+            var filter = new FilterRequest
+            {
+                DokumentStatus = 3, // Završeni
+                DoDatum = DateTime.Now
+            };
+
+            var radniNalozi = await PreradaService.UcitajRadniNalogIzvestaj(filter);
+
+            // Grupisati po RadniNalog i sabrati troškove - sortirati po poslednja 4 broja (RN-25-0259 -> 0259)
+            var grupisaniPodaci = radniNalozi
+                .Where(rn => !string.IsNullOrEmpty(rn.RadniNalog))
+                .GroupBy(rn => rn.RadniNalog)
+                .Select(g => new
+                {
+                    RadniNalog = g.Key,
+                    VrstaArtikla = g.First().VrstaArtikla ?? "",
+                    UkupnoTroskovi = g.Sum(x => x.TrosakPoRadnomNalogu),
+                    // Izvući poslednja 4 broja iz RN-25-0259
+                    BrojNaloga = g.Key.Split('-').LastOrDefault() ?? "0000"
+                })
+                .OrderByDescending(x => x.BrojNaloga)
+                .Take(10)
+                .ToList();
+
+            // Kreirati ChartDataPoint sa VrstaArtikla u labelu
+            TroskoviPoRN_Zadnjih10 = grupisaniPodaci
+                .Select(x => new ChartDataPoint
+                {
+                    Label = $"{x.VrstaArtikla} ({x.RadniNalog})",
+                    Value = x.UkupnoTroskovi,
+                    Color = ChartDataHelper.GetFruitColor(x.VrstaArtikla)
+                })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading RN zadnjih 10");
+            HasErrorRN10 = true;
+            TroskoviPoRN_Zadnjih10 = ChartDataHelper.GetMockData("RN", 10);
+        }
+        finally
+        {
+            IsLoadingRN10 = false;
             StateHasChanged();
         }
     }

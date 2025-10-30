@@ -18,8 +18,8 @@ namespace FruitSysWeb.Services.Interfaces
             FilterRequest filter);
 
         // ✨ NOVO: Nabavka i prodaja po danima po vrsti voća (za Home.razor charts)
-        Task<Dictionary<string, Dictionary<string, decimal>>> UcitajNabavkuPoDanimaPoVociAsync();
-        Task<Dictionary<string, Dictionary<string, decimal>>> UcitajProdajuPoDanimaPoVociAsync();
+        Task<Dictionary<string, Dictionary<string, decimal>>> UcitajNabavkuPoDanimaPoVociAsync(DateTime? odDatum = null);
+        Task<Dictionary<string, Dictionary<string, decimal>>> UcitajProdajuPoDanimaPoVociAsync(DateTime? odDatum = null);
 
         // ✨ NOVO: Ukupne vrednosti (količina i vrednost) za summary kartice
         Task<Dictionary<string, (decimal Kolicina, decimal Vrednost)>> UcitajUkupneVrednostiNabavkeAsync();

@@ -53,8 +53,7 @@
                                      Name="@series.Name"
                                      SeriesType="SeriesType.Line"
                                      XValue="@(e => e.Label)"
-                                     YAggregate="@(e => e.Sum(x => x.Value))"
-                                     OrderBy="@(e => e.X)" />
+                                     YAggregate="@(e => e.Sum(x => x.Value))" />
                 }
             </ApexChart>
 
@@ -66,17 +65,52 @@
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="p-3 rounded" style="background: linear-gradient(135deg, #232d3f, #2a3441); border: 1px solid #374151;">
-                            <div class="text-white">
-                                @foreach (var series in SeriesData)
-                                {
-                                    <div class="mb-2 pb-2" style="border-bottom: 1px solid #374151;">
-                                        <strong>@series.Name</strong> @series.TotalKolicina.ToString("N2") kg Vrednost @series.TotalVrednost.ToString("N2") RSD
+                            @if (HorizontalSummary)
+                            {
+                                <!-- Horizontalni layout - sve u jednoj liniji -->
+                                <div class="text-white d-flex flex-wrap gap-3 align-items-center">
+                                    @foreach (var series in SeriesData)
+                                    {
+                                        <div class="px-3 py-2 rounded" style="background: rgba(255, 255, 255, 0.05); border: 1px solid #374151;">
+                                            <strong>@series.Name:</strong> @series.TotalKolicina.ToString("N2") kg
+                                            @if (ShowVrednost)
+                                            {
+                                                <span class="ms-2 text-muted">(@series.TotalVrednost.ToString("N2") RSD)</span>
+                                            }
+                                        </div>
+                                    }
+                                    <div class="px-3 py-2 rounded ms-auto" style="background: rgba(40, 167, 69, 0.2); border: 1px solid #28a745;">
+                                        <strong>Ukupno:</strong> @ukupnaKolicina.ToString("N2") kg
+                                        @if (ShowVrednost)
+                                        {
+                                            <span class="ms-2 text-success">(@ukupnaVrednost.ToString("N2") RSD)</span>
+                                        }
                                     </div>
-                                }
-                                <div class="mt-2 pt-2" style="border-top: 2px solid #4b5563;">
-                                    <strong>Ukupno</strong> @ukupnaKolicina.ToString("N2") kg Vrednost @ukupnaVrednost.ToString("N2") RSD
                                 </div>
-                            </div>
+                            }
+                            else
+                            {
+                                <!-- Vertikalni layout - jedna ispod druge -->
+                                <div class="text-white">
+                                    @foreach (var series in SeriesData)
+                                    {
+                                        <div class="px-3 py-2 mb-2 rounded" style="background: rgba(255, 255, 255, 0.05); border: 1px solid #374151;">
+                                            <strong>@series.Name:</strong> @series.TotalKolicina.ToString("N2") kg
+                                            @if (ShowVrednost)
+                                            {
+                                                <span class="ms-2 text-muted">(@series.TotalVrednost.ToString("N2") RSD)</span>
+                                            }
+                                        </div>
+                                    }
+                                    <div class="px-3 py-2 rounded" style="background: rgba(40, 167, 69, 0.2); border: 1px solid #28a745;">
+                                        <strong>Ukupno:</strong> @ukupnaKolicina.ToString("N2") kg
+                                        @if (ShowVrednost)
+                                        {
+                                            <span class="ms-2 text-success">(@ukupnaVrednost.ToString("N2") RSD)</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -93,6 +127,8 @@
     [Parameter] public bool IsLoading { get; set; }
     [Parameter] public bool HasError { get; set; }
     [Parameter] public bool ShowSummary { get; set; } = true;
+    [Parameter] public bool ShowVrednost { get; set; } = true;
+    [Parameter] public bool HorizontalSummary { get; set; } = false;
     [Parameter] public int Height { get; set; } = 400;
     [Parameter] public EventCallback OnRefresh { get; set; }
 

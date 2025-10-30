@@ -379,25 +379,25 @@
             var filter = new FilterRequest { DoDatum = DateTime.Now };
             var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
 
-            // Grupisati po BrojIzvestaja i sabrati troškove - sortirati po broju (SI-251016/1 -> 2510161)
-            var troskoviDict = smene
+            // Grupisati po BrojIzvestaja i sabrati troškove - sortirati po datumu od najnovijeg ka najstarijem
+            TroskoviPoSmeni_Zadnjih20 = smene
                 .Where(s => !string.IsNullOrEmpty(s.BrojIzvestaja))
                 .GroupBy(s => s.BrojIzvestaja)
                 .Select(g => new
                 {
                     BrojIzvestaja = g.Key,
                     UkupnoTroskovi = g.Sum(x => x.TrosakPoRadnomNalogu),
-                    // SI-251016/1 -> Izvući 251016 i 1, spojiti u 2510161 za sortiranje
+                    // SI-251016/1 -> Izvući 251016 i 1, spojiti u 2510161 za sortiranje po datumu
                     SortKey = g.Key.Replace("SI-", "").Replace("/", "")
                 })
-                .OrderByDescending(x => x.SortKey)
+                .OrderByDescending(x => x.SortKey) // Sortiraj od najnovijeg ka najstarijem
                 .Take(20)
-                .ToDictionary(
-                    x => x.BrojIzvestaja,
-                    x => (decimal)x.UkupnoTroskovi
-                );
-
-            TroskoviPoSmeni_Zadnjih20 = ChartDataHelper.FromDictionary(troskoviDict, 20);
+                .Select(x => new ChartDataPoint
+                {
+                    Label = x.BrojIzvestaja,
+                    Value = x.UkupnoTroskovi
+                })
+                .ToList();
         }
         catch (Exception ex)
         {

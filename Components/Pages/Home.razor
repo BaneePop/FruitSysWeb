@@ -377,16 +377,32 @@
             var podaci = await podaciTask;
             var ukupno = await ukupnoTask;
 
+            // Kreiraj kompletan set svih datuma (unija svih datuma iz svih vrsta voća)
+            var sviDatumi = podaci
+                .SelectMany(voce => voce.Value.Keys)
+                .Distinct()
+                .OrderBy(d => {
+                    // Sortiraj po datumu parsiranjem "dd.MM" formata
+                    var parts = d.Split('.');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out var day) && int.TryParse(parts[1], out var month))
+                    {
+                        return new DateTime(DateTime.Now.Year, month, day);
+                    }
+                    return DateTime.MinValue;
+                })
+                .ToList();
+
             // Konvertuj Dictionary<VrstaVoca, Dictionary<Datum, Kolicina>> u ChartSeriesData
+            // Svaka serija mora imati SVE datume, stavlja 0 gde nema podataka
             nabavkaSeriesData = podaci
                 .Select(voce => new FruitSysWeb.Components.Charts.ChartSeriesData
                 {
                     Name = voce.Key,
-                    Data = voce.Value
+                    Data = sviDatumi
                         .Select(datum => new FruitSysWeb.Components.Charts.ChartDataPoint
                         {
-                            Label = datum.Key, // "dd.MM" format
-                            Value = datum.Value // Količina
+                            Label = datum, // "dd.MM" format
+                            Value = voce.Value.ContainsKey(datum) ? voce.Value[datum] : 0 // 0 ako nema podataka
                         })
                         .ToList(),
                     Color = FruitSysWeb.Components.Charts.ChartDataHelper.GetFruitColor(voce.Key),
@@ -426,16 +442,32 @@
             var podaci = await podaciTask;
             var ukupno = await ukupnoTask;
 
+            // Kreiraj kompletan set svih datuma (unija svih datuma iz svih vrsta voća)
+            var sviDatumi = podaci
+                .SelectMany(voce => voce.Value.Keys)
+                .Distinct()
+                .OrderBy(d => {
+                    // Sortiraj po datumu parsiranjem "dd.MM" formata
+                    var parts = d.Split('.');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out var day) && int.TryParse(parts[1], out var month))
+                    {
+                        return new DateTime(DateTime.Now.Year, month, day);
+                    }
+                    return DateTime.MinValue;
+                })
+                .ToList();
+
             // Konvertuj Dictionary<VrstaVoca, Dictionary<Datum, Kolicina>> u ChartSeriesData
+            // Svaka serija mora imati SVE datume, stavlja 0 gde nema podataka
             prodajaSeriesData = podaci
                 .Select(voce => new FruitSysWeb.Components.Charts.ChartSeriesData
                 {
                     Name = voce.Key,
-                    Data = voce.Value
+                    Data = sviDatumi
                         .Select(datum => new FruitSysWeb.Components.Charts.ChartDataPoint
                         {
-                            Label = datum.Key, // "dd.MM" format
-                            Value = datum.Value // Količina
+                            Label = datum, // "dd.MM" format
+                            Value = voce.Value.ContainsKey(datum) ? voce.Value[datum] : 0 // 0 ako nema podataka
                         })
                         .ToList(),
                     Color = FruitSysWeb.Components.Charts.ChartDataHelper.GetFruitColor(voce.Key),

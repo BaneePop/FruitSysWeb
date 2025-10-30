@@ -18,7 +18,34 @@
 @inject ILogger<FinansijeHome> Logger
 @inject IAuthService AuthService
 
-@* All styles moved to wwwroot/css/shared-components.css *@
+<style>
+    /* Custom grid za 5 kolona u jednom redu */
+    .section-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Responsive - na manjim ekranima prelazi u manje kolona */
+    @@media (max-width: 1200px) {
+        .section-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .section-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .section-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
 
 <!-- Header -->
 <div class="finansije-header text-white py-4 mb-4">
@@ -71,57 +98,42 @@
         </div>
     </div>
 
-    <!-- Brzi Pregled Tabele - Nabavka i Prodaja -->
-    @if (brziPregledDobavljaci?.Any() == true || brziPregledKupci?.Any() == true)
-    {
-        <div class="row mb-4">
-            @if (brziPregledDobavljaci?.Any() == true)
-            {
-                <div class="col-md-6">
-                    <BrziPregledTabela 
-                        Stavke="@brziPregledDobavljaci"
-                        Naslov="Pregled Nabavke"
-                        TipPartnera="Dobavljač"
-                        IsplataLabel="Isplata"
-                        HeaderBgClass="bg-danger text-white"
-                        IkonaClass="bi-truck"
-                        OdDatum="@startDatum"
-                        DoDatum="@endDatum" />
-                </div>
-            }
-
-            @if (brziPregledKupci?.Any() == true)
-            {
-                <div class="col-md-6">
-                    <BrziPregledTabela 
-                        Stavke="@brziPregledKupci"
-                        Naslov="Pregled Prodaje"
-                        TipPartnera="Kupac"
-                        IsplataLabel="Uplata"
-                        HeaderBgClass="bg-success text-white"
-                        IkonaClass="bi-cart-check"
-                        OdDatum="@startDatum"
-                        DoDatum="@endDatum" />
-                </div>
-            }
+    <!-- Nabavka i Prodaja Charts - Poslednjih 30 Dana -->
+    <div class="row mt-4 mb-4">
+        <!-- Nabavka Chart -->
+        <div class="col-12 mb-3">
+            <ApexMultiSeriesLineChart
+                Title="Nabavka po Vrsti Voća (od 01.06.2025)"
+                Icon="bi bi-cart-plus"
+                SeriesData="@nabavkaSeriesData"
+                Unit="kg"
+                IsWeight="true"
+                IsLoading="@isLoadingNabavka"
+                HasError="@hasErrorNabavka"
+                ShowSummary="true"
+                ShowVrednost="false"
+                HorizontalSummary="true"
+                Height="450"
+                OnRefresh="@UcitajNabavkuPodatke" />
         </div>
-    }
 
-    <!-- Roba na Zalihama -->
-    @if (robaZalihe?.Any() == true)
-    {
-        <div class="row mb-4">
-            <div class="col-12">
-                <RobaZaliheTabela 
-                    Stavke="@robaZalihe"
-                    Naslov="Roba na Zalihama"
-                    HeaderBgClass="bg-info text-white"
-                    IkonaClass="bi-box-seam"
-                    OdDatum="@startDatum"
-                    DoDatum="@endDatum" />
-            </div>
+        <!-- Prodaja Chart -->
+        <div class="col-12 mb-3">
+            <ApexMultiSeriesLineChart
+                Title="Prodaja po Vrsti Voća (od 01.06.2025)"
+                Icon="bi bi-cart-check"
+                SeriesData="@prodajaSeriesData"
+                Unit="kg"
+                IsWeight="true"
+                IsLoading="@isLoadingProdaja"
+                HasError="@hasErrorProdaja"
+                ShowSummary="true"
+                ShowVrednost="false"
+                HorizontalSummary="true"
+                Height="450"
+                OnRefresh="@UcitajProdajuPodatke" />
         </div>
-    }
+    </div>
 
     <!-- Dashboard Analitika - Top 5 Kupaca i Dobavljača -->
     <div class="row mb-4">
@@ -181,6 +193,15 @@
     private List<ChartDataPoint>? TopKupciData;
     private List<ChartDataPoint>? TopDobavljaciData;
 
+    // Nabavka i Prodaja chart data
+    private List<ChartSeriesData> nabavkaSeriesData = new();
+    private bool isLoadingNabavka = true;
+    private bool hasErrorNabavka = false;
+
+    private List<ChartSeriesData> prodajaSeriesData = new();
+    private bool isLoadingProdaja = true;
+    private bool hasErrorProdaja = false;
+
     // Brzi pregled data
     private List<BrziPregledStavka>? brziPregledDobavljaci;
     private List<BrziPregledStavka>? brziPregledKupci;
@@ -218,7 +239,9 @@
 
         await Task.WhenAll(
             RefreshCharts(),
-            UcitajBrziPregled()
+            UcitajBrziPregled(),
+            UcitajNabavkuPodatke(),
+            UcitajProdajuPodatke()
         );
     }
 
@@ -357,5 +380,123 @@
     private void NavigateTo(string url)
     {
         NavigationManager.NavigateTo(url);
+    }
+
+    private async Task UcitajNabavkuPodatke()
+    {
+        try
+        {
+            isLoadingNabavka = true;
+            hasErrorNabavka = false;
+            StateHasChanged();
+
+            // Učitaj samo podatke po danima (za chart) od 01.06.2025 - ne učitavamo vrednosti jer ih ne prikazujemo
+            var podaci = await BrziPregledService.UcitajNabavkuPoDanimaPoVociAsync(new DateTime(2025, 6, 1));
+
+            // Kreiraj kompletan set svih datuma (unija svih datuma iz svih vrsta voća)
+            var sviDatumi = podaci
+                .SelectMany(voce => voce.Value.Keys)
+                .Distinct()
+                .OrderBy(d => {
+                    // Sortiraj po datumu parsiranjem "dd.MM" formata
+                    var parts = d.Split('.');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out var day) && int.TryParse(parts[1], out var month))
+                    {
+                        return new DateTime(DateTime.Now.Year, month, day);
+                    }
+                    return DateTime.MinValue;
+                })
+                .ToList();
+
+            // Konvertuj Dictionary<VrstaVoca, Dictionary<Datum, Kolicina>> u ChartSeriesData
+            // Svaka serija mora imati SVE datume, stavlja 0 gde nema podataka
+            nabavkaSeriesData = podaci
+                .Select(voce => new ChartSeriesData
+                {
+                    Name = voce.Key,
+                    Data = sviDatumi
+                        .Select(datum => new ChartDataPoint
+                        {
+                            Label = datum, // "dd.MM" format
+                            Value = voce.Value.ContainsKey(datum) ? voce.Value[datum] : 0 // 0 ako nema podataka
+                        })
+                        .ToList(),
+                    Color = ChartDataHelper.GetFruitColor(voce.Key),
+                    TotalKolicina = voce.Value.Sum(x => x.Value), // Saberi sve količine za ovu vrstu
+                    TotalVrednost = 0 // Ne prikazujemo vrednosti
+                })
+                .ToList();
+
+            isLoadingNabavka = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ Greška pri učitavanju nabavke");
+            hasErrorNabavka = true;
+            isLoadingNabavka = false;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task UcitajProdajuPodatke()
+    {
+        try
+        {
+            isLoadingProdaja = true;
+            hasErrorProdaja = false;
+            StateHasChanged();
+
+            // Učitaj samo podatke po danima (za chart) od 01.06.2025 - ne učitavamo vrednosti jer ih ne prikazujemo
+            var podaci = await BrziPregledService.UcitajProdajuPoDanimaPoVociAsync(new DateTime(2025, 6, 1));
+
+            // Kreiraj kompletan set svih datuma (unija svih datuma iz svih vrsta voća)
+            var sviDatumi = podaci
+                .SelectMany(voce => voce.Value.Keys)
+                .Distinct()
+                .OrderBy(d => {
+                    // Sortiraj po datumu parsiranjem "dd.MM" formata
+                    var parts = d.Split('.');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out var day) && int.TryParse(parts[1], out var month))
+                    {
+                        return new DateTime(DateTime.Now.Year, month, day);
+                    }
+                    return DateTime.MinValue;
+                })
+                .ToList();
+
+            // Konvertuj Dictionary<VrstaVoca, Dictionary<Datum, Kolicina>> u ChartSeriesData
+            // Svaka serija mora imati SVE datume, stavlja 0 gde nema podataka
+            prodajaSeriesData = podaci
+                .Select(voce => new ChartSeriesData
+                {
+                    Name = voce.Key,
+                    Data = sviDatumi
+                        .Select(datum => new ChartDataPoint
+                        {
+                            Label = datum, // "dd.MM" format
+                            Value = voce.Value.ContainsKey(datum) ? voce.Value[datum] : 0 // 0 ako nema podataka
+                        })
+                        .ToList(),
+                    Color = ChartDataHelper.GetFruitColor(voce.Key),
+                    TotalKolicina = voce.Value.Sum(x => x.Value), // Saberi sve količine za ovu vrstu
+                    TotalVrednost = 0 // Ne prikazujemo vrednosti
+                })
+                .ToList();
+
+            isLoadingProdaja = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ Greška pri učitavanju prodaje");
+            hasErrorProdaja = true;
+            isLoadingProdaja = false;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
     }
 }

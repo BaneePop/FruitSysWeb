@@ -425,17 +425,17 @@ public class BrziPregledService : IBrziPregledService
     }
 
     /// <summary>
-    /// Učitava nabavku po danima i po vrsti voća za zadnjih 30 dana
+    /// Učitava nabavku po danima i po vrsti voća
     /// Filtrira artikle sa MagacinID (2, 3, 5, 6)
     /// </summary>
-    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajNabavkuPoDanimaPoVociAsync()
+    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajNabavkuPoDanimaPoVociAsync(DateTime? odDatum = null)
     {
         try
         {
             var doDatum = DateTime.Now;
-            var odDatum = doDatum.AddDays(-30);
+            var startDatum = odDatum ?? doDatum.AddDays(-30); // Default: poslednjih 30 dana
 
-            _logger.LogInformation($"🔍 UcitajNabavkuPoDanimaPoVoci: {odDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}");
+            _logger.LogInformation($"🔍 UcitajNabavkuPoDanimaPoVoci: {startDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}");
 
             // SQL query: Nabavka (KL- dokumenti) grupisan po datumu i vrsti artikla
             var sql = @"
@@ -456,48 +456,51 @@ public class BrziPregledService : IBrziPregledService
                 ORDER BY Datum ASC, a.Naziv";
 
             var parameters = new DynamicParameters();
-            parameters.Add("@OdDatum", odDatum);
+            parameters.Add("@OdDatum", startDatum);
             parameters.Add("@DoDatum", doDatum);
 
             var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
 
             // Grupisanje po vrsti voća koristeći MapToFruitType
-            // Dictionary<VrstaVoca, Dictionary<Datum, (Kolicina, Vrednost)>>
-            var podaciPoVoci = new Dictionary<string, Dictionary<string, (decimal Kolicina, decimal Vrednost)>>();
+            // Dictionary<VrstaVoca, List<(Datum, Kolicina, Vrednost)>>
+            var podaciPoVoci = new Dictionary<string, List<(DateTime Datum, decimal Kolicina, decimal Vrednost)>>();
 
             foreach (var red in rezultat)
             {
                 string artikalNaziv = red.VrstaVoca ?? "Nepoznato";
                 string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapToFruitType(artikalNaziv);
-                string datum = ((DateTime)red.Datum).ToString("dd.MM");
+                DateTime datum = (DateTime)red.Datum;
                 decimal kolicina = red.Kolicina;
                 decimal vrednost = red.Vrednost;
 
                 if (!podaciPoVoci.ContainsKey(vrstaVoca))
                 {
-                    podaciPoVoci[vrstaVoca] = new Dictionary<string, (decimal, decimal)>();
+                    podaciPoVoci[vrstaVoca] = new List<(DateTime, decimal, decimal)>();
                 }
 
-                // Saberi vrednosti ako već postoji taj datum
-                if (podaciPoVoci[vrstaVoca].ContainsKey(datum))
+                // Nađi postojeći datum ili dodaj novi
+                var postojeci = podaciPoVoci[vrstaVoca].FirstOrDefault(x => x.Datum.Date == datum.Date);
+                if (postojeci != default)
                 {
-                    var postojeci = podaciPoVoci[vrstaVoca][datum];
-                    podaciPoVoci[vrstaVoca][datum] = (postojeci.Kolicina + kolicina, postojeci.Vrednost + vrednost);
+                    podaciPoVoci[vrstaVoca].Remove(postojeci);
+                    podaciPoVoci[vrstaVoca].Add((datum, postojeci.Kolicina + kolicina, postojeci.Vrednost + vrednost));
                 }
                 else
                 {
-                    podaciPoVoci[vrstaVoca][datum] = (kolicina, vrednost);
+                    podaciPoVoci[vrstaVoca].Add((datum, kolicina, vrednost));
                 }
             }
 
-            // Konvertuj u stari format (samo količina za chart)
+            // Konvertuj u format za chart (samo količina) i sortiraj po datumu
             var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
             foreach (var voce in podaciPoVoci)
             {
                 rezultatDict[voce.Key] = new Dictionary<string, decimal>();
-                foreach (var datum in voce.Value)
+                // Sortiraj po datumu pre konverzije
+                foreach (var stavka in voce.Value.OrderBy(x => x.Datum))
                 {
-                    rezultatDict[voce.Key][datum.Key] = datum.Value.Kolicina; // Vraćamo količinu, ne vrednost
+                    string datumStr = stavka.Datum.ToString("dd.MM");
+                    rezultatDict[voce.Key][datumStr] = stavka.Kolicina; // Vraćamo količinu, ne vrednost
                 }
             }
 
@@ -513,17 +516,17 @@ public class BrziPregledService : IBrziPregledService
     }
 
     /// <summary>
-    /// Učitava prodaju po danima i po vrsti voća za zadnjih 30 dana
+    /// Učitava prodaju po danima i po vrsti voća
     /// Filtrira artikle sa MagacinID (2, 3, 5, 6)
     /// </summary>
-    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajProdajuPoDanimaPoVociAsync()
+    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajProdajuPoDanimaPoVociAsync(DateTime? odDatum = null)
     {
         try
         {
             var doDatum = DateTime.Now;
-            var odDatum = doDatum.AddDays(-30);
+            var startDatum = odDatum ?? doDatum.AddDays(-30); // Default: poslednjih 30 dana
 
-            _logger.LogInformation($"🔍 UcitajProdajuPoDanimaPoVoci: {odDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}");
+            _logger.LogInformation($"🔍 UcitajProdajuPoDanimaPoVoci: {startDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}");
 
             // SQL query: Prodaja (FK- dokumenti) grupisan po datumu i vrsti artikla
             var sql = @"
@@ -544,47 +547,51 @@ public class BrziPregledService : IBrziPregledService
                 ORDER BY Datum ASC, a.Naziv";
 
             var parameters = new DynamicParameters();
-            parameters.Add("@OdDatum", odDatum);
+            parameters.Add("@OdDatum", startDatum);
             parameters.Add("@DoDatum", doDatum);
 
             var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
 
             // Grupisanje po vrsti voća koristeći MapToFruitType
-            var podaciPoVoci = new Dictionary<string, Dictionary<string, (decimal Kolicina, decimal Vrednost)>>();
+            // Dictionary<VrstaVoca, List<(Datum, Kolicina, Vrednost)>>
+            var podaciPoVoci = new Dictionary<string, List<(DateTime Datum, decimal Kolicina, decimal Vrednost)>>();
 
             foreach (var red in rezultat)
             {
                 string artikalNaziv = red.VrstaVoca ?? "Nepoznato";
                 string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapToFruitType(artikalNaziv);
-                string datum = ((DateTime)red.Datum).ToString("dd.MM");
+                DateTime datum = (DateTime)red.Datum;
                 decimal kolicina = red.Kolicina;
                 decimal vrednost = red.Vrednost;
 
                 if (!podaciPoVoci.ContainsKey(vrstaVoca))
                 {
-                    podaciPoVoci[vrstaVoca] = new Dictionary<string, (decimal, decimal)>();
+                    podaciPoVoci[vrstaVoca] = new List<(DateTime, decimal, decimal)>();
                 }
 
-                // Saberi vrednosti ako već postoji taj datum
-                if (podaciPoVoci[vrstaVoca].ContainsKey(datum))
+                // Nađi postojeći datum ili dodaj novi
+                var postojeci = podaciPoVoci[vrstaVoca].FirstOrDefault(x => x.Datum.Date == datum.Date);
+                if (postojeci != default)
                 {
-                    var postojeci = podaciPoVoci[vrstaVoca][datum];
-                    podaciPoVoci[vrstaVoca][datum] = (postojeci.Kolicina + kolicina, postojeci.Vrednost + vrednost);
+                    podaciPoVoci[vrstaVoca].Remove(postojeci);
+                    podaciPoVoci[vrstaVoca].Add((datum, postojeci.Kolicina + kolicina, postojeci.Vrednost + vrednost));
                 }
                 else
                 {
-                    podaciPoVoci[vrstaVoca][datum] = (kolicina, vrednost);
+                    podaciPoVoci[vrstaVoca].Add((datum, kolicina, vrednost));
                 }
             }
 
-            // Konvertuj u stari format (samo količina za chart)
+            // Konvertuj u format za chart (samo količina) i sortiraj po datumu
             var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
             foreach (var voce in podaciPoVoci)
             {
                 rezultatDict[voce.Key] = new Dictionary<string, decimal>();
-                foreach (var datum in voce.Value)
+                // Sortiraj po datumu pre konverzije
+                foreach (var stavka in voce.Value.OrderBy(x => x.Datum))
                 {
-                    rezultatDict[voce.Key][datum.Key] = datum.Value.Kolicina; // Vraćamo količinu, ne vrednost
+                    string datumStr = stavka.Datum.ToString("dd.MM");
+                    rezultatDict[voce.Key][datumStr] = stavka.Kolicina; // Vraćamo količinu, ne vrednost
                 }
             }
 
