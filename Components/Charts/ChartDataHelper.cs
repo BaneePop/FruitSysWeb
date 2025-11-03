@@ -233,5 +233,52 @@ namespace FruitSysWeb.Components.Charts
                    data.Any() &&
                    data.All(x => !string.IsNullOrEmpty(x.Label) && x.Value >= 0);
         }
+
+        /// <summary>
+        /// Konvertuje Dictionary<Datum, Dictionary<VrstaProizvoda, Vrednost>> u MultiSeriesDataPoint listu
+        /// </summary>
+        public static List<MultiSeriesDataPoint> ConvertToMultiSeries(Dictionary<string, Dictionary<string, decimal>> data)
+        {
+            if (data == null || !data.Any())
+                return new List<MultiSeriesDataPoint>();
+
+            var result = new List<MultiSeriesDataPoint>();
+
+            // Prvo sakupi sve unikalne serije (vrste proizvoda)
+            var sveVrste = data.Values
+                .SelectMany(d => d.Keys)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            // Za svaki datum
+            foreach (var datum in data.Keys.OrderBy(x => x))
+            {
+                var point = new MultiSeriesDataPoint
+                {
+                    Label = datum,
+                    Series = new Dictionary<string, decimal>()
+                };
+
+                // Za svaku vrstu proizvoda, dodaj vrednost (ili 0 ako ne postoji)
+                foreach (var vrsta in sveVrste)
+                {
+                    point.Series[vrsta] = data[datum].ContainsKey(vrsta) ? data[datum][vrsta] : 0;
+                }
+
+                result.Add(point);
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Predstavlja jednu tačku podataka za multi-series line chart
+    /// </summary>
+    public class MultiSeriesDataPoint
+    {
+        public string Label { get; set; } = "";
+        public Dictionary<string, decimal> Series { get; set; } = new();
     }
 }

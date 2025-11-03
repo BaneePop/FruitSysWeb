@@ -168,88 +168,32 @@
         </div>
     </div>
 
-    <!-- Top 10 Artikala i Komitenata po proizvodnji -->
-    @if (proizvodnjaPoArtiklima?.Any() == true || proizvodnjaPoKomitentima?.Any() == true)
-    {
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="dashboard-card">
-                    <h5 class="section-title">
-                        <i class="bi bi-box-seam me-2"></i>Top 10 Artikala po proizvodnji
-                    </h5>
-                    @if (proizvodnjaPoArtiklima?.Any() == true)
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Artikal</th>
-                                        <th class="text-end">Količina</th>
-                                        <th class="text-end">%</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @{
-                                        var ukupnoArtikli = proizvodnjaPoArtiklima.Values.Sum();
-                                    }
-                                    @foreach (var artikal in proizvodnjaPoArtiklima.Take(10))
-                                    {
-                                        <tr>
-                                            <td>@artikal.Key</td>
-                                            <td class="text-end fw-bold">@TypeMapping.FormatDecimal(artikal.Value)</td>
-                                            <td class="text-end">@TypeMapping.FormatDecimal((artikal.Value / ukupnoArtikli * 100))%</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="text-muted">Nema podataka o proizvodnji po artiklima</p>
-                    }
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="dashboard-card">
-                    <h5 class="section-title">
-                        <i class="bi bi-people me-2"></i>Top 10 Komitenata po proizvodnji
-                    </h5>
-                    @if (proizvodnjaPoKomitentima?.Any() == true)
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Komitent</th>
-                                        <th class="text-end">Količina</th>
-                                        <th class="text-end">%</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @{
-                                        var ukupnoKomitenti = proizvodnjaPoKomitentima.Values.Sum();
-                                    }
-                                    @foreach (var komitent in proizvodnjaPoKomitentima.Take(10))
-                                    {
-                                        <tr>
-                                            <td>@komitent.Key</td>
-                                            <td class="text-end fw-bold">@TypeMapping.FormatDecimal(komitent.Value)</td>
-                                            <td class="text-end">@TypeMapping.FormatDecimal((komitent.Value / ukupnoKomitenti * 100))%</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="text-muted">Nema podataka o proizvodnji po komitentima</p>
-                    }
-                </div>
-            </div>
+    <!-- Trošak po kg Gotovog Proizvoda - Line Charts -->
+    <div class="row mb-4">
+        <!-- Trošak Direktan po kg -->
+        <div class="col-md-6">
+            <ApexMultiSeriesLineChart
+                Title="Trošak Direktan po kg - Zadnjih 20 Smena"
+                Data="@trosakDirektniPoKgData"
+                YAxisTitle="Trošak (RSD/kg)"
+                IsLoading="@isLoadingTrosakDirektni"
+                HasError="@hasErrorTrosakDirektni"
+                ShowSummary="true"
+                OnRefresh="@RefreshTrosakDirektni" />
         </div>
-    }
+
+        <!-- Trošak Ukupan po kg -->
+        <div class="col-md-6">
+            <ApexMultiSeriesLineChart
+                Title="Trošak Ukupan po kg - Zadnjih 20 Smena"
+                Data="@trosakUkupniPoKgData"
+                YAxisTitle="Trošak (RSD/kg)"
+                IsLoading="@isLoadingTrosakUkupni"
+                HasError="@hasErrorTrosakUkupni"
+                ShowSummary="true"
+                OnRefresh="@RefreshTrosakUkupni" />
+        </div>
+    </div>
 
     <!-- Navigation Breadcrumb -->
     <nav aria-label="breadcrumb">
@@ -270,9 +214,9 @@
     private List<ChartDataPoint>? TrosakPoRadnomDanu;
     private List<ChartDataPoint>? TroskoviPoRN_Zadnjih10;
 
-    // Proizvodnja Top 10
-    private Dictionary<string, decimal>? proizvodnjaPoArtiklima;
-    private Dictionary<string, decimal>? proizvodnjaPoKomitentima;
+    // Trošak po kg Data
+    private List<MultiSeriesDataPoint>? trosakDirektniPoKgData;
+    private List<MultiSeriesDataPoint>? trosakUkupniPoKgData;
 
     // Loading States
     private bool IsLoadingSirovine = false;
@@ -282,6 +226,8 @@
     private bool IsLoadingRadniciPoDanima = false;
     private bool IsLoadingTrosakPoDanu = false;
     private bool IsLoadingRN10 = false;
+    private bool isLoadingTrosakDirektni = false;
+    private bool isLoadingTrosakUkupni = false;
     private bool IsRefreshing = false;
 
     // Error States
@@ -292,6 +238,8 @@
     private bool HasErrorRadniciPoDanima = false;
     private bool HasErrorTrosakPoDanu = false;
     private bool HasErrorRN10 = false;
+    private bool hasErrorTrosakDirektni = false;
+    private bool hasErrorTrosakUkupni = false;
 
     private FilterRequest proizvodnjFilter => new FilterRequest
     {
@@ -319,7 +267,8 @@
                 RefreshGotovi(),
                 RefreshKutije(),
                 RefreshKesa(),
-                RefreshProizvodnja()
+                RefreshTrosakDirektni(),
+                RefreshTrosakUkupni()
             );
         }
         catch (Exception ex)
@@ -333,19 +282,6 @@
         }
     }
 
-    private async Task RefreshProizvodnja()
-    {
-        try
-        {
-            proizvodnjaPoArtiklima = await ProizvodnjaService.UcitajProizvodnjuPoArtiklima(proizvodnjFilter);
-            proizvodnjaPoKomitentima = await ProizvodnjaService.UcitajProizvodnjuPoKomitentima(proizvodnjFilter);
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error loading proizvodnja data");
-        }
-    }
 
     private async Task RefreshSirovine()
     {
@@ -640,5 +576,69 @@
     private void NavigateTo(string url)
     {
         NavigationManager.NavigateTo(url);
+    }
+
+    // Trošak Direktan po kg - Zadnjih 20 Smena
+    private async Task RefreshTrosakDirektni()
+    {
+        if (isLoadingTrosakDirektni) return;
+
+        isLoadingTrosakDirektni = true;
+        hasErrorTrosakDirektni = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(170);
+
+            // Učitaj direktne troškove po kg iz servisa
+            var podaciPoSmeni = await PreradaService.UcitajTrosakPoKgDirektni(20);
+
+            // Konvertuj u MultiSeriesDataPoint format
+            trosakDirektniPoKgData = ChartDataHelper.ConvertToMultiSeries(podaciPoSmeni);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading trošak direktan po kg");
+            hasErrorTrosakDirektni = true;
+            trosakDirektniPoKgData = new List<MultiSeriesDataPoint>();
+        }
+        finally
+        {
+            isLoadingTrosakDirektni = false;
+            StateHasChanged();
+        }
+    }
+
+    // Trošak Ukupan po kg - Zadnjih 20 Smena
+    private async Task RefreshTrosakUkupni()
+    {
+        if (isLoadingTrosakUkupni) return;
+
+        isLoadingTrosakUkupni = true;
+        hasErrorTrosakUkupni = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(180);
+
+            // Učitaj ukupne troškove po kg iz servisa
+            var podaciPoSmeni = await PreradaService.UcitajTrosakPoKgUkupni(20);
+
+            // Konvertuj u MultiSeriesDataPoint format
+            trosakUkupniPoKgData = ChartDataHelper.ConvertToMultiSeries(podaciPoSmeni);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading trošak ukupan po kg");
+            hasErrorTrosakUkupni = true;
+            trosakUkupniPoKgData = new List<MultiSeriesDataPoint>();
+        }
+        finally
+        {
+            isLoadingTrosakUkupni = false;
+            StateHasChanged();
+        }
     }
 }

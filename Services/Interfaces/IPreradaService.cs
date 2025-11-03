@@ -76,5 +76,9 @@ namespace FruitSysWeb.Services.Interfaces
         Task<PredhodnaSmenaInfo?> UcitajPredhodnuSmenuInfo();
         Task<List<PredhodnaSmenaModel>> UcitajPredhodnuSmenu();
 
+        // Trošak po kg gotovog proizvoda
+        Task<Dictionary<string, Dictionary<string, decimal>>> UcitajTrosakPoKgDirektni(int brojSmena = 20);
+        Task<Dictionary<string, Dictionary<string, decimal>>> UcitajTrosakPoKgUkupni(int brojSmena = 20);
+
     }
 }

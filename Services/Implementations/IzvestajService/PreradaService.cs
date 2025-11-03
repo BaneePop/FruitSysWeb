@@ -1178,5 +1178,183 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         }
 
         #endregion
+
+        #region TROŠAK PO KG GOTOVOG PROIZVODA
+
+        /// <summary>
+        /// Učitava DIREKTNI trošak po kg gotovog proizvoda za poslednje N smena
+        /// Direktni trošak = CenaKostanjaDirektanRad / Količina izlaza
+        /// </summary>
+        public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajTrosakPoKgDirektni(int brojSmena = 20)
+        {
+            try
+            {
+                Console.WriteLine($"🚀 SQL UPIT - Učitavam DIREKTNI trošak po kg za {brojSmena} smena...");
+
+                var sql = $@"
+                    SELECT
+                        v.Datum,
+                        TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM v.ArtikalIzlazNaziv)) as VrstaProizvoda,
+                        SUM(v.KolicinaIzlazKG) as UkupnoKG,
+                        SUM(v.CenaKostanjaDirektanRad) as DirektniTrosak,
+                        CASE
+                            WHEN SUM(v.KolicinaIzlazKG) > 0 THEN SUM(v.CenaKostanjaDirektanRad) / SUM(v.KolicinaIzlazKG)
+                            ELSE 0
+                        END as TrosakPoKG
+                    FROM vEvidencijaRadaPreradaUI_v2 v
+                    WHERE v.Datum IS NOT NULL
+                      AND v.ArtikalIzlazID IS NOT NULL
+                      AND v.KolicinaIzlazKG > 0
+                      AND v.SmenskiIzvestajID IN (
+                          SELECT DISTINCT SmenskiIzvestajID
+                          FROM vEvidencijaRadaPreradaUI_v2
+                          WHERE Datum IS NOT NULL AND ArtikalIzlazID IS NOT NULL
+                          ORDER BY Datum DESC
+                          LIMIT {brojSmena}
+                      )
+                    GROUP BY v.Datum, TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM v.ArtikalIzlazNaziv))
+                    HAVING UkupnoKG > 0
+                    ORDER BY v.Datum, VrstaProizvoda";
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+
+                // Grupisanje rezultata: Dictionary<Datum, Dictionary<VrstaProizvoda, TrosakPoKG>>
+                var podaci = new Dictionary<string, Dictionary<string, decimal>>();
+
+                foreach (var row in rezultat)
+                {
+                    string datum = ((DateTime)row.Datum).ToString("dd.MM");
+                    string vrsta = row.VrstaProizvoda ?? "Nepoznato";
+                    decimal trosakPoKg = row.TrosakPoKG;
+
+                    if (!podaci.ContainsKey(datum))
+                    {
+                        podaci[datum] = new Dictionary<string, decimal>();
+                    }
+
+                    podaci[datum][vrsta] = trosakPoKg;
+                }
+
+                Console.WriteLine($"✅ Učitano {podaci.Count} datuma sa direktnim troškom po kg");
+                return podaci;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Greška pri učitavanju direktnog troška po kg: {ex.Message}");
+                return new Dictionary<string, Dictionary<string, decimal>>();
+            }
+        }
+
+        /// <summary>
+        /// Učitava UKUPNI trošak po kg gotovog proizvoda za poslednje N smena
+        /// Ukupni trošak = (Direktni + Indirektni) / Količina izlaza
+        /// Indirektni troškovi se distribuiraju ravnomerno na sve vrste proizvoda
+        /// </summary>
+        public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajTrosakPoKgUkupni(int brojSmena = 20)
+        {
+            try
+            {
+                Console.WriteLine($"🚀 SQL UPIT - Učitavam UKUPNI trošak po kg za {brojSmena} smena...");
+
+                var sql = $@"
+                    SELECT
+                        dt.Datum,
+                        dt.VrstaProizvoda,
+                        dt.UkupnoKG,
+                        dt.DirektniTrosak,
+                        COALESCE(it.IndirektniTrosak, 0) as IndirektniTrosak,
+                        COALESCE(bv.BrojVrsta, 1) as BrojVrsta,
+                        CASE
+                            WHEN dt.UkupnoKG > 0 THEN
+                                (dt.DirektniTrosak + COALESCE(it.IndirektniTrosak, 0) / COALESCE(bv.BrojVrsta, 1)) / dt.UkupnoKG
+                            ELSE 0
+                        END as TrosakPoKG
+                    FROM (
+                        SELECT
+                            v.Datum,
+                            v.SmenskiIzvestajID,
+                            TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM v.ArtikalIzlazNaziv)) as VrstaProizvoda,
+                            SUM(v.KolicinaIzlazKG) as UkupnoKG,
+                            SUM(v.CenaKostanjaDirektanRad) as DirektniTrosak
+                        FROM vEvidencijaRadaPreradaUI_v2 v
+                        WHERE v.Datum IS NOT NULL
+                          AND v.ArtikalIzlazID IS NOT NULL
+                          AND v.KolicinaIzlazKG > 0
+                          AND v.SmenskiIzvestajID IN (
+                              SELECT DISTINCT SmenskiIzvestajID
+                              FROM vEvidencijaRadaPreradaUI_v2
+                              WHERE Datum IS NOT NULL AND ArtikalIzlazID IS NOT NULL
+                              ORDER BY Datum DESC
+                              LIMIT {brojSmena}
+                          )
+                        GROUP BY v.Datum, v.SmenskiIzvestajID, TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM v.ArtikalIzlazNaziv))
+                    ) dt
+                    LEFT JOIN (
+                        SELECT
+                            v.Datum,
+                            v.SmenskiIzvestajID,
+                            SUM(v.CenaKostanjaDirektanRad) as IndirektniTrosak
+                        FROM vEvidencijaRadaPreradaUI_v2 v
+                        WHERE v.Datum IS NOT NULL
+                          AND v.ArtikalIzlazID IS NULL
+                          AND v.SmenskiIzvestajID IN (
+                              SELECT DISTINCT SmenskiIzvestajID
+                              FROM vEvidencijaRadaPreradaUI_v2
+                              WHERE Datum IS NOT NULL AND ArtikalIzlazID IS NOT NULL
+                              ORDER BY Datum DESC
+                              LIMIT {brojSmena}
+                          )
+                        GROUP BY v.Datum, v.SmenskiIzvestajID
+                    ) it ON dt.SmenskiIzvestajID = it.SmenskiIzvestajID
+                    LEFT JOIN (
+                        SELECT
+                            v.SmenskiIzvestajID,
+                            COUNT(DISTINCT TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM v.ArtikalIzlazNaziv))) as BrojVrsta
+                        FROM vEvidencijaRadaPreradaUI_v2 v
+                        WHERE v.Datum IS NOT NULL
+                          AND v.ArtikalIzlazID IS NOT NULL
+                          AND v.KolicinaIzlazKG > 0
+                          AND v.SmenskiIzvestajID IN (
+                              SELECT DISTINCT SmenskiIzvestajID
+                              FROM vEvidencijaRadaPreradaUI_v2
+                              WHERE Datum IS NOT NULL AND ArtikalIzlazID IS NOT NULL
+                              ORDER BY Datum DESC
+                              LIMIT {brojSmena}
+                          )
+                        GROUP BY v.SmenskiIzvestajID
+                    ) bv ON dt.SmenskiIzvestajID = bv.SmenskiIzvestajID
+                    WHERE dt.UkupnoKG > 0
+                    ORDER BY dt.Datum, dt.VrstaProizvoda";
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+
+                // Grupisanje rezultata: Dictionary<Datum, Dictionary<VrstaProizvoda, TrosakPoKG>>
+                var podaci = new Dictionary<string, Dictionary<string, decimal>>();
+
+                foreach (var row in rezultat)
+                {
+                    string datum = ((DateTime)row.Datum).ToString("dd.MM");
+                    string vrsta = row.VrstaProizvoda ?? "Nepoznato";
+                    decimal trosakPoKg = row.TrosakPoKG;
+
+                    if (!podaci.ContainsKey(datum))
+                    {
+                        podaci[datum] = new Dictionary<string, decimal>();
+                    }
+
+                    podaci[datum][vrsta] = trosakPoKg;
+                }
+
+                Console.WriteLine($"✅ Učitano {podaci.Count} datuma sa ukupnim troškom po kg");
+                return podaci;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Greška pri učitavanju ukupnog troška po kg: {ex.Message}");
+                return new Dictionary<string, Dictionary<string, decimal>>();
+            }
+        }
+
+        #endregion
     }
 }
