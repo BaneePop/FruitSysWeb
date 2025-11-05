@@ -376,8 +376,18 @@
     {
         try
         {
-            var sirovi_podaci = await ProizvodnjaService.UcitajIzvestajProizvodnje(filterRequest);
-            
+            // OPTIMIZACIJA: Pozivaj SQL upite PARALELNO umesto sekvencijalno
+            var siroviPodaciTask = ProizvodnjaService.UcitajIzvestajProizvodnje(filterRequest);
+            var brojAktivnihTask = ProizvodnjaService.UcitajBrojAktivnihNaloga(filterRequest);
+            var najproduktivnijiTask = ProizvodnjaService.UcitajNajproduktivnijeNaloge(filterRequest, 10);
+
+            // Čekaj sve upite da se završe paralelno
+            await Task.WhenAll(siroviPodaciTask, brojAktivnihTask, najproduktivnijiTask);
+
+            var sirovi_podaci = await siroviPodaciTask;
+            brojAktivnihNaloga = await brojAktivnihTask;
+            najproduktivnijiNalozi = await najproduktivnijiTask;
+
             // Spoji artikle sa + i - obeležjima
             if (sirovi_podaci != null && sirovi_podaci.Any())
             {
@@ -404,9 +414,9 @@
                         Kolicina = g.Sum(x => x.Kolicina)
                     })
                     .ToList();
-                    
+
                 podaci = grupisani;
-                
+
                 // ISPRAVKA: Računanje ukupne sirovine i gotove robe
                 ukupnaSirovina = podaci.Sum(x => x.KolicinaRoba); // Pretpostavljam da je KolicinaRoba sirovina
                 ukupnaGotovaRoba = podaci.Sum(x => x.GotovProizvod); // Gotov proizvod
@@ -419,9 +429,7 @@
                 ukupnaGotovaRoba = 0;
                 brojUnikatanihNaloga = 0;
             }
-            
-            brojAktivnihNaloga = await ProizvodnjaService.UcitajBrojAktivnihNaloga(filterRequest);
-            
+
             if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue)
             {
                 var dana = (filterRequest.DoDatum.Value - filterRequest.OdDatum.Value).Days + 1;
@@ -431,8 +439,6 @@
             {
                 prosecnaDnevnaProizvodnja = 0;
             }
-
-            najproduktivnijiNalozi = await ProizvodnjaService.UcitajNajproduktivnijeNaloge(filterRequest, 10);
 
             StateHasChanged();
         }

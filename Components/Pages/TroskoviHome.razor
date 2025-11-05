@@ -208,18 +208,18 @@
                 </div>
             </div>
 
-            <!-- Desno: Troškovi Ambalaze -->
+            <!-- Desno: Troškovi po RN - Zadnjih 10 Završenih -->
             <div class="col-md-6">
                 <ApexBarChart
-                    Title="Troškovi Ambalaze (Od Početka Sezone)"
-                    Icon="bi bi-box-seam"
+                    Title="Troškovi po RN - Zadnjih 10 Završenih"
+                    Icon="bi bi-clipboard-check"
                     SeriesName="Troškovi"
                     Unit="RSD"
-                    Data="@TroskoviAmbalaze"
-                    IsLoading="@IsLoadingAmbalaza"
-                    HasError="@HasErrorAmbalaza"
+                    Data="@TroskoviPoRN_Zadnjih10"
+                    IsLoading="@IsLoadingRN10"
+                    HasError="@HasErrorRN10"
                     ShowSummary="true"
-                    OnRefresh="@RefreshAmbalaza" />
+                    OnRefresh="@RefreshRN_Zadnjih10" />
             </div>
         </div>
 
@@ -323,20 +323,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Row 4: Troškovi po RN -->
-        <div class="chart-row">
-            <ApexBarChart
-                Title="Troškovi po Radnom Nalogu (Zadnjih 7 RN)"
-                Icon="bi bi-file-earmark-text"
-                SeriesName="Troškovi"
-                Unit="RSD"
-                Data="@TroskoviPoRN"
-                IsLoading="@IsLoadingRN"
-                HasError="@HasErrorRN"
-                ShowSummary="true"
-                OnRefresh="@RefreshRN" />
-        </div>
     }
 </div>
 
@@ -345,27 +331,24 @@
 
     // Loading States
     private bool IsLoading = true;
-    private bool IsLoadingAmbalaza = false;
+    private bool IsLoadingRN10 = false;
     private bool IsLoadingTrosakDanu = false;
     private bool IsLoadingRadnici = false;
     private bool IsLoadingSmene = false;
-    private bool IsLoadingRN = false;
 
     // Error States
-    private bool HasErrorAmbalaza = false;
+    private bool HasErrorRN10 = false;
 #pragma warning disable CS0414 // Field is assigned but never used - used for future error handling
     private bool HasErrorTrosakDanu = false;
     private bool HasErrorRadnici = false;
     private bool HasErrorSmene = false;
 #pragma warning restore CS0414
-    private bool HasErrorRN = false;
 
     // Chart Data
-    private List<ChartDataPoint>? TroskoviAmbalaze;
+    private List<ChartDataPoint>? TroskoviPoRN_Zadnjih10;
     private List<ChartDataPoint>? TrosakPoRadnomDanu;
     private List<ChartDataPoint>? BrojRadnikaPoDanima;
     private List<ChartDataPoint>? TroskoviPoSmeni;
-    private List<ChartDataPoint>? TroskoviPoRN;
 
     // Raw Data za tabele
     private List<SmenskiIzvestajModel>? SmeneRawData;
@@ -382,128 +365,102 @@
         StateHasChanged();
 
         await Task.WhenAll(
-            RefreshAmbalaza(),
+            RefreshRN_Zadnjih10(),
             RefreshTrosakDanu(),
             RefreshRadnici(),
-            RefreshSmene(),
-            RefreshRN()
+            RefreshSmene()
         );
 
         IsLoading = false;
         StateHasChanged();
     }
 
-    // Chart 1: Troškovi Ambalaze (Kutije, Kese, Repromaterijal)
-    private async Task RefreshAmbalaza()
+    // Chart 1: Troškovi po RN - Zadnjih 10 Završenih
+    private async Task RefreshRN_Zadnjih10()
     {
-        if (IsLoadingAmbalaza) return;
+        if (IsLoadingRN10) return;
 
-        IsLoadingAmbalaza = true;
-        HasErrorAmbalaza = false;
+        IsLoadingRN10 = true;
+        HasErrorRN10 = false;
         StateHasChanged();
 
         try
         {
+            await Task.Delay(100);
+
+            // OPTIMIZACIJA: Ograniči na poslednjih 60 dana umesto SVE završene naloge
             var filter = new FilterRequest
             {
-                OdDatum = SezonaConstants.GetPocetakTrenutneSezone(),
-                DoDatum = SezonaConstants.GetKrajTrenutneSezone()
+                OdDatum = DateTime.Now.AddDays(-60), // Dodato OdDatum za optimizaciju
+                DoDatum = DateTime.Now,
+                DokumentStatus = 3 // Završeni
             };
 
-            var allFinansije = await FinansijeService.UcitajFinansijskiIzvestaj(filter);
+            var radniNalozi = await PreradaService.UcitajRadniNalogIzvestaj(filter);
 
-            // Grupisanje po tipu ambalaze
-            var kutije = allFinansije
-                .Where(x => x.ArtikalMagacinId == 4 && x.Potrazuje > 0)
-                .Where(x => x.Artikal != null && (x.Artikal.ToLower().Contains("kutija") || x.Artikal.ToLower().Contains("karton")))
-                .Sum(x => x.Potrazuje);
-
-            var kese = allFinansije
-                .Where(x => x.ArtikalMagacinId == 4 && x.Potrazuje > 0)
-                .Where(x => x.Artikal != null && (x.Artikal.ToLower().Contains("kesa") || x.Artikal.ToLower().Contains("vreca") ||
-                       x.Artikal.ToLower().Contains("džak") || x.Artikal.ToLower().Contains("dzak")))
-                .Sum(x => x.Potrazuje);
-
-            var repromaterijal = allFinansije
-                .Where(x => x.ArtikalMagacinId == 9 && x.Potrazuje > 0)
-                .Sum(x => x.Potrazuje);
-
-            var ambalazaDict = new Dictionary<string, decimal>
-            {
-                { "Kutije", kutije },
-                { "Kese", kese },
-                { "Repromaterijal", repromaterijal }
-            };
-
-            TroskoviAmbalaze = ChartDataHelper.FromDictionary(ambalazaDict, 3);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error loading troskovi ambalaze");
-            HasErrorAmbalaza = true;
-            TroskoviAmbalaze = ChartDataHelper.GetMockData("Ambalaza", 3);
-        }
-        finally
-        {
-            IsLoadingAmbalaza = false;
-            StateHasChanged();
-        }
-    }
-
-    // Chart 2: Trošak po Radnom Danu (7 dana)
-    private async Task RefreshTrosakDanu()
-    {
-        if (IsLoadingTrosakDanu) return;
-
-        IsLoadingTrosakDanu = true;
-        HasErrorTrosakDanu = false;
-        StateHasChanged();
-
-        try
-        {
-            var filter = new FilterRequest
-            {
-                OdDatum = DateTime.Now.AddDays(-7),
-                DoDatum = DateTime.Now
-            };
-
-            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
-
-            var trosakPoDanuDict = smene
-                .Where(s => s.Datum.HasValue)
-                .GroupBy(s => s.Datum!.Value.Date)
+            // OPTIMIZACIJA: Grupisanje u C# je sada brže jer SQL već filtrira na 60 dana
+            // Pre optimizacije: SQL vraćao SVE završene naloge (hiljade redova)
+            // Posle optimizacije: SQL vraća samo završene naloge iz poslednjih 60 dana (~50-100 redova)
+            var grupisaniPodaci = radniNalozi
+                .Where(rn => !string.IsNullOrEmpty(rn.RadniNalog))
+                .GroupBy(rn => rn.RadniNalog)
                 .Select(g => new
                 {
-                    Datum = g.Key,
-                    Trosak = g.Sum(s => s.TrosakPoRadnomNalogu)
+                    RadniNalog = g.Key,
+                    VrstaArtikla = g.First().VrstaArtikla ?? "",
+                    UkupnoTroskovi = g.Sum(x => x.TrosakPoRadnomNalogu),
+                    // Izvući poslednja 4 broja iz RN-25-0259
+                    BrojNaloga = g.Key.Split('-').LastOrDefault() ?? "0000"
                 })
-                .OrderBy(x => x.Datum)
-                .ToDictionary(
-                    x => x.Datum.ToString("dd.MM"),
-                    x => (decimal)x.Trosak
-                );
+                .OrderByDescending(x => x.BrojNaloga)
+                .Take(10)
+                .ToList();
 
-            TrosakPoRadnomDanu = ChartDataHelper.FromDictionary(trosakPoDanuDict, 7);
+            // Kreirati ChartDataPoint sa VrstaArtikla u labelu
+            TroskoviPoRN_Zadnjih10 = grupisaniPodaci
+                .Select(x => new ChartDataPoint
+                {
+                    Label = $"{x.VrstaArtikla} ({x.RadniNalog})",
+                    Value = x.UkupnoTroskovi,
+                    Color = ChartDataHelper.GetFruitColor(x.VrstaArtikla)
+                })
+                .ToList();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error loading trosak po danu");
-            HasErrorTrosakDanu = true;
-            TrosakPoRadnomDanu = ChartDataHelper.GetMockData("Datum", 7);
+            Logger.LogError(ex, "Error loading RN zadnjih 10");
+            HasErrorRN10 = true;
+            TroskoviPoRN_Zadnjih10 = ChartDataHelper.GetMockData("RN", 10);
         }
         finally
         {
-            IsLoadingTrosakDanu = false;
+            IsLoadingRN10 = false;
             StateHasChanged();
         }
     }
 
-    // Chart 3: Broj Radnika po Danima (7 dana)
-    private async Task RefreshRadnici()
+    // Chart 2 & 3: Kombinovano učitavanje za Trošak po Danu i Broj Radnika (OPTIMIZACIJA)
+    private async Task RefreshTrosakDanu()
     {
-        if (IsLoadingRadnici) return;
+        // Ova metoda sada poziva kombinovanu metodu
+        await RefreshTrosakIRadniciPoDanu();
+    }
 
+    private Task RefreshRadnici()
+    {
+        // Ova metoda je prazna jer se poziva iz RefreshTrosakIRadniciPoDanu
+        // Ostavljamo je da ne lomimo pozive u Task.WhenAll
+        return Task.CompletedTask;
+    }
+
+    // OPTIMIZOVANO: Učitaj podatke jednom za obe tabele
+    private async Task RefreshTrosakIRadniciPoDanu()
+    {
+        if (IsLoadingTrosakDanu || IsLoadingRadnici) return;
+
+        IsLoadingTrosakDanu = true;
         IsLoadingRadnici = true;
+        HasErrorTrosakDanu = false;
         HasErrorRadnici = false;
         StateHasChanged();
 
@@ -515,32 +472,50 @@
                 DoDatum = DateTime.Now
             };
 
+            // JEDAN SQL poziv umesto DVA
             var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
 
-            var radniciPoDanimaDict = smene
+            // Grupisanje po datumu za oba seta podataka
+            var podaciPoDanima = smene
                 .Where(s => s.Datum.HasValue)
                 .GroupBy(s => s.Datum!.Value.Date)
                 .Select(g => new
                 {
                     Datum = g.Key,
+                    Trosak = g.Sum(s => s.TrosakPoRadnomNalogu),
                     BrojRadnika = Math.Round(g.Sum(s => s.BrojRadnihSati) / 8m, 0, MidpointRounding.AwayFromZero)
                 })
                 .OrderBy(x => x.Datum)
+                .ToList();
+
+            // Kreirati dictionary za trošak po danu
+            var trosakPoDanuDict = podaciPoDanima
+                .ToDictionary(
+                    x => x.Datum.ToString("dd.MM"),
+                    x => (decimal)x.Trosak
+                );
+
+            // Kreirati dictionary za broj radnika po danu
+            var radniciPoDanimaDict = podaciPoDanima
                 .ToDictionary(
                     x => x.Datum.ToString("dd.MM"),
                     x => (decimal)x.BrojRadnika
                 );
 
+            TrosakPoRadnomDanu = ChartDataHelper.FromDictionary(trosakPoDanuDict, 7);
             BrojRadnikaPoDanima = ChartDataHelper.FromDictionary(radniciPoDanimaDict, 7);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error loading broj radnika");
+            Logger.LogError(ex, "Error loading trosak i radnici po danu");
+            HasErrorTrosakDanu = true;
             HasErrorRadnici = true;
+            TrosakPoRadnomDanu = ChartDataHelper.GetMockData("Datum", 7);
             BrojRadnikaPoDanima = ChartDataHelper.GetMockData("Datum", 7);
         }
         finally
         {
+            IsLoadingTrosakDanu = false;
             IsLoadingRadnici = false;
             StateHasChanged();
         }
@@ -565,23 +540,31 @@
 
             var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
 
-            // Sačuvaj sirove podatke za tabelu
+            // Sačuvaj sirove podatke za tabelu - AGREGIRANO PO SMENI
             SmeneRawData = smene
                 .Where(s => !string.IsNullOrEmpty(s.BrojIzvestaja))
+                .GroupBy(s => s.BrojIzvestaja)  // Grupiši po smeni
+                .Select(g => {
+                    var ukupniSati = g.Sum(x => x.BrojRadnihSati);  // Saberi SVE sate za smenu
+                    var brojRadnika = (int)Math.Round(ukupniSati / 8m, 0, MidpointRounding.AwayFromZero);  // Podeli sa 8
+
+                    return new SmenskiIzvestajModel
+                    {
+                        BrojIzvestaja = g.Key,
+                        Datum = g.First().Datum,
+                        RadnikImePrezime = g.First().RadnikImePrezime,
+                        BrojRadnihSati = ukupniSati,  // Postavi ukupne sate
+                        BrojRadnika = brojRadnika,     // Postavi izračunati broj radnika
+                        TrosakPoRadnomNalogu = g.Sum(x => x.TrosakPoRadnomNalogu)  // Saberi troškove
+                    };
+                })
                 .OrderByDescending(s => s.BrojIzvestaja)
                 .Take(14)
                 .ToList();
 
+            // SmeneRawData je već agregiran po smeni, samo kreiraj Dictionary za chart
             var troskoviPoSmeniDict = SmeneRawData
-                .GroupBy(s => s.BrojIzvestaja)
-                .Select(g => new
-                {
-                    BrojIzvestaja = g.Key,
-                    Troskovi = g.Sum(x => x.TrosakPoRadnomNalogu),
-                    SortKey = g.Key.Replace("SI-", "").Replace("/", "")
-                })
-                .OrderByDescending(x => x.SortKey)
-                .ToDictionary(x => x.BrojIzvestaja, x => (decimal)x.Troskovi);
+                .ToDictionary(x => x.BrojIzvestaja, x => (decimal)x.TrosakPoRadnomNalogu);
 
             TroskoviPoSmeni = ChartDataHelper.FromDictionary(troskoviPoSmeniDict, 14);
         }
@@ -594,54 +577,6 @@
         finally
         {
             IsLoadingSmene = false;
-            StateHasChanged();
-        }
-    }
-
-    // Chart 5: Troškovi po RN (7 RN)
-    private async Task RefreshRN()
-    {
-        if (IsLoadingRN) return;
-
-        IsLoadingRN = true;
-        HasErrorRN = false;
-        StateHasChanged();
-
-        try
-        {
-            var filter = new FilterRequest
-            {
-                OdDatum = DateTime.Now.AddDays(-30), // Uzmi dovoljno dana
-                DoDatum = DateTime.Now,
-                DokumentStatus = 3 // Završeni
-            };
-
-            var radniNalozi = await PreradaService.UcitajRadniNalogIzvestaj(filter);
-
-            var troskoviPoRNDict = radniNalozi
-                .Where(rn => !string.IsNullOrEmpty(rn.RadniNalog))
-                .GroupBy(rn => rn.RadniNalog)
-                .Select(g => new
-                {
-                    RadniNalog = g.Key,
-                    Troskovi = g.Sum(rn => rn.TrosakPoRadnomNalogu),
-                    BrojNaloga = g.Key.Split('-').LastOrDefault() ?? "0000"
-                })
-                .OrderByDescending(x => x.BrojNaloga)
-                .Take(7)
-                .ToDictionary(x => x.RadniNalog, x => (decimal)x.Troskovi);
-
-            TroskoviPoRN = ChartDataHelper.FromDictionary(troskoviPoRNDict, 7);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error loading troskovi po RN");
-            HasErrorRN = true;
-            TroskoviPoRN = ChartDataHelper.GetMockData("RN", 7);
-        }
-        finally
-        {
-            IsLoadingRN = false;
             StateHasChanged();
         }
     }

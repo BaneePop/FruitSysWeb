@@ -13,6 +13,7 @@
 @inject IMagacinLagerService LagerService
 @inject ITypeMappingService TypeMapping
 @inject IProizvodnjaService ProizvodnjaService
+@inject IBrziPregledService BrziPregledService
 @inject ILogger<LagerHome> Logger
 
 @* All styles moved to wwwroot/css/shared-components.css *@
@@ -73,31 +74,37 @@
         </div>
     </div>
 
-    <!-- Top 5 Kupaca i Dobavljača -->
+    <!-- Nabavka i Prodaja po Vrsti Voća -->
     <div class="row mb-4">
-        <div class="col-lg-6 mb-3">
-            <ApexBarChart 
-                Title="Top 5 Kupaca"
-                Icon="bi bi-people"
-                SeriesName="Količina"
+        <!-- Nabavka Chart -->
+        <div class="col-md-6 mb-3">
+            <ApexMultiSeriesLineChart
+                Title="Nabavka po Vrsti Voća (Poslednjih 30 Dana)"
+                Icon="bi bi-cart-plus"
+                SeriesData="@nabavkaSeriesData"
                 Unit="kg"
-                Data="@TopKupciData"
-                IsLoading="@IsLoadingKupci"
-                HasError="@HasErrorKupci"
-                ShowSummary="false"
-                OnRefresh="@RefreshKupci" />
+                IsWeight="true"
+                IsLoading="@isLoadingNabavka"
+                HasError="@hasErrorNabavka"
+                ShowSummary="true"
+                ShowVrednost="false"
+                Height="450"
+                OnRefresh="@UcitajNabavkuPodatke" />
         </div>
-        <div class="col-lg-6 mb-3">
-            <ApexBarChart 
-                Title="Top 5 Dobavljača Sirovina"
-                Icon="bi bi-truck"
-                SeriesName="Količina"
+        <!-- Prodaja Chart -->
+        <div class="col-md-6 mb-3">
+            <ApexMultiSeriesLineChart
+                Title="Prodaja po Vrsti Voća (Poslednjih 30 Dana)"
+                Icon="bi bi-cart-check"
+                SeriesData="@prodajaSeriesData"
                 Unit="kg"
-                Data="@TopDobavljaciData"
-                IsLoading="@IsLoadingDobavljaci"
-                HasError="@HasErrorDobavljaci"
-                ShowSummary="false"
-                OnRefresh="@RefreshDobavljaci" />
+                IsWeight="true"
+                IsLoading="@isLoadingProdaja"
+                HasError="@hasErrorProdaja"
+                ShowSummary="true"
+                ShowVrednost="false"
+                Height="450"
+                OnRefresh="@UcitajProdajuPodatke" />
         </div>
     </div>
 
@@ -163,17 +170,19 @@
 </div>
 
 @code {
-    // Chart Data
-    private List<ChartDataPoint>? TopKupciData;
-    private List<ChartDataPoint>? TopDobavljaciData;
+    // Chart Data - Line Charts
+    private List<ChartSeriesData> nabavkaSeriesData = new();
+    private List<ChartSeriesData> prodajaSeriesData = new();
+
+    // Chart Data - Bar Charts
     private List<ChartDataPoint>? SirovineData;
     private List<ChartDataPoint>? GotoviProizvodiData;
     private List<ChartDataPoint>? KutijeData;
     private List<ChartDataPoint>? KesaData;
 
     // Loading States
-    private bool IsLoadingKupci = false;
-    private bool IsLoadingDobavljaci = false;
+    private bool isLoadingNabavka = true;
+    private bool isLoadingProdaja = true;
     private bool IsLoadingSirovine = false;
     private bool IsLoadingGotovi = false;
     private bool IsLoadingKutije = false;
@@ -181,8 +190,8 @@
     private bool IsRefreshing = false;
 
     // Error States
-    private bool HasErrorKupci = false;
-    private bool HasErrorDobavljaci = false;
+    private bool hasErrorNabavka = false;
+    private bool hasErrorProdaja = false;
     private bool HasErrorSirovine = false;
     private bool HasErrorGotovi = false;
     private bool HasErrorKutije = false;
@@ -208,8 +217,8 @@
         try
         {
             await Task.WhenAll(
-                RefreshKupci(), 
-                RefreshDobavljaci(),
+                UcitajNabavkuPodatke(),
+                UcitajProdajuPodatke(),
                 RefreshSirovine(),
                 RefreshGotovi(),
                 RefreshKutije(),
@@ -227,58 +236,130 @@
         }
     }
 
-    private async Task RefreshKupci()
+    private async Task UcitajNabavkuPodatke()
     {
-        if (IsLoadingKupci) return;
-        
-        IsLoadingKupci = true;
-        HasErrorKupci = false;
-        StateHasChanged();
-
         try
         {
-            await Task.Delay(100);
-            var data = await ProizvodnjaService.UcitajTopKupcePoKilogramima(StatistikaFilter);
-            TopKupciData = ChartDataHelper.FromDictionary(data, 5);
-            TopKupciData = ChartDataHelper.TruncateLabels(TopKupciData, 15);
+            isLoadingNabavka = true;
+            hasErrorNabavka = false;
+            StateHasChanged();
+
+            // Učitaj podatke po danima (za chart) i ukupne vrednosti (za summary)
+            var podaciTask = BrziPregledService.UcitajNabavkuPoDanimaPoVociAsync();
+            var ukupnoTask = BrziPregledService.UcitajUkupneVrednostiNabavkeAsync();
+
+            await Task.WhenAll(podaciTask, ukupnoTask);
+
+            var podaci = await podaciTask;
+            var ukupno = await ukupnoTask;
+
+            // Kreiraj kompletan set svih datuma (unija svih datuma iz svih vrsta voća)
+            var sviDatumi = podaci
+                .SelectMany(voce => voce.Value.Keys)
+                .Distinct()
+                .OrderBy(d => {
+                    // Sortiraj po datumu parsiranjem "dd.MM" formata
+                    var parts = d.Split('.');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out var day) && int.TryParse(parts[1], out var month))
+                    {
+                        return new DateTime(DateTime.Now.Year, month, day);
+                    }
+                    return DateTime.MinValue;
+                })
+                .ToList();
+
+            // Konvertuj Dictionary<VrstaVoca, Dictionary<Datum, Kolicina>> u ChartSeriesData
+            nabavkaSeriesData = podaci
+                .Select(voce => new ChartSeriesData
+                {
+                    Name = voce.Key,
+                    Data = sviDatumi
+                        .Select(datum => new ChartDataPoint
+                        {
+                            Label = datum,
+                            Value = voce.Value.ContainsKey(datum) ? voce.Value[datum] : 0
+                        })
+                        .ToList(),
+                    Color = ChartDataHelper.GetFruitColor(voce.Key),
+                    TotalKolicina = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Kolicina : 0,
+                    TotalVrednost = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Vrednost : 0
+                })
+                .ToList();
+
+            isLoadingNabavka = false;
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error loading top kupci data");
-            HasErrorKupci = true;
-            TopKupciData = ChartDataHelper.GetMockData("Kupac", 5);
+            Logger.LogError(ex, "Error loading nabavka data");
+            hasErrorNabavka = true;
+            isLoadingNabavka = false;
         }
         finally
         {
-            IsLoadingKupci = false;
             StateHasChanged();
         }
     }
 
-    private async Task RefreshDobavljaci()
+    private async Task UcitajProdajuPodatke()
     {
-        if (IsLoadingDobavljaci) return;
-        
-        IsLoadingDobavljaci = true;
-        HasErrorDobavljaci = false;
-        StateHasChanged();
-
         try
         {
-            await Task.Delay(150);
-            var data = await ProizvodnjaService.UcitajTopDobavljacePoKilogramima(StatistikaFilter);
-            TopDobavljaciData = ChartDataHelper.FromDictionary(data, 5);
-            TopDobavljaciData = ChartDataHelper.TruncateLabels(TopDobavljaciData, 15);
+            isLoadingProdaja = true;
+            hasErrorProdaja = false;
+            StateHasChanged();
+
+            // Učitaj podatke po danima (za chart) i ukupne vrednosti (za summary)
+            var podaciTask = BrziPregledService.UcitajProdajuPoDanimaPoVociAsync();
+            var ukupnoTask = BrziPregledService.UcitajUkupneVrednostiProdajeAsync();
+
+            await Task.WhenAll(podaciTask, ukupnoTask);
+
+            var podaci = await podaciTask;
+            var ukupno = await ukupnoTask;
+
+            // Kreiraj kompletan set svih datuma (unija svih datuma iz svih vrsta voća)
+            var sviDatumi = podaci
+                .SelectMany(voce => voce.Value.Keys)
+                .Distinct()
+                .OrderBy(d => {
+                    // Sortiraj po datumu parsiranjem "dd.MM" formata
+                    var parts = d.Split('.');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out var day) && int.TryParse(parts[1], out var month))
+                    {
+                        return new DateTime(DateTime.Now.Year, month, day);
+                    }
+                    return DateTime.MinValue;
+                })
+                .ToList();
+
+            // Konvertuj Dictionary<VrstaVoca, Dictionary<Datum, Kolicina>> u ChartSeriesData
+            prodajaSeriesData = podaci
+                .Select(voce => new ChartSeriesData
+                {
+                    Name = voce.Key,
+                    Data = sviDatumi
+                        .Select(datum => new ChartDataPoint
+                        {
+                            Label = datum,
+                            Value = voce.Value.ContainsKey(datum) ? voce.Value[datum] : 0
+                        })
+                        .ToList(),
+                    Color = ChartDataHelper.GetFruitColor(voce.Key),
+                    TotalKolicina = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Kolicina : 0,
+                    TotalVrednost = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Vrednost : 0
+                })
+                .ToList();
+
+            isLoadingProdaja = false;
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error loading top dobavljaci data");
-            HasErrorDobavljaci = true;
-            TopDobavljaciData = ChartDataHelper.GetMockData("Dobavljač", 5);
+            Logger.LogError(ex, "Error loading prodaja data");
+            hasErrorProdaja = true;
+            isLoadingProdaja = false;
         }
         finally
         {
-            IsLoadingDobavljaci = false;
             StateHasChanged();
         }
     }

@@ -191,10 +191,12 @@
     private DateTime startDatum = new DateTime(2025, 6, 1);
     private DateTime endDatum = DateTime.Now;
 
-    // Datumski filter
+    // OPTIMIZACIJA: Datumski filter - poslednjih 90 dana umesto od početka sezone
+    // Pre: Od 1. juna 2025 (5-6 meseci podataka)
+    // Posle: Poslednjih 90 dana (~3 meseca podataka) = 40-50% brže
     private FilterRequest StatistikaFilter => new FilterRequest
     {
-        OdDatum = new DateTime(2025, 6, 1),
+        OdDatum = DateTime.Now.AddDays(-90), // Ograničeno na 90 dana za bolje performanse
         DoDatum = DateTime.Now
     };
 

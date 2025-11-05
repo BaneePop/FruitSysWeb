@@ -160,7 +160,6 @@
                                 <th><strong>Br. radnika</strong></th>
                                 <th><strong>Sati</strong></th>
                                 <th><strong>Trošak</strong></th>
-                                <th><strong>Procenat</strong></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -188,15 +187,6 @@
                                     <td>
                                         <strong class="text-success">@TypeMapping.FormatCurrency(item.TrosakPoRadnomNalogu)</strong>
                                     </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="progress flex-grow-1 me-2" style="height: 8px;">
-                                                <div class="progress-bar @item.ProductivnostBadgeClass" 
-                                                     style="width: @Math.Min(item.ProcenatIskoriscenja, 100)%"></div>
-                                            </div>
-                                            <small class="text-muted">@TypeMapping.FormatDecimal(item.ProcenatIskoriscenja)%</small>
-                                        </div>
-                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -212,17 +202,6 @@
                                 </th>
                                 <th>
                                     <strong class="text-success">@TypeMapping.FormatCurrency(radniNalogData.Sum(x => x.TrosakPoRadnomNalogu))</strong>
-                                </th>
-                                <th>
-                                    <div class="d-flex align-items-center">
-                                        <div class="progress flex-grow-1 me-2" style="height: 8px;">
-                                            <div class="progress-bar bg-info" 
-                                                 style="width: @Math.Min(radniNalogData.Any() ? radniNalogData.Average(x => x.ProcenatIskoriscenja) : 0, 100)%"></div>
-                                        </div>
-                                        <small class="text-muted">
-                                            @TypeMapping.FormatDecimal(radniNalogData.Any() ? radniNalogData.Average(x => x.ProcenatIskoriscenja) : 0)%
-                                        </small>
-                                    </div>
                                 </th>
                             </tr>
                         </tfoot>
@@ -390,8 +369,7 @@
                     { "VrstaArtikla", "Vrsta artikla" },
                     { "BrojRadnika", "Br. radnika" },
                     { "BrojRadnihSati", "Sati" },
-                    { "TrosakPoRadnomNalogu", "Trošak" },
-                    { "ProcenatIskoriscenja", "Procenat" }
+                    { "TrosakPoRadnomNalogu", "Trošak" }
                 };
 
                 // Izračunaj totale - isto kao u HTML tabeli
@@ -400,8 +378,7 @@
                     { "VrstaArtikla", "UKUPNO:" },
                     { "BrojRadnika", radniNalogData.Sum(x => x.BrojRadnika) },
                     { "BrojRadnihSati", radniNalogData.Sum(x => x.BrojRadnihSati) },
-                    { "TrosakPoRadnomNalogu", radniNalogData.Sum(x => x.TrosakPoRadnomNalogu) },
-                    { "ProcenatIskoriscenja", radniNalogData.Any() ? radniNalogData.Average(x => x.ProcenatIskoriscenja) : 0 }
+                    { "TrosakPoRadnomNalogu", radniNalogData.Sum(x => x.TrosakPoRadnomNalogu) }
                 };
 
                 var excelData = ExportService.ExportToExcelWithColumns(radniNalogData, columns, totals);
@@ -431,8 +408,7 @@
                     { "VrstaArtikla", "Vrsta artikla" },
                     { "BrojRadnika", "Br. radnika" },
                     { "BrojRadnihSati", "Sati" },
-                    { "TrosakPoRadnomNalogu", "Trošak" },
-                    { "ProcenatIskoriscenja", "Procenat" }
+                    { "TrosakPoRadnomNalogu", "Trošak" }
                 };
 
                 // Izračunaj totale - isto kao u HTML tabeli
@@ -441,8 +417,7 @@
                     { "VrstaArtikla", "UKUPNO:" },
                     { "BrojRadnika", radniNalogData.Sum(x => x.BrojRadnika) },
                     { "BrojRadnihSati", radniNalogData.Sum(x => x.BrojRadnihSati) },
-                    { "TrosakPoRadnomNalogu", radniNalogData.Sum(x => x.TrosakPoRadnomNalogu) },
-                    { "ProcenatIskoriscenja", radniNalogData.Any() ? radniNalogData.Average(x => x.ProcenatIskoriscenja) : 0 }
+                    { "TrosakPoRadnomNalogu", radniNalogData.Sum(x => x.TrosakPoRadnomNalogu) }
                 };
 
                 var pdfData = ExportService.ExportToPdfWithColumns(radniNalogData, columns, totals);

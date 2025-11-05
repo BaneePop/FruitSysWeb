@@ -209,11 +209,11 @@
             {
                 Formatter = IsWeight
                     ? @"function(value) {
-                        if (value == null) return '0 kg';
+                        if (value == null || value === 0) return undefined;
                         return value.toLocaleString('sr-RS', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kg';
                     }"
                     : @"function(value) {
-                        if (value == null) return '0 RSD';
+                        if (value == null || value === 0) return undefined;
                         return value.toLocaleString('sr-RS', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' RSD';
                     }"
             }

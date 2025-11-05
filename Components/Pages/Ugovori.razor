@@ -204,11 +204,48 @@
                     <i class="bi bi-arrow-left me-1"></i>Povratak na lager
                 </button>
                 <div class="ms-auto d-flex export-buttons">
-                    <button class="btn btn-success btn-sm" @onclick="ExportToExcel" disabled="@(ugovori?.Count == 0)">
+                    <button class="btn btn-success btn-sm" @onclick="ExportToExcel" disabled="@(filteredUgovori?.Count == 0)">
                         <i class="bi bi-file-earmark-excel me-1"></i>Excel
                     </button>
-                    <button class="btn btn-danger btn-sm" @onclick="ExportToPdf" disabled="@(ugovori?.Count == 0)">
+                    <button class="btn btn-danger btn-sm" @onclick="ExportToPdf" disabled="@(filteredUgovori?.Count == 0)">
                         <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filteri -->
+    <div class="filter-card mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label text-white-50">
+                        <i class="bi bi-building me-1"></i>Komitent
+                    </label>
+                    <select class="form-select" @onchange="OnKomitentFilterChanged">
+                        <option value="">Svi komitenti</option>
+                        @foreach (var komitent in dostupniKomitenti)
+                        {
+                            <option value="@komitent">@komitent</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label text-white-50">
+                        <i class="bi bi-box me-1"></i>Artikal
+                    </label>
+                    <select class="form-select" @onchange="OnArtikalFilterChanged">
+                        <option value="">Svi artikli</option>
+                        @foreach (var artikal in dostupniArtikli)
+                        {
+                            <option value="@artikal">@artikal</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-outline-secondary w-100" @onclick="OcistiFiltere">
+                        <i class="bi bi-x-circle me-1"></i>Očisti filtere
                     </button>
                 </div>
             </div>
@@ -220,14 +257,14 @@
     <div class="card-header bg-transparent">
         <h5 class="mb-0">
             <i class="bi bi-list-check me-2"></i>Aktivni ugovori za isporuku
-            @if (ugovori != null)
+            @if (filteredUgovori != null)
             {
-                <span class="text-muted">(@ugovori.Count)</span>
+                <span class="text-muted">(@filteredUgovori.Count @if(ugovori != null && filteredUgovori.Count < ugovori.Count) { <text>od @ugovori.Count</text> })</span>
             }
         </h5>
     </div>
     <div class="card-body p-0">
-        @if (ugovori == null)
+        @if (filteredUgovori == null)
         {
             <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
@@ -236,7 +273,7 @@
                 <p class="text-muted mt-2">Učitavanje podataka o ugovorima...</p>
             </div>
         }
-        else if (!ugovori.Any())
+        else if (!filteredUgovori.Any())
         {
             <div class="text-center py-5">
                 <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
@@ -265,7 +302,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in ugovori)
+                        @foreach (var item in filteredUgovori)
                         {
                             var progressBarClass = GetProgressBarClass(item.ProcenatIsporuke);
                             var statusBadgeClass = GetStatusBadgeClass(item.ProcenatIsporuke);
@@ -318,14 +355,14 @@
                     <tfoot class="table-secondary">
                         <tr>
                             <th colspan="3" class="text-end">UKUPNO:</th>
-                            <th class="text-end text-info">@TypeMapping.FormatDecimal(ugovori.Sum(x => x.UgovorenaKolicina))</th>
-                            <th class="text-end text-success">@TypeMapping.FormatCurrency(ugovori.Sum(x => x.UkupnaVrednostEur))</th>
-                            <th class="text-end text-muted">@TypeMapping.FormatDecimal(ugovori.Sum(x => x.Isporuceno))</th>
-                            <th class="text-end text-warning">@TypeMapping.FormatDecimal(ugovori.Sum(x => x.PreostalaKolicina))</th>
+                            <th class="text-end text-info">@TypeMapping.FormatDecimal(filteredUgovori.Sum(x => x.UgovorenaKolicina))</th>
+                            <th class="text-end text-success">@TypeMapping.FormatCurrency(filteredUgovori.Sum(x => x.UkupnaVrednostEur))</th>
+                            <th class="text-end text-muted">@TypeMapping.FormatDecimal(filteredUgovori.Sum(x => x.Isporuceno))</th>
+                            <th class="text-end text-warning">@TypeMapping.FormatDecimal(filteredUgovori.Sum(x => x.PreostalaKolicina))</th>
                             <th class="text-center">
                                 @{
-                                    var ukupnoProcenat = ugovori.Sum(x => x.UgovorenaKolicina) > 0 ? 
-                                        Math.Round((ugovori.Sum(x => x.Isporuceno) / ugovori.Sum(x => x.UgovorenaKolicina)) * 100, 1) : 0;
+                                    var ukupnoProcenat = filteredUgovori.Sum(x => x.UgovorenaKolicina) > 0 ?
+                                        Math.Round((filteredUgovori.Sum(x => x.Isporuceno) / filteredUgovori.Sum(x => x.UgovorenaKolicina)) * 100, 1) : 0;
                                 }
                                 <strong class="@GetStatusBadgeClass(ukupnoProcenat)">@(ukupnoProcenat)%</strong>
                             </th>
@@ -341,6 +378,13 @@
 
 @code {
     private List<UgovorModel>? ugovori;
+    private List<UgovorModel>? filteredUgovori;
+
+    // Filter varijable
+    private string selectedKomitent = "";
+    private string selectedArtikal = "";
+    private List<string> dostupniKomitenti = new();
+    private List<string> dostupniArtikli = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -354,20 +398,86 @@
             Console.WriteLine("Učitavam podatke o ugovorima...");
             ugovori = await UgovorService.UcitajAktivneUgovore();
             Console.WriteLine($"Učitano {ugovori?.Count ?? 0} ugovora");
+
+            // Popuni liste dostupnih komitenata i artikala (samo oni koji su u ugovorima)
+            if (ugovori != null && ugovori.Any())
+            {
+                dostupniKomitenti = ugovori
+                    .Select(u => u.Komitent)
+                    .Distinct()
+                    .OrderBy(k => k)
+                    .ToList();
+
+                dostupniArtikli = ugovori
+                    .Select(u => u.Artikal)
+                    .Distinct()
+                    .OrderBy(a => a)
+                    .ToList();
+            }
+
+            // Inicijalno filtrirani ugovori = svi ugovori
+            PrimeniFiltere();
             StateHasChanged();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Greška pri učitavanju ugovora: {ex.Message}");
             ugovori = new List<UgovorModel>();
+            filteredUgovori = new List<UgovorModel>();
         }
     }
 
     private async Task RefreshData()
     {
         ugovori = null;
+        filteredUgovori = null;
         StateHasChanged();
         await UcitajUgovore();
+    }
+
+    private void OnKomitentFilterChanged(ChangeEventArgs e)
+    {
+        selectedKomitent = e.Value?.ToString() ?? "";
+        PrimeniFiltere();
+    }
+
+    private void OnArtikalFilterChanged(ChangeEventArgs e)
+    {
+        selectedArtikal = e.Value?.ToString() ?? "";
+        PrimeniFiltere();
+    }
+
+    private void OcistiFiltere()
+    {
+        selectedKomitent = "";
+        selectedArtikal = "";
+        PrimeniFiltere();
+        StateHasChanged();
+    }
+
+    private void PrimeniFiltere()
+    {
+        if (ugovori == null)
+        {
+            filteredUgovori = null;
+            return;
+        }
+
+        var query = ugovori.AsEnumerable();
+
+        // Filtriraj po komitentu ako je izabran
+        if (!string.IsNullOrEmpty(selectedKomitent))
+        {
+            query = query.Where(u => u.Komitent == selectedKomitent);
+        }
+
+        // Filtriraj po artiklu ako je izabran
+        if (!string.IsNullOrEmpty(selectedArtikal))
+        {
+            query = query.Where(u => u.Artikal == selectedArtikal);
+        }
+
+        filteredUgovori = query.ToList();
     }
 
     private void NavigateToLager()
@@ -395,7 +505,7 @@
     {
         try
         {
-            if (ugovori != null && ugovori.Any())
+            if (filteredUgovori != null && filteredUgovori.Any())
             {
                 // Definiši samo kolone koje se prikazuju u tabeli
                 var columns = new Dictionary<string, string>
@@ -414,13 +524,13 @@
                 var totals = new Dictionary<string, object>
                 {
                     { "Artikal", "UKUPNO:" },
-                    { "UgovorenaKolicina", ugovori.Sum(x => x.UgovorenaKolicina) },
-                    { "JedinicnaCenaEur", $"{ugovori.Sum(x => x.UkupnaVrednostEur):N2} EUR" }, // EUR umesto DIN
-                    { "Isporuceno", ugovori.Sum(x => x.Isporuceno) },
-                    { "PreostalaKolicina", ugovori.Sum(x => x.PreostalaKolicina) }
+                    { "UgovorenaKolicina", filteredUgovori.Sum(x => x.UgovorenaKolicina) },
+                    { "JedinicnaCenaEur", $"{filteredUgovori.Sum(x => x.UkupnaVrednostEur):N2} EUR" }, // EUR umesto DIN
+                    { "Isporuceno", filteredUgovori.Sum(x => x.Isporuceno) },
+                    { "PreostalaKolicina", filteredUgovori.Sum(x => x.PreostalaKolicina) }
                 };
 
-                var excelData = ExportService.ExportToExcelWithColumns(ugovori, columns, totals);
+                var excelData = ExportService.ExportToExcelWithColumns(filteredUgovori, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("aktivni_ugovori", SystemConstants.Export.EXCEL_EXTENSION);
                 await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
             }
@@ -435,7 +545,7 @@
     {
         try
         {
-            if (ugovori != null && ugovori.Any())
+            if (filteredUgovori != null && filteredUgovori.Any())
             {
                 // Definiši samo kolone koje se prikazuju u tabeli
                 var columns = new Dictionary<string, string>
@@ -454,13 +564,13 @@
                 var totals = new Dictionary<string, object>
                 {
                     { "Artikal", "UKUPNO:" },
-                    { "UgovorenaKolicina", ugovori.Sum(x => x.UgovorenaKolicina) },
-                    { "JedinicnaCenaEur", $"{ugovori.Sum(x => x.UkupnaVrednostEur):N2} EUR" }, // EUR umesto DIN
-                    { "Isporuceno", ugovori.Sum(x => x.Isporuceno) },
-                    { "PreostalaKolicina", ugovori.Sum(x => x.PreostalaKolicina) }
+                    { "UgovorenaKolicina", filteredUgovori.Sum(x => x.UgovorenaKolicina) },
+                    { "JedinicnaCenaEur", $"{filteredUgovori.Sum(x => x.UkupnaVrednostEur):N2} EUR" }, // EUR umesto DIN
+                    { "Isporuceno", filteredUgovori.Sum(x => x.Isporuceno) },
+                    { "PreostalaKolicina", filteredUgovori.Sum(x => x.PreostalaKolicina) }
                 };
 
-                var pdfData = ExportService.ExportToPdfWithColumns(ugovori, columns, totals);
+                var pdfData = ExportService.ExportToPdfWithColumns(filteredUgovori, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("aktivni_ugovori", SystemConstants.Export.PDF_EXTENSION);
                 await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
             }

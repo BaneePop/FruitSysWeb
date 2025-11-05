@@ -67,6 +67,35 @@
         </div>
     </div>
 
+    <!-- Trošak po kg Gotovog Proizvoda - Line Charts -->
+    <div class="row mb-4">
+        <!-- Trošak Direktan po kg -->
+        <div class="col-md-6">
+            <ApexMultiSeriesLineChart
+                Title="Trošak Direktan po kg - Zadnjih 20 Smena"
+                Icon="bi bi-cash-coin"
+                SeriesData="@trosakDirektniPoKgData"
+                Unit="RSD/kg"
+                IsLoading="@isLoadingTrosakDirektni"
+                HasError="@hasErrorTrosakDirektni"
+                ShowSummary="false"
+                OnRefresh="@RefreshTrosakDirektni" />
+        </div>
+
+        <!-- Trošak Ukupan po kg -->
+        <div class="col-md-6">
+            <ApexMultiSeriesLineChart
+                Title="Trošak Ukupan po kg - Zadnjih 20 Smena"
+                Icon="bi bi-cash-stack"
+                SeriesData="@trosakUkupniPoKgData"
+                Unit="RSD/kg"
+                IsLoading="@isLoadingTrosakUkupni"
+                HasError="@hasErrorTrosakUkupni"
+                ShowSummary="false"
+                OnRefresh="@RefreshTrosakUkupni" />
+        </div>
+    </div>
+
     <!-- Dashboard Analitika -->
     <div class="row mb-4">
         <div class="col-12">
@@ -82,10 +111,10 @@
         </div>
     </div>
 
-    <!-- Troškovi Charts - Radna Snaga i Radni Nalozi -->
+    <!-- Troškovi Charts - Radna Snaga -->
     <div class="row mb-4">
-        <!-- Chart 1: Broj Radnika i Troškovi po Danima -->
-        <div class="col-lg-6 mb-3">
+        <!-- Chart: Broj Radnika i Troškovi po Danima -->
+        <div class="col-lg-12 mb-3">
             <ApexMultiLineChart
                 Title="Broj Radnika i Troškovi po Danima (Poslednjih 30 Dana)"
                 Icon="bi bi-graph-up"
@@ -99,20 +128,6 @@
                 HasError="@(HasErrorRadniciPoDanima || HasErrorTrosakPoDanu)"
                 ShowSummary="true"
                 OnRefresh="@RefreshKombinovanePodatke" />
-        </div>
-
-        <!-- Chart 2: Troškovi po RN - Zadnjih 10 Završenih -->
-        <div class="col-lg-6 mb-3">
-            <ApexBarChart
-                Title="Troškovi po RN - Zadnjih 10 Završenih"
-                Icon="bi bi-clipboard-check"
-                SeriesName="Troškovi"
-                Unit="RSD"
-                Data="@TroskoviPoRN_Zadnjih10"
-                IsLoading="@IsLoadingRN10"
-                HasError="@HasErrorRN10"
-                ShowSummary="true"
-                OnRefresh="@RefreshRN_Zadnjih10" />
         </div>
     </div>
 
@@ -168,33 +183,6 @@
         </div>
     </div>
 
-    <!-- Trošak po kg Gotovog Proizvoda - Line Charts -->
-    <div class="row mb-4">
-        <!-- Trošak Direktan po kg -->
-        <div class="col-md-6">
-            <ApexMultiSeriesLineChart
-                Title="Trošak Direktan po kg - Zadnjih 20 Smena"
-                Data="@trosakDirektniPoKgData"
-                YAxisTitle="Trošak (RSD/kg)"
-                IsLoading="@isLoadingTrosakDirektni"
-                HasError="@hasErrorTrosakDirektni"
-                ShowSummary="true"
-                OnRefresh="@RefreshTrosakDirektni" />
-        </div>
-
-        <!-- Trošak Ukupan po kg -->
-        <div class="col-md-6">
-            <ApexMultiSeriesLineChart
-                Title="Trošak Ukupan po kg - Zadnjih 20 Smena"
-                Data="@trosakUkupniPoKgData"
-                YAxisTitle="Trošak (RSD/kg)"
-                IsLoading="@isLoadingTrosakUkupni"
-                HasError="@hasErrorTrosakUkupni"
-                ShowSummary="true"
-                OnRefresh="@RefreshTrosakUkupni" />
-        </div>
-    </div>
-
     <!-- Navigation Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -212,11 +200,10 @@
     private List<ChartDataPoint>? KesaData;
     private List<ChartDataPoint>? BrojRadnikaPoDanima;
     private List<ChartDataPoint>? TrosakPoRadnomDanu;
-    private List<ChartDataPoint>? TroskoviPoRN_Zadnjih10;
 
     // Trošak po kg Data
-    private List<MultiSeriesDataPoint>? trosakDirektniPoKgData;
-    private List<MultiSeriesDataPoint>? trosakUkupniPoKgData;
+    private List<ChartSeriesData> trosakDirektniPoKgData = new();
+    private List<ChartSeriesData> trosakUkupniPoKgData = new();
 
     // Loading States
     private bool IsLoadingSirovine = false;
@@ -225,7 +212,6 @@
     private bool IsLoadingKesa = false;
     private bool IsLoadingRadniciPoDanima = false;
     private bool IsLoadingTrosakPoDanu = false;
-    private bool IsLoadingRN10 = false;
     private bool isLoadingTrosakDirektni = false;
     private bool isLoadingTrosakUkupni = false;
     private bool IsRefreshing = false;
@@ -237,7 +223,6 @@
     private bool HasErrorKesa = false;
     private bool HasErrorRadniciPoDanima = false;
     private bool HasErrorTrosakPoDanu = false;
-    private bool HasErrorRN10 = false;
     private bool hasErrorTrosakDirektni = false;
     private bool hasErrorTrosakUkupni = false;
 
@@ -262,7 +247,6 @@
             await Task.WhenAll(
                 RefreshRadniciPoDanima(),
                 RefreshTrosakPoRadnomDanu(),
-                RefreshRN_Zadnjih10(),
                 RefreshSirovine(),
                 RefreshGotovi(),
                 RefreshKutije(),
@@ -512,67 +496,6 @@
         }
     }
 
-    // Chart: Troškovi po RN - Zadnjih 10 Završenih
-    private async Task RefreshRN_Zadnjih10()
-    {
-        if (IsLoadingRN10) return;
-
-        IsLoadingRN10 = true;
-        HasErrorRN10 = false;
-        StateHasChanged();
-
-        try
-        {
-            await Task.Delay(100);
-
-            // Učitaj zadnjih 10 završenih radnih naloga
-            var filter = new FilterRequest
-            {
-                DokumentStatus = 3, // Završeni
-                DoDatum = DateTime.Now
-            };
-
-            var radniNalozi = await PreradaService.UcitajRadniNalogIzvestaj(filter);
-
-            // Grupisati po RadniNalog i sabrati troškove - sortirati po poslednja 4 broja (RN-25-0259 -> 0259)
-            var grupisaniPodaci = radniNalozi
-                .Where(rn => !string.IsNullOrEmpty(rn.RadniNalog))
-                .GroupBy(rn => rn.RadniNalog)
-                .Select(g => new
-                {
-                    RadniNalog = g.Key,
-                    VrstaArtikla = g.First().VrstaArtikla ?? "",
-                    UkupnoTroskovi = g.Sum(x => x.TrosakPoRadnomNalogu),
-                    // Izvući poslednja 4 broja iz RN-25-0259
-                    BrojNaloga = g.Key.Split('-').LastOrDefault() ?? "0000"
-                })
-                .OrderByDescending(x => x.BrojNaloga)
-                .Take(10)
-                .ToList();
-
-            // Kreirati ChartDataPoint sa VrstaArtikla u labelu
-            TroskoviPoRN_Zadnjih10 = grupisaniPodaci
-                .Select(x => new ChartDataPoint
-                {
-                    Label = $"{x.VrstaArtikla} ({x.RadniNalog})",
-                    Value = x.UkupnoTroskovi,
-                    Color = ChartDataHelper.GetFruitColor(x.VrstaArtikla)
-                })
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error loading RN zadnjih 10");
-            HasErrorRN10 = true;
-            TroskoviPoRN_Zadnjih10 = ChartDataHelper.GetMockData("RN", 10);
-        }
-        finally
-        {
-            IsLoadingRN10 = false;
-            StateHasChanged();
-        }
-    }
-
     private void NavigateTo(string url)
     {
         NavigationManager.NavigateTo(url);
@@ -594,14 +517,14 @@
             // Učitaj direktne troškove po kg iz servisa
             var podaciPoSmeni = await PreradaService.UcitajTrosakPoKgDirektni(20);
 
-            // Konvertuj u MultiSeriesDataPoint format
-            trosakDirektniPoKgData = ChartDataHelper.ConvertToMultiSeries(podaciPoSmeni);
+            // Konvertuj u ChartSeriesData format
+            trosakDirektniPoKgData = ChartDataHelper.ConvertToChartSeriesData(podaciPoSmeni);
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error loading trošak direktan po kg");
             hasErrorTrosakDirektni = true;
-            trosakDirektniPoKgData = new List<MultiSeriesDataPoint>();
+            trosakDirektniPoKgData = new List<ChartSeriesData>();
         }
         finally
         {
@@ -626,14 +549,14 @@
             // Učitaj ukupne troškove po kg iz servisa
             var podaciPoSmeni = await PreradaService.UcitajTrosakPoKgUkupni(20);
 
-            // Konvertuj u MultiSeriesDataPoint format
-            trosakUkupniPoKgData = ChartDataHelper.ConvertToMultiSeries(podaciPoSmeni);
+            // Konvertuj u ChartSeriesData format
+            trosakUkupniPoKgData = ChartDataHelper.ConvertToChartSeriesData(podaciPoSmeni);
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error loading trošak ukupan po kg");
             hasErrorTrosakUkupni = true;
-            trosakUkupniPoKgData = new List<MultiSeriesDataPoint>();
+            trosakUkupniPoKgData = new List<ChartSeriesData>();
         }
         finally
         {

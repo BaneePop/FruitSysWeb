@@ -271,6 +271,48 @@ namespace FruitSysWeb.Components.Charts
 
             return result;
         }
+
+        /// <summary>
+        /// Konvertuje Dictionary<Datum, Dictionary<VrstaProizvoda, Vrednost>> u ChartSeriesData listu
+        /// </summary>
+        public static List<ChartSeriesData> ConvertToChartSeriesData(Dictionary<string, Dictionary<string, decimal>> data)
+        {
+            if (data == null || !data.Any())
+                return new List<ChartSeriesData>();
+
+            // Prvo sakupi sve unikalne datume i sortiraj ih
+            var sviDatumi = data.Keys.OrderBy(x => x).ToList();
+
+            // Zatim sakupi sve unikalne serije (vrste proizvoda)
+            var sveVrste = data.Values
+                .SelectMany(d => d.Keys)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            // Kreiraj jednu ChartSeriesData za svaku vrstu proizvoda
+            var result = new List<ChartSeriesData>();
+
+            foreach (var vrsta in sveVrste)
+            {
+                var series = new ChartSeriesData
+                {
+                    Name = vrsta,
+                    Color = GetFruitColor(vrsta), // Boja serije na nivou series
+                    Data = sviDatumi.Select(datum => new ChartDataPoint
+                    {
+                        Label = datum,
+                        Value = data[datum].ContainsKey(vrsta) ? data[datum][vrsta] : 0
+                    }).ToList(),
+                    TotalKolicina = sviDatumi.Sum(datum => data[datum].ContainsKey(vrsta) ? data[datum][vrsta] : 0),
+                    TotalVrednost = sviDatumi.Sum(datum => data[datum].ContainsKey(vrsta) ? data[datum][vrsta] : 0)
+                };
+
+                result.Add(series);
+            }
+
+            return result;
+        }
     }
 
     /// <summary>
