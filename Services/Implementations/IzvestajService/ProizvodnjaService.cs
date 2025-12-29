@@ -11,12 +11,15 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
     {
         private readonly DatabaseService _databaseService;
         private readonly ILogger<ProizvodnjaService> _logger;
+        private readonly CacheService _cacheService;
 
         public ProizvodnjaService(DatabaseService databaseService,
-            ILogger<ProizvodnjaService> logger)
+            ILogger<ProizvodnjaService> logger,
+            CacheService cacheService)
         {
             _databaseService = databaseService;
             _logger = logger;
+            _cacheService = cacheService;
         }
 
         public async Task<List<ProizvodnjaModel>> UcitajIzvestajProizvodnje(FilterRequest filterRequest)
@@ -163,9 +166,20 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = CreateSqlBuilder();
-                sql.Append(@"
-        SELECT 
+                // ✅ OPTIMIZACIJA: Keširanje Top 5 Kupaca za 5 minuta
+                var cacheKey = CacheService.BuildKey(
+                    CacheKeys.TopKupci,
+                    filterRequest.OdDatum?.ToString("yyyy-MM-dd") ?? "null",
+                    filterRequest.DoDatum?.ToString("yyyy-MM-dd") ?? "null"
+                );
+
+                return await _cacheService.GetOrCreateAsync(
+                    cacheKey,
+                    async () =>
+                    {
+                        var sql = CreateSqlBuilder();
+                        sql.Append(@"
+        SELECT
         COALESCE(k.Naziv, vpp.Komitent, 'Nepoznato') as Komitent,
         SUM(ABS(vpp.Kolicina)) as UkupnaKolicina
         FROM vPreradaPregled vpp
@@ -177,25 +191,28 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         AND a.Aktivno = 1
         AND vpp.Komitent IS NOT NULL
           AND vpp.Komitent != ''
-                ");
+                        ");
 
-                var parameters = CreateParameters();
+                        var parameters = CreateParameters();
 
-                // Apply date filter using BaseService
-                ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumPocetka");
+                        // Apply date filter using BaseService
+                        ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumPocetka");
 
-                sql.Append(@"
+                        sql.Append(@"
                 GROUP BY COALESCE(k.ID, vpp.KomitentID), COALESCE(k.Naziv, vpp.Komitent)
                 HAVING SUM(ABS(vpp.Kolicina)) > 0
                 ORDER BY UkupnaKolicina DESC
                     LIMIT 5
             ");
 
-                var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
+                        var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
 
-                return rezultat.ToDictionary(
-                    x => (string)x.Komitent ?? "Nepoznato",
-                    x => (decimal)x.UkupnaKolicina
+                        return rezultat.ToDictionary(
+                            x => (string)x.Komitent ?? "Nepoznato",
+                            x => (decimal)x.UkupnaKolicina
+                        );
+                    },
+                    CacheService.DefaultExpiration  // 5 minuta
                 );
             }
             catch (Exception ex)
@@ -209,39 +226,53 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = CreateSqlBuilder();
-                sql.Append(@"
-        SELECT 
+                // ✅ OPTIMIZACIJA: Keširanje Top 5 Dobavljača za 5 minuta
+                var cacheKey = CacheService.BuildKey(
+                    CacheKeys.TopDobavljaci,
+                    filterRequest.OdDatum?.ToString("yyyy-MM-dd") ?? "null",
+                    filterRequest.DoDatum?.ToString("yyyy-MM-dd") ?? "null"
+                );
+
+                return await _cacheService.GetOrCreateAsync(
+                    cacheKey,
+                    async () =>
+                    {
+                        var sql = CreateSqlBuilder();
+                        sql.Append(@"
+        SELECT
         COALESCE(k.Naziv, vrp.Komitent, 'Nepoznato') as Komitent,
         SUM(ABS(vrp.Ulaz)) as UkupnaKolicina
-        FROM vPrometRoba vrp 
+        FROM vPrometRoba vrp
         LEFT JOIN Artikal a ON vrp.ArtikalID = a.ID
         LEFT JOIN Komitent k ON vrp.KomitentID = k.ID
         WHERE a.MagacinID IN (2, 3, 5)  -- SVEZA ROBA I SIROVINE
         AND vrp.DOKUMENT LIKE 'PR-%'
         AND vrp.Ulaz > 0  -- POZITIVNA KOLICINA = NABAVKA/ULAZ
         AND vrp.DokumentStatus = (3)
-        
+
           AND vrp.Komitent != ''
-                ");
+                        ");
 
-                var parameters = CreateParameters();
+                        var parameters = CreateParameters();
 
-                // Apply date filter using BaseService
-                ApplyDateFilter(sql, parameters, filterRequest, "vrp.Datum");
+                        // Apply date filter using BaseService
+                        ApplyDateFilter(sql, parameters, filterRequest, "vrp.Datum");
 
-                sql.Append(@"
+                        sql.Append(@"
                 GROUP BY COALESCE(k.ID, vrp.KomitentID), COALESCE(k.Naziv, vrp.Komitent)
                 HAVING SUM(ABS(vrp.Ulaz)) > 0
                 ORDER BY UkupnaKolicina DESC
                     LIMIT 5
             ");
 
-                var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
+                        var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
 
-                return rezultat.ToDictionary(
-                    x => (string)x.Komitent ?? "Nepoznato",
-                    x => (decimal)x.UkupnaKolicina
+                        return rezultat.ToDictionary(
+                            x => (string)x.Komitent ?? "Nepoznato",
+                            x => (decimal)x.UkupnaKolicina
+                        );
+                    },
+                    CacheService.DefaultExpiration  // 5 minuta
                 );
             }
             catch (Exception ex)

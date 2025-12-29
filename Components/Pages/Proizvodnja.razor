@@ -58,7 +58,7 @@
                 <div class="col-md-6">
                     <h1 class="h3 mb-0">
                         <i class="bi bi-gear-fill me-2"></i>
-                        Utrošak Sirovina RN - Detaljni izveštaj
+                        Detaljni izveštaj o utrošku sirovina u radnim nalozima
                     </h1>
                 </div>
                 <div class="col-md-6 text-end">
@@ -94,8 +94,12 @@
                         </div>
                         <div class="col-md-2">
                             <label class="form-label fw-bold">Radni nalog:</label>
-                            <select class="form-select" @bind="filterRequest.RadniNalog">
-                                <option value="">Svi radni nalozi</option>
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Unesite radni nalog..."
+                                   list="radni-nalozi-lista"
+                                   @bind="filterRequest.RadniNalog" />
+                            <datalist id="radni-nalozi-lista">
                                 @if (radniNaloziLista != null)
                                 {
                                     @foreach (var nalog in radniNaloziLista)
@@ -103,7 +107,7 @@
                                         <option value="@nalog">@nalog</option>
                                     }
                                 }
-                            </select>
+                            </datalist>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label fw-bold">Komitent:</label>
@@ -326,19 +330,36 @@
         await UcitajPodatke();
     }
 
-    private void OnOdDatumChanged(ChangeEventArgs e)
+    private async Task OnOdDatumChanged(ChangeEventArgs e)
     {
         if (DateTime.TryParse(e.Value?.ToString(), out var date))
         {
             filterRequest.OdDatum = date;
+            // Refresh-uj listu radnih naloga za novi period
+            await RefreshRadniNaloziListu();
         }
     }
 
-    private void OnDoDatumChanged(ChangeEventArgs e)
+    private async Task OnDoDatumChanged(ChangeEventArgs e)
     {
         if (DateTime.TryParse(e.Value?.ToString(), out var date))
         {
             filterRequest.DoDatum = date;
+            // Refresh-uj listu radnih naloga za novi period
+            await RefreshRadniNaloziListu();
+        }
+    }
+
+    private async Task RefreshRadniNaloziListu()
+    {
+        try
+        {
+            radniNaloziLista = await ProizvodnjaService.UcitajListuRadnihNaloga(filterRequest);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri refresh-ovanju radnih naloga: {ex.Message}");
         }
     }
 
@@ -483,7 +504,15 @@
                 { "Komitent", "Komitent" }
             };
 
-            var excelData = ExportService.ExportToExcelWithColumns(podaci, columns);
+            // Dodaj totale na dnu
+            var totals = new Dictionary<string, object>
+            {
+                { "Artikal", "UKUPNO:" },
+                { "KolicinaRoba", podaci.Sum(x => x.KolicinaRoba) },
+                { "GotovProizvod", podaci.Sum(x => x.GotovProizvod) }
+            };
+
+            var excelData = ExportService.ExportToExcelWithColumns(podaci, columns, totals);
             var fileName = TypeMapping.GenerateExportFileName("proizvodnja", ".xlsx");
             await DownloadFile(excelData, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         }
@@ -508,7 +537,15 @@
                 { "Komitent", "Komitent" }
             };
 
-            var pdfData = ExportService.ExportToPdfWithColumns(podaci, columns);
+            // Dodaj totale na dnu
+            var totals = new Dictionary<string, object>
+            {
+                { "Artikal", "UKUPNO:" },
+                { "KolicinaRoba", podaci.Sum(x => x.KolicinaRoba) },
+                { "GotovProizvod", podaci.Sum(x => x.GotovProizvod) }
+            };
+
+            var pdfData = ExportService.ExportToPdfWithColumns(podaci, columns, totals);
             var fileName = TypeMapping.GenerateExportFileName("proizvodnja", ".pdf");
             await DownloadFile(pdfData, fileName, "application/pdf");
         }

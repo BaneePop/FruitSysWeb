@@ -21,7 +21,7 @@
             <div class="col-md-6">
                 <h1 class="h3 mb-0">
                     <i class="bi bi-calculator me-2"></i>
-                    Pregled Stanja
+                    Ukupan Finansijski Pregled Stanja
                 </h1>
             </div>
             <div class="col-md-6 text-end">
@@ -391,7 +391,15 @@
                 { "Duguje", "Duguje" }
             };
 
-            var excelData = ExportService.ExportToExcelWithColumns(podaci, columns);
+            // Dodaj totale na dnu
+            var totals = new Dictionary<string, object>
+            {
+                { "Artikal", "UKUPNO:" },
+                { "Potrazuje", podaci.Sum(x => x.Potrazuje) },
+                { "Duguje", podaci.Sum(x => x.Duguje) }
+            };
+
+            var excelData = ExportService.ExportToExcelWithColumns(podaci, columns, totals);
             var fileName = SystemConstants.GenerateExportFileName("finansije", "xlsx");
             await DownloadFile(excelData, fileName, SystemConstants.ExcelMimeType);
         }
@@ -417,7 +425,15 @@
                 { "Duguje", "Duguje" }
             };
 
-            var pdfData = ExportService.ExportToPdfWithColumns(podaci, columns);
+            // Dodaj totale na dnu
+            var totals = new Dictionary<string, object>
+            {
+                { "Artikal", "UKUPNO:" },
+                { "Potrazuje", podaci.Sum(x => x.Potrazuje) },
+                { "Duguje", podaci.Sum(x => x.Duguje) }
+            };
+
+            var pdfData = ExportService.ExportToPdfWithColumns(podaci, columns, totals);
             var fileName = SystemConstants.GenerateExportFileName("finansije", "pdf");
             await DownloadFile(pdfData, fileName, SystemConstants.PdfMimeType);
         }

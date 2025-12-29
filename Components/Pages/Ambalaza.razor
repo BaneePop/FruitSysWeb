@@ -435,7 +435,17 @@
                     { "Lot", "Dostupno" }
                 };
 
-                var excelData = ExportService.ExportToExcelWithColumns(lagerStanje, columns);
+                // Dodaj totale na dnu
+                var totals = new Dictionary<string, object>
+                {
+                    { "Artikal", "UKUPNO:" },
+                    { "Kolicina", lagerStanje.Sum(x => x.Kolicina) },
+                    { "Pakovanje", lagerStanje.Where(x => !string.IsNullOrEmpty(x.Pakovanje)).Sum(x => decimal.TryParse(x.Pakovanje, out var val) ? val : 0) },
+                    { "ZaNajavljeneUtovare", lagerStanje.Where(x => !string.IsNullOrEmpty(x.ZaNajavljeneUtovare)).Sum(x => decimal.TryParse(x.ZaNajavljeneUtovare, out var val) ? val : 0) },
+                    { "Lot", lagerStanje.Where(x => !string.IsNullOrEmpty(x.Lot)).Sum(x => decimal.TryParse(x.Lot, out var val) ? val : 0) }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(lagerStanje, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("ambalaza_kutije", SystemConstants.Export.EXCEL_EXTENSION);
                 await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
             }
@@ -462,7 +472,17 @@
                     { "Lot", "Dostupno" }
                 };
 
-                var pdfData = ExportService.ExportToPdfWithColumns(lagerStanje, columns);
+                // Dodaj totale na dnu
+                var totals = new Dictionary<string, object>
+                {
+                    { "Artikal", "UKUPNO:" },
+                    { "Kolicina", lagerStanje.Sum(x => x.Kolicina) },
+                    { "Pakovanje", lagerStanje.Where(x => !string.IsNullOrEmpty(x.Pakovanje)).Sum(x => decimal.TryParse(x.Pakovanje, out var val) ? val : 0) },
+                    { "ZaNajavljeneUtovare", lagerStanje.Where(x => !string.IsNullOrEmpty(x.ZaNajavljeneUtovare)).Sum(x => decimal.TryParse(x.ZaNajavljeneUtovare, out var val) ? val : 0) },
+                    { "Lot", lagerStanje.Where(x => !string.IsNullOrEmpty(x.Lot)).Sum(x => decimal.TryParse(x.Lot, out var val) ? val : 0) }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(lagerStanje, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("ambalaza_kutije", SystemConstants.Export.PDF_EXTENSION);
                 await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
             }
@@ -489,7 +509,17 @@
                     { "Lot", "Dostupno" }
                 };
 
-                var excelData = ExportService.ExportToExcelWithColumns(keseStanje, columns);
+                // Dodaj totale na dnu
+                var totals = new Dictionary<string, object>
+                {
+                    { "Artikal", "UKUPNO:" },
+                    { "Kolicina", keseStanje.Sum(x => x.Kolicina) },
+                    { "Pakovanje", keseStanje.Where(x => !string.IsNullOrEmpty(x.Pakovanje)).Sum(x => decimal.TryParse(x.Pakovanje, out var val) ? val : 0) },
+                    { "ZaNajavljeneUtovare", keseStanje.Where(x => !string.IsNullOrEmpty(x.ZaNajavljeneUtovare)).Sum(x => decimal.TryParse(x.ZaNajavljeneUtovare, out var val) ? val : 0) },
+                    { "Lot", keseStanje.Where(x => !string.IsNullOrEmpty(x.Lot)).Sum(x => decimal.TryParse(x.Lot, out var val) ? val : 0) }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(keseStanje, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("ambalaza_kese", SystemConstants.Export.EXCEL_EXTENSION);
                 await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
             }
@@ -516,7 +546,17 @@
                     { "Lot", "Dostupno" }
                 };
 
-                var pdfData = ExportService.ExportToPdfWithColumns(keseStanje, columns);
+                // Dodaj totale na dnu
+                var totals = new Dictionary<string, object>
+                {
+                    { "Artikal", "UKUPNO:" },
+                    { "Kolicina", keseStanje.Sum(x => x.Kolicina) },
+                    { "Pakovanje", keseStanje.Where(x => !string.IsNullOrEmpty(x.Pakovanje)).Sum(x => decimal.TryParse(x.Pakovanje, out var val) ? val : 0) },
+                    { "ZaNajavljeneUtovare", keseStanje.Where(x => !string.IsNullOrEmpty(x.ZaNajavljeneUtovare)).Sum(x => decimal.TryParse(x.ZaNajavljeneUtovare, out var val) ? val : 0) },
+                    { "Lot", keseStanje.Where(x => !string.IsNullOrEmpty(x.Lot)).Sum(x => decimal.TryParse(x.Lot, out var val) ? val : 0) }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(keseStanje, columns, totals);
                 var fileName = TypeMapping.GenerateExportFileName("ambalaza_kese", SystemConstants.Export.PDF_EXTENSION);
                 await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
             }

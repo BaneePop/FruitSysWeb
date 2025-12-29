@@ -1,6 +1,7 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Models.Requests;
+using FruitSysWeb.Services.Core;
 using Dapper;
 using System.Text;
 
@@ -9,10 +10,12 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
     public class PreradaService : IPreradaService
     {
         private readonly DatabaseService _databaseService;
+        private readonly CacheService _cacheService;
 
-        public PreradaService(DatabaseService databaseService)
+        public PreradaService(DatabaseService databaseService, CacheService cacheService)
         {
             _databaseService = databaseService;
+            _cacheService = cacheService;
         }
 
         #region GLAVNI IZVEŠTAJI - NOVI MODELI
@@ -253,15 +256,23 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = @"
-                    SELECT DISTINCT si.Broj
-                    FROM SmenskiIzvestaj si
-                    WHERE si.Broj IS NOT NULL
-                    ORDER BY si.Broj DESC
-                    LIMIT 200";
+                // ✅ OPTIMIZACIJA: Keširanje dropdown liste za 5 minuta
+                return await _cacheService.GetOrCreateAsync(
+                    "SmenskiIzvestaji:Brojevi",
+                    async () =>
+                    {
+                        var sql = @"
+                            SELECT DISTINCT si.Broj
+                            FROM SmenskiIzvestaj si
+                            WHERE si.Broj IS NOT NULL
+                            ORDER BY si.Broj DESC
+                            LIMIT 200";
 
-                var result = await _databaseService.QueryAsync<string>(sql);
-                return result.ToList();
+                        var result = await _databaseService.QueryAsync<string>(sql);
+                        return result.ToList();
+                    },
+                    CacheService.DefaultExpiration  // 5 minuta
+                );
             }
             catch (Exception ex)
             {
@@ -420,16 +431,24 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = @"
-                    SELECT ID, Naziv, RezijaID, Kreirano, Azurirano, Version
-                    FROM RadniProces 
-                    WHERE Naziv NOT LIKE '%#%'
-                    ORDER BY Naziv
-                    LIMIT 200";
+                // ✅ OPTIMIZACIJA: Keširanje dropdown liste za 10 minuta
+                return await _cacheService.GetOrCreateAsync(
+                    "RadniProcesi:All",
+                    async () =>
+                    {
+                        var sql = @"
+                            SELECT ID, Naziv, RezijaID, Kreirano, Azurirano, Version
+                            FROM RadniProces
+                            WHERE Naziv NOT LIKE '%#%'
+                            ORDER BY Naziv
+                            LIMIT 200";
 
-                var rezultat = await _databaseService.QueryAsync<RadniProcesModel>(sql);
-                Console.WriteLine($"✅ Učitano {rezultat?.Count() ?? 0} korišćenih proizvodnih procesa");
-                return rezultat?.ToList() ?? new List<RadniProcesModel>();
+                        var rezultat = await _databaseService.QueryAsync<RadniProcesModel>(sql);
+                        Console.WriteLine($"✅ Učitano {rezultat?.Count() ?? 0} korišćenih proizvodnih procesa (keširano)");
+                        return rezultat?.ToList() ?? new List<RadniProcesModel>();
+                    },
+                    CacheService.MediumExpiration  // 10 minuta
+                );
             }
             catch (Exception ex)
             {
@@ -442,24 +461,38 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = @"
-            SELECT DISTINCT 
-                pp.ID, 
-                pp.Naziv, 
-                pp.Kreirano, 
-                pp.Azurirano, 
-                pp.Version
-            FROM ProizvodniProces pp
-            INNER JOIN RadniProcesToProizvodniProces rppp ON pp.ID = rppp.ProizvodniProcesID
-            INNER JOIN EvidencijaRada er ON rppp.RadniProcesID = er.RadniProcesID
-            WHERE er.Obrisan = 0
-              AND er.Datum >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-            ORDER BY pp.Naziv
-            LIMIT 100";
+                // ✅ OPTIMIZACIJA: Keširanje dropdown liste za 10 minuta
+                return await _cacheService.GetOrCreateAsync(
+                    "ProizvodniProcesi:Active",
+                    async () =>
+                    {
+                        // ✅ OPTIMIZACIJA: Prebacujem DATE_SUB u parametar
+                        var odDatum = DateTime.Now.AddMonths(-6);
 
-                var rezultat = await _databaseService.QueryAsync<ProizvodniProcesModel>(sql);
-                Console.WriteLine($"✅ Učitano {rezultat?.Count() ?? 0} korišćenih proizvodnih procesa");
-                return rezultat?.ToList() ?? new List<ProizvodniProcesModel>();
+                        var sql = @"
+                SELECT DISTINCT
+                    pp.ID,
+                    pp.Naziv,
+                    pp.Kreirano,
+                    pp.Azurirano,
+                    pp.Version
+                FROM ProizvodniProces pp
+                INNER JOIN RadniProcesToProizvodniProces rppp ON pp.ID = rppp.ProizvodniProcesID
+                INNER JOIN EvidencijaRada er ON rppp.RadniProcesID = er.RadniProcesID
+                WHERE er.Obrisan = 0
+                  AND er.Datum >= @OdDatum
+                ORDER BY pp.Naziv
+                LIMIT 100";
+
+                        var rezultat = await _databaseService.QueryAsync<ProizvodniProcesModel>(
+                            sql,
+                            new { OdDatum = odDatum }
+                        );
+                        Console.WriteLine($"✅ Učitano {rezultat?.Count() ?? 0} korišćenih proizvodnih procesa (keširano)");
+                        return rezultat?.ToList() ?? new List<ProizvodniProcesModel>();
+                    },
+                    CacheService.MediumExpiration  // 10 minuta
+                );
             }
             catch (Exception ex)
             {
@@ -944,18 +977,26 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = @"
-                SELECT DISTINCT rn.Sifra
-                FROM RadniNalog rn
-                WHERE rn.Aktivno = 1
-                  AND rn.DokumentStatus IN (2, 3)
-                  AND rn.Sifra NOT LIKE 'ST-%'
-                  AND rn.Sifra IS NOT NULL
-                ORDER BY rn.Sifra DESC
-                LIMIT 200";
+                // ✅ OPTIMIZACIJA: Keširanje dropdown liste za 5 minuta
+                return await _cacheService.GetOrCreateAsync(
+                    "RadniNalozi:Aktivni",
+                    async () =>
+                    {
+                        var sql = @"
+                    SELECT DISTINCT rn.Sifra
+                    FROM RadniNalog rn
+                    WHERE rn.Aktivno = 1
+                      AND rn.DokumentStatus IN (2, 3)
+                      AND rn.Sifra NOT LIKE 'ST-%'
+                      AND rn.Sifra IS NOT NULL
+                    ORDER BY rn.Sifra DESC
+                    LIMIT 200";
 
-                var result = await _databaseService.QueryAsync<string>(sql);
-                return result.ToList();
+                        var result = await _databaseService.QueryAsync<string>(sql);
+                        return result.ToList();
+                    },
+                    CacheService.DefaultExpiration  // 5 minuta
+                );
             }
             catch (Exception ex)
             {
@@ -1196,10 +1237,11 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         si.Datum,
                         si.Broj as BrojIzvestaja,
                         TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a.Naziv)) as VrstaArtikla,
-                        SUM(er.CenaKostanjaDirektanRad) as UkupanTrosak,
-                        SUM(vpp.Kolicina) as UkupnaKolicina,
+                        SUM(CASE WHEN er.DirektanRadObracunat = 1 THEN er.CenaKostanjaDirektanRad ELSE 0 END) as UkupanTrosak,
+                        SUM(CASE WHEN rpa.RpArtikalTip = 2 AND a.MagacinID = 6 THEN rpa.Kolicina ELSE 0 END) as UkupnaKolicina,
                         CASE
-                            WHEN SUM(vpp.Kolicina) > 0 THEN SUM(er.CenaKostanjaDirektanRad) / SUM(vpp.Kolicina)
+                            WHEN SUM(CASE WHEN rpa.RpArtikalTip = 2 AND a.MagacinID = 6 THEN rpa.Kolicina ELSE 0 END) > 0
+                            THEN SUM(CASE WHEN er.DirektanRadObracunat = 1 THEN er.CenaKostanjaDirektanRad ELSE 0 END) / SUM(CASE WHEN  a.MagacinID = 6 THEN rpa.Kolicina ELSE 0 END)
                             ELSE 0
                         END as TrosakPoKg
                     FROM (
@@ -1212,14 +1254,13 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         LIMIT {brojSmena}
                     ) si
                     INNER JOIN EvidencijaRada er ON er.SmenskiIzvestajID = si.ID
-                    INNER JOIN RadniNalog rn ON er.RadniNalogID = rn.ID
-                    INNER JOIN vEvidencijaRadaPreradaUI_v2 vpp ON vpp.RadniNalogID = rn.ID
+                    INNER JOIN RadniProcesArtikal rpa ON rpa.EvidencijaRadaID = er.ID
+                    INNER JOIN vEvidencijaRadaPreradaUI_v2 vpp ON vpp.EvidencijaRadaID = er.ID
                     INNER JOIN Artikal a ON vpp.ArtikalIzlazID = a.ID
                     WHERE er.Obrisan = 0
                       AND er.DirektanRadObracunat = 1
-                      AND rn.Aktivno = 1
+                      AND rpa.Storno = 0
                       AND a.MagacinID = 6
-                      AND vpp.Kolicina > 0
                     GROUP BY si.Datum, si.Broj, TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a.Naziv))
                     ORDER BY si.Datum DESC, VrstaArtikla";
 
@@ -1278,16 +1319,15 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         si.Datum,
                         SUM(er.CenaKostanjaDirektanRad) as IndirektanTrosak,
                         (
-                            SELECT SUM(vpp2.Kolicina)
+                            SELECT SUM(rpa2.Kolicina)
                             FROM EvidencijaRada er2
-                            INNER JOIN RadniNalog rn2 ON er2.RadniNalogID = rn2.ID
-                            INNER JOIN vEvidencijaRadaPreradaUI_v2 vpp2 ON vpp2.RadniNalogID = rn2.ID
-                            INNER JOIN Artikal a3 ON vpp2.ArtikalIzlazID = a3.ID
+                            INNER JOIN RadniProcesArtikal rpa2 ON rpa2.EvidencijaRadaID = er2.ID
+                            INNER JOIN ArtikalInstanca ai ON rpa2.ArtikalInstancaID = ai.ID
+                            INNER JOIN Artikal a3 ON ai.ArtikalID = a3.ID
                             WHERE er2.SmenskiIzvestajID = si.ID
                               AND er2.Obrisan = 0
-                              AND rn2.Aktivno = 1
                               AND a3.MagacinID = 6
-                              AND vpp2.Kolicina > 0
+                              AND rpa2.Kolicina > 0
                         ) as UkupnaKolicinaSmene
                     FROM (
                         SELECT ID, Datum, Broj

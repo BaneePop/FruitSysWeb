@@ -47,14 +47,8 @@ builder.Services.AddFruitSysServices();
 
 // OSTALI servisi ostaju isti
 
-// ISPRAVLJENA registracija DashboardService - bez HttpClient
-builder.Services.AddScoped<IDashboardService, DashboardService>();
-builder.Services.AddScoped<IFinansijskiPregledService, FinansijskiPregledService>();
-builder.Services.AddScoped<IBrziPregledService, BrziPregledService>();
-builder.Services.AddScoped<IUgovorService, UgovorService>();
-builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IPovratnaAmbalazaService, PovratnaAmbalazaService>();
+// ✅ REFACTORED: Svi servisi su sada u ServiceCollectionExtensions.cs
+// Ne treba dodavati servise ovde - sve je u AddFruitSysServices() extension metodi
 
 
 

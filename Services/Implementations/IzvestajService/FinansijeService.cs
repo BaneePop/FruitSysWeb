@@ -725,5 +725,114 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 return new List<ZbirniFinansijeModel>();
             }
         }
+
+        // ========================================
+        // ✨ NOVO: PREGLED SALDA PO KOMITENTIMA
+        // ========================================
+
+        /// <summary>
+        /// Učitava saldo po komitentima za period od 01.01.2023 do danas
+        /// Prikazuje samo komitente gde je apsolutno stanje > minimumStanje (default 1000 RSD)
+        /// </summary>
+        public async Task<List<SaldoPoKomitentuModel>> UcitajSaldoPoKomitentima(
+            FilterRequest filterRequest,
+            decimal minimumStanje = 1000)
+        {
+            try
+            {
+                // Default datumi: 01.01.2023 - danas
+                var odDatum = filterRequest.OdDatum ?? new DateTime(2023, 1, 1);
+                var doDatum = filterRequest.DoDatum ?? DateTime.Now.Date;
+
+                _logger.LogInformation($"🔍 UcitajSaldoPoKomitentima: {odDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}, MinimumStanje: {minimumStanje}");
+
+                var sql = CreateSqlBuilder(@"
+                    SELECT
+                        k.ID as KomitentID,
+                        k.Naziv as Komitent,
+
+                        -- POTRAŽUJE (šta oni duguju nama)
+                        -- FK-, IS- imaju vrednost u koloni Potrazuje
+                        COALESCE(SUM(
+                            CASE
+                                WHEN fm.Datum >= @OdDatum
+                                    AND fm.Datum <= @DoDatum
+                                    AND fm.DokumentStatus != 2
+                                    AND fm.DokumentStatus != 4
+                                THEN fm.Potrazuje
+                                ELSE 0
+                            END
+                        ), 0) as Potrazuje,
+
+                        -- DUGUJE (šta mi dugujemo njima)
+                        -- KL-, UP- imaju vrednost u koloni Duguje
+                        COALESCE(SUM(
+                            CASE
+                                WHEN fm.Datum >= @OdDatum
+                                    AND fm.Datum <= @DoDatum
+                                    AND fm.DokumentStatus != 2
+                                    AND fm.DokumentStatus != 4
+                                THEN fm.Duguje
+                                ELSE 0
+                            END
+                        ), 0) as Duguje
+
+                    FROM Komitent k
+                    LEFT JOIN vPrometFinansijev9 fm ON k.ID = fm.KomitentID
+                    WHERE k.Aktivno = 1
+                ");
+
+                var parameters = CreateParameters();
+                parameters.Add("@OdDatum", odDatum);
+                parameters.Add("@DoDatum", doDatum);
+
+                // Komitent filter
+                if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
+                {
+                    sql.Append(" AND k.ID = @KomitentId");
+                    parameters.Add("@KomitentId", filterRequest.KomitentId.Value);
+                }
+
+                // Komitent tip filter
+                if (!string.IsNullOrEmpty(filterRequest.KomitentTip))
+                {
+                    switch (filterRequest.KomitentTip.ToLower())
+                    {
+                        case "kupac":
+                            sql.Append(" AND fm.Kupac = 1");
+                            break;
+                        case "dobavljac":
+                            sql.Append(" AND fm.Dobavljac = 1");
+                            break;
+                        case "proizvodjac":
+                            sql.Append(" AND fm.Proizvodjac = 1");
+                            break;
+                        case "otkupljivac":
+                            sql.Append(" AND fm.Otkupljivac = 1");
+                            break;
+                    }
+                }
+
+                sql.Append(@"
+                    GROUP BY k.ID, k.Naziv
+                    HAVING ABS(Potrazuje - Duguje) > @MinimumStanje
+                    ORDER BY (Potrazuje - Duguje) DESC
+                ");
+
+                parameters.Add("@MinimumStanje", minimumStanje);
+
+                var rezultat = await _databaseService.QueryAsync<SaldoPoKomitentuModel>(sql.ToString(), parameters);
+                var lista = rezultat?.ToList() ?? new List<SaldoPoKomitentuModel>();
+
+                _logger.LogInformation($"✅ Učitano {lista.Count} komitenata sa saldom > {minimumStanje} RSD");
+
+                return lista;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška u UcitajSaldoPoKomitentima");
+                return new List<SaldoPoKomitentuModel>();
+            }
+        }
     }
 }

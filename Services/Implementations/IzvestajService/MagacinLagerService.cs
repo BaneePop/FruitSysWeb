@@ -1,5 +1,6 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Models.Requests;
+using FruitSysWeb.Services.Core;
 using System.Text;
 using FruitSysWeb.Services.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -10,12 +11,15 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
     {
         private readonly DatabaseService _databaseService;
         private readonly ILogger<MagacinLagerService> _logger;
+        private readonly CacheService _cacheService;
 
         public MagacinLagerService(DatabaseService databaseService,
-            ILogger<MagacinLagerService> logger)
+            ILogger<MagacinLagerService> logger,
+            CacheService cacheService)
         {
             _databaseService = databaseService;
             _logger = logger;
+            _cacheService = cacheService;
         }
 
         // ============================================
@@ -43,32 +47,40 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = @"
-                    SELECT 
-                        ml.Artikal,
-                        SUM(ml.Kolicina) as UkupnaKolicina
-                    FROM vwMagacinLager ml
-                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
-                    WHERE a.MagacinID = 4  -- AMBALAZA
-                      AND a.GrupnaAmbalaza = 1  -- KUTIJE/DZAKOVI
-                      AND ml.Kolicina >= 10
-                      AND ml.Kolicina IS NOT NULL
-                      AND a.Aktivno = 1
-                      AND ml.Artikal NOT LIKE '%POLOVNE%'
-                      AND ml.Artikal NOT LIKE '%POL.%'
-                      AND ml.Artikal NOT LIKE '%Prijem%'
-                      AND ml.Artikal NOT LIKE '%PRIJEM%'
-                      AND ml.Artikal NOT LIKE '%Kutija Prijem%'
-                    GROUP BY ml.Artikal, ml.ArtikalID
-                    ORDER BY UkupnaKolicina DESC
-                    LIMIT 10
-                ";
+                // ✅ OPTIMIZACIJA: Keširanje strukture kutija za 5 minuta
+                return await _cacheService.GetOrCreateAsync(
+                    "Lager:Struktura:Kutije",
+                    async () =>
+                    {
+                        var sql = @"
+                            SELECT
+                                ml.Artikal,
+                                SUM(ml.Kolicina) as UkupnaKolicina
+                            FROM vwMagacinLager ml
+                            LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                            WHERE a.MagacinID = 4  -- AMBALAZA
+                              AND a.GrupnaAmbalaza = 1  -- KUTIJE/DZAKOVI
+                              AND ml.Kolicina >= 10
+                              AND ml.Kolicina IS NOT NULL
+                              AND a.Aktivno = 1
+                              AND ml.Artikal NOT LIKE '%POLOVNE%'
+                              AND ml.Artikal NOT LIKE '%POL.%'
+                              AND ml.Artikal NOT LIKE '%Prijem%'
+                              AND ml.Artikal NOT LIKE '%PRIJEM%'
+                              AND ml.Artikal NOT LIKE '%Kutija Prijem%'
+                            GROUP BY ml.Artikal, ml.ArtikalID
+                            ORDER BY UkupnaKolicina DESC
+                            LIMIT 10
+                        ";
 
-                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+                        var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
 
-                return rezultat.ToDictionary(
-                    x => (string)x.Artikal ?? "Nepoznato",
-                    x => (decimal)x.UkupnaKolicina
+                        return rezultat.ToDictionary(
+                            x => (string)x.Artikal ?? "Nepoznato",
+                            x => (decimal)x.UkupnaKolicina
+                        );
+                    },
+                    CacheService.DefaultExpiration  // 5 minuta
                 );
             }
             catch (Exception ex)
@@ -82,31 +94,39 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = @"
-                    SELECT 
-                        ml.Artikal,
-                        SUM(ml.Kolicina) as UkupnaKolicina
-                    FROM vwMagacinLager ml
-                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
-                    WHERE a.MagacinID = 4  -- AMBALAZA
-                      AND a.GrupnaAmbalaza = 0  -- KESE
-                      AND ml.Kolicina >= 10
-                      AND ml.Kolicina IS NOT NULL
-                      AND a.Aktivno = 1
-                      AND ml.Artikal NOT LIKE '%POLOVNE%'
-                      AND ml.Artikal NOT LIKE '%POL.%'
-                      AND ml.Artikal NOT LIKE '%Prijem%'
-                      AND ml.Artikal NOT LIKE '%PRIJEM%'
-                    GROUP BY ml.Artikal, ml.ArtikalID
-                    ORDER BY UkupnaKolicina DESC
-                    LIMIT 10
-                ";
+                // ✅ OPTIMIZACIJA: Keširanje strukture kesa za 5 minuta
+                return await _cacheService.GetOrCreateAsync(
+                    "Lager:Struktura:Kese",
+                    async () =>
+                    {
+                        var sql = @"
+                            SELECT
+                                ml.Artikal,
+                                SUM(ml.Kolicina) as UkupnaKolicina
+                            FROM vwMagacinLager ml
+                            LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                            WHERE a.MagacinID = 4  -- AMBALAZA
+                              AND a.GrupnaAmbalaza = 0  -- KESE
+                              AND ml.Kolicina >= 10
+                              AND ml.Kolicina IS NOT NULL
+                              AND a.Aktivno = 1
+                              AND ml.Artikal NOT LIKE '%POLOVNE%'
+                              AND ml.Artikal NOT LIKE '%POL.%'
+                              AND ml.Artikal NOT LIKE '%Prijem%'
+                              AND ml.Artikal NOT LIKE '%PRIJEM%'
+                            GROUP BY ml.Artikal, ml.ArtikalID
+                            ORDER BY UkupnaKolicina DESC
+                            LIMIT 10
+                        ";
 
-                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+                        var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
 
-                return rezultat.ToDictionary(
-                    x => (string)x.Artikal ?? "Nepoznato",
-                    x => (decimal)x.UkupnaKolicina
+                        return rezultat.ToDictionary(
+                            x => (string)x.Artikal ?? "Nepoznato",
+                            x => (decimal)x.UkupnaKolicina
+                        );
+                    },
+                    CacheService.DefaultExpiration  // 5 minuta
                 );
             }
             catch (Exception ex)
@@ -637,35 +657,43 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = @"
-                    SELECT 
-                        CASE 
-                            WHEN ml.Artikal LIKE '%+' THEN LEFT(ml.Artikal, LENGTH(ml.Artikal) - 1)
-                            WHEN ml.Artikal LIKE '%-' THEN LEFT(ml.Artikal, LENGTH(ml.Artikal) - 1)
-                            ELSE ml.Artikal
-                        END as BaseArtikal,
-                        SUM(ml.Kolicina) as UkupnaKolicina
-                    FROM vwMagacinLager ml
-                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
-                    WHERE a.MagacinID IN (2, 3)  -- SVEZA ROBA I SIROVINE
-                      AND ml.Kolicina >= 10
-                      AND ml.Kolicina IS NOT NULL
-                      AND a.Aktivno = 1
-                      AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
-                      AND ml.Artikal NOT LIKE '%D/Z Sljiva stenlej%'
-                      AND ml.Artikal NOT LIKE '%klasa%'
-                      AND ml.Artikal NOT LIKE '%KLASA%'
-                      AND ml.Artikal NOT LIKE '%Klasa%'
-                    GROUP BY BaseArtikal
-                    ORDER BY UkupnaKolicina DESC
-                    LIMIT 10
-                ";
+                // ✅ OPTIMIZACIJA: Keširanje strukture sirovina za 5 minuta
+                return await _cacheService.GetOrCreateAsync(
+                    "Lager:Struktura:Sirovine",
+                    async () =>
+                    {
+                        var sql = @"
+                            SELECT
+                                CASE
+                                    WHEN ml.Artikal LIKE '%+' THEN LEFT(ml.Artikal, LENGTH(ml.Artikal) - 1)
+                                    WHEN ml.Artikal LIKE '%-' THEN LEFT(ml.Artikal, LENGTH(ml.Artikal) - 1)
+                                    ELSE ml.Artikal
+                                END as BaseArtikal,
+                                SUM(ml.Kolicina) as UkupnaKolicina
+                            FROM vwMagacinLager ml
+                            LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                            WHERE a.MagacinID IN (2, 3)  -- SVEZA ROBA I SIROVINE
+                              AND ml.Kolicina >= 10
+                              AND ml.Kolicina IS NOT NULL
+                              AND a.Aktivno = 1
+                              AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
+                              AND ml.Artikal NOT LIKE '%D/Z Sljiva stenlej%'
+                              AND ml.Artikal NOT LIKE '%klasa%'
+                              AND ml.Artikal NOT LIKE '%KLASA%'
+                              AND ml.Artikal NOT LIKE '%Klasa%'
+                            GROUP BY BaseArtikal
+                            ORDER BY UkupnaKolicina DESC
+                            LIMIT 10
+                        ";
 
-                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+                        var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
 
-                return rezultat.ToDictionary(
-                    x => (string)x.BaseArtikal ?? "Nepoznato",
-                    x => (decimal)x.UkupnaKolicina
+                        return rezultat.ToDictionary(
+                            x => (string)x.BaseArtikal ?? "Nepoznato",
+                            x => (decimal)x.UkupnaKolicina
+                        );
+                    },
+                    CacheService.DefaultExpiration  // 5 minuta
                 );
             }
             catch (Exception ex)
@@ -679,33 +707,41 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         {
             try
             {
-                var sql = @"
-                    SELECT 
-                        CASE 
-                            WHEN ml.Artikal LIKE '%+' THEN LEFT(ml.Artikal, LENGTH(ml.Artikal) - 1)
-                            WHEN ml.Artikal LIKE '%-' THEN LEFT(ml.Artikal, LENGTH(ml.Artikal) - 1)
-                            ELSE ml.Artikal
-                        END as BaseArtikal,
-                        SUM(ml.Kolicina) as UkupnaKolicina
-                    FROM vwMagacinLager ml
-                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
-                    WHERE a.MagacinID = 6  -- GOTOVI PROIZVODI
-                      AND ml.Kolicina >= 10
-                      AND ml.Kolicina IS NOT NULL
-                      AND a.Aktivno = 1
-                      AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
-                      AND ml.Artikal NOT LIKE '%D/Z Šljiva%'
-                      AND ml.Artikal NOT LIKE '%D/Z Sljiva%'
-                    GROUP BY BaseArtikal
-                    ORDER BY UkupnaKolicina DESC
-                    LIMIT 10
-                ";
+                // ✅ OPTIMIZACIJA: Keširanje strukture gotovih proizvoda za 5 minuta
+                return await _cacheService.GetOrCreateAsync(
+                    "Lager:Struktura:GotoviProizvodi",
+                    async () =>
+                    {
+                        var sql = @"
+                            SELECT
+                                CASE
+                                    WHEN ml.Artikal LIKE '%+' THEN LEFT(ml.Artikal, LENGTH(ml.Artikal) - 1)
+                                    WHEN ml.Artikal LIKE '%-' THEN LEFT(ml.Artikal, LENGTH(ml.Artikal) - 1)
+                                    ELSE ml.Artikal
+                                END as BaseArtikal,
+                                SUM(ml.Kolicina) as UkupnaKolicina
+                            FROM vwMagacinLager ml
+                            LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                            WHERE a.MagacinID = 6  -- GOTOVI PROIZVODI
+                              AND ml.Kolicina >= 10
+                              AND ml.Kolicina IS NOT NULL
+                              AND a.Aktivno = 1
+                              AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
+                              AND ml.Artikal NOT LIKE '%D/Z Šljiva%'
+                              AND ml.Artikal NOT LIKE '%D/Z Sljiva%'
+                            GROUP BY BaseArtikal
+                            ORDER BY UkupnaKolicina DESC
+                            LIMIT 10
+                        ";
 
-                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+                        var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
 
-                return rezultat.ToDictionary(
-                    x => (string)x.BaseArtikal ?? "Nepoznato",
-                    x => (decimal)x.UkupnaKolicina
+                        return rezultat.ToDictionary(
+                            x => (string)x.BaseArtikal ?? "Nepoznato",
+                            x => (decimal)x.UkupnaKolicina
+                        );
+                    },
+                    CacheService.DefaultExpiration  // 5 minuta
                 );
             }
             catch (Exception ex)
@@ -928,53 +964,53 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             try
             {
                 var sql = $@"
-                    SELECT 
+                    SELECT
                         ml.ArtikalID,
                         a.MagacinID as Tip,
                         {TipArtiklaCaseStatement} as TipArtikla,
                         ml.Artikal,
                         COALESCE(SUM(ml.Kolicina), 0) as Kolicina,
-                        COALESCE(SUM(rn_kolicina.BrojPakovanja), 0) as KolicinaRadniNalog,
-                        COALESCE(SUM(otvoreni_rn.BrojPakovanja), 0) as ZaNajavljeneUtovare,
-                        (COALESCE(SUM(ml.Kolicina), 0) - COALESCE(SUM(otvoreni_rn.BrojPakovanja), 0)) as Dostupno
+                        COALESCE(MAX(rn_svi.BrojPakovanja), 0) as KolicinaRadniNalog,
+                        COALESCE(MAX(rn_otvoreni.BrojPakovanja), 0) as ZaNajavljeneUtovare,
+                        (COALESCE(SUM(ml.Kolicina), 0) - COALESCE(MAX(rn_otvoreni.BrojPakovanja), 0)) as Dostupno
                     FROM vwMagacinLager ml
                     LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
                     LEFT JOIN (
-                        SELECT 
-                            a2.Naziv as Artikal,
+                        SELECT
+                            a2.ID as ArtikalID,
                             SUM(
-                                CASE 
-                                    WHEN rnl.PakovanjeTip = 2 THEN rnl.BrojPakovanja * p.BrojJPuGP
+                                CASE
+                                    WHEN p.BrojJPuGP > 0 THEN rnl.BrojPakovanja * p.BrojJPuGP
                                     ELSE rnl.BrojPakovanja
                                 END
                             ) as BrojPakovanja
                         FROM vwRadniNalogLager rnl
                         INNER JOIN Pakovanje p ON rnl.PakovanjeID = p.ID
                         INNER JOIN Artikal a2 ON p.JpAmbalazaID = a2.ID
-                        WHERE a2.GrupnaAmbalaza = 0  -- KESE
-                          AND rnl.PakovanjeTip IN (1, 2, 3)
-                        GROUP BY a2.Naziv
-                    ) rn_kolicina ON ml.Artikal = rn_kolicina.Artikal
+                        WHERE a2.GrupnaAmbalaza = 0
+                          AND rnl.BrojPakovanja > 0
+                        GROUP BY a2.ID
+                    ) rn_svi ON ml.ArtikalID = rn_svi.ArtikalID
                     LEFT JOIN (
-                        SELECT 
-                            a3.Naziv as Artikal,
+                        SELECT
+                            a3.ID as ArtikalID,
                             SUM(
-                                CASE 
-                                    WHEN p2.BrojJPuGP > 0 THEN rn.BrojPakovanja * p2.BrojJPuGP
-                                    ELSE rn.BrojPakovanja
+                                CASE
+                                    WHEN p3.BrojJPuGP > 0 THEN rn2.BrojPakovanja * p3.BrojJPuGP
+                                    ELSE rn2.BrojPakovanja
                                 END
                             ) as BrojPakovanja
-                        FROM RadniNalog rn
-                        INNER JOIN ArtikalInstanca ai ON rn.ArtikalInstancaID = ai.ID
-                        INNER JOIN Pakovanje p2 ON ai.PakovanjeID = p2.ID
-                        INNER JOIN Artikal a3 ON p2.JpAmbalazaID = a3.ID
-                        WHERE rn.DokumentStatus = 2  -- OTVORENI
-                          AND a3.GrupnaAmbalaza = 0  -- KESE
-                        GROUP BY a3.Naziv
-                    ) otvoreni_rn ON ml.Artikal = otvoreni_rn.Artikal
+                        FROM RadniNalog rn2
+                        INNER JOIN ArtikalInstanca ai2 ON rn2.ArtikalInstancaID = ai2.ID
+                        INNER JOIN Pakovanje p3 ON ai2.PakovanjeID = p3.ID
+                        INNER JOIN Artikal a3 ON p3.JpAmbalazaID = a3.ID
+                        WHERE rn2.DokumentStatus = 2
+                          AND a3.GrupnaAmbalaza = 0
+                        GROUP BY a3.ID
+                    ) rn_otvoreni ON ml.ArtikalID = rn_otvoreni.ArtikalID
                     WHERE a.MagacinID = 4  -- AMBALAZA
                       AND a.GrupnaAmbalaza = 0  -- KESE
-                      AND (ml.Kolicina >= 10 OR rn_kolicina.BrojPakovanja > 0 OR otvoreni_rn.BrojPakovanja > 0)
+                      AND (ml.Kolicina >= 10 OR rn_svi.BrojPakovanja > 0 OR rn_otvoreni.BrojPakovanja > 0)
                       AND a.Aktivno = 1
                       AND ml.Artikal NOT LIKE '%POLOVNE%'
                       AND ml.Artikal NOT LIKE '%POL.%'
@@ -1003,6 +1039,105 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Greška pri učitavanju kesa");
+                return new List<MagacinLagerModel>();
+            }
+        }
+
+        /// <summary>
+        /// Učitava stanje kesa po izabranim artiklima (multi-select filter)
+        /// </summary>
+        public async Task<List<MagacinLagerModel>> UcitajKesePoArtiklima(List<long> artikalIds)
+        {
+            try
+            {
+                // Ako nema selektovanih artikala, vrati sve kese
+                if (artikalIds == null || !artikalIds.Any())
+                {
+                    return await UcitajKese(new FilterRequest());
+                }
+
+                // Kreiranje IN klauzule za SQL
+                var artikalIdsString = string.Join(",", artikalIds);
+
+                var sql = $@"
+                    SELECT
+                        ml.ArtikalID,
+                        a.MagacinID as Tip,
+                        {TipArtiklaCaseStatement} as TipArtikla,
+                        ml.Artikal,
+                        COALESCE(SUM(ml.Kolicina), 0) as Kolicina,
+                        COALESCE(MAX(rn_svi.BrojPakovanja), 0) as KolicinaRadniNalog,
+                        COALESCE(MAX(rn_otvoreni.BrojPakovanja), 0) as ZaNajavljeneUtovare,
+                        (COALESCE(SUM(ml.Kolicina), 0) - COALESCE(MAX(rn_otvoreni.BrojPakovanja), 0)) as Dostupno
+                    FROM vwMagacinLager ml
+                    LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
+                    LEFT JOIN (
+                        SELECT
+                            a2.ID as ArtikalID,
+                            SUM(
+                                CASE
+                                    WHEN p.BrojJPuGP > 0 THEN rnl.BrojPakovanja * p.BrojJPuGP
+                                    ELSE rnl.BrojPakovanja
+                                END
+                            ) as BrojPakovanja
+                        FROM vwRadniNalogLager rnl
+                        INNER JOIN Pakovanje p ON rnl.PakovanjeID = p.ID
+                        INNER JOIN Artikal a2 ON p.JpAmbalazaID = a2.ID
+                        WHERE a2.GrupnaAmbalaza = 0
+                          AND rnl.BrojPakovanja > 0
+                        GROUP BY a2.ID
+                    ) rn_svi ON ml.ArtikalID = rn_svi.ArtikalID
+                    LEFT JOIN (
+                        SELECT
+                            a3.ID as ArtikalID,
+                            SUM(
+                                CASE
+                                    WHEN p3.BrojJPuGP > 0 THEN rn2.BrojPakovanja * p3.BrojJPuGP
+                                    ELSE rn2.BrojPakovanja
+                                END
+                            ) as BrojPakovanja
+                        FROM RadniNalog rn2
+                        INNER JOIN ArtikalInstanca ai2 ON rn2.ArtikalInstancaID = ai2.ID
+                        INNER JOIN Pakovanje p3 ON ai2.PakovanjeID = p3.ID
+                        INNER JOIN Artikal a3 ON p3.JpAmbalazaID = a3.ID
+                        WHERE rn2.DokumentStatus = 2
+                          AND a3.GrupnaAmbalaza = 0
+                        GROUP BY a3.ID
+                    ) rn_otvoreni ON ml.ArtikalID = rn_otvoreni.ArtikalID
+                    WHERE a.MagacinID = 4
+                      AND a.GrupnaAmbalaza = 0
+                      AND ml.ArtikalID IN ({artikalIdsString})
+                      AND (ml.Kolicina >= 10 OR rn_svi.BrojPakovanja > 0 OR rn_otvoreni.BrojPakovanja > 0)
+                      AND a.Aktivno = 1
+                      AND ml.Artikal NOT LIKE '%POLOVNE%'
+                      AND ml.Artikal NOT LIKE '%POL.%'
+                      AND ml.Artikal NOT LIKE '%Prijem%'
+                      AND ml.Artikal NOT LIKE '%PRIJEM%'
+                      AND ml.Artikal NOT LIKE '%DŽAK%'
+                      AND ml.AmbalazaTip = 2
+                    GROUP BY ml.ArtikalID, a.MagacinID, ml.Artikal
+                    ORDER BY ml.Artikal
+                ";
+
+                _logger.LogInformation($"🔍 UcitajKesePoArtiklima: {artikalIds.Count} artikala");
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+
+                return rezultat.Select(x => new MagacinLagerModel
+                {
+                    ArtikalID = (long)x.ArtikalID,
+                    Tip = x.Tip != null ? (int?)Convert.ToInt32(x.Tip) : null,
+                    TipArtikla = x.TipArtikla,
+                    Artikal = (string)x.Artikal,
+                    Kolicina = (decimal)x.Kolicina,
+                    Pakovanje = ((decimal)x.KolicinaRadniNalog).ToString("N0"),
+                    ZaNajavljeneUtovare = ((decimal)x.ZaNajavljeneUtovare).ToString("N0"),
+                    Lot = ((decimal)x.Dostupno).ToString("N0")
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška pri učitavanju kesa po artiklima");
                 return new List<MagacinLagerModel>();
             }
         }

@@ -13,13 +13,16 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService;
 public class BrziPregledService : IBrziPregledService
 {
     private readonly DatabaseService _db;
-        private readonly ILogger<BrziPregledService> _logger;
+    private readonly ILogger<BrziPregledService> _logger;
+    private readonly CacheService _cacheService;
 
     public BrziPregledService(DatabaseService db,
-            ILogger<BrziPregledService> logger)
+        ILogger<BrziPregledService> logger,
+        CacheService cacheService)
     {
         _db = db;
-            _logger = logger;
+        _logger = logger;
+        _cacheService = cacheService;
     }
 
     /// <summary>

@@ -21,7 +21,7 @@
             <div class="col-md-6">
                 <h1 class="h3 mb-0">
                     <i class="bi bi-truck me-2"></i>
-                    Pregled Nabavke
+                    Finansijski Pregled Nabavke 
                 </h1>
             </div>
             <div class="col-md-6 text-end">
@@ -177,7 +177,7 @@
                     <div class="card-header bg-light">
                         <h5 class="card-title mb-0">
                                 <i class="bi bi-box-arrow-up me-2"></i>
-                                Nabavka - Detaljni prikaz (bez FK- dokumenata)  <!-- Izmeni naslov -->
+                                Nabavka - Detaljni prikaz   <!-- Izmeni naslov -->
                             <span class="badge bg-danger ms-2">@TypeMapping.FormatInteger(podaci.Count) stavki</span>
                         </h5>
                     </div>
@@ -450,7 +450,15 @@
                 { "Duguje", "Duguje" }
             };
 
-            var excelData = ExportService.ExportToExcelWithColumns(podaci, columns);
+            // Dodaj totale na dnu
+            var totals = new Dictionary<string, object>
+            {
+                { "Artikal", "UKUPNO:" },
+                { "Potrazuje", podaci.Sum(x => x.Potrazuje) },
+                { "Duguje", podaci.Sum(x => x.Duguje) }
+            };
+
+            var excelData = ExportService.ExportToExcelWithColumns(podaci, columns, totals);
             var fileName = SystemConstants.GenerateExportFileName("nabavka", "xlsx");
             await DownloadFile(excelData, fileName, SystemConstants.ExcelMimeType);
         }
@@ -476,7 +484,15 @@
                 { "Duguje", "Duguje" }
             };
 
-            var pdfData = ExportService.ExportToPdfWithColumns(podaci, columns);
+            // Dodaj totale na dnu
+            var totals = new Dictionary<string, object>
+            {
+                { "Artikal", "UKUPNO:" },
+                { "Potrazuje", podaci.Sum(x => x.Potrazuje) },
+                { "Duguje", podaci.Sum(x => x.Duguje) }
+            };
+
+            var pdfData = ExportService.ExportToPdfWithColumns(podaci, columns, totals);
             var fileName = SystemConstants.GenerateExportFileName("nabavka", "pdf");
             await DownloadFile(pdfData, fileName, SystemConstants.PdfMimeType);
         }

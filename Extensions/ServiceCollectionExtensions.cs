@@ -3,9 +3,10 @@ using ApexCharts;
 using FruitSysWeb.Components.Charts;
 using FruitSysWeb.Services;
 using FruitSysWeb.Services.Interfaces;
+using FruitSysWeb.Services.Implementations;
 using FruitSysWeb.Services.Implementations.IzvestajService;
 using FruitSysWeb.Services.Implementations.ExportService;
-using FruitSysWeb.Services.Core; // DODATO: Core services
+using FruitSysWeb.Services.Core;
 using Microsoft.AspNetCore.Components;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Blazor_ApexCharts;
@@ -16,30 +17,53 @@ namespace FruitSysWeb.Extensions
     {
         public static IServiceCollection AddFruitSysServices(this IServiceCollection services)
         {
-            // Database
+            // ========================================
+            // DATABASE & CORE SERVICES
+            // ========================================
             services.AddScoped<DatabaseService>();
-
-            // NOVO: Core services - centralizovani mapiranje i helpers
             services.AddScoped<ITypeMappingService, TypeMappingService>();
             services.AddSingleton<CacheService>();  // Singleton for shared cache
+            services.AddSingleton<KesaSelekcijaService>();  // Singleton for global selection
 
-            // Core services
+            // ========================================
+            // AUTHENTICATION & AUTHORIZATION
+            // ========================================
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ILocalStorageService, LocalStorageService>();
+
+            // ========================================
+            // DASHBOARD & REPORTING SERVICES
+            // ========================================
+            services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<IBrziPregledService, BrziPregledService>();
+
+            // ========================================
+            // BUSINESS LOGIC SERVICES
+            // ========================================
             services.AddScoped<IProizvodnjaService, ProizvodnjaService>();
             services.AddScoped<IFinansijeService, FinansijeService>();
             services.AddScoped<IMagacinLagerService, MagacinLagerService>();
+            services.AddScoped<IPreradaService, PreradaService>();
+            services.AddScoped<IUlazIzlazService, UlazIzlazService>();
+            services.AddScoped<IPaletniListService, PaletniListService>();
+            services.AddScoped<IUgovorService, UgovorService>();
+            services.AddScoped<IPovratnaAmbalazaService, PovratnaAmbalazaService>();
+
+            // ========================================
+            // MASTER DATA SERVICES
+            // ========================================
             services.AddScoped<IKomitentService, KomitentService>();
             services.AddScoped<IArtikalService, ArtikalService>();
             services.AddScoped<IArtikalKlasifikacijaService, ArtikalKlasifikacijaService>();
+
+            // ========================================
+            // EXPORT SERVICES
+            // ========================================
             services.AddScoped<IExportService, SimpleExportService>();
 
-            // NOVO: Prerada i Ulaz-Izlaz servisi
-            services.AddScoped<IPreradaService, PreradaService>();
-            services.AddScoped<IUlazIzlazService, UlazIzlazService>();
-            
-            // NOVO: PaletniList servis za real-time prijem
-            services.AddScoped<IPaletniListService, PaletniListService>();
-            
-            // NOVO: Sledljivost servisi
+            // ========================================
+            // SLEDLJIVOST (TRACEABILITY) SERVICES
+            // ========================================
             services.AddScoped<ISledljivostService, SledljivostService>();
             services.AddScoped<SledljivostPdfService>();
             services.AddScoped<SledljivostExcelService>();

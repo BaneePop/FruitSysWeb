@@ -78,5 +78,9 @@ namespace FruitSysWeb.Models
         [Display(Name = "Status Naloga")]
         public string StatusNaloga => DatumIsporuke.HasValue && DatumIsporuke < DateTime.Now ?
             "Zakasnio" : "U toku";
+
+        // Calculated Saldo (razlika između gotovog proizvoda i sirovine)
+        [Display(Name = "Saldo")]
+        public decimal Saldo => GotovProizvod - KolicinaRoba;
     }
 }

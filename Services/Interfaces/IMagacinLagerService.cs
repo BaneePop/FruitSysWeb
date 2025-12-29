@@ -39,6 +39,7 @@ namespace FruitSysWeb.Services.Interfaces
         // Ambalažne metode
         Task<List<MagacinLagerModel>> UcitajKutije(FilterRequest filterRequest);
         Task<List<MagacinLagerModel>> UcitajKese(FilterRequest filterRequest);
+        Task<List<MagacinLagerModel>> UcitajKesePoArtiklima(List<long> artikalIds);
 
         // Metode za Roba stranicu
         Task<List<MagacinLagerModel>> UcitajSirovine(FilterRequest filterRequest);

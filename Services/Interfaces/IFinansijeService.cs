@@ -33,6 +33,13 @@ namespace FruitSysWeb.Services.Interfaces
         Task<List<RobaNaZalihamaModel>> UcitajRobuNaZalihama(List<long> artikalIds, DateTime? odDatum = null, DateTime? doDatum = null);
 
         Task<List<ZbirniFinansijeModel>> UcitajZbirnePodatkePoRadnomDanu(FilterRequest filterRequest);
+
+        // ✨ NOVO: Pregled salda po komitentima
+        /// <summary>
+        /// Učitava saldo po komitentima (Potražuje, Duguje, Stanje)
+        /// Filtrira komitente gde je apsolutno stanje > minimumStanje (default 1000 RSD)
+        /// </summary>
+        Task<List<SaldoPoKomitentuModel>> UcitajSaldoPoKomitentima(FilterRequest filterRequest, decimal minimumStanje = 1000);
     }
 }
 

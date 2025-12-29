@@ -1,0 +1,493 @@
+@page "/stanje-kese-altiva"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Constants
+@inject IMagacinLagerService LagerService
+@inject IExportService ExportService
+@inject ITypeMappingService TypeMapping
+@inject IJSRuntime JSRuntime
+@inject KesaSelekcijaService SelekcijaService
+
+<style>
+    .low-stock { background-color: #fff5f5; border-left: 4px solid #dc3545; }
+    .medium-stock { background-color: #fff8e1; border-left: 4px solid #ffc107; }
+    .high-stock { background-color: #f0f9ff; border-left: 4px solid #198754; }
+
+    .stock-alert {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .multi-select-container {
+        max-height: 250px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+    }
+
+    .multi-select-item {
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+    }
+
+    .multi-select-item:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="bg-info text-white py-3 mb-4">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="h3 mb-0">
+                        <i class="bi bi-bag-check me-2"></i>
+                        Stanje Kesa - Altiva
+                    </h1>
+                    <small class="text-white-50">Filter po artiklima</small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <span class="badge bg-light text-dark fs-6">
+                        <i class="bi bi-bag me-1"></i>@(keseStanje?.Count ?? 0) artikala
+                    </span>
+                    <span class="badge bg-success text-white ms-2 fs-6">
+                        Dostupno: @(keseStanje?.Sum(x => decimal.Parse(x.Lot ?? "0")).ToString("N0") ?? "0") kom
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-funnel me-2"></i>Filter po artiklima
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Selektuj artikle (multi-select):</label>
+                            <div class="multi-select-container">
+                                @if (sviArtikli == null)
+                                {
+                                    <div class="text-center py-3">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Učitavanje...</span>
+                                        </div>
+                                        <p class="mb-0 mt-2">Učitavanje artikala...</p>
+                                    </div>
+                                }
+                                else if (!sviArtikli.Any())
+                                {
+                                    <div class="alert alert-warning mb-0">Nema dostupnih artikala</div>
+                                }
+                                else
+                                {
+                                    @foreach (var artikal in sviArtikli)
+                                    {
+                                        var isSelected = selektovaniArtikli.Contains(artikal.ArtikalID);
+                                        <div class="multi-select-item form-check">
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   id="artikal_@artikal.ArtikalID"
+                                                   checked="@isSelected"
+                                                   @onchange="@(() => ToggleArtikal(artikal.ArtikalID))">
+                                            <label class="form-check-label" for="artikal_@artikal.ArtikalID">
+                                                @artikal.Artikal
+                                            </label>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Selektovano: <strong>@selektovaniArtikli.Count</strong> artikala
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Akcije:</label>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" @onclick="UcitajPodatke">
+                                    <i class="bi bi-search me-1"></i>Prikaži izveštaj
+                                </button>
+                                <button class="btn btn-success" @onclick="SelektujSveArtikle">
+                                    <i class="bi bi-check-all me-1"></i>Selektuj sve
+                                </button>
+                                <button class="btn btn-secondary" @onclick="PoništiSelekciju">
+                                    <i class="bi bi-x-circle me-1"></i>Poništi selekciju
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Buttons -->
+    @if (keseStanje != null && keseStanje.Any())
+    {
+        <div class="row mb-3">
+            <div class="col-12 text-end">
+                <div class="btn-group">
+                    <button class="btn btn-success btn-sm" @onclick="ExportToExcel">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-danger btn-sm" @onclick="ExportToPdf">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Statistics Cards -->
+    @if (keseStanje != null && keseStanje.Any())
+    {
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h5>Ukupno artikala</h5>
+                        <h3>@(keseStanje?.Count ?? 0)</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h5>Na lageru</h5>
+                        <h3>@TypeMapping.FormatDecimal(keseStanje?.Sum(x => x.Kolicina) ?? 0)</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body text-center">
+                        <h5>U proizvodnji</h5>
+                        <h3>@keseStanje?.Sum(x => decimal.Parse(x.Pakovanje ?? "0")).ToString("N0")</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h5>Dostupno</h5>
+                        <h3>@keseStanje?.Sum(x => decimal.Parse(x.Lot ?? "0")).ToString("N0")</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Results Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bag me-2"></i>
+                        Stanje Kesa - Altiva
+                        <span class="badge bg-info ms-2">@(keseStanje?.Count ?? 0) artikala</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (ucitavanje)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-info" role="status">
+                                <span class="visually-hidden">Učitavanje...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Učitavanje podataka...</p>
+                        </div>
+                    }
+                    else if (keseStanje == null || !keseStanje.Any())
+                    {
+                        <div class="alert alert-info m-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            @if (selektovaniArtikli.Count == 0)
+                            {
+                                <span>Selektujte artikle iz filtera i kliknite "Prikaži izveštaj".</span>
+                            }
+                            else
+                            {
+                                <span>Nema podataka za selektovane artikle.</span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Artikal</th>
+                                        <th class="text-end">Količina</th>
+                                        <th class="text-end">U Proizvodnji</th>
+                                        <th class="text-end">Za najavljene Utovare</th>
+                                        <th class="text-end">Dostupno</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in keseStanje)
+                                    {
+                                        decimal ukupno = 0;
+                                        decimal.TryParse(item.Lot ?? "0", out ukupno);
+
+                                        var stockClass = GetStockClass(ukupno, 100);
+                                        var (stockStatus, stockBadgeClass, stockIcon) = TypeMapping.GetQuantityStatus(ukupno);
+
+                                        <tr class="@stockClass">
+                                            <td>
+                                                <strong>@item.Artikal</strong>
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="fw-bold">@TypeMapping.FormatDecimal(item.Kolicina)</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="badge bg-primary">@item.Pakovanje</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="badge bg-info">@(item.ZaNajavljeneUtovare ?? "0")</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <strong class="text-success">@item.Lot</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge @stockBadgeClass">
+                                                    <i class="@stockIcon"></i> @stockStatus
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-secondary">
+                                    <tr>
+                                        <th class="text-end">UKUPNO:</th>
+                                        <th class="text-end text-primary">@TypeMapping.FormatDecimal(keseStanje.Sum(x => x.Kolicina))</th>
+                                        <th class="text-end text-warning">@keseStanje.Sum(x => decimal.Parse(x.Pakovanje ?? "0")).ToString("N0")</th>
+                                        <th class="text-end text-danger">@keseStanje.Sum(x => decimal.Parse(x.ZaNajavljeneUtovare ?? "0")).ToString("N0")</th>
+                                        <th class="text-end text-success">@keseStanje.Sum(x => decimal.Parse(x.Lot ?? "0")).ToString("N0")</th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<MagacinLagerModel>? keseStanje;
+    private List<MagacinLagerModel>? sviArtikli;
+    private List<long> selektovaniArtikli = new List<long>();
+    private bool ucitavanje = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UcitajSveArtikle();
+        await UcitajSacuvanuSelekciju();
+    }
+
+    private async Task UcitajSveArtikle()
+    {
+        try
+        {
+            // Učitaj sve kese da dobijemo listu artikala
+            var sveKese = await LagerService.UcitajKese(new FilterRequest());
+            // Filtriraj samo artikle sa količinom > 0
+            sviArtikli = sveKese
+                .Where(x => x.Kolicina > 0)
+                .OrderBy(x => x.Artikal)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju artikala: {ex.Message}");
+            sviArtikli = new List<MagacinLagerModel>();
+        }
+    }
+
+    private async Task UcitajSacuvanuSelekciju()
+    {
+        try
+        {
+            selektovaniArtikli = await SelekcijaService.UcitajSelektovaneArtikle();
+
+            // Automatski učitaj podatke ako ima sačuvane selekcije
+            if (selektovaniArtikli.Count > 0)
+            {
+                await UcitajPodatke();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju sačuvane selekcije: {ex.Message}");
+        }
+    }
+
+    private void ToggleArtikal(long artikalId)
+    {
+        if (selektovaniArtikli.Contains(artikalId))
+        {
+            selektovaniArtikli.Remove(artikalId);
+        }
+        else
+        {
+            selektovaniArtikli.Add(artikalId);
+        }
+        StateHasChanged();
+    }
+
+    private void SelektujSveArtikle()
+    {
+        if (sviArtikli != null)
+        {
+            selektovaniArtikli = sviArtikli.Select(x => x.ArtikalID).ToList();
+            StateHasChanged();
+        }
+    }
+
+    private async Task PoništiSelekciju()
+    {
+        selektovaniArtikli.Clear();
+        keseStanje = null;
+
+        // Obriši sačuvanu selekciju
+        await SelekcijaService.SacuvajSelektovaneArtikle(new List<long>());
+
+        StateHasChanged();
+    }
+
+    private async Task UcitajPodatke()
+    {
+        ucitavanje = true;
+        try
+        {
+            if (selektovaniArtikli.Count > 0)
+            {
+                keseStanje = await LagerService.UcitajKesePoArtiklima(selektovaniArtikli);
+
+                // Sačuvaj selekciju za sve korisnike
+                await SelekcijaService.SacuvajSelektovaneArtikle(selektovaniArtikli);
+            }
+            else
+            {
+                keseStanje = new List<MagacinLagerModel>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju kesa: {ex.Message}");
+            keseStanje = new List<MagacinLagerModel>();
+        }
+        finally
+        {
+            ucitavanje = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetStockClass(decimal kolicina, decimal minimum)
+    {
+        if (kolicina < minimum) return "low-stock";
+        if (kolicina < minimum * 2) return "medium-stock";
+        return "high-stock";
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            if (keseStanje != null && keseStanje.Any())
+            {
+                var columns = new Dictionary<string, string>
+                {
+                    { "Artikal", "Artikal" },
+                    { "Kolicina", "Količina" },
+                    { "Pakovanje", "U Proizvodnji" },
+                    { "ZaNajavljeneUtovare", "Za najavljene Utovare" },
+                    { "Lot", "Dostupno" }
+                };
+
+                // Dodaj totale na dnu
+                var totals = new Dictionary<string, object>
+                {
+                    { "Artikal", "UKUPNO:" },
+                    { "Kolicina", keseStanje.Sum(x => x.Kolicina) },
+                    { "Pakovanje", keseStanje.Where(x => !string.IsNullOrEmpty(x.Pakovanje)).Sum(x => decimal.TryParse(x.Pakovanje, out var val) ? val : 0) },
+                    { "ZaNajavljeneUtovare", keseStanje.Where(x => !string.IsNullOrEmpty(x.ZaNajavljeneUtovare)).Sum(x => decimal.TryParse(x.ZaNajavljeneUtovare, out var val) ? val : 0) },
+                    { "Lot", keseStanje.Where(x => !string.IsNullOrEmpty(x.Lot)).Sum(x => decimal.TryParse(x.Lot, out var val) ? val : 0) }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(keseStanje, columns, totals);
+                var fileName = TypeMapping.GenerateExportFileName("stanje_kese_altiva", SystemConstants.Export.EXCEL_EXTENSION);
+                await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u Excel: {ex.Message}");
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        try
+        {
+            if (keseStanje != null && keseStanje.Any())
+            {
+                var columns = new Dictionary<string, string>
+                {
+                    { "Artikal", "Artikal" },
+                    { "Kolicina", "Količina" },
+                    { "Pakovanje", "U Proizvodnji" },
+                    { "ZaNajavljeneUtovare", "Za najavljene Utovare" },
+                    { "Lot", "Dostupno" }
+                };
+
+                // Dodaj totale na dnu
+                var totals = new Dictionary<string, object>
+                {
+                    { "Artikal", "UKUPNO:" },
+                    { "Kolicina", keseStanje.Sum(x => x.Kolicina) },
+                    { "Pakovanje", keseStanje.Where(x => !string.IsNullOrEmpty(x.Pakovanje)).Sum(x => decimal.TryParse(x.Pakovanje, out var val) ? val : 0) },
+                    { "ZaNajavljeneUtovare", keseStanje.Where(x => !string.IsNullOrEmpty(x.ZaNajavljeneUtovare)).Sum(x => decimal.TryParse(x.ZaNajavljeneUtovare, out var val) ? val : 0) },
+                    { "Lot", keseStanje.Where(x => !string.IsNullOrEmpty(x.Lot)).Sum(x => decimal.TryParse(x.Lot, out var val) ? val : 0) }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(keseStanje, columns, totals);
+                var fileName = TypeMapping.GenerateExportFileName("stanje_kese_altiva", SystemConstants.Export.PDF_EXTENSION);
+                await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u PDF: {ex.Message}");
+        }
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
+    }
+}

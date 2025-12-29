@@ -364,7 +364,14 @@
                 { "Kolicina", "Količina" }
             };
 
-            var excelData = ExportService.ExportToExcelWithColumns(podaci, columns);
+            // Dodaj totale na dnu
+            var totals = new Dictionary<string, object>
+            {
+                { "Artikal", "UKUPNO:" },
+                { "Kolicina", podaci.Sum(x => x.Kolicina) }
+            };
+
+            var excelData = ExportService.ExportToExcelWithColumns(podaci, columns, totals);
             var fileName = SystemConstants.GenerateExportFileName("prodaja_roba", "xlsx");
             await DownloadFile(excelData, fileName, SystemConstants.ExcelMimeType);
         }
@@ -388,7 +395,14 @@
                 { "Kolicina", "Količina" }
             };
 
-            var pdfData = ExportService.ExportToPdfWithColumns(podaci, columns);
+            // Dodaj totale na dnu
+            var totals = new Dictionary<string, object>
+            {
+                { "Artikal", "UKUPNO:" },
+                { "Kolicina", podaci.Sum(x => x.Kolicina) }
+            };
+
+            var pdfData = ExportService.ExportToPdfWithColumns(podaci, columns, totals);
             var fileName = SystemConstants.GenerateExportFileName("prodaja_roba", "pdf");
             await DownloadFile(pdfData, fileName, SystemConstants.PdfMimeType);
         }
