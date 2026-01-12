@@ -66,3 +66,17 @@ implementacija_*.md
 .fakepublish/
 
 .fake
+
+# Publish folder (deployment artifacts)
+publish/
+
+# Deployment archives
+*.zip
+
+# Data folder (local data)
+Data/
+
+# Deployment scripts and temp folders
+deploy-*.ps1
+quick-*.ps1
+quick-deploy-temp/

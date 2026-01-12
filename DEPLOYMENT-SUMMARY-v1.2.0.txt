@@ -1,0 +1,258 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                    FruitSysWeb DEPLOYMENT v1.2.0                             ║
+║                        Deployment Summary                                    ║
+║                                                                              ║
+║                    Datum: 22. decembar 2025, 18:04                          ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 📦 DEPLOYMENT PAKET INFORMACIJE                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  Naziv:     FruitSysWeb-Production-v1.2.0-20251222-180459.zip
+  Veličina:  ~39 MB
+  Build:     .NET 8.0 (Release)
+  Platform:  Windows Server x64
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ✨ NOVE FUNKCIONALNOSTI                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  ✅ 1. PREGLED SALDA PO KOMITENTU
+     - Stranica: Components/Pages/PregledSalda.razor
+     - Model: Models/SaldoPoKomitentuModel.cs
+     - Funkcionalnost: Pregled dugovanja i potraživanja po komitentu
+     - Export: Excel + PDF
+     - Pristup: FinansijeHome → "Pregled Salda"
+
+  ✅ 2. STANJE KASE ALTIVA
+     - Stranica: Components/Pages/StanjeKaseAltiva.razor
+     - Model: Models/StanjeKeseSelekcija.cs
+     - Funkcionalnost: Pregled stanja kese sa selekcijom proizvoda
+     - Persistence: Data/stanje-kese-selekcija.json (čuva user izbore)
+     - Export: Excel + PDF
+     - Pristup: FinansijeHome → "Stanje Kase Altiva"
+
+  ✅ 3. KESA SELEKCIJA SERVICE
+     - Servis: Services/Core/KesaSelekcijaService.cs
+     - Tip: Singleton (shared state)
+     - Funkcionalnost: Čuvanje user preferences za selekciju proizvoda
+     - Storage: JSON file persistence
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🔄 REFACTORING                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  ✅ OBRISANI SERVISI (Merged u FinansijeService):
+     ❌ Services/Implementations/IzvestajService/FinansijskiPregledService.cs
+     ❌ Services/Interfaces/IFinansijskiPregledService.cs
+
+  ✅ OBRISANI MODELI (Nekorišćeni):
+     ❌ Models/RobaZalihaModel.cs
+
+  ✅ AŽURIRANO 27 FAJLOVA:
+     - Sve stranice koje su koristile IFinansijskiPregledService
+     - ServiceCollectionExtensions.cs (DI registration)
+     - Program.cs (Data folder konfiguracija)
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 📁 FAJLOVI U PAKETU (Verifikacija)                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  ✅ FruitSysWeb.dll (2.0 MB) - Glavna aplikacija
+  ✅ Logo.png (14 KB) - Za PDF export
+  ✅ Data/stanje-kese-selekcija.json - User preferences
+  ✅ appsettings.json (710 B) - Konfiguracija
+  ✅ LatoFont/ - Fontovi za PDF
+  ✅ wwwroot/ - CSS, JS, Bootstrap, ApexCharts
+  ✅ Sve biblioteke: Dapper, QuestPDF, ClosedXML, Serilog, MySqlConnector
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🚀 DEPLOYMENT INSTRUKCIJE                                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  KORAK 1: Kopiraj fajlove na Windows Server
+  ───────────────────────────────────────────────────────────────────────
+    - FruitSysWeb-Production-v1.2.0-20251222-180459.zip
+    - deploy-to-windows-server-v1.2.0.ps1
+
+  KORAK 2: Pokreni deployment skriptu (PowerShell kao Administrator)
+  ───────────────────────────────────────────────────────────────────────
+    cd C:\Temp\FruitSysWeb-Deployment
+    .\deploy-to-windows-server-v1.2.0.ps1 -IIS -AppPoolName "FruitSysWeb"
+
+  KORAK 3: Proveri aplikaciju
+  ───────────────────────────────────────────────────────────────────────
+    URL: http://192.168.1.11:6001
+
+    1. Login stranica radi? ✅
+    2. FinansijeHome → Pregled Salda ✅
+    3. FinansijeHome → Stanje Kase Altiva ✅
+    4. Testiraj selekciju proizvoda i refresh stranice ✅
+    5. Testiraj export to Excel/PDF ✅
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ⚙️ SISTEM ZAHTEVI                                                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  ✅ Windows Server 2016+ (ili Windows 10/11)
+  ✅ IIS 10.0+ (ako koristite IIS)
+  ✅ .NET 8.0 Runtime (ASP.NET Core Runtime)
+  ✅ MySQL baza (185.102.237.236:63388) - već postoji
+  ✅ Network access na port 6001
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🔐 PERMISSIONS (VAŽNO!)                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  Deployment skripta automatski postavlja permissions, ali ako radite ručno:
+
+  C:\FruitSysWeb\              → IIS_IUSRS: Full Control
+  C:\FruitSysWeb\Data\         → IIS_IUSRS: Modify (Read + Write)
+  C:\FruitSysWeb\Logs\         → IIS_IUSRS: Modify (Read + Write)
+
+  PowerShell komande:
+  ─────────────────────────────────────────────────────────────────────────────
+  icacls "C:\FruitSysWeb" /grant "IIS_IUSRS:(OI)(CI)F" /T /Q
+  icacls "C:\FruitSysWeb\Data" /grant "IIS_IUSRS:(OI)(CI)M" /T /Q
+  icacls "C:\FruitSysWeb\Logs" /grant "IIS_IUSRS:(OI)(CI)M" /T /Q
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 📋 POST-DEPLOYMENT CHECKLIST                                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  NOVE FUNKCIONALNOSTI:
+  ─────────────────────────────────────────────────────────────────────────────
+  [ ] Login sa admin korisnik
+  [ ] Idi na FinansijeHome
+  [ ] Klikni "Pregled Salda" dugme
+  [ ] Proveri da li se učitava lista komitenata
+  [ ] Testiraj Export to Excel
+  [ ] Testiraj Export to PDF
+  [ ] Vrati se na FinansijeHome
+  [ ] Klikni "Stanje Kase Altiva" dugme
+  [ ] Proveri da li se učitava lista proizvoda
+  [ ] Selektuj nekoliko proizvoda (checkbox-i)
+  [ ] Refresh stranicu (F5)
+  [ ] Proveri da li su selections sačuvane ✅
+  [ ] Proveri da li postoji: C:\FruitSysWeb\Data\stanje-kese-selekcija.json
+
+  REGRESSION TESTING (Stare funkcionalnosti):
+  ─────────────────────────────────────────────────────────────────────────────
+  [ ] PreradaHome → Proizvodnja (učitavanje podataka)
+  [ ] PreradaHome → Radni Nalozi (filter po datumu)
+  [ ] PreradaHome → Sledljivost (pretraga)
+  [ ] LagerHome → Magacin Lager (svi magacini)
+  [ ] FinansijeHome → Nabavka (export to Excel)
+  [ ] FinansijeHome → Prodaja (chart prikaz)
+  [ ] TroskoviHome → Troškovi Proizvodnje
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🔧 TROUBLESHOOTING                                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  Problem: "Stanje Kase Altiva" ne čuva selections
+  ─────────────────────────────────────────────────────────────────────────────
+  Rešenje:
+    1. Proveri da li postoji: C:\FruitSysWeb\Data\
+    2. Proveri permissions: icacls "C:\FruitSysWeb\Data"
+    3. Trebalo bi: IIS_IUSRS:(OI)(CI)M
+    4. Ako ne radi: icacls "C:\FruitSysWeb\Data" /grant "IIS_IUSRS:(OI)(CI)M" /T /Q
+
+  Problem: PDF Export ne radi
+  ─────────────────────────────────────────────────────────────────────────────
+  Rešenje:
+    1. Proveri da li postoji: C:\FruitSysWeb\Logo.png
+    2. Ako ne postoji, kopiraj iz ZIP-a
+
+  Problem: Greška "FinansijskiPregledService not found"
+  ─────────────────────────────────────────────────────────────────────────────
+  Rešenje:
+    1. Stop-WebAppPool -Name "FruitSysWeb"
+    2. Očisti cache (Temporary ASP.NET Files)
+    3. Start-WebAppPool -Name "FruitSysWeb"
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🔄 ROLLBACK INSTRUKCIJE                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  Ako deployment ne radi, vrati staru verziju:
+  ─────────────────────────────────────────────────────────────────────────────
+
+  Stop-WebAppPool -Name "FruitSysWeb"
+  Remove-Item -Path "C:\FruitSysWeb\*" -Recurse -Force -Exclude "Logs"
+  Copy-Item -Path "C:\FruitSysWeb-Backup-YYYYMMDD-HHMMSS\*" `
+            -Destination "C:\FruitSysWeb\" -Recurse -Force
+  Start-WebAppPool -Name "FruitSysWeb"
+
+  (Zameni YYYYMMDD-HHMMSS sa pravim datum/vremenom iz backup foldera)
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 📚 DOKUMENTACIJA                                                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  📄 DEPLOYMENT-v1.2.0-INSTRUKCIJE.md  → Kompletan deployment guide
+  📄 CHANGELOG-v1.2.0.md                → Detaljni changelog
+  📄 PREGLED-SALDA-DOKUMENTACIJA.md     → Dokumentacija za Pregled Salda
+  📄 SALDO-LOGIKA-ISPRAVKA.md           → Saldo kalkulacija logika
+  📄 REFACTORING-REPORT.md              → Refactoring report
+  📄 REFACTORING-SUMMARY.md             → Refactoring summary
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 📊 STATISTIKA                                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  Dodato:        2 stranice + 2 modela + 1 servis + Data folder
+  Izmenjeno:     27 fajlova (stranice + servisi)
+  Obrisano:      2 servisa + 1 model (refactoring)
+  Build veličina: 2.0 MB (FruitSysWeb.dll)
+  Paket veličina: 39 MB (ZIP)
+  Build trajanje: ~15 sekundi
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ✅ VERIFIKACIJA BUILD-a                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  ✅ Build uspešan (0 errors, 0 warnings)
+  ✅ ZIP paket kreiran
+  ✅ Data folder uključen
+  ✅ Logo.png uključen
+  ✅ Novi modeli u DLL (SaldoPoKomitentuModel, StanjeKeseSelekcija)
+  ✅ Novi servis u DLL (KesaSelekcijaService)
+  ✅ Deployment skripta kreirana
+  ✅ Dokumentacija kompletna
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 📞 KONTAKT I PODRŠKA                                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  Za pitanja ili probleme:
+
+  1. Proveri Logs: C:\FruitSysWeb\Logs\fruitsysweb-YYYYMMDD.txt
+  2. Proveri Windows Event Viewer → Application logs
+  3. Pogledaj DEPLOYMENT-v1.2.0-INSTRUKCIJE.md → Troubleshooting sekciju
+  4. Kontaktiraj Development Tim
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                          🚀 SREĆAN DEPLOYMENT! 🚀                            ║
+║                                                                              ║
+║                  FruitSysWeb v1.2.0 spreman za production!                   ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
