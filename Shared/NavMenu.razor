@@ -63,6 +63,9 @@
                                     <li><a class="dropdown-item" href="/sledljivost">
                                         <i class="bi bi-diagram-3 me-2" aria-hidden="true"></i>Sledljivost
                                     </a></li>
+                                    <li><a class="dropdown-item" href="/kontrola-radni-nalog">
+                                        <i class="bi bi-clipboard2-check me-2" aria-hidden="true"></i>Kontrole RN
+                                    </a></li>
                                 </ul>
                             </li>
 
@@ -96,6 +99,15 @@
                                         </a></li>
                                         <li><a class="dropdown-item" href="/pregled-salda">
                                             <i class="bi bi-balance-scale me-2" aria-hidden="true"></i>Pregled Salda
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/kartica-komitenta">
+                                            <i class="bi bi-person-lines-fill me-2" aria-hidden="true"></i>Kartica Komitenta
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/fakture">
+                                            <i class="bi bi-receipt me-2" aria-hidden="true"></i>Fakture
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/finansijsko-stanje">
+                                            <i class="bi bi-graph-up-arrow me-2" aria-hidden="true"></i>Finansijsko Stanje
                                         </a></li>
                                     </ul>
                                 </li>
@@ -145,6 +157,9 @@
                                     <li><a class="dropdown-item" href="/troskovi-radne-snage">
                                         <i class="bi bi-people-fill me-2" aria-hidden="true"></i>Troškovi radne snage
                                     </a></li>
+                                    <li><a class="dropdown-item" href="/cena-kostanja">
+                                        <i class="bi bi-coin me-2" aria-hidden="true"></i>Cena Koštanja
+                                    </a></li>
                                     @if (ImaPuniPristup())
                                     {
                                         <li><a class="dropdown-item" href="/troskovi-ambalaze">
@@ -165,6 +180,9 @@
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="/promethome">
                                         <i class="bi bi-house-door me-2" aria-hidden="true"></i>Promet početna
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/prezentacija">
+                                        <i class="bi bi-bar-chart-line me-2" aria-hidden="true"></i>Prezentacija
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     @if (ImaPuniPristup())
@@ -339,6 +357,11 @@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="troskovihome">
                 <span class="bi bi-house-door" aria-hidden="true"></span> Troškovi početna
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="cena-kostanja">
+                <span class="bi bi-coin" aria-hidden="true"></span> Cena Koštanja
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">

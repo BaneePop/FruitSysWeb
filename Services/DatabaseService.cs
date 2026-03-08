@@ -21,7 +21,7 @@ namespace FruitSysWeb.Services
             _logger = logger;
         }
 
-        public async Task<IEnumerable<T>> QueryAsync<T>(string sql, object? parameters = null)
+        public async Task<IEnumerable<T>> QueryAsync<T>(string sql, object? parameters = null, int commandTimeout = 120)
         {
             if (string.IsNullOrEmpty(_connectionString))
             {
@@ -30,10 +30,10 @@ namespace FruitSysWeb.Services
 
             using var connection = new MySqlConnection(_connectionString);
             await connection.OpenAsync();
-            return await connection.QueryAsync<T>(sql, parameters);
+            return await connection.QueryAsync<T>(new CommandDefinition(sql, parameters, commandTimeout: commandTimeout));
         }
 
-        public async Task<T?> QueryFirstOrDefaultAsync<T>(string sql, object? parameters = null)
+        public async Task<T?> QueryFirstOrDefaultAsync<T>(string sql, object? parameters = null, int commandTimeout = 120)
         {
             if (string.IsNullOrEmpty(_connectionString))
             {
@@ -42,7 +42,7 @@ namespace FruitSysWeb.Services
 
             using var connection = new MySqlConnection(_connectionString);
             await connection.OpenAsync();
-            return await connection.QueryFirstOrDefaultAsync<T>(sql, parameters);
+            return await connection.QueryFirstOrDefaultAsync<T>(new CommandDefinition(sql, parameters, commandTimeout: commandTimeout));
         }
 
         public async Task<int> ExecuteAsync(string sql, object? parameters = null)

@@ -431,14 +431,14 @@ public class BrziPregledService : IBrziPregledService
     /// Učitava nabavku po danima i po vrsti voća
     /// Filtrira artikle sa MagacinID (2, 3, 5, 6)
     /// </summary>
-    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajNabavkuPoDanimaPoVociAsync(DateTime? odDatum = null)
+    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajNabavkuPoDanimaPoVociAsync(DateTime? odDatum = null, DateTime? doDatum = null)
     {
         try
         {
-            var doDatum = DateTime.Now;
-            var startDatum = odDatum ?? doDatum.AddDays(-30); // Default: poslednjih 30 dana
+            var endDatum = doDatum ?? DateTime.Now;
+            var startDatum = odDatum ?? endDatum.AddDays(-30); // Default: poslednjih 30 dana
 
-            _logger.LogInformation($"🔍 UcitajNabavkuPoDanimaPoVoci: {startDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}");
+            _logger.LogInformation($"🔍 UcitajNabavkuPoDanimaPoVoci: {startDatum:yyyy-MM-dd} - {endDatum:yyyy-MM-dd}");
 
             // SQL query: Nabavka (KL- dokumenti) grupisan po datumu i vrsti artikla
             var sql = @"
@@ -460,7 +460,7 @@ public class BrziPregledService : IBrziPregledService
 
             var parameters = new DynamicParameters();
             parameters.Add("@OdDatum", startDatum);
-            parameters.Add("@DoDatum", doDatum);
+            parameters.Add("@DoDatum", endDatum);
 
             var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
 
@@ -481,7 +481,6 @@ public class BrziPregledService : IBrziPregledService
                     podaciPoVoci[vrstaVoca] = new List<(DateTime, decimal, decimal)>();
                 }
 
-                // Nađi postojeći datum ili dodaj novi
                 var postojeci = podaciPoVoci[vrstaVoca].FirstOrDefault(x => x.Datum.Date == datum.Date);
                 if (postojeci != default)
                 {
@@ -494,16 +493,15 @@ public class BrziPregledService : IBrziPregledService
                 }
             }
 
-            // Konvertuj u format za chart (samo količina) i sortiraj po datumu
+            // Konvertuj u format za chart — ključ je "dd.MM.yy" da se razlikuju iste date iz raznih godina
             var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
             foreach (var voce in podaciPoVoci)
             {
                 rezultatDict[voce.Key] = new Dictionary<string, decimal>();
-                // Sortiraj po datumu pre konverzije
                 foreach (var stavka in voce.Value.OrderBy(x => x.Datum))
                 {
-                    string datumStr = stavka.Datum.ToString("dd.MM");
-                    rezultatDict[voce.Key][datumStr] = stavka.Kolicina; // Vraćamo količinu, ne vrednost
+                    string datumStr = stavka.Datum.ToString("dd.MM.yy");
+                    rezultatDict[voce.Key][datumStr] = stavka.Kolicina;
                 }
             }
 
@@ -522,14 +520,14 @@ public class BrziPregledService : IBrziPregledService
     /// Učitava prodaju po danima i po vrsti voća
     /// Filtrira artikle sa MagacinID (2, 3, 5, 6)
     /// </summary>
-    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajProdajuPoDanimaPoVociAsync(DateTime? odDatum = null)
+    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajProdajuPoDanimaPoVociAsync(DateTime? odDatum = null, DateTime? doDatum = null)
     {
         try
         {
-            var doDatum = DateTime.Now;
-            var startDatum = odDatum ?? doDatum.AddDays(-30); // Default: poslednjih 30 dana
+            var endDatum = doDatum ?? DateTime.Now;
+            var startDatum = odDatum ?? endDatum.AddDays(-30); // Default: poslednjih 30 dana
 
-            _logger.LogInformation($"🔍 UcitajProdajuPoDanimaPoVoci: {startDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}");
+            _logger.LogInformation($"🔍 UcitajProdajuPoDanimaPoVoci: {startDatum:yyyy-MM-dd} - {endDatum:yyyy-MM-dd}");
 
             // SQL query: Prodaja (FK- dokumenti) grupisan po datumu i vrsti artikla
             var sql = @"
@@ -551,12 +549,10 @@ public class BrziPregledService : IBrziPregledService
 
             var parameters = new DynamicParameters();
             parameters.Add("@OdDatum", startDatum);
-            parameters.Add("@DoDatum", doDatum);
+            parameters.Add("@DoDatum", endDatum);
 
             var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
 
-            // Grupisanje po vrsti voća koristeći MapToFruitType
-            // Dictionary<VrstaVoca, List<(Datum, Kolicina, Vrednost)>>
             var podaciPoVoci = new Dictionary<string, List<(DateTime Datum, decimal Kolicina, decimal Vrednost)>>();
 
             foreach (var red in rezultat)
@@ -572,7 +568,6 @@ public class BrziPregledService : IBrziPregledService
                     podaciPoVoci[vrstaVoca] = new List<(DateTime, decimal, decimal)>();
                 }
 
-                // Nađi postojeći datum ili dodaj novi
                 var postojeci = podaciPoVoci[vrstaVoca].FirstOrDefault(x => x.Datum.Date == datum.Date);
                 if (postojeci != default)
                 {
@@ -590,11 +585,10 @@ public class BrziPregledService : IBrziPregledService
             foreach (var voce in podaciPoVoci)
             {
                 rezultatDict[voce.Key] = new Dictionary<string, decimal>();
-                // Sortiraj po datumu pre konverzije
                 foreach (var stavka in voce.Value.OrderBy(x => x.Datum))
                 {
-                    string datumStr = stavka.Datum.ToString("dd.MM");
-                    rezultatDict[voce.Key][datumStr] = stavka.Kolicina; // Vraćamo količinu, ne vrednost
+                    string datumStr = stavka.Datum.ToString("dd.MM.yy");
+                    rezultatDict[voce.Key][datumStr] = stavka.Kolicina;
                 }
             }
 
@@ -612,12 +606,12 @@ public class BrziPregledService : IBrziPregledService
     /// <summary>
     /// Učitava ukupne vrednosti (količina i vrednost) za nabavku po vrsti voća za zadnjih 30 dana
     /// </summary>
-    public async Task<Dictionary<string, (decimal Kolicina, decimal Vrednost)>> UcitajUkupneVrednostiNabavkeAsync()
+    public async Task<Dictionary<string, (decimal Kolicina, decimal Vrednost)>> UcitajUkupneVrednostiNabavkeAsync(DateTime? odDatum = null, DateTime? doDatum = null)
     {
         try
         {
-            var doDatum = DateTime.Now;
-            var odDatum = doDatum.AddDays(-30);
+            var endDatum = doDatum ?? DateTime.Now;
+            var startDatum = odDatum ?? endDatum.AddDays(-30);
 
             var sql = @"
                 SELECT
@@ -635,8 +629,8 @@ public class BrziPregledService : IBrziPregledService
                 GROUP BY a.Naziv";
 
             var parameters = new DynamicParameters();
-            parameters.Add("@OdDatum", odDatum);
-            parameters.Add("@DoDatum", doDatum);
+            parameters.Add("@OdDatum", startDatum);
+            parameters.Add("@DoDatum", endDatum);
 
             var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
 
@@ -669,15 +663,12 @@ public class BrziPregledService : IBrziPregledService
         }
     }
 
-    /// <summary>
-    /// Učitava ukupne vrednosti (količina i vrednost) za prodaju po vrsti voća za zadnjih 30 dana
-    /// </summary>
-    public async Task<Dictionary<string, (decimal Kolicina, decimal Vrednost)>> UcitajUkupneVrednostiProdajeAsync()
+    public async Task<Dictionary<string, (decimal Kolicina, decimal Vrednost)>> UcitajUkupneVrednostiProdajeAsync(DateTime? odDatum = null, DateTime? doDatum = null)
     {
         try
         {
-            var doDatum = DateTime.Now;
-            var odDatum = doDatum.AddDays(-30);
+            var endDatum = doDatum ?? DateTime.Now;
+            var startDatum = odDatum ?? endDatum.AddDays(-30);
 
             var sql = @"
                 SELECT
@@ -695,8 +686,8 @@ public class BrziPregledService : IBrziPregledService
                 GROUP BY a.Naziv";
 
             var parameters = new DynamicParameters();
-            parameters.Add("@OdDatum", odDatum);
-            parameters.Add("@DoDatum", doDatum);
+            parameters.Add("@OdDatum", startDatum);
+            parameters.Add("@DoDatum", endDatum);
 
             var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
 
@@ -726,6 +717,46 @@ public class BrziPregledService : IBrziPregledService
         {
             _logger.LogInformation($"❌ Greška u UcitajUkupneVrednostiProdaje: {ex.Message}");
             return new Dictionary<string, (decimal, decimal)>();
+        }
+    }
+
+    public async Task<Dictionary<string, decimal>> UcitajProdajuGotovihProizvodaAsync(DateTime? odDatum = null, DateTime? doDatum = null)
+    {
+        try
+        {
+            var endDatum = doDatum ?? DateTime.Now;
+            var startDatum = odDatum ?? endDatum.AddDays(-30);
+
+            var sql = @"
+                SELECT
+                    COALESCE(a.Naziv, 'Nepoznato') as ArtikalNaziv,
+                    COALESCE(SUM(ABS(fm.Kolicina)), 0) as Kolicina
+                FROM vPrometFinansijev9 fm
+                INNER JOIN Artikal a ON fm.ArtikalID = a.ID
+                WHERE fm.Dokument LIKE 'FK-%'
+                  AND fm.Datum >= @OdDatum
+                  AND fm.Datum <= @DoDatum
+                  AND fm.DokumentStatus != 2
+                  AND fm.DokumentStatus != 4
+                  AND a.MagacinID = 6
+                GROUP BY a.Naziv
+                ORDER BY Kolicina DESC";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@OdDatum", startDatum);
+            parameters.Add("@DoDatum", endDatum);
+
+            var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
+
+            return rezultat.ToDictionary(
+                x => (string)(x.ArtikalNaziv ?? "Nepoznato"),
+                x => (decimal)x.Kolicina
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation($"❌ Greška u UcitajProdajuGotovihProizvoda: {ex.Message}");
+            return new Dictionary<string, decimal>();
         }
     }
 }

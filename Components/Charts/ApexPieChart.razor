@@ -47,84 +47,39 @@
         }
         else
         {
-            @* Pokušaj ApexChart prvo *@
-            @if (HasError || ForceTableView)
+            <ApexChart TItem="ChartDataPoint"
+                       @key="@($"pie-chart-{Title}-{Data?.Count ?? 0}")"
+                       Title="@ChartTitle"
+                       Height="@Height"
+                       Options="@ChartOptions">
+                <ApexPointSeries TItem="ChartDataPoint"
+                                 Items="@Data"
+                                 Name="@SeriesName"
+                                 SeriesType="SeriesType.Pie"
+                                 XValue="@(e => e.Label)"
+                                 YValue="@(e => (decimal?)e.Value)" />
+            </ApexChart>
+            
+            @if (ShowSummary && Data?.Any() == true)
             {
-                @* FALLBACK: Jednostavna tabela umesto chart *@
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>@SeriesName</th>
-                                <th class="text-end">Vrednost (@Unit)</th>
-                                <th class="text-end">%</th>
-                            </tr>
-                        </thead>
+                var ukupno = Data.Sum(x => x.Value);
+                <div class="mt-2">
+                    <table class="table table-sm mb-1" style="font-size:0.8rem;">
                         <tbody>
-                            @foreach (var item in Data.Take(5))
+                            @foreach (var item in Data)
                             {
                                 <tr>
-                                    <td>@item.Label</td>
-                                    <td class="text-end">@item.Value.ToString("N2")</td>
-                                    <td class="text-end">@((item.Value / Data.Sum(x => x.Value) * 100).ToString("F1"))%</td>
+                                    <td style="width:12px; padding:2px 4px;">
+                                        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:@(item.Color ?? "#888");"></span>
+                                    </td>
+                                    <td style="padding:2px 6px;">@item.Label</td>
+                                    <td class="text-end" style="padding:2px 4px;"><strong>@item.Value.ToString("N0") @Unit</strong></td>
+                                    <td class="text-end text-muted" style="padding:2px 4px;">@((item.Value / ukupno * 100).ToString("F1"))%</td>
                                 </tr>
                             }
                         </tbody>
                     </table>
-                </div>
-            }
-            else
-            {
-                @try
-                {
-                    <ApexChart TItem="ChartDataPoint" 
-                               Title="@ChartTitle"
-                               Height="@Height"
-                               Options="@ChartOptions">
-                        <ApexPointSeries TItem="ChartDataPoint"
-                                         Items="@Data"
-                                         Name="@SeriesName"
-                                         SeriesType="SeriesType.Pie"
-                                         XValue="@(e => e.Label)"
-                                         YValue="@(e => e.Value)" />
-                    </ApexChart>
-                }
-                catch
-                {
-                    @* Ako chart failed, prikaži tabelu *@
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        Chart rendering neuspešno. Prikazujem tabelu:
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>@SeriesName</th>
-                                    <th class="text-end">Vrednost (@Unit)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var item in Data.Take(5))
-                                {
-                                    <tr>
-                                        <td>@item.Label</td>
-                                        <td class="text-end">@item.Value.ToString("N2")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            }
-            
-            @if (ShowSummary && Data.Any())
-            {
-                <div class="mt-3 pt-3 border-top">
-                    <small class="text-muted">
-                        <strong>Ukupno:</strong> @Data.Sum(x => x.Value).ToString("N2") @Unit
-                        | <strong>Kategorije:</strong> @Data.Count()
-                    </small>
+                    <small class="text-muted"><strong>Ukupno:</strong> @ukupno.ToString("N0") @Unit</small>
                 </div>
             }
         }
@@ -145,8 +100,6 @@
     [Parameter] public List<ChartDataPoint>? Data { get; set; }
     [Parameter] public EventCallback OnRefresh { get; set; }
     [Parameter] public List<string>? Colors { get; set; }
-    [Parameter] public bool ForceTableView { get; set; } = false;
-
     private List<string> DefaultColors => new List<string>
     {
         "#28a745", "#dc3545", "#007bff", "#ffc107", "#6f42c1",
@@ -157,8 +110,6 @@
     {
         Chart = new Chart
         {
-            Type = ChartType.Pie,
-            Height = Height,
             Toolbar = new Toolbar { Show = false }
         },
         Colors = Colors ?? DefaultColors,
@@ -166,31 +117,11 @@
         DataLabels = new DataLabels
         {
             Enabled = true,
-            Formatter = "function(val) { return Math.round(val) + '%' }"
+            Formatter = "function(val) { return Math.round(val) + '%' }",
+            Style = new DataLabelsStyle { FontSize = "11px" },
+            DropShadow = new DropShadow { Enabled = false }
         },
-        Legend = new Legend
-        {
-            Position = LegendPosition.Bottom,
-            HorizontalAlign = Align.Center
-        },
-        Responsive = new List<Responsive<ChartDataPoint>>
-        {
-            new Responsive<ChartDataPoint>
-            {
-                Breakpoint = 480,
-                Options = new ApexChartOptions<ChartDataPoint>
-                {
-                    Chart = new Chart
-                    {
-                        Width = 300
-                    },
-                    Legend = new Legend
-                    {
-                        Position = LegendPosition.Bottom
-                    }
-                }
-            }
-        },
+        Legend = new Legend { Show = false },
         Tooltip = new Tooltip
         {
             Y = new TooltipY
