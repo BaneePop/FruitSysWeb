@@ -69,6 +69,8 @@ implementacija_*.md
 
 # Publish folder (deployment artifacts)
 publish/
+publish_output/
+publish_new/
 
 # Deployment archives
 *.zip
