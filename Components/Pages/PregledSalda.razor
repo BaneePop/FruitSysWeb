@@ -11,6 +11,8 @@
 @inject ITypeMappingService TypeMapping
 @inject IJSRuntime JSRuntime
 @inject ILogger<PregledSalda> Logger
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
 
 <!-- Header sa ukupnim saldom -->
 <div class="bg-dark text-white py-3 mb-4">
@@ -258,6 +260,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var user = await AuthService.GetCurrentUser();
+        if (user == null || !user.ImaPristupStranici("/pregled-salda"))
+        {
+            NavigationManager.NavigateTo("/unauthorized");
+            return;
+        }
+
         await UcitajInitialneVrednosti();
         await UcitajPodatke();
     }

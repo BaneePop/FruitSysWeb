@@ -972,7 +972,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         COALESCE(SUM(ml.Kolicina), 0) as Kolicina,
                         COALESCE(MAX(rn_svi.BrojPakovanja), 0) as KolicinaRadniNalog,
                         COALESCE(MAX(rn_otvoreni.BrojPakovanja), 0) as ZaNajavljeneUtovare,
-                        (COALESCE(SUM(ml.Kolicina), 0) - COALESCE(MAX(rn_otvoreni.BrojPakovanja), 0)) as Dostupno
+                        (COALESCE(SUM(ml.Kolicina), 0) - COALESCE(MAX(rn_svi.BrojPakovanja), 0) - COALESCE(MAX(rn_otvoreni.BrojPakovanja), 0)) as Dostupno
                     FROM vwMagacinLager ml
                     LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
                     LEFT JOIN (
@@ -1068,7 +1068,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         COALESCE(SUM(ml.Kolicina), 0) as Kolicina,
                         COALESCE(MAX(rn_svi.BrojPakovanja), 0) as KolicinaRadniNalog,
                         COALESCE(MAX(rn_otvoreni.BrojPakovanja), 0) as ZaNajavljeneUtovare,
-                        (COALESCE(SUM(ml.Kolicina), 0) - COALESCE(MAX(rn_otvoreni.BrojPakovanja), 0)) as Dostupno
+                        (COALESCE(SUM(ml.Kolicina), 0) - COALESCE(MAX(rn_svi.BrojPakovanja), 0) - COALESCE(MAX(rn_otvoreni.BrojPakovanja), 0)) as Dostupno
                     FROM vwMagacinLager ml
                     LEFT JOIN Artikal a ON ml.ArtikalID = a.ID
                     LEFT JOIN (

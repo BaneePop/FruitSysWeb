@@ -1,0 +1,677 @@
+@page "/kontrola-radni-nalog"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+
+@inject IKontrolaService KontrolaService
+@inject IKomitentService KomitentService
+@inject IPreradaService PreradaService
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ILogger<KontrolaRadniNalog> Logger
+
+<PageTitle>Kontrole Radnog Naloga</PageTitle>
+
+@if (!autorizovan)
+{
+    <div class="alert alert-warning">Provera pristupa...</div>
+}
+else
+{
+    <div class="container-fluid">
+
+        <!-- HEADER -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <h4 class="mb-0">
+                    <i class="bi bi-clipboard2-check me-2 text-primary"></i>Kontrole Radnog Naloga
+                </h4>
+                <small class="text-muted">Pregled svih kontrola kvaliteta po radnom nalogu</small>
+            </div>
+        </div>
+
+        <!-- FILTER BAR -->
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filteri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-2">
+                        <label class="form-label"><i class="bi bi-calendar3 me-1"></i>Od datuma</label>
+                        <input type="date" class="form-control"
+                               value="@(odDatum?.ToString("yyyy-MM-dd"))"
+                               @onchange="OnOdDatumChanged" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label"><i class="bi bi-calendar3 me-1"></i>Do datuma</label>
+                        <input type="date" class="form-control"
+                               value="@(doDatum?.ToString("yyyy-MM-dd"))"
+                               @onchange="OnDoDatumChanged" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-person me-1"></i>Komitent</label>
+                        <select class="form-select" @bind="izabraniKomitentId">
+                            <option value="0">Svi komitenti</option>
+                            @foreach (var k in komitentiLista)
+                            {
+                                <option value="@k.Id">@k.Naziv</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-clipboard-data me-1"></i>Radni nalog</label>
+                        <select class="form-select" @bind="izabraniRadniNalogSifra">
+                            <option value="">Svi radni nalozi</option>
+                            @foreach (var rn in radniNaloziLista)
+                            {
+                                <option value="@rn">@rn</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end gap-2">
+                        <button class="btn btn-primary flex-grow-1" @onclick="PretragaNaloga" disabled="@ucitavaListe">
+                            @if (ucitava)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-search me-1"></i>
+                            }
+                            Pretraži
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="ResetFilter" title="Reset">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTA NALOGA -->
+        @if (nalozi.Count > 0 && izveštaj == null)
+        {
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul me-2"></i>Pronađeni radni nalozi
+                        <span class="badge bg-secondary ms-2">@nalozi.Count</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Radni nalog</th>
+                                    <th>Komitent</th>
+                                    <th>Artikal</th>
+                                    <th>Pakovanje</th>
+                                    <th>LOT</th>
+                                    <th>Datum</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var n in nalozi)
+                                {
+                                    <tr>
+                                        <td><span class="badge bg-primary">@n.RadniNalogSifra</span></td>
+                                        <td>@n.Komitent</td>
+                                        <td>@n.Artikal</td>
+                                        <td><small>@n.Pakovanje</small></td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(n.LotNaloga))
+                                            {
+                                                <span class="badge bg-info text-dark">@n.LotNaloga</span>
+                                            }
+                                            else { <span class="text-muted">-</span> }
+                                        </td>
+                                        <td>
+                                            <small>@n.DatumPocetkaFormatted
+                                                @if (n.DatumZavrsetka.HasValue && n.DatumZavrsetka != n.DatumPocetka)
+                                                {
+                                                    <span class="text-muted"> – @n.DatumZavrsetkaFormatted</span>
+                                                }
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-outline-primary btn-sm" @onclick="() => OtvoriNalog(n)">
+                                                <i class="bi bi-eye me-1"></i>Kontrole
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (pretragaObavljena && nalozi.Count == 0)
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>Nema radnih naloga za zadati filter.
+            </div>
+        }
+
+        <!-- IZVEŠTAJ KONTROLA -->
+        @if (ucitavaKontrole)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <div class="mt-2 text-muted">Učitavanje kontrola...</div>
+            </div>
+        }
+        else if (izveštaj != null)
+        {
+            <div class="mb-3">
+                <button class="btn btn-outline-secondary btn-sm" @onclick="NazadNaListu">
+                    <i class="bi bi-arrow-left me-1"></i>Nazad na listu
+                </button>
+            </div>
+
+            @if (!izveštaj.ImaPodataka)
+            {
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Nema zabeleženih kontrola za nalog <strong>@aktivniNalog?.RadniNalogSifra</strong>.
+                </div>
+            }
+            else
+            {
+                <!-- HEADER KARTICE -->
+                @if (izveštaj.Header != null)
+                {
+                    <div class="card mb-4 border-primary border-2">
+                        <div class="card-header bg-primary text-white py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold fs-6">
+                                    <i class="bi bi-clipboard2 me-2"></i>@izveštaj.Header.RadniNalogSifra
+                                </span>
+                                @if (!string.IsNullOrEmpty(izveštaj.Header.LotNaloga))
+                                {
+                                    <span class="badge bg-warning text-dark">LOT: @izveštaj.Header.LotNaloga</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">Komitent</small>
+                                    <strong>@izveštaj.Header.Komitent</strong>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block">Artikal</small>
+                                    <strong>@izveštaj.Header.Artikal</strong>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">Pakovanje</small>
+                                    @izveštaj.Header.Pakovanje
+                                </div>
+                                <div class="col-md-2">
+                                    <small class="text-muted d-block">Period</small>
+                                    @izveštaj.Header.DatumPocetkaFormatted
+                                    @if (izveštaj.Header.DatumZavrsetka.HasValue && izveštaj.Header.DatumZavrsetka != izveštaj.Header.DatumPocetka)
+                                    {
+                                        <span class="text-muted"> – @izveštaj.Header.DatumZavrsetkaFormatted</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- 1. KONTROLE PROZVODNJE -->
+                @if (izveštaj.ImaKontroleProizvodnje)
+                {
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light py-2">
+                            <h6 class="mb-0">
+                                <i class="bi bi-gear me-2 text-primary"></i>Kontrole u procesu proizvodnje
+                                <span class="badge bg-secondary ms-2">@izveštaj.KontroleProzvodnje.Count</span>
+                            </h6>
+                        </div>
+                        @{
+                            // Prikaz mesta/pregledao u zaglavlju (uzimamo iz prvog zapisa koji ima vrednost)
+                            var prviKP = izveštaj.KontroleProzvodnje.FirstOrDefault();
+                            var mestoKP = izveštaj.KontroleProzvodnje.Select(k => k.MestoKontrole).FirstOrDefault(m => !string.IsNullOrEmpty(m));
+                            var pregledaoKP = izveštaj.KontroleProzvodnje.Select(k => k.Pregledao).FirstOrDefault(p => !string.IsNullOrEmpty(p));
+                        }
+                        @if (!string.IsNullOrEmpty(mestoKP) || !string.IsNullOrEmpty(pregledaoKP))
+                        {
+                            <div class="px-3 py-2 border-bottom bg-white">
+                                <small class="text-muted">
+                                    @if (!string.IsNullOrEmpty(mestoKP)) { <span>Mesto kontrole: <strong>@mestoKP</strong></span> }
+                                    @if (!string.IsNullOrEmpty(mestoKP) && !string.IsNullOrEmpty(pregledaoKP)) { <span class="mx-2">|</span> }
+                                    @if (!string.IsNullOrEmpty(pregledaoKP)) { <span>Pregledao: <strong>@pregledaoKP</strong></span> }
+                                </small>
+                            </div>
+                        }
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Datum</th>
+                                            <th>Smena</th>
+                                            @foreach (var key in izveštaj.SviKljeveviNalazaProizvodnje)
+                                            {
+                                                <th class="text-nowrap">@key</th>
+                                            }
+                                            <th>Rezultat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var k in izveštaj.KontroleProzvodnje)
+                                        {
+                                            <tr>
+                                                <td class="text-nowrap">@k.DatumFormatted</td>
+                                                <td>@k.Smena</td>
+                                                @foreach (var key in izveštaj.SviKljeveviNalazaProizvodnje)
+                                                {
+                                                    <td>
+                                                        @if (k.ParsedNalaz.TryGetValue(key, out var val))
+                                                        { <span>@val</span> }
+                                                        else
+                                                        { <span class="text-muted">-</span> }
+                                                    </td>
+                                                }
+                                                <td><span class="badge @k.RezultatBadge">@k.RezultatTekst</span></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- 2. METAL DETEKTOR -->
+                @if (izveštaj.ImaMetalDetektor)
+                {
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light py-2">
+                            <h6 class="mb-0">
+                                <i class="bi bi-shield-check me-2 text-danger"></i>Izveštaj metal detektora
+                                <span class="badge bg-secondary ms-2">@izveštaj.MetalDetektor.Count smena</span>
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Datum</th>
+                                            <th>SM</th>
+                                            <th>Kol.</th>
+                                            @for (int h = 0; h < 24; h++)
+                                            {
+                                                <th class="text-center px-1" style="min-width:26px;font-size:0.7rem;">@h.ToString("00")</th>
+                                            }
+                                            <th>Napomena</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var md in izveštaj.MetalDetektor)
+                                        {
+                                            <tr>
+                                                <td class="text-nowrap">@md.DatumFormatted</td>
+                                                <td>@md.Smena</td>
+                                                <td>@md.KolicinaFormatted</td>
+                                                @for (int h = 0; h < 24; h++)
+                                                {
+                                                    <td class="text-center px-1">
+                                                        @if (md.SatProveren(h))
+                                                        {
+                                                            <span class="text-success fw-bold" style="font-size:0.9rem;">X</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted" style="font-size:0.65rem;">·</span>
+                                                        }
+                                                    </td>
+                                                }
+                                                <td><small class="text-muted">@(md.Napomena ?? "")</small></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- 3. TEMPERATURA -->
+                @if (izveštaj.ImaTemperature)
+                {
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light py-2">
+                            <h6 class="mb-0">
+                                <i class="bi bi-thermometer-half me-2 text-info"></i>Kontrola temperature
+                                <small class="text-muted ms-2">(tolerancija: od -18°C do -22°C)</small>
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            @foreach (var t in izveštaj.Temperature)
+                            {
+                                var merenja = t.GetMerenja();
+                                @if (merenja.Count > 0)
+                                {
+                                    <div class="px-3 pt-2 pb-1 border-bottom bg-white">
+                                        <small class="text-muted">
+                                            @t.DatumFormatted &nbsp;|&nbsp; Smena: <strong>@t.Smena</strong>
+                                            @if (!string.IsNullOrEmpty(t.BrojLota)) { <span> &nbsp;|&nbsp; LOT: <strong>@t.BrojLota</strong></span> }
+                                            @if (!string.IsNullOrEmpty(t.VrstaPakovanja)) { <span> &nbsp;|&nbsp; @t.VrstaPakovanja</span> }
+                                            @if (!string.IsNullOrEmpty(t.Pregledao)) { <span> &nbsp;|&nbsp; Pregledao: <strong>@t.Pregledao</strong></span> }
+                                        </small>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width:80px;">Rbr.</th>
+                                                    <th>Temperatura</th>
+                                                    <th>Napomena</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var (rbr, vrednost, napomena) in merenja)
+                                                {
+                                                    <tr>
+                                                        <td>@rbr.</td>
+                                                        <td><span class="@TemperaturaBadgeClass(vrednost)">@vrednost</span></td>
+                                                        <td><small class="text-muted">@napomena</small></td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- 4. TEŽINA -->
+                @if (izveštaj.ImaTezine)
+                {
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light py-2">
+                            <h6 class="mb-0">
+                                <i class="bi bi-speedometer me-2 text-warning"></i>Kontrola težine
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            @foreach (var tz in izveštaj.Tezine)
+                            {
+                                var merenja = tz.GetMerenja();
+                                @if (merenja.Count > 0)
+                                {
+                                    <div class="px-3 pt-2 pb-1 border-bottom bg-white">
+                                        <small class="text-muted">
+                                            @tz.DatumFormatted &nbsp;|&nbsp; Smena: <strong>@tz.Smena</strong>
+                                            @if (!string.IsNullOrEmpty(tz.VrstaPakovanja)) { <span> &nbsp;|&nbsp; <strong>@tz.VrstaPakovanja</strong></span> }
+                                            @if (!string.IsNullOrEmpty(tz.Vaga)) { <span> &nbsp;|&nbsp; Vaga: <strong>@tz.Vaga</strong></span> }
+                                            @if (!string.IsNullOrEmpty(tz.BrojLota)) { <span> &nbsp;|&nbsp; LOT: <strong>@tz.BrojLota</strong></span> }
+                                            @if (!string.IsNullOrEmpty(tz.Pregledao)) { <span> &nbsp;|&nbsp; Pregledao: <strong>@tz.Pregledao</strong></span> }
+                                        </small>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width:80px;">Rbr.</th>
+                                                    <th>Težina</th>
+                                                    <th>Napomena</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var (rbr, vrednost, napomena) in merenja)
+                                                {
+                                                    <tr>
+                                                        <td>@rbr.</td>
+                                                        <td>@vrednost</td>
+                                                        <td><small class="text-muted">@napomena</small></td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- 5. ZAVRŠNA KONTROLA -->
+                @if (izveštaj.ImaZavrsneKontrole)
+                {
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-light py-2">
+                            <h6 class="mb-0">
+                                <i class="bi bi-patch-check me-2 text-success"></i>Završna kontrola
+                                <span class="badge bg-secondary ms-2">@izveštaj.ZavrsneKontrole.Count</span>
+                            </h6>
+                        </div>
+                        @{
+                            var mestoZK = izveštaj.ZavrsneKontrole.Select(k => k.MestoKontrole).FirstOrDefault(m => !string.IsNullOrEmpty(m));
+                            var voziloZK = izveštaj.ZavrsneKontrole.Select(k => k.Vozilo).FirstOrDefault(v => !string.IsNullOrEmpty(v));
+                            var pregledaoZK = izveštaj.ZavrsneKontrole.Select(k => k.Pregledao).FirstOrDefault(p => !string.IsNullOrEmpty(p));
+                        }
+                        @if (!string.IsNullOrEmpty(mestoZK) || !string.IsNullOrEmpty(voziloZK) || !string.IsNullOrEmpty(pregledaoZK))
+                        {
+                            <div class="px-3 py-2 border-bottom bg-white">
+                                <small class="text-muted">
+                                    @if (!string.IsNullOrEmpty(mestoZK)) { <span>Mesto: <strong>@mestoZK</strong></span> }
+                                    @if (!string.IsNullOrEmpty(voziloZK)) { <span class="ms-3">Vozilo: <strong>@voziloZK</strong></span> }
+                                    @if (!string.IsNullOrEmpty(pregledaoZK)) { <span class="ms-3">Pregledao: <strong>@pregledaoZK</strong></span> }
+                                </small>
+                            </div>
+                        }
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Datum</th>
+                                            <th>Smena</th>
+                                            @foreach (var key in izveštaj.SviKljeveviNalazaZavrsnih)
+                                            {
+                                                <th class="text-nowrap">@key</th>
+                                            }
+                                            <th>Rezultat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var z in izveštaj.ZavrsneKontrole)
+                                        {
+                                            <tr>
+                                                <td class="text-nowrap">@z.DatumFormatted</td>
+                                                <td>@z.Smena</td>
+                                                @foreach (var key in izveštaj.SviKljeveviNalazaZavrsnih)
+                                                {
+                                                    <td>
+                                                        @if (z.ParsedNalaz.TryGetValue(key, out var val))
+                                                        { <span>@val</span> }
+                                                        else
+                                                        { <span class="text-muted">-</span> }
+                                                    </td>
+                                                }
+                                                <td><span class="badge @z.RezultatBadge">@z.RezultatTekst</span></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        }
+
+    </div>
+}
+
+@code {
+    private bool autorizovan = false;
+    private bool ucitava = false;
+    private bool ucitavaKontrole = false;
+    private bool ucitavaListe = true;
+    private bool pretragaObavljena = false;
+
+    private DateTime? odDatum = new DateTime(DateTime.Today.Year, 1, 1);
+    private DateTime? doDatum = DateTime.Today;
+    private long izabraniKomitentId = 0;
+    private string izabraniRadniNalogSifra = "";
+
+    private List<Komitent> komitentiLista = new();
+    private List<string> radniNaloziLista = new();
+    private List<KontrolaRadniNalogHeaderModel> nalozi = new();
+    private KontrolaRadniNalogHeaderModel? aktivniNalog;
+    private KontrolaRadniNalogModel? izveštaj;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var user = await AuthService.GetCurrentUser();
+            if (user == null || !user.ImaPristupStranici("/kontrola-radni-nalog"))
+            {
+                NavigationManager.NavigateTo("/unauthorized");
+                return;
+            }
+            autorizovan = true;
+
+            await UcitajListeZaFiltriranje();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri inicijalizaciji KontrolaRadniNalog");
+            NavigationManager.NavigateTo("/unauthorized");
+        }
+    }
+
+    private async Task UcitajListeZaFiltriranje()
+    {
+        ucitavaListe = true;
+        try
+        {
+            var komitentiTask = KomitentService.UcitajKomitenteKojiImajuRadneNaloge();
+            var naloziTask = PreradaService.UcitajSveRadneNaloge();
+            await Task.WhenAll(komitentiTask, naloziTask);
+
+            komitentiLista = komitentiTask.Result ?? new();
+            radniNaloziLista = naloziTask.Result ?? new();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju lista za filtriranje");
+        }
+        finally
+        {
+            ucitavaListe = false;
+        }
+    }
+
+    private async Task PretragaNaloga()
+    {
+        ucitava = true;
+        aktivniNalog = null;
+        izveštaj = null;
+        pretragaObavljena = false;
+
+        try
+        {
+            var filter = new FilterRequest { OdDatum = odDatum, DoDatum = doDatum };
+
+            string? komitentNaziv = null;
+            if (izabraniKomitentId > 0)
+                komitentNaziv = komitentiLista.FirstOrDefault(k => k.Id == izabraniKomitentId)?.Naziv;
+
+            var svi = await KontrolaService.PretragaRadnihNaloga(filter, komitentNaziv);
+
+            // Lokalni filter po radnom nalogu ako je izabran
+            if (!string.IsNullOrEmpty(izabraniRadniNalogSifra))
+                nalozi = svi.Where(n => n.RadniNalogSifra == izabraniRadniNalogSifra).ToList();
+            else
+                nalozi = svi;
+
+            pretragaObavljena = true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška u pretrazi radnih naloga");
+            nalozi = new();
+        }
+        finally
+        {
+            ucitava = false;
+        }
+    }
+
+    private async Task OtvoriNalog(KontrolaRadniNalogHeaderModel nalog)
+    {
+        aktivniNalog = nalog;
+        izveštaj = null;
+        ucitavaKontrole = true;
+
+        try
+        {
+            izveštaj = await KontrolaService.UcitajKontrole(nalog.RadniNalogID);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju kontrola za RadniNalogID={Id}", nalog.RadniNalogID);
+            izveštaj = new KontrolaRadniNalogModel { Header = nalog };
+        }
+        finally
+        {
+            ucitavaKontrole = false;
+        }
+    }
+
+    private void NazadNaListu()
+    {
+        aktivniNalog = null;
+        izveštaj = null;
+    }
+
+    private async Task ResetFilter()
+    {
+        odDatum = new DateTime(DateTime.Today.Year, 1, 1);
+        doDatum = DateTime.Today;
+        izabraniKomitentId = 0;
+        izabraniRadniNalogSifra = "";
+        nalozi = new();
+        izveštaj = null;
+        aktivniNalog = null;
+        pretragaObavljena = false;
+        await Task.CompletedTask;
+    }
+
+    private void OnOdDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+            odDatum = d;
+    }
+
+    private void OnDoDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+            doDatum = d;
+    }
+
+    private string TemperaturaBadgeClass(string vrednost)
+    {
+        if (string.IsNullOrWhiteSpace(vrednost)) return "";
+        var cleaned = vrednost.Replace(",", ".").Replace(" ", "");
+        if (decimal.TryParse(cleaned, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var temp))
+        {
+            return temp >= -22 && temp <= -18 ? "text-success fw-semibold" : "text-danger fw-semibold";
+        }
+        return "";
+    }
+}

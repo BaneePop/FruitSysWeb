@@ -28,7 +28,7 @@
     
     .section-grid {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(7, 1fr);
         gap: 1rem;
         margin-bottom: 2rem;
     }
@@ -133,20 +133,46 @@
             </div>
         </div>
 
-        <!-- 2. Finansije Home -->
+        <!-- 2. Kvalitet Home -->
+        <div class="section-card" @onclick="@(() => NavigateTo("/kvalitethome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <h3 class="section-title">Kvalitet</h3>
+                <p class="section-description">
+                    Sledljivost, kontrole radnih naloga i upravljanje reklamacijama
+                </p>
+            </div>
+        </div>
+
+        <!-- 3. Finansije Home -->
         <div class="section-card" @onclick="@(() => NavigateTo("/finansijehome"))">
             <div class="text-center">
                 <div class="section-icon">
                     <i class="bi bi-cash-stack"></i>
                 </div>
-                <h3 class="section-title">Promet i Finansije</h3>
+                <h3 class="section-title">Finansije</h3>
                 <p class="section-description">
-                    Centralizirano upravljanje finansijskim tokovima i prometom
+                    Pregled finansijskih tokova, nabavke i prodaje
                 </p>
             </div>
         </div>
 
-        <!-- 3. Lager Home -->
+        <!-- 4. Poslovanje Home -->
+        <div class="section-card" @onclick="@(() => NavigateTo("/poslovanje"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-briefcase"></i>
+                </div>
+                <h3 class="section-title">Poslovanje</h3>
+                <p class="section-description">
+                    Fakture, ugovori, promene i kartice komitenata
+                </p>
+            </div>
+        </div>
+
+        <!-- 5. Lager Home -->
         <div class="section-card" @onclick="@(() => NavigateTo("/lagerhome"))">
             <div class="text-center">
                 <div class="section-icon">
@@ -159,7 +185,7 @@
             </div>
         </div>
 
-        <!-- 4. Troškovi Home -->
+        <!-- 6. Troškovi Home -->
         <div class="section-card" @onclick="@(() => NavigateTo("/troskovihome"))">
             <div class="text-center">
                 <div class="section-icon">
@@ -172,13 +198,13 @@
             </div>
         </div>
 
-        <!-- 5. Promet Home -->
+        <!-- 7. Promet Home -->
         <div class="section-card" @onclick="@(() => NavigateTo("/promethome"))">
             <div class="text-center">
                 <div class="section-icon">
                     <i class="bi bi-arrow-left-right"></i>
                 </div>
-                <h3 class="section-title">Promet</h3>
+                <h3 class="section-title">Promet Roba</h3>
                 <p class="section-description">
                     Upravljanje nabavkom, prodajom i izveštajima o prometu robe
                 </p>

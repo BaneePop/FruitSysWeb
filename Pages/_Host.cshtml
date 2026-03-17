@@ -197,6 +197,11 @@
 
     <!-- Download File Script -->
     <script>
+        // Alias koji koriste stranice (npr. Reklamacije)
+        function downloadFileFromBase64(base64Data, fileName, mimeType) {
+            return downloadFile(base64Data, fileName, mimeType);
+        }
+
         function downloadFile(base64Data, fileName, mimeType) {
             try {
                 const byteCharacters = atob(base64Data);

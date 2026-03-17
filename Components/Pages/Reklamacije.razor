@@ -1,0 +1,1064 @@
+@page "/reklamacije"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject IReklamacijaService ReklamacijaService
+@inject IPreradaService PreradaService
+@inject IKomitentService KomitentService
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ILogger<Reklamacije> Logger
+@inject IJSRuntime JS
+
+<PageTitle>Reklamacije</PageTitle>
+
+@if (!autorizovan)
+{
+    <div class="alert alert-warning">Provera pristupa...</div>
+}
+else if (prikazFormu)
+{
+    <!-- ========== FORMA ZA UNOS / IZMENU ========== -->
+    <div class="container-fluid">
+        <div class="row mb-3">
+            <div class="col-12 d-flex align-items-center gap-3">
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ZatvoriFormu">
+                    <i class="bi bi-arrow-left me-1"></i>Nazad na listu
+                </button>
+                <h4 class="mb-0">
+                    <i class="bi bi-exclamation-triangle me-2 text-warning"></i>
+                    @(aktivnaReklamacija?.DatumKreiranja == aktivnaReklamacija?.DatumIzmene && string.IsNullOrEmpty(aktivnaReklamacija?.Id) ? "Nova reklamacija" : $"Reklamacija – {aktivnaReklamacija?.RadniNalogSifra}")
+                </h4>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- LEVA KOLONA: Podaci o reklamaciji -->
+            <div class="col-lg-6">
+
+                <!-- Izbor Radnog Naloga -->
+                <div class="card mb-3 border-0 shadow-sm">
+                    <div class="card-header bg-primary text-white py-2">
+                        <h6 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>Radni Nalog</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (aktivnaReklamacija!.RadniNalogID == 0)
+                        {
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">Pretraga</label>
+                                    <input type="text" class="form-control" placeholder="Šifra, kupac, artikal..."
+                                           value="@pretragaRN" @oninput="FilterirajRadneNaloge" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Od datuma</label>
+                                    <input type="date" class="form-control"
+                                           value="@(rnOdDatum?.ToString("yyyy-MM-dd"))"
+                                           @onchange="OnRnOdDatumChanged" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Do datuma</label>
+                                    <input type="date" class="form-control"
+                                           value="@(rnDoDatum?.ToString("yyyy-MM-dd"))"
+                                           @onchange="OnRnDoDatumChanged" />
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-outline-primary w-100" @onclick="UcitajRadneNaloge" title="Pretraži">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            @if (sviRN.Count == 0)
+                            {
+                                <div class="text-muted small py-2">
+                                    <span class="spinner-border spinner-border-sm me-1"></span>Učitavanje radnih naloga...
+                                </div>
+                            }
+                            else if (filtriraniRN.Count > 0)
+                            {
+                                <div class="list-group" style="max-height:280px;overflow-y:auto;">
+                                    @foreach (var rn in filtriraniRN.Take(100))
+                                    {
+                                        <button type="button" class="list-group-item list-group-item-action py-2"
+                                                @onclick="() => IzaberiRadniNalog(rn)">
+                                            <div class="d-flex justify-content-between">
+                                                <span><span class="badge bg-primary me-2">@rn.RadniNalogSifra</span>@rn.KupacNaziv</span>
+                                                <small class="text-muted">@rn.DatumPocetkaFormatted</small>
+                                            </div>
+                                            <small class="text-muted">@rn.ArtikalNaziv @(rn.LotNaloga != null ? $"| LOT: {rn.LotNaloga}" : "")</small>
+                                        </button>
+                                    }
+                                </div>
+                                @if (filtriraniRN.Count > 100)
+                                {
+                                    <small class="text-muted">Prikazano 100 od @filtriraniRN.Count — suzite pretragu</small>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-muted small py-2">Nema rezultata za "@pretragaRN"</div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Radni nalog</label>
+                                    <div><span class="badge bg-primary fs-6">@aktivnaReklamacija.RadniNalogSifra</span></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Kupac</label>
+                                    <div><strong>@aktivnaReklamacija.KupacNaziv</strong></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Artikal / Vrsta voća</label>
+                                    <div>@aktivnaReklamacija.Artikal</div>
+                                    <small class="text-muted">@aktivnaReklamacija.VrstaVoca</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small">LOT</label>
+                                    <div>@(aktivnaReklamacija.LotNaloga ?? "-")</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small">Datum naloga</label>
+                                    <div>@aktivnaReklamacija.DatumRadnogNalogaFormatted</div>
+                                </div>
+                                @if (jeNova)
+                                {
+                                    <div class="col-12">
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="OcistiRadniNalog">
+                                            <i class="bi bi-x me-1"></i>Promeni radni nalog
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Podaci o reklamaciji -->
+                <div class="card mb-3 border-0 shadow-sm">
+                    <div class="card-header bg-warning text-dark py-2">
+                        <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Podaci o reklamaciji</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Datum reklamacije <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control"
+                                       value="@aktivnaReklamacija!.DatumReklamacije.ToString("yyyy-MM-dd")"
+                                       @onchange="OnDatumReklamacijeChanged" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tip reklamacije <span class="text-danger">*</span></label>
+                                <select class="form-select" @bind="aktivnaReklamacija.TipReklamacije" @bind:after="OnTipChanged">
+                                    <option value="">-- Izaberite tip --</option>
+                                    @foreach (var tip in ReklamacijaTipovi.Kategorije.Keys)
+                                    {
+                                        <option value="@tip">@tip</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Podtip</label>
+                                <select class="form-select" @bind="aktivnaReklamacija.PodtipReklamacije"
+                                        disabled="@string.IsNullOrEmpty(aktivnaReklamacija.TipReklamacije)">
+                                    <option value="">-- Izaberite podtip --</option>
+                                    @foreach (var podtip in ReklamacijaTipovi.GetPodtipovi(aktivnaReklamacija.TipReklamacije))
+                                    {
+                                        <option value="@podtip">@podtip</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Rezultat</label>
+                                <select class="form-select" @bind="aktivnaReklamacija.Rezultat">
+                                    @foreach (var rez in ReklamacijaTipovi.Rezultati)
+                                    {
+                                        <option value="@rez">@rez</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Opis reklamacije <span class="text-danger">*</span></label>
+                                <textarea class="form-control" rows="3"
+                                          placeholder="Opišite reklamaciju kupca..."
+                                          @bind="aktivnaReklamacija.OpisReklamacije"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Opis preventivnih i korektivnih mera</label>
+                                <textarea class="form-control" rows="3"
+                                          placeholder="Opišite preduzete preventivne i korektivne mere..."
+                                          @bind="aktivnaReklamacija.OpisPreventivnihMera"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Napomena o rezultatu</label>
+                                <textarea class="form-control" rows="2"
+                                          placeholder="Napomena o rešenju reklamacije..."
+                                          @bind="aktivnaReklamacija.NapomenaRezultata"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- DESNA KOLONA: Dokumenti -->
+            <div class="col-lg-6">
+
+                <!-- Dokumenti kupca -->
+                <div class="card mb-3 border-0 shadow-sm">
+                    <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="bi bi-folder me-2 text-primary"></i>Dokumenti kupca
+                            <span class="badge bg-secondary ms-1">@aktivnaReklamacija!.DokumentiKupca.Count</span>
+                        </h6>
+                        @if (aktivnaReklamacija.RadniNalogID > 0 && !string.IsNullOrEmpty(aktivnaReklamacija.Id))
+                        {
+                            <label class="btn btn-outline-primary btn-sm mb-0" style="cursor:pointer;">
+                                <i class="bi bi-upload me-1"></i>Dodaj
+                                <InputFile OnChange="@(e => DodajDokument(e, "KupacDokument"))"
+                                           multiple accept="*/*" style="display:none;" />
+                            </label>
+                        }
+                    </div>
+                    <div class="card-body p-0">
+                        @if (aktivnaReklamacija.DokumentiKupca.Count == 0)
+                        {
+                            <div class="text-muted text-center py-3 small">
+                                <i class="bi bi-folder2-open me-1"></i>Nema dokumenata
+                            </div>
+                        }
+                        else
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var dok in aktivnaReklamacija.DokumentiKupca)
+                                {
+                                    <li class="list-group-item py-2 d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <i class="@dok.IkonaKlasa me-2"></i>
+                                            <span>@dok.Naziv</span>
+                                            <small class="text-muted ms-2">@dok.VelicinaFormatted</small>
+                                        </div>
+                                        <div class="d-flex gap-1">
+                                            <button class="btn btn-outline-secondary btn-sm"
+                                                    @onclick="() => PreuzmiDokument(aktivnaReklamacija.Id, dok.Id, dok.Naziv + dok.Ekstenzija)"
+                                                    title="Preuzmi">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm"
+                                                    @onclick="() => ObrisiDokumentUI(aktivnaReklamacija.Id, dok.Id, dok.Naziv)"
+                                                    title="Obriši">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+
+                <!-- Naši odgovori -->
+                <div class="card mb-3 border-0 shadow-sm">
+                    <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="bi bi-folder-check me-2 text-success"></i>Naši odgovori
+                            <span class="badge bg-secondary ms-1">@aktivnaReklamacija!.NasiOdgovori.Count</span>
+                        </h6>
+                        @if (aktivnaReklamacija.RadniNalogID > 0 && !string.IsNullOrEmpty(aktivnaReklamacija.Id))
+                        {
+                            <label class="btn btn-outline-success btn-sm mb-0" style="cursor:pointer;">
+                                <i class="bi bi-upload me-1"></i>Dodaj
+                                <InputFile OnChange="@(e => DodajDokument(e, "NasOdgovor"))"
+                                           multiple accept="*/*" style="display:none;" />
+                            </label>
+                        }
+                    </div>
+                    <div class="card-body p-0">
+                        @if (aktivnaReklamacija.NasiOdgovori.Count == 0)
+                        {
+                            <div class="text-muted text-center py-3 small">
+                                <i class="bi bi-folder2-open me-1"></i>Nema odgovora
+                            </div>
+                        }
+                        else
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var dok in aktivnaReklamacija.NasiOdgovori)
+                                {
+                                    <li class="list-group-item py-2 d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <i class="@dok.IkonaKlasa me-2"></i>
+                                            <span>@dok.Naziv</span>
+                                            <small class="text-muted ms-2">@dok.VelicinaFormatted</small>
+                                        </div>
+                                        <div class="d-flex gap-1">
+                                            <button class="btn btn-outline-secondary btn-sm"
+                                                    @onclick="() => PreuzmiDokument(aktivnaReklamacija.Id, dok.Id, dok.Naziv + dok.Ekstenzija)"
+                                                    title="Preuzmi">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm"
+                                                    @onclick="() => ObrisiDokumentUI(aktivnaReklamacija.Id, dok.Id, dok.Naziv)"
+                                                    title="Obriši">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+
+                @if (aktivnaReklamacija.RadniNalogID > 0 && string.IsNullOrEmpty(aktivnaReklamacija.Id))
+                {
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Prvo sačuvajte reklamaciju da biste mogli da dodajete dokumente.
+                    </div>
+                }
+
+            </div>
+        </div>
+
+        <!-- FOOTER AKCIJE -->
+        <div class="row mt-3 mb-4">
+            <div class="col-12 d-flex gap-2 justify-content-end">
+                @if (!string.IsNullOrEmpty(greska))
+                {
+                    <span class="text-danger me-auto"><i class="bi bi-exclamation-triangle me-1"></i>@greska</span>
+                }
+                @if (!string.IsNullOrEmpty(uspeh))
+                {
+                    <span class="text-success me-auto"><i class="bi bi-check-circle me-1"></i>@uspeh</span>
+                }
+                <button class="btn btn-outline-secondary" @onclick="ZatvoriFormu" disabled="@cuva">
+                    Otkaži
+                </button>
+                <button class="btn btn-primary" @onclick="SacuvajReklamaciju" disabled="@(cuva || aktivnaReklamacija.RadniNalogID == 0)">
+                    @if (cuva)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-save me-1"></i>
+                    }
+                    Sačuvaj
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- ========== LISTA REKLAMACIJA ========== -->
+    <div class="container-fluid">
+
+        <!-- HEADER -->
+        <div class="row mb-3">
+            <div class="col-12 d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2 text-warning"></i>Reklamacije
+                    </h4>
+                    <small class="text-muted">Evidencija reklamacija kupaca po radnim nalozima</small>
+                </div>
+                <button class="btn btn-primary" @onclick="NovaSreklamacija">
+                    <i class="bi bi-plus-lg me-1"></i>Nova reklamacija
+                </button>
+            </div>
+        </div>
+
+        <!-- FILTERI -->
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-light py-2">
+                <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Filteri</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Kupac</label>
+                        <input type="text" class="form-control" placeholder="Naziv kupca..."
+                               @bind="filter.KupacNaziv" @bind:event="oninput" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Vrsta voća</label>
+                        <input type="text" class="form-control" placeholder="Npr. Malina..."
+                               @bind="filter.VrstaVoca" @bind:event="oninput" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tip reklamacije</label>
+                        <select class="form-select" @bind="filter.TipReklamacije" @bind:after="OnFilterTipChanged">
+                            <option value="">Svi tipovi</option>
+                            @foreach (var tip in ReklamacijaTipovi.Kategorije.Keys)
+                            {
+                                <option value="@tip">@tip</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Podtip</label>
+                        <select class="form-select" @bind="filter.PodtipReklamacije"
+                                disabled="@string.IsNullOrEmpty(filter.TipReklamacije)">
+                            <option value="">Svi podtipovi</option>
+                            @foreach (var podtip in ReklamacijaTipovi.GetPodtipovi(filter.TipReklamacije))
+                            {
+                                <option value="@podtip">@podtip</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Rezultat</label>
+                        <select class="form-select" @bind="filter.Rezultat">
+                            <option value="">Svi rezultati</option>
+                            @foreach (var rez in ReklamacijaTipovi.Rezultati)
+                            {
+                                <option value="@rez">@rez</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end gap-1">
+                        <button class="btn btn-primary flex-grow-1" @onclick="Pretrazi" disabled="@ucitava">
+                            @if (ucitava) { <span class="spinner-border spinner-border-sm"></span> }
+                            else { <i class="bi bi-search"></i> }
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="ResetFilter" title="Reset">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-2">
+                        <label class="form-label">Od datuma</label>
+                        <input type="date" class="form-control"
+                               value="@(filter.OdDatum?.ToString("yyyy-MM-dd"))"
+                               @onchange="e => { if(DateTime.TryParse(e.Value?.ToString(), out var d)) filter.OdDatum = d; }" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Do datuma</label>
+                        <input type="date" class="form-control"
+                               value="@(filter.DoDatum?.ToString("yyyy-MM-dd"))"
+                               @onchange="e => { if(DateTime.TryParse(e.Value?.ToString(), out var d)) filter.DoDatum = d; }" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Pretraga teksta</label>
+                        <input type="text" class="form-control" placeholder="Šifra RN, kupac, opis..."
+                               @bind="filter.TraziTekst" @bind:event="oninput" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABELA -->
+        @if (ucitava)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <div class="mt-2 text-muted">Učitavanje reklamacija...</div>
+            </div>
+        }
+        else if (listaReklamacija.Count == 0)
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Nema reklamacija. Kliknite <strong>Nova reklamacija</strong> da dodate prvu.
+            </div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-list-ul me-2"></i>Reklamacije <span class="badge bg-secondary ms-1">@listaReklamacija.Count</span></span>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-danger btn-sm" @onclick="ExportPdf" disabled="@exportuje" title="Export PDF">
+                            @if (exportuje) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                            else { <i class="bi bi-file-earmark-pdf me-1"></i> }
+                            PDF
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" @onclick="ExportExcel" disabled="@exportuje" title="Export Excel">
+                            @if (exportuje) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                            else { <i class="bi bi-file-earmark-excel me-1"></i> }
+                            Excel
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Datum</th>
+                                    <th>Radni nalog</th>
+                                    <th>Kupac</th>
+                                    <th>Vrsta voća</th>
+                                    <th>Tip</th>
+                                    <th>Podtip</th>
+                                    <th>Rezultat</th>
+                                    <th class="text-center">Dok.</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in listaReklamacija)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap">@r.DatumReklamacijeFormatted</td>
+                                        <td>
+                                            <span class="badge bg-primary">@r.RadniNalogSifra</span>
+                                            @if (!string.IsNullOrEmpty(r.LotNaloga))
+                                            {
+                                                <br /><small class="text-muted">LOT: @r.LotNaloga</small>
+                                            }
+                                        </td>
+                                        <td>@r.KupacNaziv</td>
+                                        <td><small>@r.VrstaVoca</small></td>
+                                        <td><span class="badge bg-secondary">@r.TipReklamacije</span></td>
+                                        <td><small class="text-muted">@r.PodtipReklamacije</small></td>
+                                        <td>
+                                            <span class="badge @r.RezultatBadgeKlasa">@r.Rezultat</span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (r.UkupnoDokumenata > 0)
+                                            {
+                                                <span class="badge bg-info text-dark">@r.UkupnoDokumenata</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-outline-primary btn-sm" @onclick="() => OtvoriReklamaciju(r)"
+                                                        title="Izmeni">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm" @onclick="() => ObrisiReklamacijuUI(r)"
+                                                        title="Obriši">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistika -->
+            <div class="row mt-3 g-3">
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light text-center py-2">
+                        <div class="fs-4 fw-bold text-warning">@listaReklamacija.Count(r => r.Rezultat == "U toku")</div>
+                        <small class="text-muted">U toku</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light text-center py-2">
+                        <div class="fs-4 fw-bold text-danger">@listaReklamacija.Count(r => r.Rezultat == "Prihvaćeno" || r.Rezultat == "Delimično prihvaćeno")</div>
+                        <small class="text-muted">Prihvaćeno</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light text-center py-2">
+                        <div class="fs-4 fw-bold text-secondary">@listaReklamacija.Count(r => r.Rezultat == "Odbijeno")</div>
+                        <small class="text-muted">Odbijeno</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light text-center py-2">
+                        <div class="fs-4 fw-bold text-primary">@listaReklamacija.Sum(r => r.UkupnoDokumenata)</div>
+                        <small class="text-muted">Ukupno dokumenata</small>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+}
+
+@code {
+    private bool autorizovan = false;
+    private bool ucitava = false;
+    private bool cuva = false;
+    private bool prikazFormu = false;
+    private bool jeNova = false;
+    private string? greska;
+    private string? uspeh;
+    private string? trenutniKorisnik;
+
+    private List<ReklamacijaModel> listaReklamacija = new();
+    private ReklamacijaModel? aktivnaReklamacija;
+    private ReklamacijaFilterModel filter = new();
+
+    // Za izbor RN u formi
+    private string pretragaRN = "";
+    private DateTime? rnOdDatum = new DateTime(DateTime.Today.Year, 1, 1);
+    private DateTime? rnDoDatum;
+    private List<RadniNalogZaIzbor> sviRN = new();
+    private List<RadniNalogZaIzbor> filtriraniRN = new();
+
+    // Export
+    private bool exportuje = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var user = await AuthService.GetCurrentUser();
+            if (user == null || !user.ImaPuniPristup())
+            {
+                NavigationManager.NavigateTo("/unauthorized");
+                return;
+            }
+            autorizovan = true;
+            trenutniKorisnik = user.Ime;
+            await UcitajListu();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri inicijalizaciji Reklamacije");
+            NavigationManager.NavigateTo("/unauthorized");
+        }
+    }
+
+    private async Task UcitajListu()
+    {
+        ucitava = true;
+        try
+        {
+            listaReklamacija = await ReklamacijaService.FilterirajReklamacije(filter);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju reklamacija");
+            listaReklamacija = new();
+        }
+        finally
+        {
+            ucitava = false;
+        }
+    }
+
+    private async Task Pretrazi()
+    {
+        await UcitajListu();
+    }
+
+    private async Task ResetFilter()
+    {
+        filter = new ReklamacijaFilterModel();
+        await UcitajListu();
+    }
+
+    private void OnFilterTipChanged()
+    {
+        filter.PodtipReklamacije = "";
+    }
+
+    // ====================================================
+    // FORMA - OTVARANJE / ZATVARANJE
+    // ====================================================
+
+    private async Task NovaSreklamacija()
+    {
+        aktivnaReklamacija = new ReklamacijaModel
+        {
+            Id = "",
+            KreiraoKorisnik = trenutniKorisnik ?? ""
+        };
+        jeNova = true;
+        pretragaRN = "";
+        filtriraniRN = new();
+        greska = null;
+        uspeh = null;
+
+        // Učitaj RN listu za izbor
+        await UcitajRadneNaloge();
+        prikazFormu = true;
+    }
+
+    private async Task OtvoriReklamaciju(ReklamacijaModel r)
+    {
+        // Ucitaj sveze podatke iz servisa da bi dokumenti bili popunjeni
+        var sveza = await ReklamacijaService.UcitajReklamaciju(r.Id);
+        aktivnaReklamacija = sveza ?? new ReklamacijaModel
+        {
+            Id = r.Id,
+            RadniNalogID = r.RadniNalogID,
+            RadniNalogSifra = r.RadniNalogSifra,
+            KupacNaziv = r.KupacNaziv,
+            KupacID = r.KupacID,
+            VrstaVoca = r.VrstaVoca,
+            Artikal = r.Artikal,
+            LotNaloga = r.LotNaloga,
+            DatumRadnogNaloga = r.DatumRadnogNaloga,
+            DatumReklamacije = r.DatumReklamacije,
+            TipReklamacije = r.TipReklamacije,
+            PodtipReklamacije = r.PodtipReklamacije,
+            OpisReklamacije = r.OpisReklamacije,
+            OpisPreventivnihMera = r.OpisPreventivnihMera,
+            Rezultat = r.Rezultat,
+            NapomenaRezultata = r.NapomenaRezultata,
+            DokumentiKupca = r.DokumentiKupca.ToList(),
+            NasiOdgovori = r.NasiOdgovori.ToList(),
+            DatumKreiranja = r.DatumKreiranja,
+            DatumIzmene = r.DatumIzmene,
+            KreiraoKorisnik = r.KreiraoKorisnik
+        };
+        jeNova = false;
+        greska = null;
+        uspeh = null;
+        prikazFormu = true;
+    }
+
+    private async Task ZatvoriFormu()
+    {
+        prikazFormu = false;
+        aktivnaReklamacija = null;
+        await UcitajListu();
+    }
+
+    // ====================================================
+    // IZBOR RADNOG NALOGA
+    // ====================================================
+
+    private async Task UcitajRadneNaloge()
+    {
+        try
+        {
+            var nalozi = await PreradaService.UcitajRadneNalogeZaIzbor(rnOdDatum, rnDoDatum);
+            sviRN = nalozi.ToList();
+            ApplyRNFilter();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju radnih naloga");
+            sviRN = new();
+            filtriraniRN = new();
+        }
+        StateHasChanged();
+    }
+
+    private void FilterirajRadneNaloge(ChangeEventArgs e)
+    {
+        pretragaRN = e.Value?.ToString() ?? "";
+        ApplyRNFilter();
+    }
+
+    private void ApplyRNFilter()
+    {
+        if (string.IsNullOrWhiteSpace(pretragaRN))
+        {
+            filtriraniRN = sviRN.ToList();
+            return;
+        }
+        var tekst = pretragaRN.ToLower();
+        filtriraniRN = sviRN.Where(rn =>
+            rn.RadniNalogSifra.ToLower().Contains(tekst) ||
+            rn.KupacNaziv.ToLower().Contains(tekst) ||
+            rn.ArtikalNaziv.ToLower().Contains(tekst) ||
+            (rn.LotNaloga ?? "").ToLower().Contains(tekst)
+        ).ToList();
+    }
+
+    private void IzaberiRadniNalog(RadniNalogZaIzbor rn)
+    {
+        if (aktivnaReklamacija == null) return;
+        aktivnaReklamacija.RadniNalogID = rn.RadniNalogID;
+        aktivnaReklamacija.RadniNalogSifra = rn.RadniNalogSifra;
+        aktivnaReklamacija.KupacNaziv = rn.KupacNaziv;
+        aktivnaReklamacija.KupacID = rn.KupacID;
+        aktivnaReklamacija.VrstaVoca = rn.VrstaVoca;
+        aktivnaReklamacija.Artikal = rn.ArtikalNaziv;
+        aktivnaReklamacija.LotNaloga = rn.LotNaloga;
+        aktivnaReklamacija.DatumRadnogNaloga = rn.DatumPocetka;
+        filtriraniRN = new();
+    }
+
+    private void OcistiRadniNalog()
+    {
+        if (aktivnaReklamacija == null) return;
+        aktivnaReklamacija.RadniNalogID = 0;
+        aktivnaReklamacija.RadniNalogSifra = "";
+        aktivnaReklamacija.KupacNaziv = "";
+        aktivnaReklamacija.KupacID = 0;
+        aktivnaReklamacija.VrstaVoca = "";
+        aktivnaReklamacija.Artikal = "";
+        aktivnaReklamacija.LotNaloga = null;
+        aktivnaReklamacija.DatumRadnogNaloga = null;
+        pretragaRN = "";
+        filtriraniRN = sviRN;
+    }
+
+    private async Task OnRnOdDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+            rnOdDatum = d;
+        else
+            rnOdDatum = null;
+        await UcitajRadneNaloge();
+    }
+
+    private async Task OnRnDoDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+            rnDoDatum = d;
+        else
+            rnDoDatum = null;
+        await UcitajRadneNaloge();
+    }
+
+    // ====================================================
+    // EXPORT
+    // ====================================================
+
+    private Task ExportPdf()
+    {
+        greska = "PDF export liste reklamacija nije još implementiran. Koristite Excel export.";
+        return Task.CompletedTask;
+    }
+
+    private async Task ExportExcel()
+    {
+        exportuje = true;
+        greska = null;
+        try
+        {
+            using var wb = new ClosedXML.Excel.XLWorkbook();
+            var ws = wb.Worksheets.Add("Reklamacije");
+
+            // Zaglavlje
+            ws.Cell(1, 1).Value = "Datum";
+            ws.Cell(1, 2).Value = "Radni nalog";
+            ws.Cell(1, 3).Value = "Kupac";
+            ws.Cell(1, 4).Value = "Vrsta voća";
+            ws.Cell(1, 5).Value = "Artikal";
+            ws.Cell(1, 6).Value = "LOT";
+            ws.Cell(1, 7).Value = "Tip";
+            ws.Cell(1, 8).Value = "Podtip";
+            ws.Cell(1, 9).Value = "Opis reklamacije";
+            ws.Cell(1, 10).Value = "Preventivne mere";
+            ws.Cell(1, 11).Value = "Rezultat";
+            ws.Cell(1, 12).Value = "Napomena";
+            ws.Cell(1, 13).Value = "Dokumenti kupca";
+            ws.Cell(1, 14).Value = "Naši odgovori";
+            ws.Cell(1, 15).Value = "Kreirao";
+            ws.Cell(1, 16).Value = "Datum kreiranja";
+
+            var headerRow = ws.Row(1);
+            headerRow.Style.Font.Bold = true;
+            headerRow.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.DarkBlue;
+            headerRow.Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+
+            int row = 2;
+            foreach (var r in listaReklamacija)
+            {
+                ws.Cell(row, 1).Value = r.DatumReklamacijeFormatted;
+                ws.Cell(row, 2).Value = r.RadniNalogSifra;
+                ws.Cell(row, 3).Value = r.KupacNaziv;
+                ws.Cell(row, 4).Value = r.VrstaVoca;
+                ws.Cell(row, 5).Value = r.Artikal;
+                ws.Cell(row, 6).Value = r.LotNaloga ?? "";
+                ws.Cell(row, 7).Value = r.TipReklamacije;
+                ws.Cell(row, 8).Value = r.PodtipReklamacije;
+                ws.Cell(row, 9).Value = r.OpisReklamacije;
+                ws.Cell(row, 10).Value = r.OpisPreventivnihMera;
+                ws.Cell(row, 11).Value = r.Rezultat;
+                ws.Cell(row, 12).Value = r.NapomenaRezultata ?? "";
+                ws.Cell(row, 13).Value = r.DokumentiKupca.Count;
+                ws.Cell(row, 14).Value = r.NasiOdgovori.Count;
+                ws.Cell(row, 15).Value = r.KreiraoKorisnik;
+                ws.Cell(row, 16).Value = r.DatumKreiranja;
+                row++;
+            }
+
+            ws.Columns().AdjustToContents();
+
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
+            var bytes = ms.ToArray();
+            var base64 = Convert.ToBase64String(bytes);
+            var datum = DateTime.Today.ToString("yyyyMMdd");
+            await JS.InvokeVoidAsync("downloadFileFromBase64", base64,
+                $"Reklamacije_{datum}.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri Excel exportu");
+            greska = "Greška pri exportu u Excel.";
+        }
+        finally
+        {
+            exportuje = false;
+        }
+    }
+
+    // ====================================================
+    // ČUVANJE
+    // ====================================================
+
+    private async Task SacuvajReklamaciju()
+    {
+        if (aktivnaReklamacija == null) return;
+        greska = null;
+        uspeh = null;
+
+        if (aktivnaReklamacija.RadniNalogID == 0)
+        { greska = "Izaberite radni nalog."; return; }
+        if (string.IsNullOrWhiteSpace(aktivnaReklamacija.TipReklamacije))
+        { greska = "Izaberite tip reklamacije."; return; }
+        if (string.IsNullOrWhiteSpace(aktivnaReklamacija.OpisReklamacije))
+        { greska = "Unesite opis reklamacije."; return; }
+
+        cuva = true;
+        try
+        {
+            // Ako je nova, dodeli novi GUID pre čuvanja (neophodno za folder dokumenata)
+            if (string.IsNullOrEmpty(aktivnaReklamacija.Id))
+                aktivnaReklamacija.Id = Guid.NewGuid().ToString();
+
+            await ReklamacijaService.SacuvajReklamaciju(aktivnaReklamacija);
+            uspeh = "Reklamacija uspešno sačuvana.";
+            jeNova = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri čuvanju reklamacije");
+            greska = "Greška pri čuvanju. Pokušajte ponovo.";
+        }
+        finally
+        {
+            cuva = false;
+        }
+    }
+
+    // ====================================================
+    // BRISANJE
+    // ====================================================
+
+    private async Task ObrisiReklamacijuUI(ReklamacijaModel r)
+    {
+        var potvrda = await JS.InvokeAsync<bool>("confirm",
+            $"Obrisati reklamaciju za nalog {r.RadniNalogSifra} ({r.KupacNaziv})?\nOvi podaci i svi dokumenti biće trajno obrisani.");
+        if (!potvrda) return;
+
+        try
+        {
+            await ReklamacijaService.ObrisiReklamaciju(r.Id);
+            await UcitajListu();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri brisanju reklamacije {Id}", r.Id);
+        }
+    }
+
+    // ====================================================
+    // DOKUMENTI
+    // ====================================================
+
+    private async Task DodajDokument(InputFileChangeEventArgs e, string tip)
+    {
+        if (aktivnaReklamacija == null || string.IsNullOrEmpty(aktivnaReklamacija.Id)) return;
+
+        foreach (var fajl in e.GetMultipleFiles(20))
+        {
+            try
+            {
+                var ekstenzija = Path.GetExtension(fajl.Name);
+                var naziv = Path.GetFileNameWithoutExtension(fajl.Name);
+                await using var stream = fajl.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024); // 100MB max
+
+                var dokument = await ReklamacijaService.DodajDokument(
+                    aktivnaReklamacija.Id, tip, naziv, stream, ekstenzija);
+
+                if (tip == "KupacDokument")
+                    aktivnaReklamacija.DokumentiKupca.Add(dokument);
+                else
+                    aktivnaReklamacija.NasiOdgovori.Add(dokument);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Greška pri uploadu fajla {Naziv}", fajl.Name);
+                greska = $"Greška pri uploadu: {fajl.Name}";
+            }
+        }
+    }
+
+    private async Task ObrisiDokumentUI(string reklamacijaId, string dokumentId, string naziv)
+    {
+        var potvrda = await JS.InvokeAsync<bool>("confirm", $"Obrisati dokument '{naziv}'?");
+        if (!potvrda) return;
+
+        try
+        {
+            await ReklamacijaService.ObrisiDokument(reklamacijaId, dokumentId);
+            if (aktivnaReklamacija != null)
+            {
+                aktivnaReklamacija.DokumentiKupca.RemoveAll(d => d.Id == dokumentId);
+                aktivnaReklamacija.NasiOdgovori.RemoveAll(d => d.Id == dokumentId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri brisanju dokumenta {Id}", dokumentId);
+        }
+    }
+
+    private async Task PreuzmiDokument(string reklamacijaId, string dokumentId, string naziv)
+    {
+        try
+        {
+            var (stream, ime, contentType) = await ReklamacijaService.PreuzmiDokument(reklamacijaId, dokumentId);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+            var base64 = Convert.ToBase64String(bytes);
+            await JS.InvokeVoidAsync("downloadFileFromBase64", base64, ime, contentType);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri preuzimanju dokumenta {Id}", dokumentId);
+            greska = "Greška pri preuzimanju dokumenta.";
+        }
+    }
+
+    // ====================================================
+    // HELPER
+    // ====================================================
+
+    private void OnTipChanged()
+    {
+        if (aktivnaReklamacija != null)
+            aktivnaReklamacija.PodtipReklamacije = "";
+    }
+
+    private void OnDatumReklamacijeChanged(ChangeEventArgs e)
+    {
+        if (aktivnaReklamacija != null && DateTime.TryParse(e.Value?.ToString(), out var d))
+            aktivnaReklamacija.DatumReklamacije = d;
+    }
+
+    // Helper model samo za izbor RN u formi
+    public class RadniNalogZaIzbor
+    {
+        public long RadniNalogID { get; set; }
+        public string RadniNalogSifra { get; set; } = "";
+        public string KupacNaziv { get; set; } = "";
+        public long KupacID { get; set; }
+        public string ArtikalNaziv { get; set; } = "";
+        public string VrstaVoca { get; set; } = "";
+        public string? LotNaloga { get; set; }
+        public DateTime? DatumPocetka { get; set; }
+        private static readonly System.Globalization.CultureInfo _sr = new("sr-Latn-RS");
+        public string DatumPocetkaFormatted => DatumPocetka?.ToString("dd.MM.yyyy", _sr) ?? "-";
+    }
+}

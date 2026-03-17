@@ -30,7 +30,7 @@
 
 <div class="container-fluid">
     <!-- Main Sections -->
-    <div class="section-grid">
+    <div class="section-grid" style="grid-template-columns: repeat(5, 1fr);">
         <div class="section-card" @onclick="@(() => NavigateTo("/lager"))">
             <div class="section-icon">
                 <i class="bi bi-archive"></i>
@@ -56,6 +56,13 @@
                 <i class="bi bi-droplet"></i>
             </div>
             <h4 class="section-title">Lager Sirovina</h4>
+        </div>
+
+        <div class="section-card" @onclick="@(() => NavigateTo("/stanje-kese-altiva"))">
+            <div class="section-icon">
+                <i class="bi bi-bag-check"></i>
+            </div>
+            <h4 class="section-title">Stanje Kesa Altiva</h4>
         </div>
     </div>
 

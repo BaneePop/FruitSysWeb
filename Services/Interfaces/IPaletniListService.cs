@@ -7,6 +7,26 @@ namespace FruitSysWeb.Services.Interfaces
 {
     public interface IPaletniListService
     {
+        // ── Paletni List Pregled (4 taba) ──────────────────────────────────
+        Task<List<PaletniListPregledRow>> UcitajNabavkuPaletniListova(PaletniListPregledFilter filter);
+        Task<List<PaletniListPregledRow>> UcitajProdajuPaletniListova(PaletniListPregledFilter filter);
+        Task<List<PaletniListPregledRow>> UcitajProizvodnjuPaletniListova(PaletniListPregledFilter filter);
+        Task<PaletniListPovezanostResult> UcitajPovezanostPaletniListova(string sifraPL);
+        Task<List<PaletniListPregledRow>> UcitajPojedinacniDokument(string tip, string sifra);
+
+        // ── Kvalitet tab ────────────────────────────────────────────────────
+        Task<List<PaletniListKvalitetRow>> UcitajKvalitetIzvestaj(PaletniListKvalitetFilter filter);
+        Task<List<(string ID, string Naziv)>> UcitajArtikleZaKvalitet();
+        Task<List<string>> UcitajKomitentePaletniListovaKvalitet();
+        Task<List<string>> UcitajPrijemniceZaPeriodKvalitet(DateTime? odDatum, DateTime? doDatum);
+
+        // ── Dropdown liste za filtere ───────────────────────────────────────
+        Task<List<string>> UcitajKomitentePaletniListova(int tip);
+        Task<List<string>> UcitajArtiklePaletniListova(int tip);
+        Task<List<string>> UcitajPrijemniceZaPeriod(DateTime? odDatum, DateTime? doDatum);
+        Task<List<string>> UcitajOtpremnicaZaPeriod(DateTime? odDatum, DateTime? doDatum);
+        Task<List<string>> UcitajRadneNalogeZaPeriod(DateTime? odDatum, DateTime? doDatum);
+
         /// <summary>
         /// Učitava sve prijeme za današnji dan (PaletniListTip = 1)
         /// </summary>

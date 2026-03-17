@@ -15,6 +15,7 @@
 @inject IPreradaService PreradaService
 @inject ITypeMappingService TypeMapping
 @inject ILogger<PreradaHome> Logger
+@inject IBrziPregledService BrziPregledService
 
 @* All styles moved to wwwroot/css/shared-components.css *@
 
@@ -30,7 +31,7 @@
 
 <div class="container-fluid">
     <!-- Main Sections -->
-    <div class="section-grid" style="grid-template-columns: repeat(5, 1fr);">
+    <div class="section-grid" style="grid-template-columns: repeat(4, 1fr);">
         <div class="section-card" @onclick="@(() => NavigateTo("/proizvodnja"))">
             <div class="section-icon">
                 <i class="bi bi-gear-fill"></i>
@@ -58,41 +59,93 @@
             </div>
             <h4 class="section-title">Utrošak Radne Snage SI</h4>
         </div>
-
-        <div class="section-card" @onclick="@(() => NavigateTo("/sledljivost"))">
-            <div class="section-icon">
-                <i class="bi bi-diagram-3"></i>
-            </div>
-            <h4 class="section-title">Sledljivost</h4>
-        </div>
     </div>
 
-    <!-- Trošak po kg Gotovog Proizvoda - Line Charts -->
-    <div class="row mb-4">
-        <!-- Trošak Direktan po kg -->
-        <div class="col-md-6">
-            <ApexMultiSeriesLineChart
-                Title="Trošak Direktan po kg - Zadnjih 20 Smena"
-                Icon="bi bi-cash-coin"
-                SeriesData="@trosakDirektniPoKgData"
-                Unit="RSD/kg"
-                IsLoading="@isLoadingTrosakDirektni"
-                HasError="@hasErrorTrosakDirektni"
-                ShowSummary="false"
-                OnRefresh="@RefreshTrosakDirektni" />
-        </div>
-
-        <!-- Trošak Ukupan po kg -->
-        <div class="col-md-6">
-            <ApexMultiSeriesLineChart
-                Title="Trošak Ukupan po kg - Zadnjih 20 Smena"
-                Icon="bi bi-cash-stack"
-                SeriesData="@trosakUkupniPoKgData"
-                Unit="RSD/kg"
-                IsLoading="@isLoadingTrosakUkupni"
-                HasError="@hasErrorTrosakUkupni"
-                ShowSummary="false"
-                OnRefresh="@RefreshTrosakUkupni" />
+    <!-- Najavljeni Utovari Section -->
+    <div class="row mt-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-truck me-2 text-primary"></i>Najavljeni Utovari (narednih 20 dana)
+                    </h5>
+                    @if (najavljeniUtovari != null)
+                    {
+                        <span class="badge bg-primary">@najavljeniUtovari.Count stavki</span>
+                    }
+                </div>
+                <div class="card-body p-0">
+                    @if (najavljeniUtovari == null)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Učitavanje...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Učitavanje najavljenih utovara...</p>
+                        </div>
+                    }
+                    else if (!najavljeniUtovari.Any())
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-check display-3 text-muted"></i>
+                            <h5 class="mt-3 text-muted">Nema najavljenih utovara u narednih 20 dana</h5>
+                            <p class="text-muted">Svi radni nalozi su isporučeni ili trenutno nema aktivnih naloga</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Radni nalog</th>
+                                        <th>Datum utovara</th>
+                                        <th>Dana</th>
+                                        <th>Kupac</th>
+                                        <th>Artikal</th>
+                                        <th>Potrebna količina</th>
+                                        <th>Lot</th>
+                                        <th>Ugovor prodaja</th>
+                                        <th>Prioritet</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var utovar in najavljeniUtovari)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge @utovar.StatusBadgeClass">@utovar.RadniNalog</span>
+                                            </td>
+                                            <td>
+                                                <strong>@TypeMapping.FormatDate(utovar.DatumIsporuke ?? DateTime.MinValue)</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@utovar.DanaDoUtovara dana</span>
+                                            </td>
+                                            <td>@utovar.Kupac</td>
+                                            <td>
+                                                <span class="text-primary">@utovar.Artikal</span>
+                                            </td>
+                                            <td>
+                                                <strong>@TypeMapping.FormatWeight(utovar.Kolicina)</strong>
+                                            </td>
+                                            <td>
+                                                <code class="text-info">@(utovar.LotNaloga ?? "N/A")</code>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@(utovar.BrojUgovora ?? "N/A")</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge @utovar.UrgentnostBadgeClass">@utovar.StatusUrgentnosti</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 
@@ -201,9 +254,8 @@
     private List<ChartDataPoint>? BrojRadnikaPoDanima;
     private List<ChartDataPoint>? TrosakPoRadnomDanu;
 
-    // Trošak po kg Data
-    private List<ChartSeriesData> trosakDirektniPoKgData = new();
-    private List<ChartSeriesData> trosakUkupniPoKgData = new();
+    // Najavljeni Utovari
+    private List<NajavljeniUtovarModel>? najavljeniUtovari;
 
     // Loading States
     private bool IsLoadingSirovine = false;
@@ -212,8 +264,6 @@
     private bool IsLoadingKesa = false;
     private bool IsLoadingRadniciPoDanima = false;
     private bool IsLoadingTrosakPoDanu = false;
-    private bool isLoadingTrosakDirektni = false;
-    private bool isLoadingTrosakUkupni = false;
     private bool IsRefreshing = false;
 
     // Error States
@@ -223,8 +273,6 @@
     private bool HasErrorKesa = false;
     private bool HasErrorRadniciPoDanima = false;
     private bool HasErrorTrosakPoDanu = false;
-    private bool hasErrorTrosakDirektni = false;
-    private bool hasErrorTrosakUkupni = false;
 
     private FilterRequest proizvodnjFilter => new FilterRequest
     {
@@ -234,7 +282,24 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await RefreshCharts();
+        await Task.WhenAll(
+            UcitajNajavljeneUtovare(),
+            RefreshCharts()
+        );
+    }
+
+    private async Task UcitajNajavljeneUtovare()
+    {
+        try
+        {
+            najavljeniUtovari = await PreradaService.UcitajNajavljeneUtovare();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju najavljenih utovara");
+            najavljeniUtovari = new List<NajavljeniUtovarModel>();
+        }
     }
 
     private async Task RefreshCharts()
@@ -250,9 +315,7 @@
                 RefreshSirovine(),
                 RefreshGotovi(),
                 RefreshKutije(),
-                RefreshKesa(),
-                RefreshTrosakDirektni(),
-                RefreshTrosakUkupni()
+                RefreshKesa()
             );
         }
         catch (Exception ex)
@@ -499,69 +562,5 @@
     private void NavigateTo(string url)
     {
         NavigationManager.NavigateTo(url);
-    }
-
-    // Trošak Direktan po kg - Zadnjih 20 Smena
-    private async Task RefreshTrosakDirektni()
-    {
-        if (isLoadingTrosakDirektni) return;
-
-        isLoadingTrosakDirektni = true;
-        hasErrorTrosakDirektni = false;
-        StateHasChanged();
-
-        try
-        {
-            await Task.Delay(170);
-
-            // Učitaj direktne troškove po kg iz servisa
-            var podaciPoSmeni = await PreradaService.UcitajTrosakPoKgDirektni(20);
-
-            // Konvertuj u ChartSeriesData format
-            trosakDirektniPoKgData = ChartDataHelper.ConvertToChartSeriesData(podaciPoSmeni);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error loading trošak direktan po kg");
-            hasErrorTrosakDirektni = true;
-            trosakDirektniPoKgData = new List<ChartSeriesData>();
-        }
-        finally
-        {
-            isLoadingTrosakDirektni = false;
-            StateHasChanged();
-        }
-    }
-
-    // Trošak Ukupan po kg - Zadnjih 20 Smena
-    private async Task RefreshTrosakUkupni()
-    {
-        if (isLoadingTrosakUkupni) return;
-
-        isLoadingTrosakUkupni = true;
-        hasErrorTrosakUkupni = false;
-        StateHasChanged();
-
-        try
-        {
-            await Task.Delay(180);
-
-            // Učitaj ukupne troškove po kg iz servisa
-            var podaciPoSmeni = await PreradaService.UcitajTrosakPoKgUkupni(20);
-
-            // Konvertuj u ChartSeriesData format
-            trosakUkupniPoKgData = ChartDataHelper.ConvertToChartSeriesData(podaciPoSmeni);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error loading trošak ukupan po kg");
-            hasErrorTrosakUkupni = true;
-            trosakUkupniPoKgData = new List<ChartSeriesData>();
-        }
-        finally
-        {
-            isLoadingTrosakUkupni = false;
-            StateHasChanged();
-        }
     }
 }

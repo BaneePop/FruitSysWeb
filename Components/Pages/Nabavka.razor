@@ -13,6 +13,8 @@
 @inject IArtikalService ArtikalService
 @inject ITypeMappingService TypeMapping
 @inject IJSRuntime JSRuntime
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
 
 <!-- Header sa saldo na vrhu -->
 <div class="bg-dark text-white py-3 mb-4">
@@ -314,11 +316,18 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var user = await AuthService.GetCurrentUser();
+        if (user == null || !user.ImaPristupStranici("/Nabavka"))
+        {
+            NavigationManager.NavigateTo("/unauthorized");
+            return;
+        }
+
         // REFACTORED: Koristi SystemConstants za default date range
         var dateRange = SystemConstants.GetDefaultDateRange();
         filterRequest.OdDatum = dateRange.startDate;
         filterRequest.DoDatum = dateRange.endDate;
-        
+
         await UcitajListeZaFiltriranje();
         await UcitajPodatke();
     }

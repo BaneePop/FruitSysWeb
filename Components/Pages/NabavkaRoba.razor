@@ -13,6 +13,8 @@
 @inject IArtikalService ArtikalService
 @inject ITypeMappingService TypeMapping
 @inject IJSRuntime JSRuntime
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
 
 <!-- Header -->
 <div class="bg-primary text-white py-3 mb-4">
@@ -235,6 +237,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var user = await AuthService.GetCurrentUser();
+        if (user == null || !user.ImaPristupStranici("/nabavka-roba"))
+        {
+            NavigationManager.NavigateTo("/unauthorized");
+            return;
+        }
+
         var dateRange = SystemConstants.GetDefaultDateRange();
         filterRequest.OdDatum = dateRange.startDate;
         filterRequest.DoDatum = dateRange.endDate;

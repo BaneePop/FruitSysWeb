@@ -4,6 +4,7 @@ using FruitSysWeb.Models;
 using FruitSysWeb.Services.Core;
 using FruitSysWeb.Services.Interfaces;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations
@@ -13,14 +14,20 @@ namespace FruitSysWeb.Services.Implementations
         private readonly DatabaseService _databaseService;
         private readonly ProtectedSessionStorage _sessionStorage;
         private readonly ILogger<AuthService> _logger;
+        private readonly IKorisnikAktivnostService _aktivnostService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private const string USER_KEY = "current_user";
+        private const string AKTIVNOST_KEY = "aktivnost_id";
 
         public AuthService(DatabaseService databaseService, ProtectedSessionStorage sessionStorage,
-            ILogger<AuthService> logger)
+            ILogger<AuthService> logger, IKorisnikAktivnostService aktivnostService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _databaseService = databaseService;
             _sessionStorage = sessionStorage;
             _logger = logger;
+            _aktivnostService = aktivnostService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<LoginResponse> Login(LoginRequest request)
@@ -61,6 +68,12 @@ namespace FruitSysWeb.Services.Implementations
                 }
 
                 await _sessionStorage.SetAsync(USER_KEY, korisnik);
+
+                // Zabeleži login (IP adresa + vreme)
+                var ipAdresa = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+                var aktivnostId = await _aktivnostService.ZabeležiLogin(korisnik.Ime, ipAdresa);
+                await _sessionStorage.SetAsync(AKTIVNOST_KEY, aktivnostId);
+
                 return new LoginResponse { Success = true, Message = "Uspešno ste se prijavili", Korisnik = korisnik };
             }
             catch (Exception ex)
@@ -74,7 +87,16 @@ namespace FruitSysWeb.Services.Implementations
         {
             try
             {
+                // Zabeleži logout pre brisanja sesije
+                var aktivnostResult = await _sessionStorage.GetAsync<long>(AKTIVNOST_KEY);
+                var korisnikResult = await _sessionStorage.GetAsync<KorisnikModel>(USER_KEY);
+                if (aktivnostResult.Success && korisnikResult.Success && korisnikResult.Value != null)
+                {
+                    await _aktivnostService.ZabeležiLogout(aktivnostResult.Value, korisnikResult.Value.Ime);
+                }
+
                 await _sessionStorage.DeleteAsync(USER_KEY);
+                await _sessionStorage.DeleteAsync(AKTIVNOST_KEY);
             }
             catch (Exception ex)
             {

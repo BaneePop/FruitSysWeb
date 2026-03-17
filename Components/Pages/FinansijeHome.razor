@@ -31,25 +31,18 @@
 
 <div class="container-fluid">
     <!-- Main Sections -->
-    <div class="section-grid" style="grid-template-columns: repeat(5, 1fr);">
+    <div class="section-grid" style="grid-template-columns: repeat(6, 1fr);">
         <div class="section-card active" @onclick="@(() => NavigateTo("/finansijski-pregled"))">
             <div class="section-icon">
                 <i class="bi bi-speedometer2"></i>
             </div>
             <h4 class="section-title">Obračun Poslovanja</h4>
         </div>
-
         <div class="section-card active" @onclick="@(() => NavigateTo("/nabavka"))">
             <div class="section-icon">
                 <i class="bi bi-truck"></i>
             </div>
             <h4 class="section-title">Pregled Nabavke</h4>
-        </div>
-        <div class="section-card" @onclick="@(() => NavigateTo("/ugovori"))">
-            <div class="section-icon">
-                <i class="bi bi-file-earmark-text"></i>
-            </div>
-            <h4 class="section-title">Ugovori</h4>
         </div>
         <div class="section-card active" @onclick="@(() => NavigateTo("/prodaja"))">
             <div class="section-icon">
@@ -62,6 +55,18 @@
                 <i class="bi bi-calculator"></i>
             </div>
             <h4 class="section-title">Pregled Stanja</h4>
+        </div>
+        <div class="section-card" @onclick="@(() => NavigateTo("/pregled-salda"))">
+            <div class="section-icon">
+                <i class="bi bi-balance-scale"></i>
+            </div>
+            <h4 class="section-title">Pregled Salda</h4>
+        </div>
+        <div class="section-card" @onclick="@(() => NavigateTo("/finansijsko-stanje"))">
+            <div class="section-icon">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <h4 class="section-title">Finansijsko Stanje</h4>
         </div>
     </div>
 

@@ -834,5 +834,78 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 return new List<SaldoPoKomitentuModel>();
             }
         }
+
+        public async Task<List<FinansijskoStanjeModel>> UcitajFinansijskoStanje(
+            FilterRequest filterRequest,
+            string tipKomitenta,
+            decimal minimumStanje = 10000)
+        {
+            try
+            {
+                var odDatum = filterRequest.OdDatum ?? new DateTime(2022, 1, 1);
+                var doDatum = filterRequest.DoDatum ?? DateTime.Now.Date;
+
+                // Kolona u Komitent tabeli prema tipu
+                var tipKolona = tipKomitenta.ToLower() switch
+                {
+                    "kupac"       => "k.JeKupac",
+                    "dobavljac"   => "k.JeDobavljac",
+                    "proizvodjac" => "k.JeProizvodjac",
+                    "otkupljivac" => "k.JeOtkupljivac",
+                    _ => "k.JeKupac"
+                };
+
+                var sql = CreateSqlBuilder($@"
+                    SELECT
+                        k.ID AS KomitentID,
+                        k.Naziv,
+                        COALESCE(SUM(
+                            CASE
+                                WHEN fm.Datum >= @OdDatum AND fm.Datum <= @DoDatum
+                                     AND fm.DokumentStatus != 4
+                                THEN COALESCE(fm.Potrazuje, 0)
+                                ELSE 0
+                            END
+                        ), 0) AS Potrazuje,
+                        COALESCE(SUM(
+                            CASE
+                                WHEN fm.Datum >= @OdDatum AND fm.Datum <= @DoDatum
+                                     AND fm.DokumentStatus != 4
+                                THEN COALESCE(fm.Duguje, 0)
+                                ELSE 0
+                            END
+                        ), 0) AS Duguje,
+                        MAX(
+                            CASE
+                                WHEN fm.DokumentStatus != 4
+                                THEN fm.Datum
+                                ELSE NULL
+                            END
+                        ) AS DatumZadnjePromene
+                    FROM Komitent k
+                    LEFT JOIN vPrometFinansijev9 fm ON k.ID = fm.KomitentID
+                    WHERE k.Aktivno = 1
+                      AND {tipKolona} = 1");
+
+                var parameters = CreateParameters();
+                parameters.Add("@OdDatum", odDatum);
+                parameters.Add("@DoDatum", doDatum);
+
+                sql.Append(@"
+                    GROUP BY k.ID, k.Naziv
+                    HAVING ABS(Potrazuje - Duguje) > @MinimumStanje
+                    ORDER BY (Potrazuje - Duguje) DESC");
+
+                parameters.Add("@MinimumStanje", minimumStanje);
+
+                var rezultat = await _databaseService.QueryAsync<FinansijskoStanjeModel>(sql.ToString(), parameters);
+                return rezultat?.ToList() ?? new List<FinansijskoStanjeModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška u UcitajFinansijskoStanje za tip={Tip}", tipKomitenta);
+                return new List<FinansijskoStanjeModel>();
+            }
+        }
     }
 }

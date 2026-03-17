@@ -80,5 +80,16 @@ namespace FruitSysWeb.Services.Interfaces
         Task<Dictionary<string, Dictionary<string, decimal>>> UcitajTrosakPoKgDirektni(int brojSmena = 20);
         Task<Dictionary<string, Dictionary<string, decimal>>> UcitajTrosakPoKgUkupni(int brojSmena = 20);
 
+        /// <summary>
+        /// Cena koštanja po radnom nalogu razložena po elementima:
+        /// direktan rad, režija, direktan materijal (sirovina), ambalaza.
+        /// Sadrži ukupan trošak i cenu po kg gotovog proizvoda.
+        /// </summary>
+        Task<List<CenaKostanjaModel>> UcitajCenuKostanjaPoRadnimNalozima(FilterRequest filterRequest);
+
+        /// <summary>
+        /// Lista radnih naloga sa osnovnim podacima za izbor pri kreiranju reklamacije.
+        /// </summary>
+        Task<List<Components.Pages.Reklamacije.RadniNalogZaIzbor>> UcitajRadneNalogeZaIzbor(DateTime? odDatum = null, DateTime? doDatum = null);
     }
 }

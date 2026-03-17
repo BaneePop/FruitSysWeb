@@ -7,6 +7,7 @@
 @inject IBrziPregledService BrziPregledService
 @inject ITypeMappingService TypeMapping
 @inject NavigationManager Navigation
+@inject IAuthService AuthService
 
 
 <PageTitle>Brzi Pregled - FruitSysWeb</PageTitle>
@@ -131,6 +132,13 @@
     
     protected override async Task OnInitializedAsync()
     {
+        var user = await AuthService.GetCurrentUser();
+        if (user == null || !user.ImaPristupStranici("/finansijski-pregled"))
+        {
+            Navigation.NavigateTo("/unauthorized");
+            return;
+        }
+
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         Console.WriteLine("🏁 FinansijskiPregled - OnInitializedAsync started");
         

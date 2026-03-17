@@ -40,6 +40,13 @@ namespace FruitSysWeb.Services.Interfaces
         /// Filtrira komitente gde je apsolutno stanje > minimumStanje (default 1000 RSD)
         /// </summary>
         Task<List<SaldoPoKomitentuModel>> UcitajSaldoPoKomitentima(FilterRequest filterRequest, decimal minimumStanje = 1000);
+
+        /// <summary>
+        /// Finansijsko stanje komitenata po tipu (dobavljac/kupac/proizvodjac/otkupljivac).
+        /// Prikazuje: Naziv, Potražuje, Duguje, Saldo, Datum zadnje promene.
+        /// Filtrira ABS(Saldo) > minimumStanje.
+        /// </summary>
+        Task<List<FinansijskoStanjeModel>> UcitajFinansijskoStanje(FilterRequest filterRequest, string tipKomitenta, decimal minimumStanje = 10000);
     }
 }
 

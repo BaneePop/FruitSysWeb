@@ -47,10 +47,19 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                             'Gotov proizvod'
                         ) as VrstaArtikla,
                         COALESCE(k.Naziv, 'Nepoznato') as Komitent,
-                        MAX(er.BrojRadnika) as BrojRadnika,
+                        SUM(er.BrojRadnika) as BrojRadnika,
                         SUM(er.BrojRadnihSati) as BrojRadnihSati,
                         SUM(er.CenaKostanjaDirektanRad) as TrosakPoRadnomNalogu,
-                        COALESCE(MAX(verm.Mnozilac) * 100, 0) as ProcenatIskoriscenja,
+                        COALESCE(
+                            (SELECT MAX(verm2.Mnozilac) * 100
+                             FROM vEvidencijaRadaPreradaMnozilac verm2
+                             WHERE verm2.EvidencijaRadaID IN (
+                                 SELECT er2.ID FROM EvidencijaRada er2
+                                 WHERE er2.SmenskiIzvestajID = si.ID AND er2.RadniNalogID = rn.ID
+                             )
+                             LIMIT 1),
+                            0
+                        ) as ProcenatIskoriscenja,
                         er.RadniNalogID,
                         er.SmenskiIzvestajID,
                         MIN(er.RadniProcesID) as RadniProcesID,
@@ -68,7 +77,6 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     INNER JOIN SmenskiIzvestaj si ON er.SmenskiIzvestajID = si.ID
                     LEFT JOIN RadniNalog rn ON er.RadniNalogID = rn.ID
                     LEFT JOIN Komitent k ON rn.KomitentID = k.ID
-                    LEFT JOIN vEvidencijaRadaPreradaMnozilac verm ON er.ID = verm.EvidencijaRadaID
                     WHERE er.Obrisan = 0
                       AND er.DirektanRadObracunat = 1
                       AND rn.Aktivno = 1
@@ -1389,5 +1397,235 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         }
 
         #endregion
+
+        #region CENA KOŠTANJA PO RADNOM NALOGU
+
+        public async Task<List<CenaKostanjaModel>> UcitajCenuKostanjaPoRadnimNalozima(FilterRequest filterRequest)
+        {
+            try
+            {
+                var odDatum = filterRequest.OdDatum ?? new DateTime(DateTime.Now.Year, 1, 1);
+                var doDatum = filterRequest.DoDatum ?? DateTime.Now.Date;
+
+                // Kolicina gotovog, BrojPakovanja (kutije) i DirektanRad dolaze direktno iz RadniNalog tabele.
+                // Rezija = SUM(CenaKostanjaDirektanRad gde DirektanRadObracunat=0) iz EvidencijaRada.
+                // Materijal: neto kolicina (tip=1 minus tip=3 povrat) x najnovija cena iz KalkulacijaArtikalCena.
+                // Samo zakljuceni nalozi: DokumentStatus = 3.
+                var sql = @"
+                    SELECT
+                        rn.ID AS RadniNalogID,
+                        rn.Sifra AS RadniNalog,
+                        COALESCE(TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a_gp.Naziv)), 'Nepoznato') AS Artikal,
+                        COALESCE(p.Naziv, '') AS Pakovanje,
+                        COALESCE(k.Naziv, '') AS Komitent,
+                        rn.LotNaloga,
+                        DATE(rn.DatumPocetka) AS DatumPocetka,
+                        MAX(si.Datum) AS DatumZavrsetka,
+
+                        -- Direktan rad ukupno iz RadniNalog.DirektanRadObracunato
+                        COALESCE(rn.DirektanRadObracunato, 0) AS TrosakDirektanRad,
+
+                        -- Rezija = SUM(CenaKostanjaDirektanRad) gde DirektanRadObracunat = 0
+                        COALESCE(SUM(
+                            CASE WHEN er.DirektanRadObracunat = 0
+                            THEN er.CenaKostanjaDirektanRad ELSE 0 END
+                        ), 0) AS TrosakRezija,
+
+                        -- Kolicina gotovog proizvoda direktno iz RadniNalog.Kolicina
+                        COALESCE(rn.Kolicina, 0) AS KolicinaGotovog,
+
+                        -- Broj pakovanja (kutije) direktno iz RadniNalog.BrojPakovanja
+                        COALESCE(rn.BrojPakovanja, 0) AS BrojPakovanja,
+
+                        -- Materijal (sirovina) iz vPreradaPregled_v2:
+                        -- RpArtikalTip=1 ulaz (potrosnja), RpArtikalTip=3 povrat (smanjuje potrosnju)
+                        -- Neto kolicina = SUM(tip=1) - SUM(tip=3), × najnovija cena iz KalkulacijaArtikalCena
+                        -- Za sirovine bez cene koristi prosek cena sirovine za koje postoji cena
+                        COALESCE((
+                            SELECT SUM(
+                                CASE WHEN vp2.RpArtikalTip = 1 THEN vp2.Kolicina
+                                     WHEN vp2.RpArtikalTip = 3 THEN -vp2.Kolicina
+                                     ELSE 0
+                                END
+                                * COALESCE(
+                                    (
+                                        SELECT CASE WHEN COALESCE(kac2.BrutoCena, 0) > 0 THEN kac2.BrutoCena ELSE kac2.NetoCena END
+                                        FROM KalkulacijaArtikalCena kac2
+                                        WHERE kac2.ArtikalID = vp2.ArtikalID
+                                        ORDER BY kac2.Version DESC LIMIT 1
+                                    ),
+                                    (
+                                        SELECT AVG(CASE WHEN COALESCE(kac3.BrutoCena, 0) > 0 THEN kac3.BrutoCena ELSE kac3.NetoCena END)
+                                        FROM vPreradaPregled_v2 vp3
+                                        INNER JOIN KalkulacijaArtikalCena kac3 ON kac3.ArtikalID = vp3.ArtikalID
+                                        INNER JOIN (
+                                            SELECT ArtikalID, MAX(Version) AS MaxVer
+                                            FROM KalkulacijaArtikalCena GROUP BY ArtikalID
+                                        ) lv3 ON lv3.ArtikalID = kac3.ArtikalID AND lv3.MaxVer = kac3.Version
+                                        WHERE vp3.RadniNalogID = rn.ID
+                                          AND vp3.RpArtikalTip = 1
+                                          AND COALESCE(kac3.BrutoCena, kac3.NetoCena, 0) > 0
+                                    ),
+                                    0
+                                )
+                            )
+                            FROM vPreradaPregled_v2 vp2
+                            WHERE vp2.RadniNalogID = rn.ID
+                              AND vp2.RpArtikalTip IN (1, 3)
+                        ), 0) AS TrosakMaterijal,
+
+                        -- Ambalaza PRIMARNA: kese, dzakovi, gajbe (MagacinID=4, AmbalazaTip != 3 ili NULL)
+                        -- RpArtikalTip = 3 = izlaz iz magacina (potrosnja ambalaze)
+                        COALESCE((
+                            SELECT SUM(rpa_a1.Kolicina * COALESCE(
+                                (
+                                    SELECT CASE WHEN COALESCE(kac_a1.BrutoCena, 0) > 0 THEN kac_a1.BrutoCena ELSE kac_a1.NetoCena END
+                                    FROM KalkulacijaArtikalCena kac_a1
+                                    WHERE kac_a1.ArtikalID = a_a1.ID
+                                    ORDER BY kac_a1.Version DESC LIMIT 1
+                                ),
+                                0
+                            ))
+                            FROM EvidencijaRada er_a1
+                            INNER JOIN RadniProcesArtikal rpa_a1 ON rpa_a1.EvidencijaRadaID = er_a1.ID
+                            INNER JOIN ArtikalInstanca ai_a1 ON rpa_a1.ArtikalInstancaID = ai_a1.ID
+                            INNER JOIN Artikal a_a1 ON ai_a1.ArtikalID = a_a1.ID
+                            WHERE er_a1.RadniNalogID = rn.ID
+                              AND er_a1.Obrisan = 0
+                              AND rpa_a1.Storno = 0
+                              AND a_a1.MagacinID = 4
+                              AND (a_a1.AmbalazaTip IS NULL OR a_a1.AmbalazaTip != 3)
+                        ), 0) AS TrosakAmbalazaPrimarna,
+
+                        -- Ambalaza SEKUNDARNA: kutije (MagacinID=4, AmbalazaTip=3)
+                        COALESCE((
+                            SELECT SUM(rpa_a2.Kolicina * COALESCE(
+                                (
+                                    SELECT CASE WHEN COALESCE(kac_a2.BrutoCena, 0) > 0 THEN kac_a2.BrutoCena ELSE kac_a2.NetoCena END
+                                    FROM KalkulacijaArtikalCena kac_a2
+                                    WHERE kac_a2.ArtikalID = a_a2.ID
+                                    ORDER BY kac_a2.Version DESC LIMIT 1
+                                ),
+                                0
+                            ))
+                            FROM EvidencijaRada er_a2
+                            INNER JOIN RadniProcesArtikal rpa_a2 ON rpa_a2.EvidencijaRadaID = er_a2.ID
+                            INNER JOIN ArtikalInstanca ai_a2 ON rpa_a2.ArtikalInstancaID = ai_a2.ID
+                            INNER JOIN Artikal a_a2 ON ai_a2.ArtikalID = a_a2.ID
+                            WHERE er_a2.RadniNalogID = rn.ID
+                              AND er_a2.Obrisan = 0
+                              AND rpa_a2.Storno = 0
+                              AND a_a2.MagacinID = 4
+                              AND a_a2.AmbalazaTip = 3
+                        ), 0) AS TrosakAmbalazaSekundarna,
+
+                        COALESCE(SUM(er.BrojRadnihSati), 0) AS BrojRadnihSati,
+                        COALESCE(MAX(er.BrojRadnika), 0) AS BrojRadnika
+
+                    FROM RadniNalog rn
+                    INNER JOIN EvidencijaRada er ON er.RadniNalogID = rn.ID
+                    INNER JOIN SmenskiIzvestaj si ON er.SmenskiIzvestajID = si.ID
+                    LEFT JOIN Komitent k ON rn.KomitentID = k.ID
+                    LEFT JOIN ArtikalInstanca ai_gp ON rn.ArtikalInstancaID = ai_gp.ID
+                    LEFT JOIN Artikal a_gp ON ai_gp.ArtikalID = a_gp.ID
+                    LEFT JOIN Pakovanje p ON ai_gp.PakovanjeID = p.ID
+                    WHERE rn.Aktivno = 1
+                      AND rn.DokumentStatus = 3
+                      AND rn.Sifra IS NOT NULL
+                      AND rn.Sifra NOT LIKE 'ST-%'
+                      AND er.Obrisan = 0
+                      AND si.Datum >= @OdDatum
+                      AND si.Datum <= @DoDatum";
+
+                var parameters = new DynamicParameters();
+                parameters.Add("@OdDatum", odDatum);
+                parameters.Add("@DoDatum", doDatum);
+
+                if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
+                {
+                    sql += " AND rn.KomitentID = @KomitentId";
+                    parameters.Add("@KomitentId", filterRequest.KomitentId.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(filterRequest.RadniNalog))
+                {
+                    sql += " AND rn.Sifra LIKE @RadniNalog";
+                    parameters.Add("@RadniNalog", $"%{filterRequest.RadniNalog}%");
+                }
+
+                sql += @"
+                    GROUP BY rn.ID, rn.Sifra, rn.DatumPocetka, rn.Kolicina, rn.BrojPakovanja,
+                             rn.DirektanRadObracunato, rn.LotNaloga, a_gp.Naziv, p.Naziv, k.Naziv
+                    HAVING rn.Kolicina > 0
+                    ORDER BY MAX(si.Datum) DESC
+                    LIMIT 200";
+
+                var rezultat = await _databaseService.QueryAsync<CenaKostanjaModel>(sql, parameters);
+                return rezultat?.ToList() ?? new List<CenaKostanjaModel>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Greška u UcitajCenuKostanjaPoRadnimNalozima: {ex.Message}");
+                return new List<CenaKostanjaModel>();
+            }
+        }
+
+        #endregion
+
+        #region Reklamacije - izbor RN
+
+        public async Task<List<FruitSysWeb.Components.Pages.Reklamacije.RadniNalogZaIzbor>> UcitajRadneNalogeZaIzbor(DateTime? odDatum = null, DateTime? doDatum = null)
+        {
+            try
+            {
+                var sqlBuilder = new StringBuilder(@"
+                    SELECT
+                        rn.ID       AS RadniNalogID,
+                        rn.Sifra    AS RadniNalogSifra,
+                        COALESCE(k.Naziv, '')   AS KupacNaziv,
+                        k.ID                    AS KupacID,
+                        COALESCE(a.Naziv, '')   AS ArtikalNaziv,
+                        COALESCE(ak.Naziv, '')  AS VrstaVoca,
+                        rn.LotNaloga,
+                        MIN(si.Datum)           AS DatumPocetka
+                    FROM RadniNalog rn
+                    LEFT JOIN Komitent k ON rn.KomitentID = k.ID
+                    LEFT JOIN ArtikalInstanca ai ON rn.ArtikalInstancaID = ai.ID
+                    LEFT JOIN Artikal a ON ai.ArtikalID = a.ID
+                    LEFT JOIN ArtikalKlasifikacija ak ON a.PrvaKlasifikacijaID = ak.ID
+                    LEFT JOIN EvidencijaRada er ON er.RadniNalogID = rn.ID
+                    LEFT JOIN SmenskiIzvestaj si ON er.SmenskiIzvestajID = si.ID
+                    WHERE rn.Aktivno = 1
+                      AND rn.Sifra IS NOT NULL
+                      AND rn.Sifra NOT LIKE 'ST-%'");
+
+                var parameters = new Dictionary<string, object?>();
+
+                if (odDatum.HasValue)
+                {
+                    sqlBuilder.Append(" AND si.Datum >= @OdDatum");
+                    parameters["@OdDatum"] = odDatum.Value;
+                }
+                if (doDatum.HasValue)
+                {
+                    sqlBuilder.Append(" AND si.Datum <= @DoDatum");
+                    parameters["@DoDatum"] = doDatum.Value;
+                }
+
+                sqlBuilder.Append(" GROUP BY rn.ID, rn.Sifra, k.Naziv, k.ID, a.Naziv, ak.Naziv, rn.LotNaloga");
+                sqlBuilder.Append(" ORDER BY DatumPocetka DESC, rn.Sifra DESC LIMIT 500");
+                var sql = sqlBuilder.ToString();
+
+                var rezultat = await _databaseService.QueryAsync<FruitSysWeb.Components.Pages.Reklamacije.RadniNalogZaIzbor>(sql, parameters);
+                return rezultat?.ToList() ?? new();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Greška u UcitajRadneNalogeZaIzbor: {ex.Message}");
+                return new();
+            }
+        }
+
+        #endregion Reklamacije
     }
 }

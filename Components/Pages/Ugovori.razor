@@ -12,6 +12,7 @@
 @inject ITypeMappingService TypeMapping
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@inject IAuthService AuthService
 
 <style>
     .ugovori-header {
@@ -388,6 +389,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var user = await AuthService.GetCurrentUser();
+        if (user == null || !user.ImaPristupStranici("/ugovori"))
+        {
+            NavigationManager.NavigateTo("/unauthorized");
+            return;
+        }
+
         await UcitajUgovore();
     }
 

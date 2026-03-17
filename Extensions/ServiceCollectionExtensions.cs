@@ -28,6 +28,8 @@ namespace FruitSysWeb.Extensions
             // ========================================
             // AUTHENTICATION & AUTHORIZATION
             // ========================================
+            services.AddHttpContextAccessor();
+            services.AddSingleton<IKorisnikAktivnostService, KorisnikAktivnostService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ILocalStorageService, LocalStorageService>();
 
@@ -60,6 +62,27 @@ namespace FruitSysWeb.Extensions
             // EXPORT SERVICES
             // ========================================
             services.AddScoped<IExportService, SimpleExportService>();
+
+            // ========================================
+            // FAKTURA SERVICES
+            // ========================================
+            services.AddScoped<IFakturaService, FakturaService>();
+            services.AddScoped<FakturaPdfService>();
+            services.AddScoped<FakturaExcelService>();
+            services.AddScoped<IKarticaKomitentaService, KarticaKomitentaService>();
+            services.AddScoped<IKontrolaService, KontrolaService>();
+
+            // ========================================
+            // PROMENE SERVICES
+            // ========================================
+            services.AddScoped<IPromenService, PromenService>();
+            services.AddScoped<PromeneExcelService>();
+            services.AddScoped<PromenePdfService>();
+
+            // ========================================
+            // REKLAMACIJE
+            // ========================================
+            services.AddSingleton<IReklamacijaService, ReklamacijaService>();
 
             // ========================================
             // SLEDLJIVOST (TRACEABILITY) SERVICES
