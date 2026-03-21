@@ -168,6 +168,48 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
         }
 
+        public async Task<List<(string Artikal, decimal PreostalaKolicina, decimal ProsecnaCenaEur, decimal VrednostEur)>> UcitajPreostaleKolicinePoArtiklu()
+        {
+            try
+            {
+                var sql = @"
+                    SELECT
+                        a.Naziv as Artikal,
+                        SUM(ups.Kolicina - COALESCE(isporuke.Isporuceno, 0)) as PreostalaKolicina,
+                        AVG(COALESCE(ups.JedinicnaCenaEur, 0)) as ProsecnaCenaEur,
+                        SUM((ups.Kolicina - COALESCE(isporuke.Isporuceno, 0)) * COALESCE(ups.JedinicnaCenaEur, 0)) as VrednostEur
+                    FROM UgovorProdaja up
+                    INNER JOIN UgovorProdajaStavka ups ON up.ID = ups.UgovorProdajaID
+                    INNER JOIN Artikal a ON ups.ArtikalID = a.ID
+                    LEFT JOIN (
+                        SELECT o.UgovorID, SUM(os.Kolicina) as Isporuceno
+                        FROM Otpremnica o
+                        INNER JOIN OtpremnicaStavka os ON o.ID = os.OtpremnicaID
+                        WHERE o.DokumentStatus = 3
+                        GROUP BY o.UgovorID
+                    ) isporuke ON up.ID = isporuke.UgovorID
+                    WHERE up.Aktivno = 1
+                      AND up.DokumentStatus = 2
+                      AND (ups.Kolicina - COALESCE(isporuke.Isporuceno, 0)) > 0
+                    GROUP BY ups.ArtikalID, a.Naziv
+                    ORDER BY PreostalaKolicina DESC
+                ";
+
+                var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
+                return rezultat.Select(r => (
+                    Artikal: (string)r.Artikal,
+                    PreostalaKolicina: (decimal)r.PreostalaKolicina,
+                    ProsecnaCenaEur: (decimal)r.ProsecnaCenaEur,
+                    VrednostEur: (decimal)r.VrednostEur
+                )).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška pri učitavanju preostalog po artiklu");
+                return new List<(string, decimal, decimal, decimal)>();
+            }
+        }
+
         // Dodatna metoda za detalje otpremnica po ugovoru
         public async Task<List<OtpremnicaDetaljiModel>> UcitajOtpremnicePoUgovoru(long ugovorId)
         {

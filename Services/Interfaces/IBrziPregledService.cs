@@ -25,5 +25,8 @@ namespace FruitSysWeb.Services.Interfaces
         Task<Dictionary<string, (decimal Kolicina, decimal Vrednost)>> UcitajUkupneVrednostiNabavkeAsync(DateTime? odDatum = null, DateTime? doDatum = null);
         Task<Dictionary<string, (decimal Kolicina, decimal Vrednost)>> UcitajUkupneVrednostiProdajeAsync(DateTime? odDatum = null, DateTime? doDatum = null);
         Task<Dictionary<string, decimal>> UcitajProdajuGotovihProizvodaAsync(DateTime? odDatum = null, DateTime? doDatum = null);
+
+        // Stanje lagera po vrsti voća kroz vreme (kumulativno: ulazi - izlazi)
+        Task<Dictionary<string, Dictionary<string, decimal>>> UcitajLagerKretanjePoVociAsync(DateTime odDatum, DateTime doDatum, string interval = "dnevno");
     }
 }

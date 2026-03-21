@@ -5,6 +5,7 @@
 @inject NavigationManager NavigationManager
 @inject IAuthService AuthService
 @inject IPromenService PromenService
+@inject IUgovorService UgovorService
 @inject IJSRuntime JS
 
 @if (!pristupDozvoljen)
@@ -60,6 +61,66 @@
                 <div class="fw-bold">Kartice Komitenata</div>
                 <div class="text-muted small">Analitika po komitentu</div>
             </div>
+        </div>
+    </div>
+
+    <!-- ── PREOSTALE KOLICINE PO UGOVORU ── -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header fw-bold text-white d-flex justify-content-between align-items-center" style="background-color:#4a148c;">
+            <span><i class="bi bi-file-earmark-text me-2"></i>Preostale Količine po Ugovoru</span>
+            <a href="/ugovori" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Aktivni Ugovori
+            </a>
+        </div>
+        <div class="card-body p-0">
+            @if (ucitavanjeUgovori)
+            {
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                    <span class="ms-2 text-muted small">Učitavanje...</span>
+                </div>
+            }
+            else if (!preostaleKolicine.Any())
+            {
+                <div class="alert alert-info m-3 mb-0"><i class="bi bi-info-circle me-2"></i>Nema aktivnih ugovora sa preostatkom.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-hover mb-0" style="font-size:0.85rem;">
+                        <thead style="background-color:#6a1b9a; color:white; font-size:0.8rem;">
+                            <tr>
+                                <th style="width:40px">Rb.</th>
+                                <th>Artikal</th>
+                                <th class="text-end">Količina (kg)</th>
+                                <th class="text-end">Prosečna Cena (EUR)</th>
+                                <th class="text-end">Vrednost (EUR)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int rbU = 1; }
+                            @foreach (var red in preostaleKolicine)
+                            {
+                                <tr>
+                                    <td class="text-muted">@(rbU++)</td>
+                                    <td class="fw-semibold">@red.Artikal</td>
+                                    <td class="text-end">@red.PreostalaKolicina.ToString("N2", SrCulture)</td>
+                                    <td class="text-end">@red.ProsecnaCenaEur.ToString("N2", SrCulture)</td>
+                                    <td class="text-end fw-semibold">@red.VrednostEur.ToString("N2", SrCulture)</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="fw-bold" style="background-color:#e1bee7;">
+                            <tr>
+                                <td colspan="2" class="text-end">Ukupno:</td>
+                                <td class="text-end">@preostaleKolicine.Sum(x => x.PreostalaKolicina).ToString("N2", SrCulture)</td>
+                                <td></td>
+                                <td class="text-end">@preostaleKolicine.Sum(x => x.VrednostEur).ToString("N2", SrCulture)</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
         </div>
     </div>
 
@@ -357,7 +418,9 @@
 @code {
     private bool pristupDozvoljen = false;
     private bool ucitavanje = false;
+    private bool ucitavanjeUgovori = false;
     private PromenPeriodData? dnevniData;
+    private List<(string Artikal, decimal PreostalaKolicina, decimal ProsecnaCenaEur, decimal VrednostEur)> preostaleKolicine = new();
 
     private static readonly System.Globalization.CultureInfo SrCulture =
         System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS");
@@ -370,7 +433,7 @@
             return;
         }
         pristupDozvoljen = true;
-        await UcitajDnevnePromene();
+        await Task.WhenAll(UcitajDnevnePromene(), UcitajPreostaleKolicine());
     }
 
     private async Task UcitajDnevnePromene()
@@ -388,6 +451,21 @@
         finally
         {
             ucitavanje = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UcitajPreostaleKolicine()
+    {
+        ucitavanjeUgovori = true;
+        StateHasChanged();
+        try
+        {
+            preostaleKolicine = await UgovorService.UcitajPreostaleKolicinePoArtiklu();
+        }
+        finally
+        {
+            ucitavanjeUgovori = false;
             StateHasChanged();
         }
     }

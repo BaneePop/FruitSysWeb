@@ -88,9 +88,8 @@ namespace FruitSysWeb.Extensions
             // SLEDLJIVOST (TRACEABILITY) SERVICES
             // ========================================
             services.AddScoped<ISledljivostService, SledljivostService>();
-            services.AddScoped<SledljivostPdfService>();
             services.AddScoped<SledljivostExcelService>();
-            services.AddScoped<SledljivostInteraktivniPdfService>();
+            services.AddScoped<SledljivostHtmlService>();
 
             return services;
         }

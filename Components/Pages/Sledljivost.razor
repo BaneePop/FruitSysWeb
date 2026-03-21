@@ -30,15 +30,9 @@
                         <button class="btn btn-success" @onclick="ExportToExcel" aria-label="Exportuj u Excel format">
                             <i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i>Excel
                         </button>
-                        <button class="btn btn-danger" @onclick="ExportToPdf" aria-label="Exportuj u PDF format">
-                            <i class="bi bi-file-earmark-pdf me-2" aria-hidden="true"></i>PDF
+                        <button class="btn btn-info text-white" @onclick="ExportToHtml" aria-label="Exportuj u HTML format">
+                            <i class="bi bi-file-earmark-code me-2" aria-hidden="true"></i>HTML Sledljivost
                         </button>
-                        @if (tipPretrage == "RadniNalog")
-                        {
-                            <button class="btn btn-warning" @onclick="ExportToInteraktivniPdf" aria-label="Exportuj u interaktivni PDF format">
-                                <i class="bi bi-file-earmark-pdf-fill me-2" aria-hidden="true"></i>PDF Interaktivni
-                            </button>
-                        }
                     </div>
                 }
             </div>
@@ -1166,57 +1160,32 @@
         }
     }
 
-    /// <summary>
-    /// Export u PDF
-    /// </summary>
-    private async Task ExportToPdf()
+    private async Task ExportToHtml()
     {
         try
         {
             if (sledljivostData == null || string.IsNullOrWhiteSpace(sledljivostData.Sifra)) return;
 
-            byte[] pdfData;
+            byte[] htmlData;
             string fileName;
 
-            // Detektuj tip pretrage i pozovi odgovarajući servis
             if (tipPretrage == "RadniNalog")
             {
-                // UPSTREAM PDF
-                pdfData = await SledljivostService.GenerisiUpstreamPdf(sledljivostData.Sifra);
-                fileName = TypeMapping.GenerateExportFileName($"Sledljivost_UPSTREAM_{sledljivostData.Sifra}", ".pdf");
+                htmlData = await SledljivostService.GenerisiUpstreamHtml(sledljivostData.Sifra);
+                fileName = TypeMapping.GenerateExportFileName($"Sledljivost_UPSTREAM_{sledljivostData.Sifra}", ".html");
             }
             else
             {
-                // DOWNSTREAM PDF
-                pdfData = await SledljivostService.GenerisiDownstreamPdf(sledljivostData.Sifra);
-                fileName = TypeMapping.GenerateExportFileName($"Sledljivost_DOWNSTREAM_{sledljivostData.Sifra}", ".pdf");
+                htmlData = await SledljivostService.GenerisiDownstreamHtml(sledljivostData.Sifra);
+                fileName = TypeMapping.GenerateExportFileName($"Sledljivost_DOWNSTREAM_{sledljivostData.Sifra}", ".html");
             }
 
-            await DownloadFile(pdfData, fileName, "application/pdf");
+            await DownloadFile(htmlData, fileName, "text/html");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Greška pri PDF exportu: {ex.Message}");
-            errorPoruka = $"Greška pri exportu PDF-a: {ex.Message}";
-        }
-    }
-
-    private async Task ExportToInteraktivniPdf()
-    {
-        try
-        {
-            if (sledljivostData == null || string.IsNullOrWhiteSpace(sledljivostData.Sifra)) return;
-
-            // Generiši interaktivni PDF samo za UPSTREAM (Radni Nalog)
-            var pdfData = await SledljivostService.GenerisiInteraktivniUpstreamPdf(sledljivostData.Sifra);
-            var fileName = TypeMapping.GenerateExportFileName($"Sledljivost_INTERAKTIVNI_{sledljivostData.Sifra}", ".pdf");
-
-            await DownloadFile(pdfData, fileName, "application/pdf");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Greška pri PDF exportu: {ex.Message}");
-            errorPoruka = $"Greška pri exportu interaktivnog PDF-a: {ex.Message}";
+            Console.WriteLine($"Greška pri HTML exportu: {ex.Message}");
+            errorPoruka = $"Greška pri exportu HTML-a: {ex.Message}";
         }
     }
 

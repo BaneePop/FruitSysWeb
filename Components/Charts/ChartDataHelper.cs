@@ -146,7 +146,7 @@ namespace FruitSysWeb.Components.Charts
             var labelLower = label.ToLower();
 
             if (labelLower.Contains("malina")) return "#DC143C"; // Crimson - crvena
-            if (labelLower.Contains("kupina")) return "#000000"; // Crna
+            if (labelLower.Contains("kupina")) return "#1C1C1C"; // Tamna grafitna crna
 
             // Šljiva - uključuje sve sorte šljiva
             if (labelLower.Contains("šljiva") || labelLower.Contains("sljiva") ||
@@ -159,7 +159,7 @@ namespace FruitSysWeb.Components.Charts
             }
 
             if (labelLower.Contains("višnja") || labelLower.Contains("visnja")) return "#8B0000"; // DarkRed - bordo
-            if (labelLower.Contains("borovnica")) return "#FF6B6B"; // LightCoral - svetlo crvena
+            if (labelLower.Contains("borovnica")) return "#800000"; // Maroon - bordo
             if (labelLower.Contains("kajsija")) return "#FF8C00"; // DarkOrange - narandžasta
 
             return "#28a745"; // Default zelena
@@ -178,7 +178,28 @@ namespace FruitSysWeb.Components.Charts
         }
 
         /// <summary>
-        /// Mapira naziv artikla na glavnu vrstu voća (Malina, Kupina, Šljiva, itd.)
+        /// Mapira PrvaKlasifikacijaID na vrstu voća.
+        /// 6=Malina, 10=Kupina, 11=Višnja, 15=Šljiva, 25=Ambalaža, 27=Repromaterijal, 28=Kajsija, 34=Jagoda, 39=Borovnica
+        /// </summary>
+        public static string MapKlasifikacijaToFruitType(int klasifikacijaId)
+        {
+            return klasifikacijaId switch
+            {
+                6  => "Malina",
+                10 => "Kupina",
+                11 => "Višnja",
+                15 => "Šljiva",
+                25 => "Ambalaža",
+                27 => "Repromaterijal",
+                28 => "Kajsija",
+                34 => "Jagoda",
+                39 => "Borovnica",
+                _  => "Ostalo"
+            };
+        }
+
+        /// <summary>
+        /// Mapira naziv artikla na glavnu vrstu voća (fallback za stari kod — preferuj MapKlasifikacijaToFruitType)
         /// </summary>
         public static string MapToFruitType(string artikalNaziv)
         {

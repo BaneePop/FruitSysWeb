@@ -9,5 +9,6 @@ namespace FruitSysWeb.Services.Interfaces
         Task<List<UgovorModel>> UcitajUgovoreSaFilterima(FilterRequest filterRequest);
         Task<decimal> UcitajUkupnuVrednostAktivnihUgovora();
         Task<List<OtpremnicaDetaljiModel>> UcitajOtpremnicePoUgovoru(long ugovorId);
+        Task<List<(string Artikal, decimal PreostalaKolicina, decimal ProsecnaCenaEur, decimal VrednostEur)>> UcitajPreostaleKolicinePoArtiklu();
     }
 }

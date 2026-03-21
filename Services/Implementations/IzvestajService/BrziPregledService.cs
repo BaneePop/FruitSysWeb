@@ -440,23 +440,20 @@ public class BrziPregledService : IBrziPregledService
 
             _logger.LogInformation($"🔍 UcitajNabavkuPoDanimaPoVoci: {startDatum:yyyy-MM-dd} - {endDatum:yyyy-MM-dd}");
 
-            // SQL query: Nabavka (KL- dokumenti) grupisan po datumu i vrsti artikla
+            // SQL query: Nabavka (Ulaz > 0) grupisan po datumu i vrsti artikla
             var sql = @"
                 SELECT
                     DATE(fm.Datum) as Datum,
-                    COALESCE(a.Naziv, 'Nepoznato') as VrstaVoca,
-                    COALESCE(SUM(ABS(fm.Kolicina)), 0) as Kolicina,
-                    COALESCE(SUM(fm.Potrazuje), 0) as Vrednost
-                FROM vPrometFinansijev9 fm
-                INNER JOIN Artikal a ON fm.ArtikalID = a.ID
-                WHERE fm.Dokument LIKE 'KL-%'
+                    COALESCE(fm.ArtikalPrvaKlasifikacijaID, 0) as KlasifikacijaID,
+                    COALESCE(SUM(fm.Ulaz), 0) as Kolicina
+                FROM vPrometRobav6 fm
+                WHERE fm.Ulaz > 0
                   AND fm.Datum >= @OdDatum
                   AND fm.Datum <= @DoDatum
-                  AND fm.DokumentStatus != 2
-                  AND fm.DokumentStatus != 4
-                  AND a.MagacinID IN (2, 3, 5, 6)
-                GROUP BY DATE(fm.Datum), a.Naziv
-                ORDER BY Datum ASC, a.Naziv";
+                  AND fm.DokumentStatus = 3
+                  AND fm.ArtikalPrvaKlasifikacijaID IN (6, 10, 11, 15, 28, 34, 39)
+                GROUP BY DATE(fm.Datum), fm.ArtikalPrvaKlasifikacijaID
+                ORDER BY Datum ASC";
 
             var parameters = new DynamicParameters();
             parameters.Add("@OdDatum", startDatum);
@@ -464,45 +461,22 @@ public class BrziPregledService : IBrziPregledService
 
             var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
 
-            // Grupisanje po vrsti voća koristeći MapToFruitType
-            // Dictionary<VrstaVoca, List<(Datum, Kolicina, Vrednost)>>
-            var podaciPoVoci = new Dictionary<string, List<(DateTime Datum, decimal Kolicina, decimal Vrednost)>>();
+            var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
 
             foreach (var red in rezultat)
             {
-                string artikalNaziv = red.VrstaVoca ?? "Nepoznato";
-                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapToFruitType(artikalNaziv);
-                DateTime datum = (DateTime)red.Datum;
+                int klasifikacijaId = (int)red.KlasifikacijaID;
+                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapKlasifikacijaToFruitType(klasifikacijaId);
+                string datumStr = ((DateTime)red.Datum).ToString("dd.MM.yy");
                 decimal kolicina = red.Kolicina;
-                decimal vrednost = red.Vrednost;
 
-                if (!podaciPoVoci.ContainsKey(vrstaVoca))
-                {
-                    podaciPoVoci[vrstaVoca] = new List<(DateTime, decimal, decimal)>();
-                }
+                if (!rezultatDict.ContainsKey(vrstaVoca))
+                    rezultatDict[vrstaVoca] = new Dictionary<string, decimal>();
 
-                var postojeci = podaciPoVoci[vrstaVoca].FirstOrDefault(x => x.Datum.Date == datum.Date);
-                if (postojeci != default)
-                {
-                    podaciPoVoci[vrstaVoca].Remove(postojeci);
-                    podaciPoVoci[vrstaVoca].Add((datum, postojeci.Kolicina + kolicina, postojeci.Vrednost + vrednost));
-                }
+                if (rezultatDict[vrstaVoca].ContainsKey(datumStr))
+                    rezultatDict[vrstaVoca][datumStr] += kolicina;
                 else
-                {
-                    podaciPoVoci[vrstaVoca].Add((datum, kolicina, vrednost));
-                }
-            }
-
-            // Konvertuj u format za chart — ključ je "dd.MM.yy" da se razlikuju iste date iz raznih godina
-            var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
-            foreach (var voce in podaciPoVoci)
-            {
-                rezultatDict[voce.Key] = new Dictionary<string, decimal>();
-                foreach (var stavka in voce.Value.OrderBy(x => x.Datum))
-                {
-                    string datumStr = stavka.Datum.ToString("dd.MM.yy");
-                    rezultatDict[voce.Key][datumStr] = stavka.Kolicina;
-                }
+                    rezultatDict[vrstaVoca][datumStr] = kolicina;
             }
 
             _logger.LogInformation($"✅ Učitano {rezultatDict.Count} vrsta voća za nabavku");
@@ -529,23 +503,20 @@ public class BrziPregledService : IBrziPregledService
 
             _logger.LogInformation($"🔍 UcitajProdajuPoDanimaPoVoci: {startDatum:yyyy-MM-dd} - {endDatum:yyyy-MM-dd}");
 
-            // SQL query: Prodaja (FK- dokumenti) grupisan po datumu i vrsti artikla
+            // SQL query: Prodaja (Izlaz > 0) grupisan po datumu i vrsti artikla
             var sql = @"
                 SELECT
                     DATE(fm.Datum) as Datum,
-                    COALESCE(a.Naziv, 'Nepoznato') as VrstaVoca,
-                    COALESCE(SUM(ABS(fm.Kolicina)), 0) as Kolicina,
-                    COALESCE(SUM(fm.Duguje), 0) as Vrednost
-                FROM vPrometFinansijev9 fm
-                INNER JOIN Artikal a ON fm.ArtikalID = a.ID
-                WHERE fm.Dokument LIKE 'FK-%'
+                    COALESCE(fm.ArtikalPrvaKlasifikacijaID, 0) as KlasifikacijaID,
+                    COALESCE(SUM(fm.Izlaz), 0) as Kolicina
+                FROM vPrometRobav6 fm
+                WHERE fm.Izlaz > 0
                   AND fm.Datum >= @OdDatum
                   AND fm.Datum <= @DoDatum
-                  AND fm.DokumentStatus != 2
-                  AND fm.DokumentStatus != 4
-                  AND a.MagacinID IN (2, 3, 5, 6)
-                GROUP BY DATE(fm.Datum), a.Naziv
-                ORDER BY Datum ASC, a.Naziv";
+                  AND fm.DokumentStatus = 3
+                  AND fm.ArtikalPrvaKlasifikacijaID IN (6, 10, 11, 15, 28, 34, 39)
+                GROUP BY DATE(fm.Datum), fm.ArtikalPrvaKlasifikacijaID
+                ORDER BY Datum ASC";
 
             var parameters = new DynamicParameters();
             parameters.Add("@OdDatum", startDatum);
@@ -553,43 +524,22 @@ public class BrziPregledService : IBrziPregledService
 
             var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
 
-            var podaciPoVoci = new Dictionary<string, List<(DateTime Datum, decimal Kolicina, decimal Vrednost)>>();
+            var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
 
             foreach (var red in rezultat)
             {
-                string artikalNaziv = red.VrstaVoca ?? "Nepoznato";
-                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapToFruitType(artikalNaziv);
-                DateTime datum = (DateTime)red.Datum;
+                int klasifikacijaId = (int)red.KlasifikacijaID;
+                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapKlasifikacijaToFruitType(klasifikacijaId);
+                string datumStr = ((DateTime)red.Datum).ToString("dd.MM.yy");
                 decimal kolicina = red.Kolicina;
-                decimal vrednost = red.Vrednost;
 
-                if (!podaciPoVoci.ContainsKey(vrstaVoca))
-                {
-                    podaciPoVoci[vrstaVoca] = new List<(DateTime, decimal, decimal)>();
-                }
+                if (!rezultatDict.ContainsKey(vrstaVoca))
+                    rezultatDict[vrstaVoca] = new Dictionary<string, decimal>();
 
-                var postojeci = podaciPoVoci[vrstaVoca].FirstOrDefault(x => x.Datum.Date == datum.Date);
-                if (postojeci != default)
-                {
-                    podaciPoVoci[vrstaVoca].Remove(postojeci);
-                    podaciPoVoci[vrstaVoca].Add((datum, postojeci.Kolicina + kolicina, postojeci.Vrednost + vrednost));
-                }
+                if (rezultatDict[vrstaVoca].ContainsKey(datumStr))
+                    rezultatDict[vrstaVoca][datumStr] += kolicina;
                 else
-                {
-                    podaciPoVoci[vrstaVoca].Add((datum, kolicina, vrednost));
-                }
-            }
-
-            // Konvertuj u format za chart (samo količina) i sortiraj po datumu
-            var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
-            foreach (var voce in podaciPoVoci)
-            {
-                rezultatDict[voce.Key] = new Dictionary<string, decimal>();
-                foreach (var stavka in voce.Value.OrderBy(x => x.Datum))
-                {
-                    string datumStr = stavka.Datum.ToString("dd.MM.yy");
-                    rezultatDict[voce.Key][datumStr] = stavka.Kolicina;
-                }
+                    rezultatDict[vrstaVoca][datumStr] = kolicina;
             }
 
             _logger.LogInformation($"✅ Učitano {rezultatDict.Count} vrsta voća za prodaju");
@@ -615,18 +565,16 @@ public class BrziPregledService : IBrziPregledService
 
             var sql = @"
                 SELECT
-                    COALESCE(a.Naziv, 'Nepoznato') as ArtikalNaziv,
-                    COALESCE(SUM(ABS(fm.Kolicina)), 0) as Kolicina,
-                    COALESCE(SUM(fm.Potrazuje), 0) as Vrednost
-                FROM vPrometFinansijev9 fm
-                INNER JOIN Artikal a ON fm.ArtikalID = a.ID
-                WHERE fm.Dokument LIKE 'KL-%'
+                    COALESCE(fm.ArtikalPrvaKlasifikacijaID, 0) as KlasifikacijaID,
+                    COALESCE(SUM(CASE WHEN LEFT(fm.Dokument, 2) = 'PR' THEN fm.Ulaz ELSE 0 END), 0) as Kolicina,
+                    0 as Vrednost
+                FROM vPrometRobav6 fm
+                WHERE fm.DokumentStatus = 3
                   AND fm.Datum >= @OdDatum
                   AND fm.Datum <= @DoDatum
-                  AND fm.DokumentStatus != 2
-                  AND fm.DokumentStatus != 4
-                  AND a.MagacinID IN (2, 3, 5, 6)
-                GROUP BY a.Naziv";
+                  AND fm.ArtikalPrvaKlasifikacijaID IN (6, 10, 11, 15, 28, 34, 39)
+                  AND fm.Ulaz > 0
+                GROUP BY fm.ArtikalPrvaKlasifikacijaID";
 
             var parameters = new DynamicParameters();
             parameters.Add("@OdDatum", startDatum);
@@ -638,8 +586,8 @@ public class BrziPregledService : IBrziPregledService
 
             foreach (var red in rezultat)
             {
-                string artikalNaziv = red.ArtikalNaziv ?? "Nepoznato";
-                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapToFruitType(artikalNaziv);
+                int klasifikacijaId = (int)red.KlasifikacijaID;
+                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapKlasifikacijaToFruitType(klasifikacijaId);
                 decimal kolicina = red.Kolicina;
                 decimal vrednost = red.Vrednost;
 
@@ -672,18 +620,16 @@ public class BrziPregledService : IBrziPregledService
 
             var sql = @"
                 SELECT
-                    COALESCE(a.Naziv, 'Nepoznato') as ArtikalNaziv,
-                    COALESCE(SUM(ABS(fm.Kolicina)), 0) as Kolicina,
-                    COALESCE(SUM(fm.Duguje), 0) as Vrednost
-                FROM vPrometFinansijev9 fm
-                INNER JOIN Artikal a ON fm.ArtikalID = a.ID
-                WHERE fm.Dokument LIKE 'FK-%'
+                    COALESCE(fm.ArtikalPrvaKlasifikacijaID, 0) as KlasifikacijaID,
+                    COALESCE(SUM(CASE WHEN LEFT(fm.Dokument, 2) = 'OT' THEN fm.Izlaz ELSE 0 END), 0) as Kolicina,
+                    0 as Vrednost
+                FROM vPrometRobav6 fm
+                WHERE fm.DokumentStatus = 3
                   AND fm.Datum >= @OdDatum
                   AND fm.Datum <= @DoDatum
-                  AND fm.DokumentStatus != 2
-                  AND fm.DokumentStatus != 4
-                  AND a.MagacinID IN (2, 3, 5, 6)
-                GROUP BY a.Naziv";
+                  AND fm.ArtikalPrvaKlasifikacijaID IN (6, 10, 11, 15, 28, 34, 39)
+                  AND fm.Izlaz > 0
+                GROUP BY fm.ArtikalPrvaKlasifikacijaID";
 
             var parameters = new DynamicParameters();
             parameters.Add("@OdDatum", startDatum);
@@ -695,8 +641,8 @@ public class BrziPregledService : IBrziPregledService
 
             foreach (var red in rezultat)
             {
-                string artikalNaziv = red.ArtikalNaziv ?? "Nepoznato";
-                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapToFruitType(artikalNaziv);
+                int klasifikacijaId = (int)red.KlasifikacijaID;
+                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapKlasifikacijaToFruitType(klasifikacijaId);
                 decimal kolicina = red.Kolicina;
                 decimal vrednost = red.Vrednost;
 
@@ -718,6 +664,363 @@ public class BrziPregledService : IBrziPregledService
             _logger.LogInformation($"❌ Greška u UcitajUkupneVrednostiProdaje: {ex.Message}");
             return new Dictionary<string, (decimal, decimal)>();
         }
+    }
+
+    private static readonly int[] PraceneKlasifikacije = { 6, 10, 11, 15, 28, 34, 39 };
+
+    /// <summary>
+    /// Ucitava promet iz baze od datumOd do datumDo i vraca neto (Ulaz-Izlaz) po KlasifikacijaID i po danu.
+    /// Koristi LEFT(Dokument,2)='PR' za ulaz, 'OT' za izlaz.
+    /// </summary>
+    private async Task<Dictionary<int, Dictionary<DateTime, decimal>>> UcitajPrometPoKlasifikacijiAsync(DateTime datumOd, DateTime datumDo)
+    {
+        var sql = @"
+            SELECT
+                DATE(fm.Datum) as Datum,
+                fm.ArtikalPrvaKlasifikacijaID as KlasifikacijaID,
+                SUM(CASE WHEN LEFT(fm.Dokument, 2) = 'PR' THEN COALESCE(fm.Ulaz, 0) ELSE 0 END) as Ulaz,
+                SUM(CASE WHEN LEFT(fm.Dokument, 2) = 'OT' THEN COALESCE(fm.Izlaz, 0) ELSE 0 END) as Izlaz
+            FROM vPrometRobav6 fm
+            WHERE fm.DokumentStatus = 3
+              AND fm.ArtikalPrvaKlasifikacijaID IN (6, 10, 11, 15, 28, 34, 39)
+              AND fm.Datum >= @DatumOd
+              AND fm.Datum <= @DatumDo
+              AND (fm.Ulaz > 0 OR fm.Izlaz > 0)
+            GROUP BY DATE(fm.Datum), fm.ArtikalPrvaKlasifikacijaID
+            ORDER BY Datum ASC";
+
+        var parameters = new DynamicParameters();
+        parameters.Add("@DatumOd", datumOd);
+        parameters.Add("@DatumDo", datumDo);
+
+        var rezultat = await _db.QueryAsync<dynamic>(sql, parameters);
+
+        var dict = new Dictionary<int, Dictionary<DateTime, decimal>>();
+        foreach (var red in rezultat)
+        {
+            int klasId = (int)red.KlasifikacijaID;
+            DateTime datum = ((DateTime)red.Datum).Date;
+            decimal neto = (decimal)red.Ulaz - (decimal)red.Izlaz;
+
+            if (!dict.ContainsKey(klasId))
+                dict[klasId] = new Dictionary<DateTime, decimal>();
+
+            dict[klasId][datum] = dict[klasId].TryGetValue(datum, out var existing) ? existing + neto : neto;
+        }
+        return dict;
+    }
+
+    /// <summary>
+    /// Izracunava pocetno stanje sezone:
+    /// PocetnoStanje = TrenutnoStanje(MagacinLager) - NetoPromet(pocetakSezone -> danas)
+    /// </summary>
+    private async Task<Dictionary<int, decimal>> IzracunajPocetnoStanjeSezonAsync(DateTime pocetakSezone)
+    {
+        // 1. Trenutno stanje iz MagacinLager JOIN Artikal, grupisano po PrvaKlasifikacijaID
+        var sqlLager = @"
+            SELECT
+                a.PrvaKlasifikacijaID as KlasifikacijaID,
+                SUM(ml.Kolicina) as Kolicina
+            FROM MagacinLager ml
+            JOIN ArtikalInstanca ai ON ml.ArtikalInstancaID = ai.ID
+            JOIN Artikal a ON ai.ArtikalID = a.ID
+            WHERE a.PrvaKlasifikacijaID IN (6, 10, 11, 15, 28, 34, 39)
+            GROUP BY a.PrvaKlasifikacijaID";
+
+        var lagerRezultat = await _db.QueryAsync<dynamic>(sqlLager);
+        var trenutnoStanje = new Dictionary<int, decimal>();
+        foreach (var red in lagerRezultat)
+            trenutnoStanje[(int)red.KlasifikacijaID] = (decimal)red.Kolicina;
+
+        // 2. Neto promet od pocetka sezone do danas
+        var danas = DateTime.Today;
+        var promet = await UcitajPrometPoKlasifikacijiAsync(pocetakSezone, danas);
+
+        // 3. PocetnoStanje = TrenutnoStanje - NetoPrometOdPocetka
+        var pocetnoStanje = new Dictionary<int, decimal>();
+        foreach (var klasId in PraceneKlasifikacije)
+        {
+            decimal trenutno = trenutnoStanje.TryGetValue(klasId, out var t) ? t : 0m;
+            decimal neto = promet.TryGetValue(klasId, out var dp) ? dp.Values.Sum() : 0m;
+            pocetnoStanje[klasId] = Math.Max(0, trenutno - neto);
+        }
+
+        return pocetnoStanje;
+    }
+
+    /// <summary>
+    /// Ucitava kretanje stanja lagera po vrsti voca kroz vreme.
+    /// Pocinje od tacnog pocetnog stanja sezone (izracunatog iz baze od 01.06.2023).
+    /// interval: "dnevno", "nedeljno", "mesecno"
+    /// </summary>
+    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajLagerKretanjePoVociAsync(DateTime odDatum, DateTime doDatum, string interval = "dnevno")
+    {
+        try
+        {
+            _logger.LogInformation($"UcitajLagerKretanje: {odDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}, interval={interval}");
+
+            // Odredi sezonu (godina u kojoj pocinje sezona = godina od datuma, ali ako je pre 01.06 onda prethodna)
+            int sezona = odDatum.Month >= 6 ? odDatum.Year : odDatum.Year - 1;
+            var pocetakSezone = new DateTime(sezona, 6, 1);
+
+            // 1. Izracunaj pocetno stanje na pocetku sezone
+            var pocetnoStanje = await IzracunajPocetnoStanjeSezonAsync(pocetakSezone);
+
+            // 2. Ucitaj sav promet od pocetka sezone do kraja trazenog perioda
+            var promet = await UcitajPrometPoKlasifikacijiAsync(pocetakSezone, doDatum);
+
+            // 3. Za svaki klasifikacijski ID izracunaj kumulativ po danima
+            var intervalDatumi = GenerisiIntervalDatume(odDatum, doDatum, interval);
+            var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
+
+            foreach (var klasId in PraceneKlasifikacije)
+            {
+                string vrstaVoca = FruitSysWeb.Components.Charts.ChartDataHelper.MapKlasifikacijaToFruitType(klasId);
+
+                // Kumulativ od pocetka sezone do pocetka prikaza
+                decimal kumulativ = pocetnoStanje.TryGetValue(klasId, out var ps) ? ps : 0m;
+
+                if (promet.TryGetValue(klasId, out var dnevniPromet))
+                {
+                    // Dodaj promet od pocetka sezone do pocetka prikaza (pre-load)
+                    kumulativ += dnevniPromet
+                        .Where(x => x.Key < odDatum.Date)
+                        .Sum(x => x.Value);
+                }
+
+                var serija = new Dictionary<string, decimal>();
+
+                foreach (var (intervalStart, intervalEnd, intervalLabel) in intervalDatumi)
+                {
+                    if (promet.TryGetValue(klasId, out var dp))
+                    {
+                        kumulativ += dp
+                            .Where(x => x.Key >= intervalStart && x.Key <= intervalEnd)
+                            .Sum(x => x.Value);
+                    }
+
+                    serija[intervalLabel] = Math.Max(0, kumulativ);
+                }
+
+                // Dodaj samo ako ima podataka > 0
+                if (serija.Values.Any(v => v > 0))
+                    rezultatDict[vrstaVoca] = serija;
+            }
+
+            _logger.LogInformation($"Lager kretanje ucitano: {rezultatDict.Count} vrsta voca, sezona={sezona}, pocetnoStanje={string.Join(", ", pocetnoStanje.Select(x => $"{x.Key}:{x.Value:N0}"))}");
+            return rezultatDict;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Greška u UcitajLagerKretanje: {ex.Message}");
+            return new Dictionary<string, Dictionary<string, decimal>>();
+        }
+    }
+
+    /// <summary>
+    /// Stanje lagera za jednu vrstu voca (klasifikacijaId), razdeljeno po tipu proizvoda (MagacinID).
+    /// Tipovi: Sirovina(2+3), Poluproizvod(5), Gotova roba(6), Kalo i Rastur(7)
+    /// Boje su nijanse boje te vrste voca.
+    /// </summary>
+    public async Task<Dictionary<string, Dictionary<string, decimal>>> UcitajLagerPoTipuProizvodaAsync(int klasifikacijaId, DateTime odDatum, DateTime doDatum, string interval = "dnevno")
+    {
+        try
+        {
+            int sezona = odDatum.Month >= 6 ? odDatum.Year : odDatum.Year - 1;
+            var pocetakSezone = new DateTime(sezona, 6, 1);
+
+            // Pocetno stanje po MagacinID za ovu klasifikaciju
+            var sqlLager = @"
+                SELECT
+                    a.MagacinID,
+                    SUM(ml.Kolicina) as Kolicina
+                FROM MagacinLager ml
+                JOIN ArtikalInstanca ai ON ml.ArtikalInstancaID = ai.ID
+                JOIN Artikal a ON ai.ArtikalID = a.ID
+                WHERE a.PrvaKlasifikacijaID = @KlasifikacijaId
+                  AND a.MagacinID IN (2, 3, 5, 6, 7)
+                GROUP BY a.MagacinID";
+
+            var lagerParams = new DynamicParameters();
+            lagerParams.Add("@KlasifikacijaId", klasifikacijaId);
+            var lagerRezultat = await _db.QueryAsync<dynamic>(sqlLager, lagerParams);
+
+            var trenutnoPoTipu = new Dictionary<int, decimal>();
+            foreach (var red in lagerRezultat)
+                trenutnoPoTipu[(int)red.MagacinID] = (decimal)red.Kolicina;
+
+            // Spoji MagacinID 2 i 3 u Sirovina
+            decimal sirovinaKolicina = (trenutnoPoTipu.TryGetValue(2, out var m2) ? m2 : 0)
+                                     + (trenutnoPoTipu.TryGetValue(3, out var m3) ? m3 : 0);
+            var trenutno = new Dictionary<int, decimal>
+            {
+                { 23, sirovinaKolicina },
+                { 5,  trenutnoPoTipu.TryGetValue(5, out var m5) ? m5 : 0 },
+                { 6,  trenutnoPoTipu.TryGetValue(6, out var m6) ? m6 : 0 },
+                { 7,  trenutnoPoTipu.TryGetValue(7, out var m7) ? m7 : 0 },
+            };
+
+            // Promet od pocetka sezone do danas po MagacinID
+            var sqlPromet = @"
+                SELECT
+                    DATE(fm.Datum) as Datum,
+                    a.MagacinID,
+                    SUM(CASE WHEN LEFT(fm.Dokument, 2) = 'PR' THEN COALESCE(fm.Ulaz, 0) ELSE 0 END) as Ulaz,
+                    SUM(CASE WHEN LEFT(fm.Dokument, 2) = 'OT' THEN COALESCE(fm.Izlaz, 0) ELSE 0 END) as Izlaz
+                FROM vPrometRobav6 fm
+                JOIN Artikal a ON fm.ArtikalID = a.ID
+                WHERE fm.DokumentStatus = 3
+                  AND fm.ArtikalPrvaKlasifikacijaID = @KlasifikacijaId
+                  AND a.MagacinID IN (2, 3, 5, 6, 7)
+                  AND fm.Datum >= @PocetakSezone
+                  AND fm.Datum <= @DoDatum
+                  AND (fm.Ulaz > 0 OR fm.Izlaz > 0)
+                GROUP BY DATE(fm.Datum), a.MagacinID
+                ORDER BY Datum ASC";
+
+            var prometParams = new DynamicParameters();
+            prometParams.Add("@KlasifikacijaId", klasifikacijaId);
+            prometParams.Add("@PocetakSezone", pocetakSezone);
+            prometParams.Add("@DoDatum", doDatum);
+            var prometRezultat = await _db.QueryAsync<dynamic>(sqlPromet, prometParams);
+
+            // Grupisanje prometa: key=tip(23=Sirovina,5,6,7), value=Dictionary<datum, neto>
+            var prometPoTipu = new Dictionary<int, Dictionary<DateTime, decimal>>();
+            foreach (var red in prometRezultat)
+            {
+                int magId = (int)red.MagacinID;
+                int tip = (magId == 2 || magId == 3) ? 23 : magId; // spoji 2+3 u 23
+                DateTime datum = ((DateTime)red.Datum).Date;
+                decimal neto = (decimal)red.Ulaz - (decimal)red.Izlaz;
+
+                if (!prometPoTipu.ContainsKey(tip))
+                    prometPoTipu[tip] = new Dictionary<DateTime, decimal>();
+                prometPoTipu[tip][datum] = prometPoTipu[tip].TryGetValue(datum, out var ex) ? ex + neto : neto;
+            }
+
+            // Pocetno stanje = trenutno - neto promet od pocetka sezone do danas
+            var danas = DateTime.Today;
+            var pocetnoStanje = new Dictionary<int, decimal>();
+            foreach (var tip in trenutno.Keys)
+            {
+                decimal neto = prometPoTipu.TryGetValue(tip, out var dp)
+                    ? dp.Where(x => x.Key <= danas).Sum(x => x.Value)
+                    : 0;
+                pocetnoStanje[tip] = Math.Max(0, trenutno[tip] - neto);
+            }
+
+            // Nazivi i boje tipova — nijanse boje vrste voca
+            string baseColor = ChartDataHelper.GetFruitColor(ChartDataHelper.MapKlasifikacijaToFruitType(klasifikacijaId));
+            var tipInfo = new Dictionary<int, (string Naziv, string Boja)>
+            {
+                { 23, ("Sirovina",     AdjustColorBrightness(baseColor, 0.9m))  },
+                { 5,  ("Poluproizvod", AdjustColorBrightness(baseColor, 0.6m))  },
+                { 6,  ("Gotova roba",  AdjustColorBrightness(baseColor, 0.3m))  },
+                { 7,  ("Kalo i Rastur",AdjustColorBrightness(baseColor, -0.3m)) },
+            };
+
+            var intervalDatumi = GenerisiIntervalDatume(odDatum, doDatum, interval);
+            var rezultatDict = new Dictionary<string, Dictionary<string, decimal>>();
+
+            foreach (var (tip, info) in tipInfo)
+            {
+                decimal kumulativ = pocetnoStanje.TryGetValue(tip, out var ps) ? ps : 0m;
+
+                if (prometPoTipu.TryGetValue(tip, out var dp2))
+                    kumulativ += dp2.Where(x => x.Key < odDatum.Date).Sum(x => x.Value);
+
+                var serija = new Dictionary<string, decimal>();
+                foreach (var (intervalStart, intervalEnd, label) in intervalDatumi)
+                {
+                    if (prometPoTipu.TryGetValue(tip, out var dp3))
+                        kumulativ += dp3.Where(x => x.Key >= intervalStart && x.Key <= intervalEnd).Sum(x => x.Value);
+                    serija[label] = Math.Max(0, kumulativ);
+                }
+
+                if (serija.Values.Any(v => v > 0))
+                    rezultatDict[$"{info.Naziv}|{info.Boja}"] = serija;
+            }
+
+            return rezultatDict;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Greška u UcitajLagerPoTipuProizvoda: {ex.Message}");
+            return new Dictionary<string, Dictionary<string, decimal>>();
+        }
+    }
+
+    /// Tamni ili posvetli hex boju. factor: 0.9=skoro ista, 0.3=tamna, -0.3=jos tamnija
+    private static string AdjustColorBrightness(string hex, decimal factor)
+    {
+        hex = hex.TrimStart('#');
+        if (hex.Length != 6) return "#" + hex;
+        int r = Convert.ToInt32(hex[..2], 16);
+        int g = Convert.ToInt32(hex[2..4], 16);
+        int b = Convert.ToInt32(hex[4..6], 16);
+
+        if (factor >= 0)
+        {
+            // Posvetli ka beloj
+            r = (int)(r + (255 - r) * (double)(1 - factor));
+            g = (int)(g + (255 - g) * (double)(1 - factor));
+            b = (int)(b + (255 - b) * (double)(1 - factor));
+        }
+        else
+        {
+            // Potamni ka crnoj
+            double f = 1 + (double)factor;
+            r = (int)(r * f);
+            g = (int)(g * f);
+            b = (int)(b * f);
+        }
+
+        r = Math.Clamp(r, 0, 255);
+        g = Math.Clamp(g, 0, 255);
+        b = Math.Clamp(b, 0, 255);
+        return $"#{r:X2}{g:X2}{b:X2}";
+    }
+
+    private List<(DateTime Start, DateTime End, string Label)> GenerisiIntervalDatume(DateTime odDatum, DateTime doDatum, string interval)
+    {
+        var lista = new List<(DateTime, DateTime, string)>();
+
+        if (interval == "mesecno")
+        {
+            var current = new DateTime(odDatum.Year, odDatum.Month, 1);
+            while (current <= doDatum)
+            {
+                var end = new DateTime(current.Year, current.Month, DateTime.DaysInMonth(current.Year, current.Month));
+                if (end > doDatum) end = doDatum;
+                lista.Add((current, end, current.ToString("MM.yyyy")));
+                current = current.AddMonths(1);
+            }
+        }
+        else if (interval == "nedeljno")
+        {
+            // Pocetak od ponedeljka
+            int diff = (int)odDatum.DayOfWeek - (int)DayOfWeek.Monday;
+            if (diff < 0) diff += 7;
+            var current = odDatum.AddDays(-diff).Date;
+            while (current <= doDatum)
+            {
+                var end = current.AddDays(6);
+                if (end > doDatum) end = doDatum;
+                lista.Add((current, end, current.ToString("dd.MM.yy")));
+                current = current.AddDays(7);
+            }
+        }
+        else // dnevno
+        {
+            var current = odDatum.Date;
+            while (current <= doDatum.Date)
+            {
+                lista.Add((current, current, current.ToString("dd.MM.yy")));
+                current = current.AddDays(1);
+            }
+        }
+
+        return lista;
     }
 
     public async Task<Dictionary<string, decimal>> UcitajProdajuGotovihProizvodaAsync(DateTime? odDatum = null, DateTime? doDatum = null)
