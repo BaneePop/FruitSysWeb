@@ -69,8 +69,15 @@ namespace FruitSysWeb.Models
                     urlLower.Contains("/proizvodnja") ||
                     urlLower.Contains("/radni-nalozi") ||
                     urlLower.Contains("/smenski-izvestaji") ||
-                    urlLower.Contains("/sledljivost") ||
                     urlLower.Contains("/lager-proizvodnje"))
+                    return true;
+
+                // ✅ DOZVOLJENO: Kvalitet
+                if (urlLower.Contains("/kvalitet") ||
+                    urlLower.Contains("/sledljivost") ||
+                    urlLower.Contains("/kontrola-radni-nalog") ||
+                    urlLower.Contains("/reklamacije") ||
+                    urlLower.Contains("/paletni-list-pregled"))
                     return true;
 
                 // ✅ DOZVOLJENO: Lager

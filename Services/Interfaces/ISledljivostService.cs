@@ -14,5 +14,8 @@ namespace FruitSysWeb.Services.Interfaces
         Task<byte[]> GenerisiDownstreamExcel(string sifra);
         Task<byte[]> GenerisiUpstreamHtml(string sifra);
         Task<byte[]> GenerisiDownstreamHtml(string sifra);
+        Task<PrijemSledljivostModel?> UcitajPrijemSledljivost(string sifra);
+        Task<byte[]> GenerisiPrijemExcel(string sifra);
+        Task<byte[]> GenerisiPrijemHtml(string sifra);
     }
 }

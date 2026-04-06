@@ -425,6 +425,129 @@ tr:hover td { background: #f7fafc; }
 </style>
 ";
 
+        public byte[] GenerisiPrijemHtml(PrijemSledljivostModel model)
+        {
+            var sb = new StringBuilder();
+            var generisano = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+            var naslov = $"Prijem Sledljivost &#x2014; Prijemnica: {model.PrijemnicaSifra}";
+
+            sb.Append("<!DOCTYPE html>\n<html lang=\"sr\">\n<head>\n");
+            sb.Append("<meta charset=\"UTF-8\">\n");
+            sb.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
+            sb.Append($"<title>{naslov}</title>\n");
+            sb.Append(CSS());
+            sb.Append("</head>\n<body>\n");
+
+            // Header
+            sb.Append("<div class=\"header\">\n");
+            sb.Append($"  <div class=\"header-title\">{naslov}</div>\n");
+            sb.Append($"  <div class=\"meta\">ODETTA DOO &nbsp;|&nbsp; Generisano: {generisano}</div>\n");
+            sb.Append("  <div class=\"badge-tip\">PRIJEM</div>\n");
+            sb.Append("</div>\n");
+            sb.Append("<div class=\"content\">\n");
+
+            // Info box o prijemnici
+            sb.Append("<div class=\"info-box\" style=\"margin-bottom:20px;\">\n");
+            sb.Append("  <table style=\"width:100%;border:none;\">\n    <tr>\n");
+            sb.Append($"    <td style=\"border:none;padding:4px 12px;\"><span class=\"lbl\">Prijemnica:</span> <strong>{model.PrijemnicaSifra}</strong></td>\n");
+            if (model.Datum.HasValue)
+                sb.Append($"    <td style=\"border:none;padding:4px 12px;\"><span class=\"lbl\">Datum:</span> {model.Datum.Value:dd.MM.yyyy}</td>\n");
+            if (!string.IsNullOrEmpty(model.KomitentNaziv))
+                sb.Append($"    <td style=\"border:none;padding:4px 12px;\"><span class=\"lbl\">Dobavljač:</span> {model.KomitentNaziv}</td>\n");
+            if (!string.IsNullOrEmpty(model.OtpremnicaDobavljaca))
+                sb.Append($"    <td style=\"border:none;padding:4px 12px;\"><span class=\"lbl\">Otpr. dobavljača:</span> {model.OtpremnicaDobavljaca}</td>\n");
+            sb.Append("    </tr>\n  </table>\n</div>\n");
+
+            // Sekcija paletnih listova
+            sb.Append("<div class=\"section\">\n");
+            sb.Append("  <div class=\"section-header\" onclick=\"toggleSection('pl')\" style=\"cursor:pointer;\">\n");
+            sb.Append("    <span>Paletni Listovi</span>\n");
+            sb.Append($"    <span class=\"badge\" style=\"background:#718096;\">{model.PaletniListovi.Count}</span>\n");
+            sb.Append("    <span class=\"chevron\" id=\"chev_pl\">&#9654;</span>\n");
+            sb.Append("  </div>\n");
+            sb.Append("  <div class=\"section-body open\" id=\"sb_pl\">\n");
+
+            foreach (var pl in model.PaletniListovi)
+            {
+                var plKey = $"pl_{pl.PaletniListID}";
+                var naLageru = pl.NaLageru;
+                var borderColor = naLageru ? "#38a169" : "#3182ce";
+                var statusTekst = naLageru ? "NA LAGERU" : "UTROŠEN";
+                var statusColor = naLageru ? "#38a169" : "#3182ce";
+
+                sb.Append($"    <div class=\"doc-card\" style=\"border-left:4px solid {borderColor};\">\n");
+                sb.Append($"      <div class=\"doc-card-header\" onclick=\"toggleDoc('{plKey}')\" style=\"cursor:pointer;\">\n");
+                sb.Append("        <div>\n");
+                sb.Append($"          <strong>{pl.Sifra}</strong>\n");
+                if (!string.IsNullOrEmpty(pl.ArtikalNaziv))
+                    sb.Append($"          <span style=\"color:#718096;margin-left:8px;\">{pl.ArtikalNaziv}</span>\n");
+                if (pl.Tezina.HasValue)
+                    sb.Append($"          <span style=\"color:#718096;margin-left:8px;\">{pl.Tezina.Value:N2} kg</span>\n");
+                if (!string.IsNullOrEmpty(pl.LotDobavljaca))
+                    sb.Append($"          <span style=\"color:#718096;margin-left:8px;\">LOT: {pl.LotDobavljaca}</span>\n");
+                sb.Append("        </div>\n");
+                sb.Append($"        <span class=\"status-badge\" style=\"background:{statusColor};color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;\">{statusTekst}</span>\n");
+                sb.Append("      </div>\n");
+
+                sb.Append($"      <div class=\"doc-card-body open\" id=\"db_{plKey}\">\n");
+                sb.Append("        <table style=\"width:100%;\">\n");
+
+                if (pl.RadniNalozi.Any())
+                {
+                    sb.Append("          <tr><td class=\"lbl\" style=\"width:180px;\">Radni Nalozi</td><td>");
+                    foreach (var rn in pl.RadniNalozi)
+                    {
+                        sb.Append($"<strong>{rn.Sifra}</strong>");
+                        if (!string.IsNullOrEmpty(rn.KomitentNaziv))
+                            sb.Append($" <span style=\"color:#718096;\">({rn.KomitentNaziv})</span>");
+                        sb.Append(" ");
+                    }
+                    sb.Append("</td></tr>\n");
+                }
+                if (pl.SmenskiIzvestaji.Any())
+                {
+                    sb.Append("          <tr><td class=\"lbl\">Smenski Izveštaji</td>");
+                    sb.Append($"<td>{string.Join(", ", pl.SmenskiIzvestaji)}</td></tr>\n");
+                }
+                if (pl.EvidencijeRada.Any())
+                {
+                    sb.Append("          <tr><td class=\"lbl\">Evidencije Rada</td>");
+                    sb.Append($"<td>{string.Join(", ", pl.EvidencijeRada)}</td></tr>\n");
+                }
+                if (pl.GotoviPaletniListovi.Any())
+                {
+                    sb.Append("          <tr><td class=\"lbl\" style=\"vertical-align:top;\">Gotovi Proizvodi (PL)</td><td>");
+                    sb.Append("<table style=\"width:100%;border-collapse:collapse;font-size:11px;\">");
+                    sb.Append("<tr style=\"background:#edf2f7;\"><th style=\"padding:2px 6px;\">PL</th><th style=\"padding:2px 6px;\">Artikal</th><th style=\"padding:2px 6px;\">Težina</th><th style=\"padding:2px 6px;\">Otpremnica</th><th style=\"padding:2px 6px;\">Kupac</th></tr>");
+                    foreach (var g in pl.GotoviPaletniListovi)
+                    {
+                        sb.Append("<tr>");
+                        sb.Append($"<td style=\"padding:2px 6px;\"><strong>{g.Sifra}</strong></td>");
+                        sb.Append($"<td style=\"padding:2px 6px;\">{g.ArtikalNaziv}</td>");
+                        sb.Append($"<td style=\"padding:2px 6px;\">{(g.Tezina.HasValue ? $"{g.Tezina.Value:N2} kg" : "")}</td>");
+                        sb.Append($"<td style=\"padding:2px 6px;\">{g.OtpremnicaSifra ?? "—"}</td>");
+                        sb.Append($"<td style=\"padding:2px 6px;\">{g.KomitentNaziv}</td>");
+                        sb.Append("</tr>");
+                    }
+                    sb.Append("</table></td></tr>\n");
+                }
+                if (naLageru)
+                {
+                    sb.Append("          <tr><td colspan=\"2\" style=\"color:#38a169;font-weight:700;padding:6px 0;\">Paletni list se nalazi na lageru — nije korišćen u proizvodnji.</td></tr>\n");
+                }
+
+                sb.Append("        </table>\n");
+                sb.Append("      </div>\n");
+                sb.Append("    </div>\n");
+            }
+
+            sb.Append("  </div>\n</div>\n");
+            sb.Append("</div>\n");
+            sb.Append(JS());
+            sb.Append("</body>\n</html>");
+            return Encoding.UTF8.GetBytes(sb.ToString());
+        }
+
         private static string JS() => @"<script>
 function toggleSection(id) {
   var body = document.getElementById('sb_' + id);

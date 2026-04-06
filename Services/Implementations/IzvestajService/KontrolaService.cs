@@ -91,6 +91,104 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
         }
 
+        public async Task<List<OtvoreniRadniNalogModel>> UcitajOtvoreneNaloge()
+        {
+            try
+            {
+                const string sql = @"
+                    SELECT
+                        rn.ID,
+                        rn.Sifra,
+                        COALESCE(k.Naziv, '') AS Komitent,
+                        COALESCE(a.Naziv, '') AS Artikal,
+                        COALESCE(p.Naziv, '') AS Pakovanje,
+                        rn.DatumPocetka,
+                        rn.Kolicina,
+                        rn.LotNaloga,
+                        rn.BrojPakovanja,
+                        (SELECT COUNT(*) FROM EvidencijaRada er WHERE er.RadniNalogID = rn.ID) AS BrojEvidencija,
+                        COALESCE((
+                            SELECT SUM(rnl.Kolicina)
+                            FROM vwRadniNalogLager rnl
+                            WHERE rnl.RadniNalogLager = rn.Sifra
+                        ), 0) AS KolicinaULageru
+                    FROM RadniNalog rn
+                    LEFT JOIN Komitent k ON rn.KomitentID = k.ID
+                    LEFT JOIN ArtikalInstanca ai ON rn.ArtikalInstancaID = ai.ID
+                    LEFT JOIN Artikal a ON ai.ArtikalID = a.ID
+                    LEFT JOIN Pakovanje p ON ai.PakovanjeID = p.ID
+                    WHERE rn.DokumentStatus = 2
+                      AND rn.Aktivno = 1
+                      AND rn.Sifra LIKE 'RN-%'
+                      AND rn.Stalni = 0
+                      AND (k.Naziv IS NULL OR k.Naziv NOT LIKE '%Odetta%')
+                    ORDER BY rn.DatumPocetka ASC
+                    LIMIT 300";
+
+                return (await _db.QueryAsync<OtvoreniRadniNalogModel>(sql)).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška u UcitajOtvoreneNaloge");
+                return new List<OtvoreniRadniNalogModel>();
+            }
+        }
+
+        public async Task<List<UcitajRadneNalogeModel>> UcitajIsporuceneNaloge(FilterRequest filterRequest, int? komitentId = null, string? radniNalog = null)
+        {
+            try
+            {
+                var sql = CreateSqlBuilder(@"
+                    SELECT
+                        rn.ID,
+                        rn.Sifra,
+                        COALESCE(k.Naziv, '') AS Komitent,
+                        COALESCE(a.Naziv, '') AS Artikal,
+                        COALESCE(p.Naziv, '') AS Pakovanje,
+                        rn.DatumPocetka,
+                        rn.DatumIsporuke,
+                        rn.Kolicina,
+                        rn.LotNaloga,
+                        rn.BrojPakovanja,
+                        (SELECT COUNT(*) FROM EvidencijaRada er WHERE er.RadniNalogID = rn.ID) AS BrojEvidencija,
+                        (SELECT ot.Sifra FROM Otpremnica ot WHERE ot.RadniNalogID = rn.ID AND ot.Aktivno = 1 LIMIT 1) AS OtpremnicaSifra
+                    FROM RadniNalog rn
+                    LEFT JOIN Komitent k ON rn.KomitentID = k.ID
+                    LEFT JOIN ArtikalInstanca ai ON rn.ArtikalInstancaID = ai.ID
+                    LEFT JOIN Artikal a ON ai.ArtikalID = a.ID
+                    LEFT JOIN Pakovanje p ON ai.PakovanjeID = p.ID
+                    WHERE rn.DokumentStatus = 3
+                      AND rn.Aktivno = 1
+                      AND rn.Sifra LIKE 'RN-%'");
+
+                var parameters = CreateParameters();
+
+                if (komitentId.HasValue && komitentId.Value > 0)
+                {
+                    sql.Append(" AND rn.KomitentID = @KomitentID");
+                    parameters.Add("@KomitentID", komitentId.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(radniNalog))
+                {
+                    sql.Append(" AND rn.Sifra = @Sifra");
+                    parameters.Add("@Sifra", radniNalog.Trim());
+                }
+
+                ApplyDateFilter(sql, parameters, filterRequest, "rn.DatumIsporuke");
+
+                sql.Append(" ORDER BY rn.DatumIsporuke DESC");
+                sql.Append(" LIMIT 300");
+
+                return (await _db.QueryAsync<UcitajRadneNalogeModel>(sql.ToString(), parameters)).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška u UcitajIsporuceneNaloge");
+                return new List<UcitajRadneNalogeModel>();
+            }
+        }
+
         private async Task<KontrolaRadniNalogHeaderModel?> UcitajHeaderAsync(long radniNalogId)
         {
             try

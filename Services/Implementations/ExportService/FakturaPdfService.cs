@@ -63,7 +63,7 @@ namespace FruitSysWeb.Services.Implementations.ExportService
 
                     page.Header().Element(c => BuildHeader(c, model, naslov, labels, en));
                     page.Content().Element(c => BuildContent(c, model, labels, en));
-                    page.Footer().Element(BuildFooter);
+                    page.Footer().Element(c => BuildFooter(c, model));
                 });
             });
 
@@ -94,9 +94,9 @@ namespace FruitSysWeb.Services.Implementations.ExportService
                         c.Item().Text("ODETTA DOO").FontSize(14).Bold().FontColor(Colors.Black);
                         c.Item().Text("Kralja Dragutina 5, 7/31, 15000 Šabac, Srbija")
                             .FontSize(8).FontColor(Colors.Grey.Darken2);
-                        c.Item().Text("PIB: 106784736  |  MB: 20323869")
+                        c.Item().Text("PIB: 102679301  |  MB: 17392344")
                             .FontSize(8).FontColor(Colors.Grey.Darken2);
-                        c.Item().Text("Tel: +381 15 347 777  |  www.odetta.rs")
+                        c.Item().Text("Tel: 015/7511-299  |  www.odetta.rs")
                             .FontSize(8).FontColor(Colors.Grey.Darken2);
                     });
 
@@ -443,15 +443,17 @@ namespace FruitSysWeb.Services.Implementations.ExportService
         // FOOTER
         // ═══════════════════════════════════════════════════════════════
 
-        private void BuildFooter(IContainer container)
+        private void BuildFooter(IContainer container, FakturaDetaljiModel model)
         {
+            var footerTekst = "ODETTA DOO | Kralja Dragutina 5, 7/31, 15000 Šabac | www.odetta.rs";
+
             container
                 .Background(Colors.Grey.Lighten3)
                 .Padding(8)
                 .Row(row =>
                 {
                     row.RelativeItem().AlignLeft().AlignMiddle()
-                        .Text("ODETTA DOO | Kralja Dragutina 5, 7/31, 15000 Šabac | www.odetta.rs")
+                        .Text(footerTekst)
                         .FontSize(7).FontColor(Colors.Grey.Darken1);
 
                     row.ConstantItem(100).AlignRight().AlignMiddle().Text(x =>

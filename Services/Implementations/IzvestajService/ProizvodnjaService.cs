@@ -28,34 +28,28 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             {
                 var sql = CreateSqlBuilder();
                 sql.Append(@"
-                SELECT 
+                SELECT
                     rn.DatumPocetka as Datum,
                     rn.Sifra as RadniNalog,
                     vpp.Artikal,
-                    CAST(CASE a.MagacinID
-                        WHEN 2 THEN 'Sveza Roba'
-                        WHEN 3 THEN 'Sirovine'
-                        WHEN 4 THEN 'Ambalaza'
-                        WHEN 5 THEN 'PoluProizvodi'
-                        WHEN 6 THEN 'Gotov Proizvod'
-                        WHEN 8 THEN 'Usl. Mlečni'
-                        WHEN 9 THEN 'Repromaterijal'
-                        WHEN 10 THEN 'Đubriva'
-                        WHEN 11 THEN 'Usl. Voće'
-                        WHEN 12 THEN 'Usl. Meso'
-                        ELSE CONCAT('MagacinID ', a.MagacinID)
+                    CAST(CASE vpp.RpArtikalTip
+                        WHEN 1 THEN 'Sirovina'
+                        WHEN 2 THEN 'Gotov Proizvod'
+                        WHEN 3 THEN 'Polu Proizvod'
+                        ELSE CONCAT('Tip ', vpp.RpArtikalTip)
                     END AS CHAR(50)) as TipArtikla,
-                    CASE 
-                        WHEN a.MagacinID NOT IN (4, 6) THEN vpp.Kolicina 
-                        ELSE 0 
+                    CASE
+                        WHEN vpp.RpArtikalTip = 1 THEN vpp.Kolicina
+                        ELSE 0
                     END as KolicinaRoba,
-                    CASE 
-                        WHEN a.MagacinID = 4 THEN vpp.Kolicina 
-                        ELSE 0 
-                    END as KolicinaAmbalaza,
-                    CASE 
-                        WHEN a.MagacinID = 6 THEN vpp.Kolicina 
-                        ELSE 0 
+                    CASE
+                        WHEN vpp.RpArtikalTip = 3 THEN vpp.Kolicina
+                        ELSE 0
+                    END as PoluProizvodIzlaz,
+                    0 as KolicinaAmbalaza,
+                    CASE
+                        WHEN vpp.RpArtikalTip = 2 THEN vpp.Kolicina
+                        ELSE 0
                     END as GotovProizvod,
                     vpp.Kolicina,
                     vpp.Komitent,
@@ -64,14 +58,12 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     rn.DokumentStatus,
                     vpp.ArtikalID,
                     vpp.ArtikalPrvaKlasifikacijaID,
-                    a.MagacinID as Tip
+                    vpp.RpArtikalTip as Tip
                 FROM RadniNalog rn
                 LEFT JOIN vPreradaPregled vpp ON rn.ID = vpp.RadniNalogID
-                LEFT JOIN Artikal a ON vpp.ArtikalID = a.ID
                 WHERE rn.Aktivno = 1
-                    AND a.Aktivno = 1
-                    AND a.ID IS NOT NULL
-                    AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
+                    AND vpp.ArtikalID IS NOT NULL
+                    AND vpp.RpArtikalTip IN (1, 2, 3)
                 ");
 
                 var parameters = CreateParameters();

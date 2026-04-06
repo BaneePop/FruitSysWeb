@@ -21,8 +21,11 @@ namespace FruitSysWeb.Models
         public decimal Kolicina { get; set; }
 
         // NOVE KOLONE prema zahtevima
-        [Display(Name = "Količina Roba")]
+        [Display(Name = "Sirovina Ulaz")]
         public decimal KolicinaRoba { get; set; }
+
+        [Display(Name = "Polu Proizvod Izlaz")]
+        public decimal PoluProizvodIzlaz { get; set; }
 
         [Display(Name = "Količina Ambalaza")]
         public decimal KolicinaAmbalaza { get; set; }

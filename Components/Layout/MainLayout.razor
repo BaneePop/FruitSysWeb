@@ -1,8 +1,11 @@
 ﻿@inherits LayoutComponentBase
 @using FruitSysWeb.Shared
+@using FruitSysWeb.Components.Shared
 
 <!-- Skip to main content link for keyboard accessibility -->
 <a href="#main-content" class="skip-link">Preskoči na glavni sadržaj</a>
+
+<InactivityHandler />
 
 <div class="d-flex flex-column min-vh-100">
     <NavMenu />

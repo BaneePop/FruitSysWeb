@@ -20,7 +20,7 @@
                 <h1 class="h3 mb-0">
                     <i class="bi bi-bar-chart-line me-2"></i>Prezentacija
                 </h1>
-                <small class="text-muted">Pregled nabavke, proizvodnje i prodaje po vrstama</small>
+                <small class="text-muted">Vizuelni pregled ključnih poslovnih pokazatelja — nabavka, prerada i prodaja po vrstama voća u odabranom periodu</small>
             </div>
         </div>
     </div>
@@ -73,32 +73,38 @@
         </div>
     </div>
 
-    <!-- Column chartovi: Nabavka + Prodaja jedan pored drugog -->
+    <!-- Area chart: Nabavka po vrsti voća kroz vreme -->
     <div class="row mb-4">
-        <div class="col-lg-6 mb-3">
-            <ApexBarChart
-                Title="Nabavka po Vrsti Voća"
+        <div class="col-12">
+            <ApexAreaChart
+                Title="@($"Nabavka po Vrsti Voća ({odDatum:dd.MM.yyyy} – {doDatum:dd.MM.yyyy})")"
                 Icon="bi bi-cart-plus"
-                SeriesName="Količina"
+                SeriesData="@nabavkaSeriesData"
                 Unit="kg"
-                Data="@nabavkaData"
                 IsLoading="@isLoadingNabavka"
                 HasError="@hasErrorNabavka"
                 ShowSummary="true"
-                Height="400"
+                Height="480"
+                Interval="@nabavkaInterval"
+                OnIntervalChanged="@OnNabavkaIntervalChanged"
                 OnRefresh="@UcitajNabavku" />
         </div>
-        <div class="col-lg-6 mb-3">
-            <ApexBarChart
-                Title="Prodaja Gotovih Proizvoda"
+    </div>
+
+    <!-- Area chart: Prodaja po vrsti voća kroz vreme -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <ApexAreaChart
+                Title="@($"Prodaja po Vrsti Voća ({odDatum:dd.MM.yyyy} – {doDatum:dd.MM.yyyy})")"
                 Icon="bi bi-cart-check"
-                SeriesName="Količina"
+                SeriesData="@prodajaSeriesData"
                 Unit="kg"
-                Data="@prodajaData"
                 IsLoading="@isLoadingProdaja"
                 HasError="@hasErrorProdaja"
                 ShowSummary="true"
-                Height="400"
+                Height="480"
+                Interval="@prodajaInterval"
+                OnIntervalChanged="@OnProdajaIntervalChanged"
                 OnRefresh="@UcitajProdaju" />
         </div>
     </div>
@@ -119,16 +125,17 @@
     private bool hasErrorLager = false;
     private string lagerInterval = "dnevno";
 
-    // Nabavka column
-    private List<ChartDataPoint>? nabavkaData;
-    private List<string>? nabavkaColors;
+    // Nabavka area chart
+    private List<ChartSeriesData>? nabavkaSeriesData;
     private bool isLoadingNabavka = true;
     private bool hasErrorNabavka = false;
+    private string nabavkaInterval = "dnevno";
 
-    // Prodaja column (gotovi proizvodi)
-    private List<ChartDataPoint>? prodajaData;
+    // Prodaja area chart
+    private List<ChartSeriesData>? prodajaSeriesData;
     private bool isLoadingProdaja = true;
     private bool hasErrorProdaja = false;
+    private string prodajaInterval = "dnevno";
 
 
     protected override async Task OnInitializedAsync()
@@ -223,6 +230,18 @@
         await UcitajLager();
     }
 
+    private async Task OnNabavkaIntervalChanged(string noviInterval)
+    {
+        nabavkaInterval = noviInterval;
+        await UcitajNabavku();
+    }
+
+    private async Task OnProdajaIntervalChanged(string noviInterval)
+    {
+        prodajaInterval = noviInterval;
+        await UcitajProdaju();
+    }
+
     private async Task UcitajNabavku()
     {
         isLoadingNabavka = true;
@@ -230,10 +249,8 @@
         StateHasChanged();
         try
         {
-            var podaci = await BrziPregledService.UcitajUkupneVrednostiNabavkeAsync(odDatum, doDatum);
-            var sortirano = podaci.OrderByDescending(x => x.Value.Kolicina).ToList();
-            nabavkaColors = sortirano.Select(x => ChartDataHelper.GetFruitColor(x.Key)).ToList();
-            nabavkaData = sortirano.Select((x, i) => new ChartDataPoint { Label = x.Key, Value = x.Value.Kolicina, Color = nabavkaColors[i] }).ToList();
+            var podaci = await BrziPregledService.UcitajNabavkuPoDanimaPoVociAsync(odDatum, doDatum);
+            nabavkaSeriesData = PretвориUSeriesData(podaci, nabavkaInterval);
         }
         catch (Exception ex)
         {
@@ -254,19 +271,12 @@
         StateHasChanged();
         try
         {
-            var podaci = await BrziPregledService.UcitajProdajuGotovihProizvodaAsync(odDatum, doDatum);
-            prodajaData = podaci
-                .Select(x => new ChartDataPoint
-                {
-                    Label = x.Key,
-                    Value = x.Value,
-                    Color = ChartDataHelper.GetFruitColor(x.Key)
-                })
-                .ToList();
+            var podaci = await BrziPregledService.UcitajProdajuPoDanimaPoVociAsync(odDatum, doDatum);
+            prodajaSeriesData = PretвориUSeriesData(podaci, prodajaInterval);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Greška pri učitavanju prodaje gotovih proizvoda za prezentaciju");
+            Logger.LogError(ex, "Greška pri učitavanju prodaje za prezentaciju");
             hasErrorProdaja = true;
         }
         finally
@@ -274,5 +284,46 @@
             isLoadingProdaja = false;
             StateHasChanged();
         }
+    }
+
+    private List<ChartSeriesData> PretвориUSeriesData(Dictionary<string, Dictionary<string, decimal>> podaci, string interval)
+    {
+        var sviDatumi = podaci.SelectMany(v => v.Value.Keys).Distinct().ToList();
+        List<string> sortiraniDatumi;
+        if (interval == "mesecno")
+        {
+            sortiraniDatumi = sviDatumi
+                .OrderBy(d => DateTime.TryParseExact(d, "MM.yyyy",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var dt) ? dt : DateTime.MinValue)
+                .ToList();
+        }
+        else
+        {
+            sortiraniDatumi = sviDatumi
+                .OrderBy(d => DateTime.TryParseExact(d, "dd.MM.yy",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var dt) ? dt : DateTime.MinValue)
+                .ToList();
+        }
+        return podaci
+            .Select(v =>
+            {
+                decimal kumulativ = 0;
+                var data = sortiraniDatumi.Select(d =>
+                {
+                    kumulativ += v.Value.ContainsKey(d) ? v.Value[d] : 0;
+                    return new ChartDataPoint { Label = d, Value = kumulativ };
+                }).ToList();
+                return new ChartSeriesData
+                {
+                    Name = v.Key,
+                    Data = data,
+                    Color = ChartDataHelper.GetFruitColor(v.Key),
+                    TotalKolicina = kumulativ
+                };
+            })
+            .OrderByDescending(s => s.TotalKolicina)
+            .ToList();
     }
 }

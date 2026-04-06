@@ -105,9 +105,9 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 if (faktura.KomitentID.HasValue)
                 {
                     var sqlKupac = @"
-                        SELECT k.ID, k.Naziv, k.Adresa, k.PostanskiBroj, k.Mesto, k.Drzava,
-                               k.PoreskiBroj, k.MaticniBroj, k.BrojRacuna, k.Ino, k.Telefon
-                        FROM Komitent k WHERE k.ID = @KomitentId";
+                        SELECT k.Id AS ID, k.Naziv, k.Adresa, '' AS PostanskiBroj, k.Mesto, '' AS Drzava,
+                               k.PoreskiBroj, k.MaticniBroj, '' AS BrojRacuna, k.Ino, k.Telefon
+                        FROM Komitent k WHERE k.Id = @KomitentId";
 
                     model.Kupac = await _databaseService.QueryFirstOrDefaultAsync<KupacDetaljiModel>(
                         sqlKupac, new Dictionary<string, object> { { "@KomitentId", faktura.KomitentID.Value } });

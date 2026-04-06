@@ -24,9 +24,9 @@ else
         <div class="row mb-3">
             <div class="col-12">
                 <h4 class="mb-0">
-                    <i class="bi bi-clipboard2-check me-2 text-primary"></i>Kontrole Radnog Naloga
+                    <i class="bi bi-clipboard2-check me-2"></i>Kontrole RN
                 </h4>
-                <small class="text-muted">Pregled svih kontrola kvaliteta po radnom nalogu</small>
+                <small class="text-muted">Pregled svih unešenih kontrola kvaliteta i rezultata merenja po radnom nalogu</small>
             </div>
         </div>
 
@@ -515,6 +515,16 @@ else
 }
 
 @code {
+    // Query parametri (sa stranice UcitajRadneNaloge)
+    [SupplyParameterFromQuery(Name = "radniNalog")]
+    public string? QueryRadniNalog { get; set; }
+
+    [SupplyParameterFromQuery(Name = "odDatum")]
+    public string? QueryOdDatum { get; set; }
+
+    [SupplyParameterFromQuery(Name = "doDatum")]
+    public string? QueryDoDatum { get; set; }
+
     private bool autorizovan = false;
     private bool ucitava = false;
     private bool ucitavaKontrole = false;
@@ -544,7 +554,18 @@ else
             }
             autorizovan = true;
 
+            // Primeni query parametre ako postoje
+            if (!string.IsNullOrWhiteSpace(QueryRadniNalog))
+                izabraniRadniNalogSifra = QueryRadniNalog;
+            if (DateTime.TryParse(QueryOdDatum, out var qOd))
+                odDatum = qOd;
+            if (DateTime.TryParse(QueryDoDatum, out var qDo))
+                doDatum = qDo;
+
             await UcitajListeZaFiltriranje();
+
+            if (!string.IsNullOrWhiteSpace(QueryRadniNalog))
+                await PretragaNaloga();
         }
         catch (Exception ex)
         {

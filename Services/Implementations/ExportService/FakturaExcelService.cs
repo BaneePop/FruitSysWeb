@@ -144,7 +144,7 @@ namespace FruitSysWeb.Services.Implementations.ExportService
             ws.Cell(1, 1).Style.Font.FontSize = 14;
             ws.Range(1, 1, 1, 4).Merge();
 
-            ws.Cell(2, 1).Value = $"ODETTA DOO | Kralja Dragutina 5, 15000 Šabac";
+            ws.Cell(2, 1).Value = "ODETTA DOO | Kralja Dragutina 5, 15000 Šabac";
             ws.Cell(2, 1).Style.Font.FontColor = XLColor.Gray;
             ws.Range(2, 1, 2, 4).Merge();
 

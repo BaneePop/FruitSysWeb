@@ -71,6 +71,10 @@ namespace FruitSysWeb.Extensions
             services.AddScoped<FakturaExcelService>();
             services.AddScoped<IKarticaKomitentaService, KarticaKomitentaService>();
             services.AddScoped<IKontrolaService, KontrolaService>();
+            services.AddScoped<IIzvodDokumenataService, IzvodDokumenataService>();
+            services.AddScoped<PrijemnicaPdfService>();
+            services.AddScoped<OtpremnicaPdfService>();
+            services.AddScoped<RadniNalogIzvodPdfService>();
 
             // ========================================
             // PROMENE SERVICES

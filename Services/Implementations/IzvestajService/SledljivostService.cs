@@ -1588,5 +1588,207 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
         }
 
         #endregion
+
+        #region Prijem Sledljivost
+
+        /// <summary>
+        /// Učitava sledljivost za sve paletne listove jedne prijemnice
+        /// </summary>
+        public async Task<PrijemSledljivostModel?> UcitajPrijemSledljivost(string sifra)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(sifra))
+                    return null;
+
+                // 1. Učitaj prijemnicu po šifri
+                var sqlPrijemnica = @"
+                    SELECT
+                        pr.ID,
+                        pr.Sifra,
+                        pr.Datum,
+                        pr.Otpremnica,
+                        pr.KomitentID,
+                        k.Naziv as KomitentNaziv,
+                        pr.DokumentStatus
+                    FROM Prijemnica pr
+                    LEFT JOIN Komitent k ON pr.KomitentID = k.ID
+                    WHERE pr.Sifra = @Sifra
+                    LIMIT 1
+                ";
+
+                var prijemnica = await _databaseService.QueryFirstOrDefaultAsync<dynamic>(sqlPrijemnica, new { Sifra = sifra.Trim() });
+                if (prijemnica == null)
+                    return null;
+
+                long prijemnicaId = prijemnica.ID;
+
+                var model = new PrijemSledljivostModel
+                {
+                    PrijemnicaID = prijemnicaId,
+                    PrijemnicaSifra = prijemnica.Sifra,
+                    Datum = prijemnica.Datum,
+                    KomitentNaziv = prijemnica.KomitentNaziv,
+                    OtpremnicaDobavljaca = prijemnica.Otpremnica,
+                    DokumentStatus = prijemnica.DokumentStatus,
+                    StatusNaziv = DocumentStatus.GetDisplayName((int)(prijemnica.DokumentStatus ?? 0))
+                };
+
+                // 2. Učitaj sve paletne listove te prijemnice
+                var sqlPL = @"
+                    SELECT
+                        pl.ID,
+                        pl.Sifra,
+                        pl.Tezina,
+                        pl.LotDobavljaca,
+                        a.Naziv as ArtikalNaziv
+                    FROM PaletniList pl
+                    INNER JOIN PrijemnicaStavka ps ON pl.PrijemnicaStavkaID = ps.ID
+                    LEFT JOIN Artikal a ON pl.ArtikalID = a.ID
+                    WHERE ps.PrijemnicaID = @PrijemnicaID
+                    ORDER BY pl.Sifra
+                ";
+
+                var paletniListovi = (await _databaseService.QueryAsync<dynamic>(sqlPL, new { PrijemnicaID = prijemnicaId })).ToList();
+
+                if (!paletniListovi.Any())
+                    return model;
+
+                var plIDs = paletniListovi.Select(pl => (long)pl.ID).ToList();
+
+                // 3. Učitaj SVE veze u proizvodnji za sve PL odjednom (bez filtera po RN)
+                var sqlVeze = @"
+                    SELECT
+                        erupl.PaletniListID,
+                        er.Sifra as EvidencijaSifra,
+                        si.Broj as SmenskiIzvestajSifra,
+                        rn.Sifra as RadniNalogSifra,
+                        k.Naziv as KomitentNaziv
+                    FROM EvidencijaRada_UtroseniPaletniListovi erupl
+                    INNER JOIN EvidencijaRada er ON erupl.EvidencijaRadaID = er.ID
+                    LEFT JOIN SmenskiIzvestaj si ON er.SmenskiIzvestajID = si.ID
+                    LEFT JOIN RadniNalog rn ON er.RadniNalogID = rn.ID
+                    LEFT JOIN Komitent k ON rn.KomitentID = k.ID
+                    WHERE erupl.PaletniListID IN @IDs
+                      AND er.Obrisan = 0
+                ";
+
+                var vezeRezultat = (await _databaseService.QueryAsync<dynamic>(sqlVeze, new { IDs = plIDs })).ToList();
+
+                // Grupiši veze po PaletniListID
+                var vezeDict = new Dictionary<long, (List<string> evidencije, List<string> smene, List<RadniNalogInfo> radniNalozi)>();
+                foreach (var row in vezeRezultat)
+                {
+                    long plId = row.PaletniListID;
+                    if (!vezeDict.ContainsKey(plId))
+                        vezeDict[plId] = (new List<string>(), new List<string>(), new List<RadniNalogInfo>());
+
+                    string? ev = row.EvidencijaSifra;
+                    string? si = row.SmenskiIzvestajSifra;
+                    string? rn = row.RadniNalogSifra;
+                    string? komitent = row.KomitentNaziv;
+
+                    if (!string.IsNullOrEmpty(ev) && !vezeDict[plId].evidencije.Contains(ev))
+                        vezeDict[plId].evidencije.Add(ev);
+                    if (!string.IsNullOrEmpty(si) && !vezeDict[plId].smene.Contains(si))
+                        vezeDict[plId].smene.Add(si);
+                    if (!string.IsNullOrEmpty(rn) && !vezeDict[plId].radniNalozi.Any(x => x.Sifra == rn))
+                        vezeDict[plId].radniNalozi.Add(new RadniNalogInfo { Sifra = rn, KomitentNaziv = komitent });
+                }
+
+                // 4. Učitaj gotove PL:
+                //    - Sirovi PL korišćen u RN (vezeDict.radniNalozi)
+                //    - Za taj RN uzmi sve gotove PL (pl.RadniNalogID = rn.ID)
+                //    - Gotovi PL koji imaju sirovi PL u svom PaletniListoviPracenje
+                //      (plp.PaletniListID = gotoviPL.ID AND plp.TPaletniListID = siroviPL.ID)
+                var sqlGotovi = @"
+                    SELECT
+                        plp.TPaletniListID as SiroviPLID,
+                        gpl.Sifra as PLSifra,
+                        a.Naziv as ArtikalNaziv,
+                        gpl.Tezina,
+                        otp.Sifra as OtpremnicaSifra,
+                        k.Naziv as KomitentNaziv
+                    FROM PaletniList gpl
+                    INNER JOIN RadniNalog rn ON gpl.RadniNalogID = rn.ID
+                    INNER JOIN EvidencijaRada er ON er.RadniNalogID = rn.ID
+                    INNER JOIN EvidencijaRada_UtroseniPaletniListovi erupl ON erupl.EvidencijaRadaID = er.ID
+                        AND erupl.PaletniListID IN @SiroviIDs
+                    INNER JOIN PaletniListoviPracenje plp ON plp.PaletniListID = gpl.ID
+                        AND plp.TPaletniListID = erupl.PaletniListID
+                    LEFT JOIN Artikal a ON gpl.ArtikalID = a.ID
+                    LEFT JOIN Otpremnica otp ON otp.RadniNalogID = rn.ID
+                    LEFT JOIN Komitent k ON otp.KomitentID = k.ID
+                    WHERE er.Obrisan = 0
+                    ORDER BY gpl.Sifra
+                ";
+
+                var gotoviRez = (await _databaseService.QueryAsync<dynamic>(sqlGotovi, new { SiroviIDs = plIDs })).ToList();
+
+                var gotoviDict = new Dictionary<long, List<GotoviPLInfo>>();
+                foreach (var row in gotoviRez)
+                {
+                    long siroviId = row.SiroviPLID;
+                    if (!gotoviDict.ContainsKey(siroviId))
+                        gotoviDict[siroviId] = new List<GotoviPLInfo>();
+                    string gSifra = row.PLSifra;
+                    if (!gotoviDict[siroviId].Any(x => x.Sifra == gSifra))
+                        gotoviDict[siroviId].Add(new GotoviPLInfo
+                        {
+                            Sifra = gSifra,
+                            ArtikalNaziv = row.ArtikalNaziv,
+                            Tezina = row.Tezina,
+                            OtpremnicaSifra = row.OtpremnicaSifra,
+                            KomitentNaziv = row.KomitentNaziv
+                        });
+                }
+
+                // 5. Složi redove
+                foreach (var pl in paletniListovi)
+                {
+                    long plId = pl.ID;
+                    vezeDict.TryGetValue(plId, out var veze);
+                    gotoviDict.TryGetValue(plId, out var gotovi);
+
+                    model.PaletniListovi.Add(new PrijemPaletniListRow
+                    {
+                        PaletniListID = plId,
+                        Sifra = pl.Sifra,
+                        ArtikalNaziv = pl.ArtikalNaziv,
+                        Tezina = pl.Tezina,
+                        LotDobavljaca = pl.LotDobavljaca,
+                        EvidencijeRada = veze.evidencije ?? new List<string>(),
+                        SmenskiIzvestaji = veze.smene ?? new List<string>(),
+                        RadniNalozi = veze.radniNalozi ?? new List<RadniNalogInfo>(),
+                        GotoviPaletniListovi = gotovi ?? new List<GotoviPLInfo>()
+                    });
+                }
+
+                return model;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška u UcitajPrijemSledljivost");
+                return null;
+            }
+        }
+
+        public async Task<byte[]> GenerisiPrijemExcel(string sifra)
+        {
+            var model = await UcitajPrijemSledljivost(sifra);
+            if (model == null)
+                throw new Exception($"Prijemnica '{sifra}' nije pronađena.");
+            return _excelService.GenerisiPrijemExcel(model);
+        }
+
+        public async Task<byte[]> GenerisiPrijemHtml(string sifra)
+        {
+            var model = await UcitajPrijemSledljivost(sifra);
+            if (model == null)
+                throw new Exception($"Prijemnica '{sifra}' nije pronađena.");
+            return _htmlService.GenerisiPrijemHtml(model);
+        }
+
+        #endregion
     }
 }

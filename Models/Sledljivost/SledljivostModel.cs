@@ -208,4 +208,57 @@ namespace FruitSysWeb.Models.Sledljivost
         public long ID { get; set; }
         public string? Opis { get; set; } // Npr. "Kupac: Maxi d.o.o., 500 kg"
     }
+
+    /// <summary>
+    /// Model za Prijem Sledljivost — kontejner za prijemnicu i sve njene paletne listove
+    /// </summary>
+    public class PrijemSledljivostModel
+    {
+        public long PrijemnicaID { get; set; }
+        public string? PrijemnicaSifra { get; set; }
+        public DateTime? Datum { get; set; }
+        public string? KomitentNaziv { get; set; }
+        public string? OtpremnicaDobavljaca { get; set; }
+        public int? DokumentStatus { get; set; }
+        public string? StatusNaziv { get; set; }
+
+        public List<PrijemPaletniListRow> PaletniListovi { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Jedan paletni list iz prijemnice sa svim vezama u proizvodnji
+    /// </summary>
+    public class PrijemPaletniListRow
+    {
+        public long PaletniListID { get; set; }
+        public string? Sifra { get; set; }
+        public string? ArtikalNaziv { get; set; }
+        public decimal? Tezina { get; set; }
+        public string? LotDobavljaca { get; set; }
+
+        // Veze u proizvodnji
+        public List<RadniNalogInfo> RadniNalozi { get; set; } = new();
+        public List<string> SmenskiIzvestaji { get; set; } = new();
+        public List<string> EvidencijeRada { get; set; } = new();
+
+        // Gotovi proizvodi nastali u radnim nalozima gde je ovaj PL korišćen
+        public List<GotoviPLInfo> GotoviPaletniListovi { get; set; } = new();
+
+        public bool NaLageru => !RadniNalozi.Any() && !EvidencijeRada.Any();
+    }
+
+    public class RadniNalogInfo
+    {
+        public string? Sifra { get; set; }
+        public string? KomitentNaziv { get; set; }
+    }
+
+    public class GotoviPLInfo
+    {
+        public string? Sifra { get; set; }
+        public string? ArtikalNaziv { get; set; }
+        public decimal? Tezina { get; set; }
+        public string? OtpremnicaSifra { get; set; }
+        public string? KomitentNaziv { get; set; }
+    }
 }

@@ -58,8 +58,9 @@
                 <div class="col-md-6">
                     <h1 class="h3 mb-0">
                         <i class="bi bi-gear-fill me-2"></i>
-                        Detaljni izveštaj o utrošku sirovina u radnim nalozima
+                        Utrošak Sirovina RN
                     </h1>
+                    <small class="opacity-75">Detaljan pregled utroška sirovina i poluproizvoda po radnim nalozima sa kolicinama ulaza, izlaza i gotove robe</small>
                 </div>
                 <div class="col-md-6 text-end">
                     <span class="badge bg-light text-dark fs-6">
@@ -229,11 +230,12 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th>Datum</th>
+                                        <th>Komitent</th>
                                         <th>Radni Nalog</th>
                                         <th>Artikal</th>
-                                        <th class="text-end">Količina Roba</th>
-                                        <th class="text-end">Gotov Proizvod</th>
-                                        <th>Komitent</th>
+                                        <th class="text-end">Sirovina Ulaz</th>
+                                        <th class="text-end">Polu Proizvod Izlaz</th>
+                                        <th class="text-end">Gotova Roba</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -241,6 +243,7 @@
                                     {
                                         <tr>
                                             <td>@TypeMapping.FormatDate(item.Datum ?? DateTime.MinValue)</td>
+                                            <td>@item.Komitent</td>
                                             <td>
                                                 <span class="badge bg-info">@item.RadniNalog</span>
                                             </td>
@@ -249,17 +252,17 @@
                                                 <span class="badge bg-secondary ms-1">@item.TipArtikla</span>
                                             </td>
                                             <td class="text-end fw-bold">@TypeMapping.FormatDecimal(item.KolicinaRoba)</td>
+                                            <td class="text-end fw-bold text-warning">@TypeMapping.FormatDecimal(item.PoluProizvodIzlaz)</td>
                                             <td class="text-end fw-bold text-success">@TypeMapping.FormatDecimal(item.GotovProizvod)</td>
-                                            <td>@item.Komitent</td>
                                         </tr>
                                     }
                                 </tbody>
                                 <tfoot class="table-secondary">
                                     <tr>
-                                        <th colspan="3" class="text-end">UKUPNO:</th>
+                                        <th colspan="4" class="text-end">UKUPNO:</th>
                                         <th class="text-end text-primary">@TypeMapping.FormatDecimal(podaci.Sum(x => x.KolicinaRoba))</th>
+                                        <th class="text-end text-warning">@TypeMapping.FormatDecimal(podaci.Sum(x => x.PoluProizvodIzlaz))</th>
                                         <th class="text-end text-success">@TypeMapping.FormatDecimal(podaci.Sum(x => x.GotovProizvod))</th>
-                                        <th></th>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -282,6 +285,16 @@
 </div>
 
 @code {
+    // Query parametri (sa stranice UcitajRadneNaloge)
+    [SupplyParameterFromQuery(Name = "radniNalog")]
+    public string? QueryRadniNalog { get; set; }
+
+    [SupplyParameterFromQuery(Name = "odDatum")]
+    public string? QueryOdDatum { get; set; }
+
+    [SupplyParameterFromQuery(Name = "doDatum")]
+    public string? QueryDoDatum { get; set; }
+
     private List<ProizvodnjaModel> podaci = new List<ProizvodnjaModel>();
     private FilterRequest filterRequest = new FilterRequest();
     
@@ -322,9 +335,19 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // OPTIMIZACIJA: Učitaj samo zadnjih 7 dana umesto celog perioda od juna
-        filterRequest.OdDatum = DateTime.Now.AddDays(-7);
-        filterRequest.DoDatum = DateTime.Now;
+        // Primeni query parametre ako postoje (navigacija sa UcitajRadneNaloge)
+        if (DateTime.TryParse(QueryOdDatum, out var qOd))
+            filterRequest.OdDatum = qOd;
+        else
+            filterRequest.OdDatum = DateTime.Now.AddDays(-7);
+
+        if (DateTime.TryParse(QueryDoDatum, out var qDo))
+            filterRequest.DoDatum = qDo;
+        else
+            filterRequest.DoDatum = DateTime.Now;
+
+        if (!string.IsNullOrWhiteSpace(QueryRadniNalog))
+            filterRequest.RadniNalog = QueryRadniNalog;
 
         await UcitajListeZaFiltriranje();
         await UcitajPodatke();
@@ -430,6 +453,7 @@
                         Komitent = g.Key.Komitent,
                         Tip = g.Key.Tip,
                         KolicinaRoba = g.Sum(x => x.KolicinaRoba),
+                        PoluProizvodIzlaz = g.Sum(x => x.PoluProizvodIzlaz),
                         KolicinaAmbalaza = g.Sum(x => x.KolicinaAmbalaza),
                         GotovProizvod = g.Sum(x => x.GotovProizvod),
                         Kolicina = g.Sum(x => x.Kolicina)
@@ -497,11 +521,12 @@
             var columns = new Dictionary<string, string>
             {
                 { "Datum", "Datum" },
+                { "Komitent", "Komitent" },
                 { "RadniNalog", "Radni Nalog" },
                 { "Artikal", "Artikal" },
-                { "KolicinaRoba", "Količina Roba" },
-                { "GotovProizvod", "Gotov Proizvod" },
-                { "Komitent", "Komitent" }
+                { "KolicinaRoba", "Sirovina Ulaz" },
+                { "PoluProizvodIzlaz", "Polu Proizvod Izlaz" },
+                { "GotovProizvod", "Gotova Roba" }
             };
 
             // Dodaj totale na dnu
@@ -509,6 +534,7 @@
             {
                 { "Artikal", "UKUPNO:" },
                 { "KolicinaRoba", podaci.Sum(x => x.KolicinaRoba) },
+                { "PoluProizvodIzlaz", podaci.Sum(x => x.PoluProizvodIzlaz) },
                 { "GotovProizvod", podaci.Sum(x => x.GotovProizvod) }
             };
 
@@ -530,11 +556,12 @@
             var columns = new Dictionary<string, string>
             {
                 { "Datum", "Datum" },
+                { "Komitent", "Komitent" },
                 { "RadniNalog", "Radni Nalog" },
                 { "Artikal", "Artikal" },
-                { "KolicinaRoba", "Količina Roba" },
-                { "GotovProizvod", "Gotov Proizvod" },
-                { "Komitent", "Komitent" }
+                { "KolicinaRoba", "Sirovina Ulaz" },
+                { "PoluProizvodIzlaz", "Polu Proizvod Izlaz" },
+                { "GotovProizvod", "Gotova Roba" }
             };
 
             // Dodaj totale na dnu
@@ -542,6 +569,7 @@
             {
                 { "Artikal", "UKUPNO:" },
                 { "KolicinaRoba", podaci.Sum(x => x.KolicinaRoba) },
+                { "PoluProizvodIzlaz", podaci.Sum(x => x.PoluProizvodIzlaz) },
                 { "GotovProizvod", podaci.Sum(x => x.GotovProizvod) }
             };
 

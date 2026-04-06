@@ -19,11 +19,11 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h2 class="mb-1">
-                        <i class="bi bi-clipboard-data text-primary me-2"></i>
-                        Utrošak Radne Snage Radnim Nalozima
+                        <i class="bi bi-clipboard-data me-2"></i>
+                        Utrošak Radne Snage RN
                     </h2>
                     <p class="text-muted mb-0">
-                        Detaljni pregled troškova radne snage po Radnim Nalozima
+                        Pregled broja radnika, radnih sati i troškova radne snage grupisanih po radnim nalozima
                     </p>
                 </div>
                 <div class="d-flex gap-2">
@@ -213,6 +213,16 @@
 </div>
 
 @code {
+    // Query parametri (sa stranice UcitajRadneNaloge)
+    [SupplyParameterFromQuery(Name = "radniNalog")]
+    public string? QueryRadniNalog { get; set; }
+
+    [SupplyParameterFromQuery(Name = "odDatum")]
+    public string? QueryOdDatum { get; set; }
+
+    [SupplyParameterFromQuery(Name = "doDatum")]
+    public string? QueryDoDatum { get; set; }
+
     // Data properties
     private List<RadniNalogIzvestajModel>? radniNalogData;
 
@@ -226,9 +236,19 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // OPTIMIZACIJA: Učitaj samo zadnjih 7 dana umesto celog perioda
-        filterRequest.OdDatum = DateTime.Now.AddDays(-7);
-        filterRequest.DoDatum = DateTime.Now;
+        // Primeni query parametre ako postoje (navigacija sa UcitajRadneNaloge)
+        if (DateTime.TryParse(QueryOdDatum, out var qOd))
+            filterRequest.OdDatum = qOd;
+        else
+            filterRequest.OdDatum = DateTime.Now.AddDays(-7);
+
+        if (DateTime.TryParse(QueryDoDatum, out var qDo))
+            filterRequest.DoDatum = qDo;
+        else
+            filterRequest.DoDatum = DateTime.Now;
+
+        if (!string.IsNullOrWhiteSpace(QueryRadniNalog))
+            filterRequest.RadniNalog = QueryRadniNalog;
 
         await UcitajListeZaFiltriranje();
         await UcitajPodatke();

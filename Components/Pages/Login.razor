@@ -16,6 +16,13 @@
             <p class="text-muted">Prijavite se na vaš nalog</p>
         </div>
 
+        @if (autoOdjava)
+        {
+            <div class="alert alert-warning" role="alert">
+                <i class="bi bi-clock me-2"></i>Automatski ste odjavljeni zbog neaktivnosti od 30 minuta.
+            </div>
+        }
+
         @if (!string.IsNullOrEmpty(errorMessage))
         {
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -115,9 +122,15 @@
     private LoginRequest loginRequest = new();
     private string errorMessage = string.Empty;
     private bool isLoading = false;
+    private bool autoOdjava = false;
 
     protected override async Task OnInitializedAsync()
     {
+        // Proveri da li je automatska odjava
+        var uri = new Uri(Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        autoOdjava = query["razlog"] == "neaktivnost";
+
         // Proveri da li je već ulogovan
         if (await AuthService.IsAuthenticated())
         {

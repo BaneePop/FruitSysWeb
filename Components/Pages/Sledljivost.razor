@@ -21,7 +21,7 @@
                         <i class="bi bi-diagram-3 me-2" aria-hidden="true"></i>Sledljivost Robe
                     </h1>
                     <p class="text-muted mb-0">
-                        Upstream i Downstream sledljivost dokumenata
+                        Praćenje porekla robe kroz ceo lanac — od nabavke sirovine preko prerade do isporuke gotovog proizvoda
                     </p>
                 </div>
                 @if (sledljivostData != null)
@@ -31,6 +31,17 @@
                             <i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i>Excel
                         </button>
                         <button class="btn btn-info text-white" @onclick="ExportToHtml" aria-label="Exportuj u HTML format">
+                            <i class="bi bi-file-earmark-code me-2" aria-hidden="true"></i>HTML Sledljivost
+                        </button>
+                    </div>
+                }
+                @if (prijemData != null)
+                {
+                    <div class="btn-group" role="group" aria-label="Export opcije">
+                        <button class="btn btn-success" @onclick="ExportPrijemToExcel" aria-label="Exportuj u Excel format">
+                            <i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i>Excel
+                        </button>
+                        <button class="btn btn-info text-white" @onclick="ExportPrijemToHtml" aria-label="Exportuj u HTML format">
                             <i class="bi bi-file-earmark-code me-2" aria-hidden="true"></i>HTML Sledljivost
                         </button>
                     </div>
@@ -64,6 +75,14 @@
                             <strong>DOWNSTREAM</strong> - Paletni List
                             <br><small class="text-muted">Gotov proizvod → Sirovina</small>
                         </label>
+
+                        <input type="radio" class="btn-check" name="tipPretrage" id="prijemRadio" value="Prijem"
+                               checked="@(tipPretrage == "Prijem")" @onchange='() => { tipPretrage = "Prijem"; sledljivostData = null; prijemData = null; }'>
+                        <label class="btn btn-outline-warning" for="prijemRadio">
+                            <i class="bi bi-truck me-2" aria-hidden="true"></i>
+                            <strong>PRIJEM SLEDLJIVOST</strong>
+                            <br><small class="text-muted">Prijemnica → Paletni Listovi</small>
+                        </label>
                     </div>
 
                     <label class="form-label fw-bold">
@@ -72,7 +91,7 @@
                     <div class="input-group input-group-lg">
                         <input type="text"
                                class="form-control"
-                               placeholder="@(tipPretrage == "RadniNalog" ? "RN-25-0192" : "P-251011-002")"
+                               placeholder="@(tipPretrage == "RadniNalog" ? "RN-25-0192" : tipPretrage == "PaletniList" ? "P-251011-002" : "PR-26-0056")"
                                @bind="searchSifra"
                                @bind:event="oninput"
                                @onkeydown="OnSearchKeyDown"
@@ -103,7 +122,14 @@
 
                     <small class="text-muted mt-2 d-block">
                         <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
-                        Primer: RN-25-0192 (Radni Nalog) ili P-251011-002 (Paletni List)
+                        @if (tipPretrage == "Prijem")
+                        {
+                            <text>Primer: PR-26-0056 (šifra prijemnice)</text>
+                        }
+                        else
+                        {
+                            <text>Primer: RN-25-0192 (Radni Nalog) ili P-251011-002 (Paletni List)</text>
+                        }
                     </small>
                 </div>
             </div>
@@ -128,6 +154,280 @@
             <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
             @errorPoruka
             <button type="button" class="btn-close" @onclick="() => errorPoruka = null"></button>
+        </div>
+    }
+
+    <!-- Prijem Sledljivost Results -->
+    @if (prijemData != null && !ucitavanje)
+    {
+        <div class="row">
+            <div class="col-12">
+                <!-- Header Info Card -->
+                <div class="card shadow-sm mb-4 border-warning">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h4 class="mb-2">
+                                    <i class="bi bi-truck text-warning me-2" aria-hidden="true"></i>
+                                    <span>Prijemnica: </span>
+                                    <span class="badge @GetStatusBadgeClass(prijemData.DokumentStatus ?? 0)">
+                                        @prijemData.PrijemnicaSifra
+                                    </span>
+                                </h4>
+                                <div class="text-muted">
+                                    <i class="bi bi-person me-1" aria-hidden="true"></i>
+                                    Dobavljač: <strong>@prijemData.KomitentNaziv</strong>
+                                    @if (!string.IsNullOrEmpty(prijemData.OtpremnicaDobavljaca))
+                                    {
+                                        <span class="ms-3">
+                                            <i class="bi bi-file-text me-1" aria-hidden="true"></i>
+                                            Otpr. dobavljača: @prijemData.OtpremnicaDobavljaca
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                @if (prijemData.Datum.HasValue)
+                                {
+                                    <div class="text-muted">
+                                        <i class="bi bi-calendar3 me-1" aria-hidden="true"></i>
+                                        @TypeMapping.FormatDate(prijemData.Datum.Value)
+                                    </div>
+                                }
+                                <div class="mt-2">
+                                    <span class="badge bg-warning text-dark">
+                                        @prijemData.PaletniListovi.Count PL
+                                    </span>
+                                    <span class="badge bg-success ms-1">
+                                        @prijemData.PaletniListovi.Count(pl => pl.NaLageru) na lageru
+                                    </span>
+                                    <span class="badge bg-primary ms-1">
+                                        @prijemData.PaletniListovi.Count(pl => !pl.NaLageru) utrošeno
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela paletnih listova -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-box-seam me-2" aria-hidden="true"></i>
+                            Paletni Listovi — Sledljivost
+                            <span class="badge bg-dark ms-2">@prijemData.PaletniListovi.Count</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (prijemData.PaletniListovi.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th style="width:30px;"></th>
+                                            <th>Paletni List</th>
+                                            <th>Artikal</th>
+                                            <th>Težina</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var pl in prijemData.PaletniListovi)
+                                        {
+                                            var prijemPlKey = $"prijem_pl_{pl.PaletniListID}";
+                                            var isPlExpanded = IsSectionExpanded(prijemPlKey);
+
+                                            <tr class="cursor-pointer @(pl.NaLageru ? "table-success" : "") @(isPlExpanded ? "table-active" : "")"
+                                                @onclick="() => ToggleSection(prijemPlKey)">
+                                                <td class="text-center">
+                                                    <i class="bi @(isPlExpanded ? "bi-chevron-down" : "bi-chevron-right") text-primary"></i>
+                                                </td>
+                                                <td><strong>@pl.Sifra</strong></td>
+                                                <td>@pl.ArtikalNaziv</td>
+                                                <td>
+                                                    @if (pl.Tezina.HasValue)
+                                                    {
+                                                        <span>@TypeMapping.FormatDecimal(pl.Tezina.Value) kg</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (pl.NaLageru)
+                                                    {
+                                                        <span class="badge bg-success">
+                                                            <i class="bi bi-archive me-1"></i>NA LAGERU
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-primary">
+                                                            <i class="bi bi-gear me-1"></i>UTROŠEN
+                                                        </span>
+                                                    }
+                                                </td>
+                                            </tr>
+
+                                            @if (isPlExpanded)
+                                            {
+                                                <tr>
+                                                    <td colspan="5" class="p-0">
+                                                        <div class="bg-light border-top border-bottom px-4 py-3">
+                                                            <div class="row g-3">
+                                                                @if (!string.IsNullOrEmpty(pl.LotDobavljaca))
+                                                                {
+                                                                    <div class="col-12">
+                                                                        <small class="text-muted fw-bold">LOT Dobavljača:</small>
+                                                                        <span class="badge bg-secondary ms-2">@pl.LotDobavljaca</span>
+                                                                    </div>
+                                                                }
+                                                                @if (pl.RadniNalozi.Any())
+                                                                {
+                                                                    <div class="col-md-4">
+                                                                        <small class="text-muted fw-bold d-block mb-1">
+                                                                            <i class="bi bi-clipboard-check me-1"></i>Radni Nalozi
+                                                                        </small>
+                                                                        @foreach (var rn in pl.RadniNalozi)
+                                                                        {
+                                                                            <div class="mb-1">
+                                                                                <span class="badge bg-primary me-1">@rn.Sifra</span>
+                                                                                @if (!string.IsNullOrEmpty(rn.KomitentNaziv))
+                                                                                {
+                                                                                    <small class="text-muted">@rn.KomitentNaziv</small>
+                                                                                }
+                                                                            </div>
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                                @if (pl.SmenskiIzvestaji.Any())
+                                                                {
+                                                                    <div class="col-md-4">
+                                                                        <small class="text-muted fw-bold d-block mb-1">
+                                                                            <i class="bi bi-file-text me-1"></i>Smenski Izveštaji
+                                                                        </small>
+                                                                        @foreach (var si in pl.SmenskiIzvestaji)
+                                                                        {
+                                                                            <span class="badge bg-info text-dark me-1 mb-1">@si</span>
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                                @if (pl.EvidencijeRada.Any())
+                                                                {
+                                                                    <div class="col-md-4">
+                                                                        <small class="text-muted fw-bold d-block mb-1">
+                                                                            <i class="bi bi-clipboard-data me-1"></i>Evidencije Rada
+                                                                        </small>
+                                                                        @foreach (var er in pl.EvidencijeRada)
+                                                                        {
+                                                                            <span class="badge bg-secondary me-1 mb-1">@er</span>
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                                @if (pl.GotoviPaletniListovi.Any())
+                                                                {
+                                                                    <div class="col-12">
+                                                                        <small class="text-muted fw-bold d-block mb-1">
+                                                                            <i class="bi bi-box-seam text-success me-1"></i>Gotovi Proizvodi (PL)
+                                                                        </small>
+                                                                        <table class="table table-sm table-bordered mb-0" style="font-size:0.82rem;">
+                                                                            <thead class="table-secondary">
+                                                                                <tr>
+                                                                                    <th>Paletni List</th>
+                                                                                    <th>Artikal</th>
+                                                                                    <th>Težina</th>
+                                                                                    <th>Otpremnica</th>
+                                                                                    <th>Kupac</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                @foreach (var gpl in pl.GotoviPaletniListovi)
+                                                                                {
+                                                                                    <tr>
+                                                                                        <td><strong>@gpl.Sifra</strong></td>
+                                                                                        <td>@gpl.ArtikalNaziv</td>
+                                                                                        <td>
+                                                                                            @if (gpl.Tezina.HasValue)
+                                                                                            {
+                                                                                                @TypeMapping.FormatDecimal(gpl.Tezina.Value) <text>kg</text>
+                                                                                            }
+                                                                                        </td>
+                                                                                        <td>
+                                                                                            @if (!string.IsNullOrEmpty(gpl.OtpremnicaSifra))
+                                                                                            {
+                                                                                                <span class="badge bg-success">@gpl.OtpremnicaSifra</span>
+                                                                                            }
+                                                                                            else
+                                                                                            {
+                                                                                                <span class="text-muted">—</span>
+                                                                                            }
+                                                                                        </td>
+                                                                                        <td>@gpl.KomitentNaziv</td>
+                                                                                    </tr>
+                                                                                }
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                }
+                                                                @if (pl.NaLageru)
+                                                                {
+                                                                    <div class="col-12">
+                                                                        <div class="alert alert-success py-2 mb-0">
+                                                                            <i class="bi bi-archive me-2"></i>
+                                                                            Paletni list se nalazi na lageru — nije korišćen u proizvodnji.
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted py-4">
+                                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                <p class="mt-2">Prijemnica nema paletnih listova</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="card shadow-sm text-center">
+                            <div class="card-body">
+                                <i class="bi bi-box-seam text-warning" style="font-size: 2rem;"></i>
+                                <h4 class="mt-2 mb-0">@prijemData.PaletniListovi.Count</h4>
+                                <small class="text-muted">Ukupno PL</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm text-center">
+                            <div class="card-body">
+                                <i class="bi bi-archive text-success" style="font-size: 2rem;"></i>
+                                <h4 class="mt-2 mb-0">@prijemData.PaletniListovi.Count(pl => pl.NaLageru)</h4>
+                                <small class="text-muted">Na Lageru</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm text-center">
+                            <div class="card-body">
+                                <i class="bi bi-gear text-primary" style="font-size: 2rem;"></i>
+                                <h4 class="mt-2 mb-0">@prijemData.PaletniListovi.Count(pl => !pl.NaLageru)</h4>
+                                <small class="text-muted">Utrošeno (Prerada)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     }
 
@@ -1017,8 +1317,13 @@
 </style>
 
 @code {
+    // Query parametri (sa stranice UcitajRadneNaloge)
+    [SupplyParameterFromQuery(Name = "radniNalog")]
+    public string? QueryRadniNalog { get; set; }
+
     // Data properties
     private SledljivostModel? sledljivostData;
+    private PrijemSledljivostModel? prijemData;
     private List<DokumentSearchResultModel>? autocompleteRezultati;
 
     // UI state
@@ -1035,8 +1340,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Učitaj početne autocomplete podatke
-        await UcitajAutocomplete("");
+        if (!string.IsNullOrWhiteSpace(QueryRadniNalog))
+        {
+            tipPretrage = "RadniNalog";
+            searchSifra = QueryRadniNalog;
+            await UcitajAutocomplete("");
+            await PretraziSledljivost();
+        }
+        else
+        {
+            await UcitajAutocomplete("");
+        }
     }
 
     /// <summary>
@@ -1055,24 +1369,28 @@
             ucitavanje = true;
             errorPoruka = null;
             sledljivostData = null;
+            prijemData = null;
             expandedSections.Clear(); // Reset expanded sections
             StateHasChanged();
 
             // Pozovi odgovarajuću metodu u zavisnosti od tipa pretrage
             if (tipPretrage == "RadniNalog")
             {
-                // UPSTREAM - Radni Nalog
                 sledljivostData = await SledljivostService.UcitajSledljivost(searchSifra);
+                if (sledljivostData == null)
+                    errorPoruka = $"Dokument sa šifrom '{searchSifra}' nije pronađen.";
             }
             else if (tipPretrage == "PaletniList")
             {
-                // DOWNSTREAM - Paletni List gotove robe
                 sledljivostData = await SledljivostService.UcitajSledljivostPoPaletnomListu(searchSifra);
+                if (sledljivostData == null)
+                    errorPoruka = $"Dokument sa šifrom '{searchSifra}' nije pronađen.";
             }
-
-            if (sledljivostData == null)
+            else if (tipPretrage == "Prijem")
             {
-                errorPoruka = $"Dokument sa šifrom '{searchSifra}' nije pronađen.";
+                prijemData = await SledljivostService.UcitajPrijemSledljivost(searchSifra);
+                if (prijemData == null)
+                    errorPoruka = $"Prijemnica sa šifrom '{searchSifra}' nije pronađena.";
             }
         }
         catch (Exception ex)
@@ -1181,6 +1499,38 @@
             }
 
             await DownloadFile(htmlData, fileName, "text/html");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri HTML exportu: {ex.Message}");
+            errorPoruka = $"Greška pri exportu HTML-a: {ex.Message}";
+        }
+    }
+
+    private async Task ExportPrijemToExcel()
+    {
+        try
+        {
+            if (prijemData == null || string.IsNullOrWhiteSpace(prijemData.PrijemnicaSifra)) return;
+            var data = await SledljivostService.GenerisiPrijemExcel(prijemData.PrijemnicaSifra);
+            var fileName = TypeMapping.GenerateExportFileName($"PrijemSledljivost_{prijemData.PrijemnicaSifra}", ".xlsx");
+            await DownloadFile(data, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri Excel exportu: {ex.Message}");
+            errorPoruka = $"Greška pri exportu Excel-a: {ex.Message}";
+        }
+    }
+
+    private async Task ExportPrijemToHtml()
+    {
+        try
+        {
+            if (prijemData == null || string.IsNullOrWhiteSpace(prijemData.PrijemnicaSifra)) return;
+            var data = await SledljivostService.GenerisiPrijemHtml(prijemData.PrijemnicaSifra);
+            var fileName = TypeMapping.GenerateExportFileName($"PrijemSledljivost_{prijemData.PrijemnicaSifra}", ".html");
+            await DownloadFile(data, fileName, "text/html");
         }
         catch (Exception ex)
         {
