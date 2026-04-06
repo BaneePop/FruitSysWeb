@@ -25,6 +25,35 @@ namespace FruitSysWeb.Components.Charts
         }
     }
 
+    /// <summary>
+    /// Predstavlja jednu seriju podataka za multi-series chart
+    /// </summary>
+    public class ChartSeriesData
+    {
+        public string Name { get; set; } = "";
+        public List<ChartDataPoint> Data { get; set; } = new();
+        public string? Color { get; set; }
+
+        // Dodatni podaci za summary prikaz
+        public decimal TotalKolicina { get; set; }
+        public decimal TotalVrednost { get; set; }
+
+        public ChartSeriesData() { }
+
+        public ChartSeriesData(string name, List<ChartDataPoint> data)
+        {
+            Name = name;
+            Data = data;
+        }
+
+        public ChartSeriesData(string name, List<ChartDataPoint> data, string color)
+        {
+            Name = name;
+            Data = data;
+            Color = color;
+        }
+    }
+
     public static class ChartDataHelper
     {
         /// <summary>
@@ -110,6 +139,94 @@ namespace FruitSysWeb.Components.Charts
         }
 
         /// <summary>
+        /// Određuje boju prema vrsti voća u nazivu
+        /// </summary>
+        public static string GetFruitColor(string label)
+        {
+            var labelLower = label.ToLower();
+
+            if (labelLower.Contains("malina")) return "#DC143C"; // Crimson - crvena
+            if (labelLower.Contains("kupina")) return "#1C1C1C"; // Tamna grafitna crna
+
+            // Šljiva - uključuje sve sorte šljiva
+            if (labelLower.Contains("šljiva") || labelLower.Contains("sljiva") ||
+                labelLower.Contains("stenley") || labelLower.Contains("stanley") ||
+                labelLower.Contains("čačanka") || labelLower.Contains("cacanka") ||
+                labelLower.Contains("požegača") || labelLower.Contains("pozegaca") ||
+                labelLower.Contains("pžegača") || labelLower.Contains("pzegaca"))
+            {
+                return "#0000FF"; // Plava
+            }
+
+            if (labelLower.Contains("višnja") || labelLower.Contains("visnja")) return "#8B0000"; // DarkRed - bordo
+            if (labelLower.Contains("borovnica")) return "#800000"; // Maroon - bordo
+            if (labelLower.Contains("kajsija")) return "#FF8C00"; // DarkOrange - narandžasta
+
+            return "#28a745"; // Default zelena
+        }
+
+        /// <summary>
+        /// Dodaje boje prema vrsti voća u nazivu
+        /// </summary>
+        public static List<ChartDataPoint> WithFruitColors(List<ChartDataPoint> data)
+        {
+            foreach (var item in data)
+            {
+                item.Color = GetFruitColor(item.Label);
+            }
+            return data;
+        }
+
+        /// <summary>
+        /// Mapira PrvaKlasifikacijaID na vrstu voća.
+        /// 6=Malina, 10=Kupina, 11=Višnja, 15=Šljiva, 25=Ambalaža, 27=Repromaterijal, 28=Kajsija, 34=Jagoda, 39=Borovnica
+        /// </summary>
+        public static string MapKlasifikacijaToFruitType(int klasifikacijaId)
+        {
+            return klasifikacijaId switch
+            {
+                6  => "Malina",
+                10 => "Kupina",
+                11 => "Višnja",
+                15 => "Šljiva",
+                25 => "Ambalaža",
+                27 => "Repromaterijal",
+                28 => "Kajsija",
+                34 => "Jagoda",
+                39 => "Borovnica",
+                _  => "Ostalo"
+            };
+        }
+
+        /// <summary>
+        /// Mapira naziv artikla na glavnu vrstu voća (fallback za stari kod — preferuj MapKlasifikacijaToFruitType)
+        /// </summary>
+        public static string MapToFruitType(string artikalNaziv)
+        {
+            var nazivLower = artikalNaziv.ToLower();
+
+            if (nazivLower.Contains("malina")) return "Malina";
+            if (nazivLower.Contains("kupina")) return "Kupina";
+
+            // Šljiva - sve sorte
+            if (nazivLower.Contains("šljiva") || nazivLower.Contains("sljiva") ||
+                nazivLower.Contains("stenley") || nazivLower.Contains("stanley") ||
+                nazivLower.Contains("čačanka") || nazivLower.Contains("cacanka") ||
+                nazivLower.Contains("požegača") || nazivLower.Contains("pozegaca") ||
+                nazivLower.Contains("pžegača") || nazivLower.Contains("pzegaca"))
+            {
+                return "Šljiva";
+            }
+
+            if (nazivLower.Contains("višnja") || nazivLower.Contains("visnja")) return "Višnja";
+            if (nazivLower.Contains("borovnica")) return "Borovnica";
+            if (nazivLower.Contains("kajsija")) return "Kajsija";
+            if (nazivLower.Contains("jagoda")) return "Jagoda";
+
+            return "Ostalo";
+        }
+
+        /// <summary>
         /// Mock podatci za testiranje
         /// </summary>
         public static List<ChartDataPoint> GetMockData(string prefix = "Item", int count = 5)
@@ -137,5 +254,94 @@ namespace FruitSysWeb.Components.Charts
                    data.Any() &&
                    data.All(x => !string.IsNullOrEmpty(x.Label) && x.Value >= 0);
         }
+
+        /// <summary>
+        /// Konvertuje Dictionary<Datum, Dictionary<VrstaProizvoda, Vrednost>> u MultiSeriesDataPoint listu
+        /// </summary>
+        public static List<MultiSeriesDataPoint> ConvertToMultiSeries(Dictionary<string, Dictionary<string, decimal>> data)
+        {
+            if (data == null || !data.Any())
+                return new List<MultiSeriesDataPoint>();
+
+            var result = new List<MultiSeriesDataPoint>();
+
+            // Prvo sakupi sve unikalne serije (vrste proizvoda)
+            var sveVrste = data.Values
+                .SelectMany(d => d.Keys)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            // Za svaki datum
+            foreach (var datum in data.Keys.OrderBy(x => x))
+            {
+                var point = new MultiSeriesDataPoint
+                {
+                    Label = datum,
+                    Series = new Dictionary<string, decimal>()
+                };
+
+                // Za svaku vrstu proizvoda, dodaj vrednost (ili 0 ako ne postoji)
+                foreach (var vrsta in sveVrste)
+                {
+                    point.Series[vrsta] = data[datum].ContainsKey(vrsta) ? data[datum][vrsta] : 0;
+                }
+
+                result.Add(point);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Konvertuje Dictionary<Datum, Dictionary<VrstaProizvoda, Vrednost>> u ChartSeriesData listu
+        /// </summary>
+        public static List<ChartSeriesData> ConvertToChartSeriesData(Dictionary<string, Dictionary<string, decimal>> data)
+        {
+            if (data == null || !data.Any())
+                return new List<ChartSeriesData>();
+
+            // Prvo sakupi sve unikalne datume i sortiraj ih
+            var sviDatumi = data.Keys.OrderBy(x => x).ToList();
+
+            // Zatim sakupi sve unikalne serije (vrste proizvoda)
+            var sveVrste = data.Values
+                .SelectMany(d => d.Keys)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            // Kreiraj jednu ChartSeriesData za svaku vrstu proizvoda
+            var result = new List<ChartSeriesData>();
+
+            foreach (var vrsta in sveVrste)
+            {
+                var series = new ChartSeriesData
+                {
+                    Name = vrsta,
+                    Color = GetFruitColor(vrsta), // Boja serije na nivou series
+                    Data = sviDatumi.Select(datum => new ChartDataPoint
+                    {
+                        Label = datum,
+                        Value = data[datum].ContainsKey(vrsta) ? data[datum][vrsta] : 0
+                    }).ToList(),
+                    TotalKolicina = sviDatumi.Sum(datum => data[datum].ContainsKey(vrsta) ? data[datum][vrsta] : 0),
+                    TotalVrednost = sviDatumi.Sum(datum => data[datum].ContainsKey(vrsta) ? data[datum][vrsta] : 0)
+                };
+
+                result.Add(series);
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Predstavlja jednu tačku podataka za multi-series line chart
+    /// </summary>
+    public class MultiSeriesDataPoint
+    {
+        public string Label { get; set; } = "";
+        public Dictionary<string, decimal> Series { get; set; } = new();
     }
 }

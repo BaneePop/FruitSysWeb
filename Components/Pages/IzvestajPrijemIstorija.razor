@@ -1,0 +1,466 @@
+@page "/izvestaj-prijem-istorija"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components.Web
+@using ApexCharts
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Constants
+@inject ITypeMappingService TypeMapping
+@inject ILogger<IzvestajPrijemIstorija> Logger
+@inject IPaletniListService PaletniListService
+
+<PageTitle>Izveštaj Prijem - Istorija</PageTitle>
+
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .filter-section {
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .date-range-info {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-1">
+                <i class="bi bi-cart-check me-2"></i>
+                Prijem Statistika
+            </h2>
+            <p class="text-muted mb-0">
+                Istorijski pregled primljenih količina voća po vrsti i dobavljaču za izabrani vremenski period
+            </p>
+            <hr />
+        </div>
+    </div>
+
+    <!-- Filter sekcija -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-section">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-bold">Datum od</label>
+                        <input type="date" class="form-control" value="@OdDatumValue" @onchange="OnOdDatumChanged" />
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-bold">Datum do</label>
+                        <input type="date" class="form-control" value="@DoDatumValue" @onchange="OnDoDatumChanged" />
+                    </div>
+                    <div class="col-md-6 mb-3 d-flex align-items-end">
+                        <div class="w-100">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" @onclick="UcitajPodatke" disabled="@IsRefreshing">
+                                    <i class="bi bi-search"></i>
+                                    @(IsRefreshing ? "Učitavam..." : "Primeni filter")
+                                </button>
+                                <button class="btn btn-outline-secondary" @onclick="ResetujFiltere">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                    Resetuj
+                                </button>
+                                <button class="btn btn-success" @onclick="PrethodniDan">
+                                    <i class="bi bi-arrow-left"></i>
+                                    Prethodni dan
+                                </button>
+                                <button class="btn btn-success" @onclick="SledeciDan">
+                                    Sledeći dan
+                                    <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
+                            @if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue)
+                            {
+                                <div class="date-range-info mt-2">
+                                    <i class="bi bi-calendar-range"></i>
+                                    Prikaz podataka za period: 
+                                    <strong>@filterRequest.OdDatum.Value.ToString("dd.MM.yyyy") - @filterRequest.DoDatum.Value.ToString("dd.MM.yyyy")</strong>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(InitializationError))
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-danger">
+                    <h5><i class="bi bi-exclamation-triangle"></i> Greška pri učitavanju</h5>
+                    <p><strong>Poruka:</strong> @InitializationError</p>
+                    <p><strong>Vreme:</strong> @ErrorTimestamp</p>
+                    <pre class="mt-2">@ErrorDetails</pre>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Statistike -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-list-check"></i>
+                        Ukupno Prijema
+                    </h6>
+                    <h2 class="mb-0">@BrojAktivnihPrijema</h2>
+                    <small>U izabranom periodu</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-box-seam"></i>
+                        Ukupna Težina
+                    </h6>
+                    <h2 class="mb-0">@TypeMapping.FormatDecimal(UkupnaTezina)</h2>
+                    <small>kg</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-apple"></i>
+                        Vrste Voća
+                    </h6>
+                    <h2 class="mb-0">@BrojVrstaVoca</h2>
+                    <small>Različite vrste</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card bg-warning text-white">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-people"></i>
+                        Dobavljači
+                    </h6>
+                    <h2 class="mb-0">@BrojDobavljaca</h2>
+                    <small>U izabranom periodu</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (VoceChartData != null && VoceChartData.Any())
+    {
+        var voceList = VoceChartData.ToList();
+        int i = 0;
+        while (i < voceList.Count)
+        {
+            var currentChart = voceList[i];
+            var currentHasMany = currentChart.Value.Count >= 5;
+
+            // Ako trenutni chart ima 5+ dobavljača, sam u redu
+            if (currentHasMany)
+            {
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <ApexBarChart
+                            Title="@($"{currentChart.Key} - Prijem po Dobavljačima")"
+                            Icon="bi bi-bar-chart"
+                            SeriesName="Količina"
+                            Unit="kg"
+                            Data="@currentChart.Value"
+                            IsLoading="@IsRefreshing"
+                            HasError="false"
+                            ShowSummary="true"
+                            OnRefresh="@UcitajPodatke" />
+                    </div>
+                </div>
+                i++;
+            }
+            else
+            {
+                // Trenutni chart ima manje od 5 dobavljača
+                var nextIndex = i + 1;
+                var nextChart = nextIndex < voceList.Count ? (KeyValuePair<string, List<ChartDataPoint>>?)voceList[nextIndex] : null;
+                var nextHasMany = nextChart != null && nextChart.Value.Value.Count >= 5;
+
+                // Ako sledeći ne postoji ili ima 5+, trenutni sam u redu
+                if (nextChart == null || nextHasMany)
+                {
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <ApexBarChart
+                                Title="@($"{currentChart.Key} - Prijem po Dobavljačima")"
+                                Icon="bi bi-bar-chart"
+                                SeriesName="Količina"
+                                Unit="kg"
+                                Data="@currentChart.Value"
+                                IsLoading="@IsRefreshing"
+                                HasError="false"
+                                ShowSummary="true"
+                                OnRefresh="@UcitajPodatke" />
+                        </div>
+                    </div>
+                    i++;
+                }
+                else
+                {
+                    // Oba imaju manje od 5, stavi ih u isti red
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <ApexBarChart
+                                Title="@($"{currentChart.Key} - Prijem po Dobavljačima")"
+                                Icon="bi bi-bar-chart"
+                                SeriesName="Količina"
+                                Unit="kg"
+                                Data="@currentChart.Value"
+                                IsLoading="@IsRefreshing"
+                                HasError="false"
+                                ShowSummary="true"
+                                OnRefresh="@UcitajPodatke" />
+                        </div>
+                        <div class="col-md-6">
+                            <ApexBarChart
+                                Title="@($"{nextChart.Value.Key} - Prijem po Dobavljačima")"
+                                Icon="bi bi-bar-chart"
+                                SeriesName="Količina"
+                                Unit="kg"
+                                Data="@nextChart.Value.Value"
+                                IsLoading="@IsRefreshing"
+                                HasError="false"
+                                ShowSummary="true"
+                                OnRefresh="@UcitajPodatke" />
+                        </div>
+                    </div>
+                    i += 2;
+                }
+            }
+        }
+    }
+    else if (IsRefreshing)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center p-5">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Učitavam...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Učitavam podatke o prijemu...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (PodaciUcitani)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Nema podataka o prijemu za izabrani period.
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private FilterRequest filterRequest = new FilterRequest();
+    private Dictionary<string, List<ChartDataPoint>>? VoceChartData;
+    private int BrojAktivnihPrijema = 0;
+    private decimal UkupnaTezina = 0;
+    private int BrojVrstaVoca = 0;
+    private int BrojDobavljaca = 0;
+    private bool IsRefreshing = false;
+    private bool PodaciUcitani = false;
+    private string? InitializationError;
+    private DateTime? ErrorTimestamp;
+    private string? ErrorDetails;
+    private string OdDatumValue => filterRequest.OdDatum?.ToString("yyyy-MM-dd") ?? "";
+    private string DoDatumValue => filterRequest.DoDatum?.ToString("yyyy-MM-dd") ?? "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var dateRange = SystemConstants.GetDefaultDateRange();
+            filterRequest.OdDatum = dateRange.startDate;
+            filterRequest.DoDatum = dateRange.endDate;
+
+            await UcitajPodatke();
+        }
+        catch (Exception ex)
+        {
+            InitializationError = $"{ex.GetType().Name}: {ex.Message}";
+            ErrorTimestamp = DateTime.Now;
+            ErrorDetails = ex.StackTrace;
+            Logger.LogError(ex, "Greška pri inicijalizaciji IzvestajPrijemIstorija");
+        }
+    }
+
+    private void OnOdDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            filterRequest.OdDatum = date;
+        }
+    }
+
+    private void OnDoDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            filterRequest.DoDatum = date;
+        }
+    }
+
+    private async Task UcitajPodatke()
+    {
+        IsRefreshing = true;
+        try
+        {
+            Logger.LogInformation($"Učitavanje podataka za period: {filterRequest.OdDatum} - {filterRequest.DoDatum}");
+
+            var tasks = new[]
+            {
+                LoadStatisticsAsync(),
+                LoadChartDataAsync()
+            };
+
+            await Task.WhenAll(tasks);
+            PodaciUcitani = true;
+        }
+        catch (Exception ex)
+        {
+            InitializationError = $"{ex.GetType().Name}: {ex.Message}";
+            ErrorTimestamp = DateTime.Now;
+            ErrorDetails = ex.StackTrace;
+            Logger.LogError(ex, "Greška pri učitavanju podataka");
+        }
+        finally
+        {
+            IsRefreshing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadStatisticsAsync()
+    {
+        try
+        {
+            if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue)
+            {
+                // ✅ ISPRAVKA: Koristi filterRequest umesto 2 DateTime parametra
+                BrojAktivnihPrijema = await PaletniListService.UcitajBrojAktivnihPrijemaPeriod(filterRequest);
+                UkupnaTezina = await PaletniListService.UcitajUkupnuTezinuPeriod(filterRequest);
+
+                var statistike = await PaletniListService.UcitajStatistikuPrijemaPoVocuPeriod(filterRequest);
+                BrojVrstaVoca = statistike?.Count ?? 0;
+
+                if (statistike != null && statistike.Any())
+                {
+                    var sviDobavljaci = statistike
+                        .SelectMany(s => s.Dobavljaci)
+                        .Select(d => d.Dobavljac)
+                        .Distinct()
+                        .Count();
+                    BrojDobavljaca = sviDobavljaci;
+                }
+                else
+                {
+                    BrojDobavljaca = 0;
+                }
+            }
+            else
+            {
+                BrojAktivnihPrijema = 0;
+                UkupnaTezina = 0;
+                BrojVrstaVoca = 0;
+                BrojDobavljaca = 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju statistika");
+            throw;
+        }
+    }
+
+    private async Task LoadChartDataAsync()
+    {
+        try
+        {
+            // ✅ ISPRAVKA: Koristi filterRequest umesto 2 DateTime parametra
+            var prijemData = await PaletniListService.UcitajPrijemPoVocuIDobavljacimaPeriod(filterRequest);
+
+            if (prijemData != null && prijemData.Any())
+            {
+                VoceChartData = prijemData.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value.Select(d => new ChartDataPoint
+                    {
+                        Label = d.Dobavljac,
+                        Value = d.Kolicina,
+                        ExtraData = d.Artikli // Artikli za tooltip
+                    }).ToList()
+                );
+            }
+            else
+            {
+                VoceChartData = new Dictionary<string, List<ChartDataPoint>>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju chart podataka");
+            throw;
+        }
+    }
+
+    private async Task ResetujFiltere()
+    {
+        filterRequest.OdDatum = DateTime.Today.AddDays(-7);
+        filterRequest.DoDatum = DateTime.Today;
+        await UcitajPodatke();
+    }
+
+    private async Task PrethodniDan()
+    {
+        if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue)
+        {
+            filterRequest.OdDatum = filterRequest.OdDatum.Value.AddDays(-1);
+            filterRequest.DoDatum = filterRequest.DoDatum.Value.AddDays(-1);
+            await UcitajPodatke();
+        }
+    }
+
+    private async Task SledeciDan()
+    {
+        if (filterRequest.OdDatum.HasValue && filterRequest.DoDatum.HasValue && filterRequest.DoDatum.Value < DateTime.Today)
+        {
+            filterRequest.OdDatum = filterRequest.OdDatum.Value.AddDays(1);
+            filterRequest.DoDatum = filterRequest.DoDatum.Value.AddDays(1);
+            await UcitajPodatke();
+        }
+    }
+
+}

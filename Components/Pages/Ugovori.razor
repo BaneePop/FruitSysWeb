@@ -1,0 +1,596 @@
+@page "/ugovori"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Constants
+@inject IUgovorService UgovorService
+@inject IExportService ExportService
+@inject ITypeMappingService TypeMapping
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject IAuthService AuthService
+
+<style>
+    .ugovori-header {
+        background: linear-gradient(135deg, #1a2332, #232d3f);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid #374151;
+    }
+
+    .filter-card {
+        background: #1a2332;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        margin-bottom: 1.5rem;
+        border: 1px solid #374151;
+    }
+
+    .data-table {
+        background: #1a2332;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        overflow: hidden;
+        border: 1px solid #374151;
+    }
+
+    .table thead th {
+        background-color: #232d3f;
+        color: #e5e7eb;
+        font-weight: 600;
+        border: none;
+        padding: 1rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .table tbody tr {
+        background-color: #1a2332;
+        color: #e5e7eb;
+        border-bottom: 1px solid #374151;
+    }
+
+    .table tbody tr:hover {
+        background-color: #232d3f;
+        transform: translateY(-1px);
+        transition: all 0.2s ease;
+    }
+
+    .table tfoot tr {
+        background-color: #232d3f;
+        color: #e5e7eb;
+        border-top: 2px solid #374151;
+    }
+
+    .badge-status {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.7rem;
+    }
+
+    .stats-row {
+        background: #1a2332;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        border: 1px solid #374151;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #e5e7eb;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #9ca3af;
+        margin-top: 0.2rem;
+        font-weight: 500;
+    }
+
+    .export-buttons {
+        gap: 0.5rem;
+    }
+
+    .progress-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .progress-mini {
+        width: 60px;
+        height: 18px;
+        border-radius: 9px;
+        overflow: hidden;
+    }
+
+    .text-currency {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+    }
+
+    .card-header {
+        background-color: #232d3f !important;
+        color: #e5e7eb;
+        border-bottom: 1px solid #374151;
+    }
+
+    .text-muted {
+        color: #9ca3af !important;
+    }
+
+    .text-primary {
+        color: #3e6b1f !important;
+    }
+</style>
+
+<!-- Header -->
+<div class="ugovori-header text-white py-4 mb-4">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-1">
+                    <i class="bi bi-file-earmark-text me-2"></i>Ugovori
+                </h1>
+                <p class="mb-0 opacity-75">Pregled aktivnih ugovora sa kupcima — realizovane i preostale količine po ugovoru</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-light text-dark fs-6">
+                    <i class="bi bi-journal-text me-1"></i>@(ugovori?.Count ?? 0) ugovora
+                </span>
+                <span class="badge bg-warning text-dark ms-2 fs-6">
+                    @TypeMapping.FormatCurrency(ugovori?.Sum(x => x.VrednostPreostaloEur) ?? 0)
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Statistics -->
+    <div class="stats-row">
+        <div class="row">
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-item">
+                    <div class="stat-value">@(ugovori?.Count ?? 0)</div>
+                    <div class="stat-label">
+                    <i class="bi bi-journal-text me-1"></i>Aktivni ugovori
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-item">
+                <div class="stat-value">@TypeMapping.FormatCurrency(ugovori?.Sum(x => x.UkupnaVrednostEur) ?? 0)</div>
+                <div class="stat-label">
+                    <i class="bi bi-currency-euro me-1"></i>Ukupna vrednost
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-item">
+                <div class="stat-value">@TypeMapping.FormatCurrency(ugovori?.Sum(x => x.VrednostPreostaloEur) ?? 0)</div>
+                <div class="stat-label">
+                    <i class="bi bi-clock-history me-1"></i>Preostalo za isporuku
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-item">
+                <div class="stat-value">@(ugovori?.Count(x => x.Isporuceno == 0) ?? 0)</div>
+                <div class="stat-label">
+                    <i class="bi bi-clock me-1"></i>Bez isporuke
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-outline-primary btn-sm" @onclick="RefreshData">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Osveži podatke
+                </button>
+                <button class="btn btn-outline-info btn-sm" @onclick="() => NavigateToLager()">
+                    <i class="bi bi-arrow-left me-1"></i>Povratak na lager
+                </button>
+                <div class="ms-auto d-flex export-buttons">
+                    <button class="btn btn-success btn-sm" @onclick="ExportToExcel" disabled="@(filteredUgovori?.Count == 0)">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-danger btn-sm" @onclick="ExportToPdf" disabled="@(filteredUgovori?.Count == 0)">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filteri -->
+    <div class="filter-card mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label text-white-50">
+                        <i class="bi bi-building me-1"></i>Komitent
+                    </label>
+                    <select class="form-select" @onchange="OnKomitentFilterChanged">
+                        <option value="">Svi komitenti</option>
+                        @foreach (var komitent in dostupniKomitenti)
+                        {
+                            <option value="@komitent">@komitent</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label text-white-50">
+                        <i class="bi bi-box me-1"></i>Artikal
+                    </label>
+                    <select class="form-select" @onchange="OnArtikalFilterChanged">
+                        <option value="">Svi artikli</option>
+                        @foreach (var artikal in dostupniArtikli)
+                        {
+                            <option value="@artikal">@artikal</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-outline-secondary w-100" @onclick="OcistiFiltere">
+                        <i class="bi bi-x-circle me-1"></i>Očisti filtere
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="data-table">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0">
+            <i class="bi bi-list-check me-2"></i>Aktivni ugovori za isporuku
+            @if (filteredUgovori != null)
+            {
+                <span class="text-muted">(@filteredUgovori.Count @if(ugovori != null && filteredUgovori.Count < ugovori.Count) { <text>od @ugovori.Count</text> })</span>
+            }
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        @if (filteredUgovori == null)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Učitavanje...</span>
+                </div>
+                <p class="text-muted mt-2">Učitavanje podataka o ugovorima...</p>
+            </div>
+        }
+        else if (!filteredUgovori.Any())
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">Nema aktivnih ugovora</h5>
+                <p class="text-muted">Trenutno nema aktivnih ugovora za prikaz.</p>
+                <button class="btn btn-primary mt-2" @onclick="RefreshData">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Pokušaj ponovo
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Broj Ugovora</th>
+                            <th>Komitent</th>
+                            <th>Artikal</th>
+                            <th class="text-end">Ugovorena Količina</th>
+                            <th class="text-end">Cena (EUR)</th>
+                            <th class="text-end">Isporučeno</th>
+                            <th class="text-end">Preostalo</th>
+                            <th class="text-center">Status isporuke</th>
+                            <th>Datum Ugovora</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in filteredUgovori)
+                        {
+                            var progressBarClass = GetProgressBarClass(item.ProcenatIsporuke);
+                            var statusBadgeClass = GetStatusBadgeClass(item.ProcenatIsporuke);
+
+                            <tr>
+                                <td>
+                                    <strong class="text-primary">@item.BrojUgovora</strong>
+                                    @if (item.ProcenatIsporuke == 0)
+                                    {
+                                        <i class="bi bi-clock text-warning ms-1" title="Još nema isporuke"></i>
+                                    }
+                                </td>
+                                <td>
+                                    <strong>@item.Komitent</strong>
+                                </td>
+                                <td>
+                                    <span class="text-muted">@item.Artikal</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold">@TypeMapping.FormatDecimal(item.UgovorenaKolicina)</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-currency text-success">@TypeMapping.FormatDecimal(item.JedinicnaCenaEur)</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-muted">@TypeMapping.FormatDecimal(item.Isporuceno)</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge @(item.PreostalaKolicina > 0 ? "bg-warning" : "bg-success")">
+                                        @TypeMapping.FormatDecimal(item.PreostalaKolicina)
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="progress-container">
+                                        <div class="progress progress-mini">
+                                            <div class="progress-bar @progressBarClass" 
+                                                 style="width: @(item.ProcenatIsporuke)%"></div>
+                                        </div>
+                                        <small class="fw-bold @statusBadgeClass">@(item.ProcenatIsporuke)%</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        @item.DatumUgovora.ToString("dd.MM.yyyy")
+                                    </small>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <th colspan="3" class="text-end">UKUPNO:</th>
+                            <th class="text-end text-info">@TypeMapping.FormatDecimal(filteredUgovori.Sum(x => x.UgovorenaKolicina))</th>
+                            <th class="text-end text-success">@TypeMapping.FormatCurrency(filteredUgovori.Sum(x => x.UkupnaVrednostEur))</th>
+                            <th class="text-end text-muted">@TypeMapping.FormatDecimal(filteredUgovori.Sum(x => x.Isporuceno))</th>
+                            <th class="text-end text-warning">@TypeMapping.FormatDecimal(filteredUgovori.Sum(x => x.PreostalaKolicina))</th>
+                            <th class="text-center">
+                                @{
+                                    var ukupnoProcenat = filteredUgovori.Sum(x => x.UgovorenaKolicina) > 0 ?
+                                        Math.Round((filteredUgovori.Sum(x => x.Isporuceno) / filteredUgovori.Sum(x => x.UgovorenaKolicina)) * 100, 1) : 0;
+                                }
+                                <strong class="@GetStatusBadgeClass(ukupnoProcenat)">@(ukupnoProcenat)%</strong>
+                            </th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+</div>
+
+@code {
+    private List<UgovorModel>? ugovori;
+    private List<UgovorModel>? filteredUgovori;
+
+    // Filter varijable
+    private string selectedKomitent = "";
+    private string selectedArtikal = "";
+    private List<string> dostupniKomitenti = new();
+    private List<string> dostupniArtikli = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await AuthService.GetCurrentUser();
+        if (user == null || !user.ImaPristupStranici("/ugovori"))
+        {
+            NavigationManager.NavigateTo("/unauthorized");
+            return;
+        }
+
+        await UcitajUgovore();
+    }
+
+    private async Task UcitajUgovore()
+    {
+        try
+        {
+            Console.WriteLine("Učitavam podatke o ugovorima...");
+            ugovori = await UgovorService.UcitajAktivneUgovore();
+            Console.WriteLine($"Učitano {ugovori?.Count ?? 0} ugovora");
+
+            // Popuni liste dostupnih komitenata i artikala (samo oni koji su u ugovorima)
+            if (ugovori != null && ugovori.Any())
+            {
+                dostupniKomitenti = ugovori
+                    .Select(u => u.Komitent)
+                    .Distinct()
+                    .OrderBy(k => k)
+                    .ToList();
+
+                dostupniArtikli = ugovori
+                    .Select(u => u.Artikal)
+                    .Distinct()
+                    .OrderBy(a => a)
+                    .ToList();
+            }
+
+            // Inicijalno filtrirani ugovori = svi ugovori
+            PrimeniFiltere();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju ugovora: {ex.Message}");
+            ugovori = new List<UgovorModel>();
+            filteredUgovori = new List<UgovorModel>();
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        ugovori = null;
+        filteredUgovori = null;
+        StateHasChanged();
+        await UcitajUgovore();
+    }
+
+    private void OnKomitentFilterChanged(ChangeEventArgs e)
+    {
+        selectedKomitent = e.Value?.ToString() ?? "";
+        PrimeniFiltere();
+    }
+
+    private void OnArtikalFilterChanged(ChangeEventArgs e)
+    {
+        selectedArtikal = e.Value?.ToString() ?? "";
+        PrimeniFiltere();
+    }
+
+    private void OcistiFiltere()
+    {
+        selectedKomitent = "";
+        selectedArtikal = "";
+        PrimeniFiltere();
+        StateHasChanged();
+    }
+
+    private void PrimeniFiltere()
+    {
+        if (ugovori == null)
+        {
+            filteredUgovori = null;
+            return;
+        }
+
+        var query = ugovori.AsEnumerable();
+
+        // Filtriraj po komitentu ako je izabran
+        if (!string.IsNullOrEmpty(selectedKomitent))
+        {
+            query = query.Where(u => u.Komitent == selectedKomitent);
+        }
+
+        // Filtriraj po artiklu ako je izabran
+        if (!string.IsNullOrEmpty(selectedArtikal))
+        {
+            query = query.Where(u => u.Artikal == selectedArtikal);
+        }
+
+        filteredUgovori = query.ToList();
+    }
+
+    private void NavigateToLager()
+    {
+        NavigationManager.NavigateTo("/lager");
+    }
+
+    private string GetStatusBadgeClass(decimal procenat) => procenat switch
+    {
+        >= 90 => "text-success",
+        >= 70 => "text-info", 
+        >= 50 => "text-warning",
+        _ => "text-danger"
+    };
+
+    private string GetProgressBarClass(decimal procenat) => procenat switch
+    {
+        >= 90 => "bg-success",
+        >= 70 => "bg-info",
+        >= 50 => "bg-warning", 
+        _ => "bg-danger"
+    };
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            if (filteredUgovori != null && filteredUgovori.Any())
+            {
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "BrojUgovora", "Broj Ugovora" },
+                    { "Komitent", "Komitent" },
+                    { "Artikal", "Artikal" },
+                    { "UgovorenaKolicina", "Ugovorena Količina" },
+                    { "JedinicnaCenaEur", "Cena (EUR)" },
+                    { "Isporuceno", "Isporučeno" },
+                    { "PreostalaKolicina", "Preostalo" },
+                    { "DatumUgovora", "Datum Ugovora" }
+                };
+
+                // Izračunaj totale - UKUPNO u EUR
+                var totals = new Dictionary<string, object>
+                {
+                    { "Artikal", "UKUPNO:" },
+                    { "UgovorenaKolicina", filteredUgovori.Sum(x => x.UgovorenaKolicina) },
+                    { "JedinicnaCenaEur", $"{filteredUgovori.Sum(x => x.UkupnaVrednostEur):N2} EUR" }, // EUR umesto DIN
+                    { "Isporuceno", filteredUgovori.Sum(x => x.Isporuceno) },
+                    { "PreostalaKolicina", filteredUgovori.Sum(x => x.PreostalaKolicina) }
+                };
+
+                var excelData = ExportService.ExportToExcelWithColumns(filteredUgovori, columns, totals);
+                var fileName = TypeMapping.GenerateExportFileName("aktivni_ugovori", SystemConstants.Export.EXCEL_EXTENSION);
+                await DownloadFile(excelData, fileName, SystemConstants.Export.EXCEL_MIME_TYPE);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u Excel: {ex.Message}");
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        try
+        {
+            if (filteredUgovori != null && filteredUgovori.Any())
+            {
+                // Definiši samo kolone koje se prikazuju u tabeli
+                var columns = new Dictionary<string, string>
+                {
+                    { "BrojUgovora", "Broj Ugovora" },
+                    { "Komitent", "Komitent" },
+                    { "Artikal", "Artikal" },
+                    { "UgovorenaKolicina", "Ugovorena Količina" },
+                    { "JedinicnaCenaEur", "Cena (EUR)" },
+                    { "Isporuceno", "Isporučeno" },
+                    { "PreostalaKolicina", "Preostalo" },
+                    { "DatumUgovora", "Datum Ugovora" }
+                };
+
+                // Izračunaj totale - UKUPNO u EUR
+                var totals = new Dictionary<string, object>
+                {
+                    { "Artikal", "UKUPNO:" },
+                    { "UgovorenaKolicina", filteredUgovori.Sum(x => x.UgovorenaKolicina) },
+                    { "JedinicnaCenaEur", $"{filteredUgovori.Sum(x => x.UkupnaVrednostEur):N2} EUR" }, // EUR umesto DIN
+                    { "Isporuceno", filteredUgovori.Sum(x => x.Isporuceno) },
+                    { "PreostalaKolicina", filteredUgovori.Sum(x => x.PreostalaKolicina) }
+                };
+
+                var pdfData = ExportService.ExportToPdfWithColumns(filteredUgovori, columns, totals);
+                var fileName = TypeMapping.GenerateExportFileName("aktivni_ugovori", SystemConstants.Export.PDF_EXTENSION);
+                await DownloadFile(pdfData, fileName, SystemConstants.Export.PDF_MIME_TYPE);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu u PDF: {ex.Message}");
+        }
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string mimeType)
+    {
+        await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(data), fileName, mimeType);
+    }
+}

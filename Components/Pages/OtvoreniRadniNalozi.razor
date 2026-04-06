@@ -1,0 +1,256 @@
+@page "/otvoreni-radni-nalozi"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+
+@inject IKontrolaService KontrolaService
+@inject NavigationManager NavigationManager
+@inject ILogger<OtvoreniRadniNalozi> Logger
+
+<PageTitle>Pregled Otvorenih RN</PageTitle>
+
+<div class="container-fluid">
+
+    <!-- HEADER -->
+    <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0">
+                    <i class="bi bi-clipboard-pulse me-2"></i>Pregled Otvorenih RN
+                </h4>
+                <small class="text-muted">Lista aktivnih radnih naloga u toku sa stanjem u lageru</small>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="Osvezi" disabled="@ucitava">
+                <i class="bi bi-arrow-clockwise me-1"></i>Osveži
+            </button>
+        </div>
+    </div>
+
+    <!-- TABELA -->
+    @if (ucitava)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2 text-muted">Učitavanje podataka...</div>
+        </div>
+    }
+    else if (nalozi.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>Nema otvorenih radnih naloga.
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ul me-2"></i>Otvoreni radni nalozi
+                    <span class="badge bg-secondary ms-2">@nalozi.Count</span>
+                </h5>
+                <small class="text-muted">Kliknite na red za detalje i akcije</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width:30px;"></th>
+                                <th>Radni nalog</th>
+                                <th>Komitent</th>
+                                <th>Artikal</th>
+                                <th>Datum Početka</th>
+                                <th>Broj dana</th>
+                                <th class="text-end">Kol. naloga</th>
+                                <th class="text-end">Kol. u lageru</th>
+                                <th class="text-end">Fali do završetka</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var nalog in nalozi)
+                            {
+                                var jeOtvoren = otvoreniNalozi.Contains(nalog.ID);
+                                var procenat = nalog.Kolicina > 0 ? Math.Round((nalog.KolicinaULageru / nalog.Kolicina) * 100, 1) : 0;
+                                <tr style="cursor:pointer; background-color:@(jeOtvoren ? "#e8f0fe" : ""); border-bottom: 1px solid #dee2e6;" @onclick="() => ToggleNalog(nalog.ID)">
+                                    <td class="text-center">
+                                        <i class="bi @(jeOtvoren ? "bi-chevron-down text-primary" : "bi-chevron-right text-muted")"></i>
+                                    </td>
+                                    <td><span class="badge bg-warning text-dark">@nalog.Sifra</span></td>
+                                    <td>@nalog.Komitent</td>
+                                    <td>@nalog.Artikal</td>
+                                    <td>@nalog.DatumPocetkaFormatted</td>
+                                    <td><span class="badge bg-secondary">@nalog.BrojDana dana</span></td>
+                                    <td class="text-end"><strong>@nalog.KolicinaFormatted</strong></td>
+                                    <td class="text-end"><span class="text-info fw-bold">@nalog.KolicinaULageruFormatted</span></td>
+                                    <td class="text-end">
+                                        @if (nalog.FaliDoZavrsetka > 0)
+                                        {
+                                            <span class="text-danger fw-bold">@nalog.FaliDoZavrsetkaFormatted</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-success fw-bold">Kompletno</span>
+                                        }
+                                    </td>
+                                </tr>
+                                @if (jeOtvoren)
+                                {
+                                    <tr style="background-color:#f8f9fa;">
+                                        <td colspan="9" class="px-4 py-3" style="border-bottom: 2px solid #ffc107;">
+                                            <div class="row g-3 align-items-start">
+                                                <!-- Detalji -->
+                                                <div class="col-md-5">
+                                                    <div class="row g-2">
+                                                        <div class="col-6 col-md-4">
+                                                            <small class="text-muted d-block">LOT</small>
+                                                            @if (!string.IsNullOrEmpty(nalog.LotNaloga))
+                                                            {
+                                                                <span class="badge bg-info text-dark">@nalog.LotNaloga</span>
+                                                            }
+                                                            else { <span class="text-muted">-</span> }
+                                                        </div>
+                                                        <div class="col-6 col-md-4">
+                                                            <small class="text-muted d-block">Pakovanje</small>
+                                                            <span>@(string.IsNullOrEmpty(nalog.Pakovanje) ? "-" : nalog.Pakovanje)</span>
+                                                        </div>
+                                                        <div class="col-6 col-md-4">
+                                                            <small class="text-muted d-block">Br. pakovanja</small>
+                                                            <strong>@nalog.BrojPakovanja</strong>
+                                                        </div>
+                                                        <div class="col-6 col-md-4">
+                                                            <small class="text-muted d-block">Br. evidencija</small>
+                                                            <span class="badge bg-secondary">@nalog.BrojEvidencija</span>
+                                                        </div>
+                                                        <div class="col-12 col-md-8 mt-1">
+                                                            <small class="text-muted d-block mb-1">Napredak</small>
+                                                            <div class="progress" style="height:18px;">
+                                                                <div class="progress-bar @(procenat >= 100 ? "bg-success" : procenat >= 60 ? "bg-info" : "bg-warning")"
+                                                                     style="width:@(Math.Min(100, procenat))%">
+                                                                    @procenat%
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- Dugmad 2x2 -->
+                                                <div class="col-md-7">
+                                                    <div class="row g-2">
+                                                        <div class="col-6">
+                                                            <button class="btn btn-primary w-100"
+                                                                    @onclick:stopPropagation="true"
+                                                                    @onclick="() => OtvoriSledljivost(nalog)">
+                                                                <i class="bi bi-diagram-3 me-1"></i>Sledljivost RN
+                                                            </button>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <button class="btn btn-warning w-100"
+                                                                    @onclick:stopPropagation="true"
+                                                                    @onclick="() => OtvoriKontrole(nalog)">
+                                                                <i class="bi bi-clipboard2-check me-1"></i>Kontrole RN
+                                                            </button>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <button class="btn btn-success w-100"
+                                                                    @onclick:stopPropagation="true"
+                                                                    @onclick="() => OtvoriUtrosakSirovine(nalog)">
+                                                                <i class="bi bi-box-arrow-in-down me-1"></i>Utrošena Sirovina
+                                                            </button>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <button class="btn btn-info w-100"
+                                                                    @onclick:stopPropagation="true"
+                                                                    @onclick="() => OtvoriUtrosakRadneSnage(nalog)">
+                                                                <i class="bi bi-people me-1"></i>Utrošak Radne Snage RN
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="6" class="text-end">UKUPNO:</th>
+                                <th class="text-end"><strong>@nalozi.Sum(x => x.Kolicina).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS"))</strong></th>
+                                <th class="text-end text-info"><strong>@nalozi.Sum(x => x.KolicinaULageru).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS"))</strong></th>
+                                <th class="text-end text-danger"><strong>@nalozi.Sum(x => x.FaliDoZavrsetka).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS"))</strong></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+@code {
+    private bool ucitava = false;
+    private List<OtvoreniRadniNalogModel> nalozi = new();
+    private HashSet<long> otvoreniNalozi = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UcitajPodatke();
+    }
+
+    private async Task UcitajPodatke()
+    {
+        ucitava = true;
+        otvoreniNalozi.Clear();
+        try
+        {
+            nalozi = await KontrolaService.UcitajOtvoreneNaloge();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju otvorenih naloga");
+            nalozi = new();
+        }
+        finally
+        {
+            ucitava = false;
+        }
+    }
+
+    private async Task Osvezi()
+    {
+        await UcitajPodatke();
+    }
+
+    private void ToggleNalog(long id)
+    {
+        if (!otvoreniNalozi.Add(id))
+            otvoreniNalozi.Remove(id);
+    }
+
+    private void OtvoriSledljivost(OtvoreniRadniNalogModel nalog)
+    {
+        NavigationManager.NavigateTo($"/sledljivost?radniNalog={Uri.EscapeDataString(nalog.Sifra)}");
+    }
+
+    private void OtvoriKontrole(OtvoreniRadniNalogModel nalog)
+    {
+        var od = FormatDateParam(nalog.DatumPocetka ?? DateTime.Today.AddMonths(-1));
+        var do_ = FormatDateParam(DateTime.Today);
+        NavigationManager.NavigateTo($"/kontrola-radni-nalog?radniNalog={Uri.EscapeDataString(nalog.Sifra)}&odDatum={od}&doDatum={do_}");
+    }
+
+    private void OtvoriUtrosakSirovine(OtvoreniRadniNalogModel nalog)
+    {
+        var od = FormatDateParam(nalog.DatumPocetka ?? DateTime.Today.AddMonths(-1));
+        var do_ = FormatDateParam(DateTime.Today);
+        NavigationManager.NavigateTo($"/proizvodnja?radniNalog={Uri.EscapeDataString(nalog.Sifra)}&odDatum={od}&doDatum={do_}");
+    }
+
+    private void OtvoriUtrosakRadneSnage(OtvoreniRadniNalogModel nalog)
+    {
+        var od = FormatDateParam(nalog.DatumPocetka ?? DateTime.Today.AddMonths(-1));
+        var do_ = FormatDateParam(DateTime.Today);
+        NavigationManager.NavigateTo($"/radni-nalozi?radniNalog={Uri.EscapeDataString(nalog.Sifra)}&odDatum={od}&doDatum={do_}");
+    }
+
+    private static string FormatDateParam(DateTime d) => d.ToString("yyyy-MM-dd");
+}

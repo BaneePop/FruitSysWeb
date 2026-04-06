@@ -1,0 +1,566 @@
+@page "/preradahome"
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Components.Shared.Layout
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Models
+
+@inject NavigationManager NavigationManager
+@inject IProizvodnjaService ProizvodnjaService
+@inject IMagacinLagerService LagerService
+@inject IPreradaService PreradaService
+@inject ITypeMappingService TypeMapping
+@inject ILogger<PreradaHome> Logger
+@inject IBrziPregledService BrziPregledService
+
+@* All styles moved to wwwroot/css/shared-components.css *@
+
+<!-- Header -->
+<div class="prerada-header text-white py-3 mb-4">
+    <div class="container-fluid">
+        <h1 class="h2 mb-1">
+            <i class="bi bi-gear-wide-connected me-2"></i>Prerada Početna
+        </h1>
+        <p class="mb-0 opacity-75">Pregled procesa u proizvodnji — utrošak sirovina i radne snage po radnim nalozima i smenskim izveštajima</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Main Sections -->
+    <div class="section-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="section-card" @onclick="@(() => NavigateTo("/proizvodnja"))">
+            <div class="section-icon">
+                <i class="bi bi-gear-fill"></i>
+            </div>
+            <h4 class="section-title">Utrošak Sirovina RN</h4>
+        </div>
+
+        <div class="section-card" @onclick="@(() => NavigateTo("/lager-proizvodnje"))">
+            <div class="section-icon">
+                <i class="bi bi-boxes"></i>
+            </div>
+            <h4 class="section-title">Lager Proizvodnje</h4>
+        </div>
+
+        <div class="section-card" @onclick="@(() => NavigateTo("/radni-nalozi"))">
+            <div class="section-icon">
+                <i class="bi bi-clipboard-data"></i>
+            </div>
+            <h4 class="section-title">Utrošak Radne Snage RN</h4>
+        </div>
+
+        <div class="section-card" @onclick="@(() => NavigateTo("/smenski-izvestaji"))">
+            <div class="section-icon">
+                <i class="bi bi-calendar3"></i>
+            </div>
+            <h4 class="section-title">Utrošak Radne Snage SI</h4>
+        </div>
+    </div>
+
+    <!-- Najavljeni Utovari Section -->
+    <div class="row mt-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-truck me-2 text-primary"></i>Najavljeni Utovari (narednih 20 dana)
+                    </h5>
+                    @if (najavljeniUtovari != null)
+                    {
+                        <span class="badge bg-primary">@najavljeniUtovari.Count stavki</span>
+                    }
+                </div>
+                <div class="card-body p-0">
+                    @if (najavljeniUtovari == null)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Učitavanje...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Učitavanje najavljenih utovara...</p>
+                        </div>
+                    }
+                    else if (!najavljeniUtovari.Any())
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-check display-3 text-muted"></i>
+                            <h5 class="mt-3 text-muted">Nema najavljenih utovara u narednih 20 dana</h5>
+                            <p class="text-muted">Svi radni nalozi su isporučeni ili trenutno nema aktivnih naloga</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Radni nalog</th>
+                                        <th>Datum utovara</th>
+                                        <th>Dana</th>
+                                        <th>Kupac</th>
+                                        <th>Artikal</th>
+                                        <th>Potrebna količina</th>
+                                        <th>Lot</th>
+                                        <th>Ugovor prodaja</th>
+                                        <th>Prioritet</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var utovar in najavljeniUtovari)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge @utovar.StatusBadgeClass">@utovar.RadniNalog</span>
+                                            </td>
+                                            <td>
+                                                <strong>@TypeMapping.FormatDate(utovar.DatumIsporuke ?? DateTime.MinValue)</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@utovar.DanaDoUtovara dana</span>
+                                            </td>
+                                            <td>@utovar.Kupac</td>
+                                            <td>
+                                                <span class="text-primary">@utovar.Artikal</span>
+                                            </td>
+                                            <td>
+                                                <strong>@TypeMapping.FormatWeight(utovar.Kolicina)</strong>
+                                            </td>
+                                            <td>
+                                                <code class="text-info">@(utovar.LotNaloga ?? "N/A")</code>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@(utovar.BrojUgovora ?? "N/A")</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge @utovar.UrgentnostBadgeClass">@utovar.StatusUrgentnosti</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Analitika -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>
+                    <i class="bi bi-graph-up me-2"></i>Dashboard Analitika
+                </h5>
+                <button class="btn btn-sm btn-primary" @onclick="RefreshCharts" disabled="@IsRefreshing">
+                    <i class="bi bi-arrow-clockwise @(IsRefreshing ? "spin" : "")"></i>
+                    @(IsRefreshing ? "Osvežavam..." : "Osveži")
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Troškovi Charts - Radna Snaga -->
+    <div class="row mb-4">
+        <!-- Chart: Broj Radnika i Troškovi po Danima -->
+        <div class="col-lg-12 mb-3">
+            <ApexMultiLineChart
+                Title="Broj Radnika i Troškovi po Danima (Poslednjih 30 Dana)"
+                Icon="bi bi-graph-up"
+                Series1Name="Broj Radnika"
+                Series2Name="Troškovi"
+                Unit1="radnika"
+                Unit2="RSD"
+                Series1Data="@BrojRadnikaPoDanima"
+                Series2Data="@TrosakPoRadnomDanu"
+                IsLoading="@(IsLoadingRadniciPoDanima || IsLoadingTrosakPoDanu)"
+                HasError="@(HasErrorRadniciPoDanima || HasErrorTrosakPoDanu)"
+                ShowSummary="true"
+                OnRefresh="@RefreshKombinovanePodatke" />
+        </div>
+    </div>
+
+    <!-- Struktura Lagera - 4 Charts -->
+    <div class="row mb-4">
+        <div class="col-lg-3 mb-3">
+            <ApexBarChart 
+                Title="Struktura Sirovina"
+                Icon="bi bi-basket"
+                SeriesName="Količina"
+                Unit="kg"
+                Data="@SirovineData"
+                IsLoading="@IsLoadingSirovine"
+                HasError="@HasErrorSirovine"
+                ShowSummary="false"
+                OnRefresh="@RefreshSirovine" />
+        </div>
+        <div class="col-lg-3 mb-3">
+            <ApexBarChart 
+                Title="Struktura Gotovih Proizvoda"
+                Icon="bi bi-box2"
+                SeriesName="Količina"
+                Unit="kg"
+                Data="@GotoviProizvodiData"
+                IsLoading="@IsLoadingGotovi"
+                HasError="@HasErrorGotovi"
+                ShowSummary="false"
+                OnRefresh="@RefreshGotovi" />
+        </div>
+        <div class="col-lg-3 mb-3">
+            <ApexBarChart 
+                Title="Struktura Kutija/Džakova"
+                Icon="bi bi-box"
+                SeriesName="Količina"
+                Unit="kom"
+                Data="@KutijeData"
+                IsLoading="@IsLoadingKutije"
+                HasError="@HasErrorKutije"
+                ShowSummary="false"
+                OnRefresh="@RefreshKutije" />
+        </div>
+        <div class="col-lg-3 mb-3">
+            <ApexBarChart 
+                Title="Struktura Kesa"
+                Icon="bi bi-bag"
+                SeriesName="Količina"
+                Unit="kom"
+                Data="@KesaData"
+                IsLoading="@IsLoadingKesa"
+                HasError="@HasErrorKesa"
+                ShowSummary="false"
+                OnRefresh="@RefreshKesa" />
+        </div>
+    </div>
+
+    <!-- Navigation Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Početna</a></li>
+            <li class="breadcrumb-item active">Prerada</li>
+        </ol>
+    </nav>
+</div>
+
+@code {
+    // Chart Data
+    private List<ChartDataPoint>? SirovineData;
+    private List<ChartDataPoint>? GotoviProizvodiData;
+    private List<ChartDataPoint>? KutijeData;
+    private List<ChartDataPoint>? KesaData;
+    private List<ChartDataPoint>? BrojRadnikaPoDanima;
+    private List<ChartDataPoint>? TrosakPoRadnomDanu;
+
+    // Najavljeni Utovari
+    private List<NajavljeniUtovarModel>? najavljeniUtovari;
+
+    // Loading States
+    private bool IsLoadingSirovine = false;
+    private bool IsLoadingGotovi = false;
+    private bool IsLoadingKutije = false;
+    private bool IsLoadingKesa = false;
+    private bool IsLoadingRadniciPoDanima = false;
+    private bool IsLoadingTrosakPoDanu = false;
+    private bool IsRefreshing = false;
+
+    // Error States
+    private bool HasErrorSirovine = false;
+    private bool HasErrorGotovi = false;
+    private bool HasErrorKutije = false;
+    private bool HasErrorKesa = false;
+    private bool HasErrorRadniciPoDanima = false;
+    private bool HasErrorTrosakPoDanu = false;
+
+    private FilterRequest proizvodnjFilter => new FilterRequest
+    {
+        OdDatum = new DateTime(2025, 6, 1),
+        DoDatum = DateTime.Now
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            UcitajNajavljeneUtovare(),
+            RefreshCharts()
+        );
+    }
+
+    private async Task UcitajNajavljeneUtovare()
+    {
+        try
+        {
+            najavljeniUtovari = await PreradaService.UcitajNajavljeneUtovare();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju najavljenih utovara");
+            najavljeniUtovari = new List<NajavljeniUtovarModel>();
+        }
+    }
+
+    private async Task RefreshCharts()
+    {
+        IsRefreshing = true;
+        StateHasChanged();
+
+        try
+        {
+            await Task.WhenAll(
+                RefreshRadniciPoDanima(),
+                RefreshTrosakPoRadnomDanu(),
+                RefreshSirovine(),
+                RefreshGotovi(),
+                RefreshKutije(),
+                RefreshKesa()
+            );
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing charts");
+        }
+        finally
+        {
+            IsRefreshing = false;
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task RefreshSirovine()
+    {
+        if (IsLoadingSirovine) return;
+        
+        IsLoadingSirovine = true;
+        HasErrorSirovine = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(250);
+            var data = await LagerService.UcitajStrukturuSirovina();
+            SirovineData = ChartDataHelper.FromDictionary(data, 5);
+            SirovineData = ChartDataHelper.TruncateLabels(SirovineData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading sirovine data");
+            HasErrorSirovine = true;
+            SirovineData = ChartDataHelper.GetMockData("Sirovina", 5);
+        }
+        finally
+        {
+            IsLoadingSirovine = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshGotovi()
+    {
+        if (IsLoadingGotovi) return;
+        
+        IsLoadingGotovi = true;
+        HasErrorGotovi = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(300);
+            var data = await LagerService.UcitajStrukturuGotovihProizvoda();
+            GotoviProizvodiData = ChartDataHelper.FromDictionary(data, 5);
+            GotoviProizvodiData = ChartDataHelper.TruncateLabels(GotoviProizvodiData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading gotovi proizvodi data");
+            HasErrorGotovi = true;
+            GotoviProizvodiData = ChartDataHelper.GetMockData("Proizvod", 5);
+        }
+        finally
+        {
+            IsLoadingGotovi = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshKutije()
+    {
+        if (IsLoadingKutije) return;
+        
+        IsLoadingKutije = true;
+        HasErrorKutije = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(350);
+            var data = await LagerService.UcitajStrukturuKutija();
+            KutijeData = ChartDataHelper.FromDictionary(data, 5);
+            KutijeData = ChartDataHelper.TruncateLabels(KutijeData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading kutije data");
+            HasErrorKutije = true;
+            KutijeData = ChartDataHelper.GetMockData("Kutija", 5);
+        }
+        finally
+        {
+            IsLoadingKutije = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshKesa()
+    {
+        if (IsLoadingKesa) return;
+        
+        IsLoadingKesa = true;
+        HasErrorKesa = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(400);
+            var data = await LagerService.UcitajStrukturuKesa();
+            KesaData = ChartDataHelper.FromDictionary(data, 5);
+            KesaData = ChartDataHelper.TruncateLabels(KesaData, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading kesa data");
+            HasErrorKesa = true;
+            KesaData = ChartDataHelper.GetMockData("Kesa", 5);
+        }
+        finally
+        {
+            IsLoadingKesa = false;
+            StateHasChanged();
+        }
+    }
+
+    // Combined refresh for both Radnici and Trosak charts
+    private async Task RefreshKombinovanePodatke()
+    {
+        await Task.WhenAll(
+            RefreshRadniciPoDanima(),
+            RefreshTrosakPoRadnomDanu()
+        );
+    }
+
+    // Chart: Broj radnika po danima (30 dana)
+    private async Task RefreshRadniciPoDanima()
+    {
+        if (IsLoadingRadniciPoDanima) return;
+
+        IsLoadingRadniciPoDanima = true;
+        HasErrorRadniciPoDanima = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(150);
+
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-30),
+                DoDatum = DateTime.Now
+            };
+
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            // Grupisanje po datumu i računanje broja radnika (radni sati / 8), zaokruženo
+            var radniciPoDanimaList = smene
+                .Where(s => s.Datum.HasValue)
+                .GroupBy(s => s.Datum!.Value.Date)
+                .Select(g => new
+                {
+                    Datum = g.Key,
+                    BrojRadnika = Math.Round(g.Sum(s => s.BrojRadnihSati) / 8m, 0, MidpointRounding.AwayFromZero)
+                })
+                .OrderBy(x => x.Datum)
+                .ToList();
+
+            var radniciPoDanimaDict = radniciPoDanimaList
+                .ToDictionary(
+                    x => x.Datum.ToString("dd.MM"),
+                    x => (decimal)x.BrojRadnika
+                );
+
+            BrojRadnikaPoDanima = ChartDataHelper.FromDictionary(radniciPoDanimaDict, 30);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading radnici po danima");
+            HasErrorRadniciPoDanima = true;
+            BrojRadnikaPoDanima = ChartDataHelper.GetMockData("Datum", 30);
+        }
+        finally
+        {
+            IsLoadingRadniciPoDanima = false;
+            StateHasChanged();
+        }
+    }
+
+    // Chart: Trošak po radnom danu (30 dana)
+    private async Task RefreshTrosakPoRadnomDanu()
+    {
+        if (IsLoadingTrosakPoDanu) return;
+
+        IsLoadingTrosakPoDanu = true;
+        HasErrorTrosakPoDanu = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(160);
+
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-30),
+                DoDatum = DateTime.Now
+            };
+
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            // Grupisanje po datumu i sumiranje troškova
+            var trosakPoDanuList = smene
+                .Where(s => s.Datum.HasValue)
+                .GroupBy(s => s.Datum!.Value.Date)
+                .Select(g => new
+                {
+                    Datum = g.Key,
+                    Trosak = g.Sum(s => s.TrosakPoRadnomNalogu)
+                })
+                .OrderBy(x => x.Datum)
+                .ToList();
+
+            var trosakPoDanuDict = trosakPoDanuList
+                .ToDictionary(
+                    x => x.Datum.ToString("dd.MM"),
+                    x => (decimal)x.Trosak
+                );
+
+            TrosakPoRadnomDanu = ChartDataHelper.FromDictionary(trosakPoDanuDict, 30);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading trosak po danu");
+            HasErrorTrosakPoDanu = true;
+            TrosakPoRadnomDanu = ChartDataHelper.GetMockData("Datum", 30);
+        }
+        finally
+        {
+            IsLoadingTrosakPoDanu = false;
+            StateHasChanged();
+        }
+    }
+
+    private void NavigateTo(string url)
+    {
+        NavigationManager.NavigateTo(url);
+    }
+}

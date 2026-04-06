@@ -3,16 +3,7 @@
 @using ApexCharts
 @using FruitSysWeb.Components.Charts
 
-<style>
-    .spin {
-        animation: spin 1s linear infinite;
-    }
-
-    @@keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-</style>
+@* All styles moved to wwwroot/css/shared-components.css *@
 
 
 <div class="card">
@@ -69,13 +60,13 @@
                                  XValue="@(e => e.Label)"
                                  YValue="@(e => e.Value)" />
             </ApexChart>
-            
-            @if (ShowSummary && "Data".Any())
+
+            @if (ShowSummary && Data != null && Data.Any())
             {
                 <div class="mt-3 pt-3 border-top">
                     <small class="text-muted">
-                        <strong>Ukupno:</strong> Data.Sum(x => x.Value).ToString("N2") @Unit
-                        | <strong>Prosek:</strong> Data.Average(x => x.Value).ToString("N2") @Unit
+                        <strong>Ukupno:</strong> @Data.Sum(x => x.Value).ToString("N2") @Unit
+                        | <strong>Prosek:</strong> @Data.Average(x => x.Value).ToString("N2") @Unit
                     </small>
                 </div>
             }
@@ -96,7 +87,20 @@
     [Parameter] public bool HasError { get; set; } = false;
     [Parameter] public List<ChartDataPoint>? Data { get; set; }
     [Parameter] public EventCallback OnRefresh { get; set; }
-    [Parameter] public string Color { get; set; } = "#28a745"; // Default green
+
+    // Monochrome theme colors (shades of blue-gray)
+    private static readonly List<string> MonochromeColors = new()
+    {
+        "#546E7A", "#607D8B", "#78909C", "#90A4AE", "#B0BEC5",
+        "#CFD8DC", "#546E7A", "#607D8B", "#78909C", "#90A4AE"
+    };
+
+    // Helper method to truncate labels to 14 characters
+    private string TruncateLabel(string label)
+    {
+        if (string.IsNullOrEmpty(label)) return label;
+        return label.Length > 14 ? label.Substring(0, 14) + "..." : label;
+    }
 
     private ApexChartOptions<ChartDataPoint> ChartOptions => new()
     {
@@ -104,15 +108,20 @@
         {
             Type = ChartType.Bar,
             Height = Height,
-            Toolbar = new Toolbar { Show = false }
+            Toolbar = new Toolbar { Show = false },
+            Selection = new Selection { Enabled = false },
+            Zoom = new Zoom { Enabled = false }
         },
-        Colors = new List<string> { Color },
+        Colors = Data?.Any(d => !string.IsNullOrEmpty(d.Color)) == true
+            ? Data.Select(d => d.Color ?? "#546E7A").ToList()
+            : MonochromeColors,
         PlotOptions = new PlotOptions
         {
             Bar = new PlotOptionsBar
             {
                 Horizontal = false,
-                ColumnWidth = "60%"
+                ColumnWidth = "60%",
+                Distributed = true  // Different color per bar
             }
         },
         DataLabels = new DataLabels
@@ -127,7 +136,24 @@
         },
         Xaxis = new XAxis
         {
-            Categories = Data?.Select(x => x.Label).ToList() ?? new List<string>()
+            Categories = Data?.Select(x => x.Label).ToList() ?? new List<string>(),
+            Labels = new XAxisLabels
+            {
+                Rotate = -45,
+                RotateAlways = false,
+                MaxHeight = 100,
+                Trim = true,
+                Style = new AxisLabelStyle
+                {
+                    FontSize = "10px"
+                },
+                // Truncate labels to 14 chars
+                Formatter = @"function(value) {
+                    if (!value) return '';
+                    var label = String(value);
+                    return label.length > 14 ? label.substring(0, 14) + '...' : label;
+                }"
+            }
         },
         Yaxis = new List<YAxis>
         {
@@ -138,14 +164,32 @@
         },
         Fill = new Fill
         {
-            Opacity = 0.8
+            Opacity = 0.85
         },
         Tooltip = new Tooltip
         {
             Y = new TooltipY
             {
                 Formatter = $"function(val) {{ return val.toLocaleString() + ' {Unit}' }}"
+            },
+            X = new TooltipX
+            {
+                // Show article names from ExtraData if available, otherwise show supplier name
+                Formatter = "function(val, opts) { " +
+                    "var extraData = " + System.Text.Json.JsonSerializer.Serialize(Data?.Select(x => x.ExtraData?.ToString() ?? "").ToList() ?? new List<string>()) + "; " +
+                    "var fullLabels = " + System.Text.Json.JsonSerializer.Serialize(Data?.Select(x => x.Label).ToList() ?? new List<string>()) + "; " +
+                    "var articles = extraData[opts.dataPointIndex]; " +
+                    "if (articles && articles.length > 0) { " +
+                    "  return '<div><strong>' + fullLabels[opts.dataPointIndex] + '</strong><br/>' + articles + '</div>'; " +
+                    "} else { " +
+                    "  return fullLabels[opts.dataPointIndex] || val; " +
+                    "} " +
+                "}"
             }
+        },
+        Legend = new Legend
+        {
+            Show = false  // Hide legend since we're using distributed colors
         }
     };
 

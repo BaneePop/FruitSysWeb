@@ -1,0 +1,489 @@
+@page "/kartica-komitenta"
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Constants
+@inject IKarticaKomitentaService KarticaService
+@inject IKomitentService KomitentService
+@inject IExportService ExportService
+@inject IJSRuntime JSRuntime
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ILogger<KarticaKomitenta> Logger
+
+<!-- Naslov -->
+<div class="bg-dark text-white py-3 mb-4">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-person-lines-fill me-2"></i>Kartice Komitenata
+                </h1>
+                <small class="text-muted">Hronološki pregled svih transakcija (nabavka, prodaja, uplate, isplate) sa tekućim saldom po komitentima</small>
+            </div>
+            <div class="col-md-6 text-end">
+                @if (suma != null)
+                {
+                    <span class="badge bg-light text-dark fs-6 me-2">
+                        <i class="bi bi-receipt me-1"></i>@suma.BrojTransakcija transakcija
+                    </span>
+                    <span class="badge @(suma.ZavrsniSaldo > 0 ? "bg-success" : suma.ZavrsniSaldo < 0 ? "bg-danger" : "bg-secondary") fs-6">
+                        Saldo: @suma.ZavrsniSaldoFormatted RSD
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-funnel me-2"></i>Filteri pretrage
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+
+                        <!-- Komitent (obavezno) -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-person-badge me-1"></i>Komitent <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" @bind="izabraniKomitentId">
+                                <option value="0">-- Izaberite komitenta --</option>
+                                @foreach (var k in komitentiLista)
+                                {
+                                    <option value="@k.Id">@k.Naziv</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Od datuma -->
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-bold">Od datuma:</label>
+                            <input type="date" class="form-control" value="@OdDatumValue"
+                                   @onchange="OnOdDatumChanged" />
+                        </div>
+
+                        <!-- Do datuma -->
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-bold">Do datuma:</label>
+                            <input type="date" class="form-control" value="@DoDatumValue"
+                                   @onchange="OnDoDatumChanged" />
+                        </div>
+
+                        <!-- Tip dokumenta -->
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-bold">Tip dokumenta:</label>
+                            <select class="form-select" @bind="filterDokumentTip">
+                                <option value="">Svi tipovi</option>
+                                <option value="KL-">Nabavka (KL-)</option>
+                                <option value="FK-">Faktura (FK-)</option>
+                                <option value="IS-">Isplata (IS-)</option>
+                                <option value="UP-">Uplata (UP-)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <button class="btn btn-primary me-2" @onclick="UcitajPodatke"
+                                    disabled="@(izabraniKomitentId == 0)">
+                                <i class="bi bi-search me-1"></i>Prikaži karticu
+                            </button>
+                            <button class="btn btn-secondary me-2" @onclick="ResetujFiltere">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Resetuj
+                            </button>
+                            @if (stavke != null && stavke.Any())
+                            {
+                                <button class="btn btn-success me-2" @onclick="ExportExcel">
+                                    <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                                </button>
+                                <button class="btn btn-danger" @onclick="ExportPdf">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suma kartica (prikazuje se kad ima podataka) -->
+    @if (suma != null)
+    {
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-success">
+                    <div class="card-body text-center py-3">
+                        <div class="text-muted small mb-1">
+                            <i class="bi bi-arrow-up-circle me-1"></i>Ukupno potražuje
+                        </div>
+                        <div class="fw-bold fs-5 text-success">@suma.UkupnoPotrazujeFormatted RSD</div>
+                        <small class="text-muted">Komitent duguje nama</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-danger">
+                    <div class="card-body text-center py-3">
+                        <div class="text-muted small mb-1">
+                            <i class="bi bi-arrow-down-circle me-1"></i>Ukupno duguje
+                        </div>
+                        <div class="fw-bold fs-5 text-danger">@suma.UkupnoDugujeFormatted RSD</div>
+                        <small class="text-muted">Mi dugujemo komitentu</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card @(suma.ZavrsniSaldo > 0 ? "border-success" : suma.ZavrsniSaldo < 0 ? "border-danger" : "border-secondary")">
+                    <div class="card-body text-center py-3">
+                        <div class="text-muted small mb-1">
+                            <i class="bi bi-balance-scale me-1"></i>Završni saldo
+                        </div>
+                        <div class="fw-bold fs-5 @suma.SaldoTextClass">@suma.ZavrsniSaldoFormatted RSD</div>
+                        <small class="text-muted">@suma.SaldoLabel</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-info">
+                    <div class="card-body text-center py-3">
+                        <div class="text-muted small mb-1">
+                            <i class="bi bi-list-ol me-1"></i>Broj transakcija
+                        </div>
+                        <div class="fw-bold fs-5 text-info">@suma.BrojTransakcija</div>
+                        <small class="text-muted">
+                            Period: @OdDatumValue – @DoDatumValue
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Tabela transakcija -->
+    @if (ucitavanje)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3 text-muted">Učitavanje kartice komitenta...</p>
+        </div>
+    }
+    else if (stavke != null && stavke.Any())
+    {
+        <div class="card">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-table me-2"></i>
+                    @suma?.Komitent — transakcije (@stavke.Count)
+                </h5>
+                <small class="text-muted">Sortirano po datumu (rastuće)</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th style="width:4%" class="text-center">#</th>
+                                <th style="width:10%">
+                                    <i class="bi bi-calendar3 me-1"></i>Datum
+                                </th>
+                                <th style="width:14%">
+                                    <i class="bi bi-file-text me-1"></i>Dokument
+                                </th>
+                                <th style="width:10%" class="text-center">Tip</th>
+                                <th style="width:20%">
+                                    <i class="bi bi-box me-1"></i>Artikal
+                                </th>
+                                <th style="width:8%" class="text-end">Količina</th>
+                                <th style="width:11%" class="text-end">
+                                    <i class="bi bi-arrow-up-circle text-success me-1"></i>Potražuje
+                                </th>
+                                <th style="width:11%" class="text-end">
+                                    <i class="bi bi-arrow-down-circle text-danger me-1"></i>Duguje
+                                </th>
+                                <th style="width:12%" class="text-end">
+                                    <i class="bi bi-balance-scale me-1"></i>Tekući saldo
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int rb = 1;
+                            }
+                            @foreach (var s in PrikazaneStavke)
+                            {
+                                <tr>
+                                    <td class="text-center text-muted small">@rb</td>
+                                    <td class="small">@s.DatumFormatted</td>
+                                    <td>
+                                        <span class="fw-bold small">@s.Dokument</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary small">
+                                            <i class="bi @s.TipIkonica me-1"></i>@s.TipDokumenta
+                                        </span>
+                                    </td>
+                                    <td class="small text-truncate" style="max-width:160px" title="@s.Artikal">
+                                        @(s.Artikal ?? "-")
+                                    </td>
+                                    <td class="text-end small text-muted">@s.KolicinaFormatted</td>
+                                    <td class="text-end small">
+                                        @if (s.Potrazuje != 0)
+                                        {
+                                            <span class="text-success fw-bold">@s.PotrazujeFormatted</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-end small">
+                                        @if (s.Duguje != 0)
+                                        {
+                                            <span class="text-danger fw-bold">@s.DugujeFormatted</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="@s.SaldoTextClass small">@s.TekuciSaldoFormatted</span>
+                                    </td>
+                                </tr>
+                                rb++;
+                            }
+                        </tbody>
+                        <tfoot class="table-light border-top border-dark border-2">
+                            <tr class="fw-bold">
+                                <td colspan="6" class="text-end">
+                                    <i class="bi bi-calculator me-1"></i>UKUPNO:
+                                </td>
+                                <td class="text-end text-success">
+                                    @(PrikazaneStavke.Sum(x => x.Potrazuje).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS")))
+                                </td>
+                                <td class="text-end text-danger">
+                                    @(PrikazaneStavke.Sum(x => x.Duguje).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS")))
+                                </td>
+                                <td class="text-end">
+                                    @if (suma != null)
+                                    {
+                                        <span class="badge @(suma.ZavrsniSaldo > 0 ? "bg-success" : suma.ZavrsniSaldo < 0 ? "bg-danger" : "bg-secondary")">
+                                            @suma.ZavrsniSaldoFormatted
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer text-muted small">
+                <i class="bi bi-info-circle me-1"></i>
+                Potražuje = komitent duguje nama &nbsp;|&nbsp;
+                Duguje = mi dugujemo komitentu &nbsp;|&nbsp;
+                Tekući saldo = kumulativno Potražuje − Duguje
+            </div>
+        </div>
+    }
+    else if (prikaziPrazan)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            Nema transakcija za izabrani period i komitenta.
+        </div>
+    }
+    else if (izabraniKomitentId == 0)
+    {
+        <div class="alert alert-secondary">
+            <i class="bi bi-person-badge me-2"></i>
+            Izaberite komitenta i kliknite <strong>Prikaži karticu</strong>.
+        </div>
+    }
+
+</div>
+
+@code {
+    private List<KarticaStavkaModel> stavke = new();
+    private KarticaKomitentaSumaModel? suma;
+    private List<Komitent> komitentiLista = new();
+    private FilterRequest filterRequest = new();
+
+    private long izabraniKomitentId = 0;
+    private string filterDokumentTip = "";
+    private bool ucitavanje = false;
+    private bool prikaziPrazan = false;
+
+    private string OdDatumValue = new DateTime(2022, 1, 1).ToString("yyyy-MM-dd");
+    private string DoDatumValue = DateTime.Now.ToString("yyyy-MM-dd");
+
+    // Filtriranje po tipu dokumenta na klijentskoj strani
+    private List<KarticaStavkaModel> PrikazaneStavke => string.IsNullOrEmpty(filterDokumentTip)
+        ? stavke
+        : stavke.Where(s => s.Dokument.StartsWith(filterDokumentTip)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Provjera pristupa — samo Full Access
+        var user = await AuthService.GetCurrentUser();
+        if (user == null || !user.ImaPristupStranici("/kartica-komitenta"))
+        {
+            NavigationManager.NavigateTo("/unauthorized");
+            return;
+        }
+
+        filterRequest.OdDatum = new DateTime(2022, 1, 1);
+        filterRequest.DoDatum = DateTime.Now.Date;
+
+        try
+        {
+            komitentiLista = await KomitentService.UcitajSveKomitente();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju komitenata");
+        }
+    }
+
+    private async Task UcitajPodatke()
+    {
+        if (izabraniKomitentId == 0) return;
+
+        ucitavanje = true;
+        prikaziPrazan = false;
+        stavke = new();
+        suma = null;
+
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = filterRequest.OdDatum,
+                DoDatum = filterRequest.DoDatum
+            };
+
+            var rezultatTask = KarticaService.UcitajKarticu(izabraniKomitentId, filter);
+            var sumaTask = KarticaService.UcitajSumu(izabraniKomitentId, filter);
+
+            await Task.WhenAll(rezultatTask, sumaTask);
+
+            stavke = rezultatTask.Result;
+            suma = sumaTask.Result;
+            prikaziPrazan = !stavke.Any();
+
+            Logger.LogInformation("Kartica komitenta {Id}: {Count} transakcija", izabraniKomitentId, stavke.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju kartice komitenta");
+        }
+        finally
+        {
+            ucitavanje = false;
+        }
+    }
+
+    private void ResetujFiltere()
+    {
+        izabraniKomitentId = 0;
+        filterDokumentTip = "";
+        filterRequest.OdDatum = new DateTime(2022, 1, 1);
+        filterRequest.DoDatum = DateTime.Now.Date;
+        OdDatumValue = filterRequest.OdDatum.Value.ToString("yyyy-MM-dd");
+        DoDatumValue = filterRequest.DoDatum.Value.ToString("yyyy-MM-dd");
+        stavke = new();
+        suma = null;
+        prikaziPrazan = false;
+    }
+
+    private void OnOdDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+        {
+            filterRequest.OdDatum = d;
+            OdDatumValue = d.ToString("yyyy-MM-dd");
+        }
+    }
+
+    private void OnDoDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+        {
+            filterRequest.DoDatum = d;
+            DoDatumValue = d.ToString("yyyy-MM-dd");
+        }
+    }
+
+    private async Task ExportExcel()
+    {
+        try
+        {
+            var columns = new Dictionary<string, string>
+            {
+                { "DatumFormatted",       "Datum" },
+                { "Dokument",             "Dokument" },
+                { "TipDokumenta",         "Tip" },
+                { "Artikal",              "Artikal" },
+                { "KolicinaFormatted",    "Količina" },
+                { "PotrazujeFormatted",   "Potražuje (RSD)" },
+                { "DugujeFormatted",      "Duguje (RSD)" },
+                { "TekuciSaldoFormatted", "Tekući saldo (RSD)" }
+            };
+
+            var naziv = komitentiLista.FirstOrDefault(k => k.Id == izabraniKomitentId)?.Naziv ?? "komitent";
+            var bytes = ExportService.ExportToExcelWithColumns(PrikazaneStavke, columns, null);
+            var fileName = SystemConstants.GenerateExportFileName($"kartica_{naziv}", "xlsx");
+            await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(bytes), fileName, SystemConstants.ExcelMimeType);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri Excel exportu kartice");
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu: {ex.Message}");
+        }
+    }
+
+    private async Task ExportPdf()
+    {
+        try
+        {
+            var columns = new Dictionary<string, string>
+            {
+                { "DatumFormatted",       "Datum" },
+                { "Dokument",             "Dokument" },
+                { "TipDokumenta",         "Tip" },
+                { "Artikal",              "Artikal" },
+                { "PotrazujeFormatted",   "Potražuje" },
+                { "DugujeFormatted",      "Duguje" },
+                { "TekuciSaldoFormatted", "Saldo" }
+            };
+
+            var naziv = komitentiLista.FirstOrDefault(k => k.Id == izabraniKomitentId)?.Naziv ?? "komitent";
+            var totals = new Dictionary<string, object>
+            {
+                { "DatumFormatted", "UKUPNO:" },
+                { "PotrazujeFormatted", PrikazaneStavke.Sum(x => x.Potrazuje).ToString("N2") },
+                { "DugujeFormatted",   PrikazaneStavke.Sum(x => x.Duguje).ToString("N2") },
+                { "TekuciSaldoFormatted", suma?.ZavrsniSaldoFormatted ?? "" }
+            };
+
+            var bytes = ExportService.ExportToPdfWithColumns(PrikazaneStavke, columns, totals);
+            var fileName = SystemConstants.GenerateExportFileName($"kartica_{naziv}", "pdf");
+            await JSRuntime.InvokeVoidAsync("downloadFile", Convert.ToBase64String(bytes), fileName, SystemConstants.PdfMimeType);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri PDF exportu kartice");
+            await JSRuntime.InvokeVoidAsync("alert", $"Greška pri exportu: {ex.Message}");
+        }
+    }
+}

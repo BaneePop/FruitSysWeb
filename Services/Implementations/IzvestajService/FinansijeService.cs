@@ -1,26 +1,30 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Interfaces;
 using FruitSysWeb.Services.Models.Requests;
+using FruitSysWeb.Services.Core;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services.Implementations.IzvestajService
 {
-    public class FinansijeService : IFinansijeService
+    public class FinansijeService : BaseService, IFinansijeService
     {
         private readonly DatabaseService _databaseService;
+        private readonly ILogger<FinansijeService> _logger;
 
-        public FinansijeService(DatabaseService databaseService)
+        public FinansijeService(DatabaseService databaseService,
+            ILogger<FinansijeService> logger)
         {
             _databaseService = databaseService;
+            _logger = logger;
         }
 
         public async Task<List<FinansijeModel>> UcitajFinansijskiIzvestaj(FilterRequest filterRequest)
         {
             try
             {
-                var sql = new StringBuilder();
-                sql.Append(@"
-                    SELECT 
+                var sql = CreateSqlBuilder(@"
+                    SELECT
                         fm.ID,
                         fm.KomitentID,
                         fm.Komitent,
@@ -37,6 +41,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         fm.Artikal,
                         fm.ArtikalPrvaKlasifikacijaID,
                         fm.Kolicina,
+                        a.MagacinID as ArtikalMagacinId,
                         COALESCE(fm.Potrazuje, 0) as Potrazuje,
                         COALESCE(fm.Duguje, 0) as Duguje,
                         COALESCE(fm.Saldo, 0) as Saldo,
@@ -57,37 +62,19 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         0 as JedinicaMereID,
                         0 as OtkupniArtikal
                     FROM vPrometFinansijev9 fm
-                    WHERE 1=1
+                    LEFT JOIN Artikal a ON fm.ArtikalID = a.ID
+                    WHERE fm.DokumentStatus != 4
+                    AND fm.DokumentStatus != 2
+
                 ");
 
-                var parameters = new Dictionary<string, object>();
+                var parameters = CreateParameters();
 
-                // Datum filteri
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
-
-                // Komitent filter
-                if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
-                {
-                    sql.Append(" AND fm.KomitentID = @KomitentId");
-                    parameters.Add("@KomitentId", filterRequest.KomitentId.Value);
-                }
-
-                // Artikal filter
-                if (filterRequest.ArtikalId.HasValue && filterRequest.ArtikalId > 0)
-                {
-                    sql.Append(" AND fm.ArtikalID = @ArtikalId");
-                    parameters.Add("@ArtikalId", filterRequest.ArtikalId.Value);
-                }
+                // Apply common filters using BaseService helper method
+                ApplyCommonFilters(sql, parameters, filterRequest,
+                    dateColumnName: "fm.Datum",
+                    komitentColumnName: "fm.KomitentID",
+                    artikalColumnName: "fm.ArtikalID");
 
                 // POPRAVLJENO: Komitent tip filter - koristimo boolean kolone
                 if (!string.IsNullOrEmpty(filterRequest.KomitentTip))
@@ -115,8 +102,8 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     if (int.TryParse(filterRequest.Tip, out int TipInt))
                     {
                         // Ovde treba join sa Artikal tabelom da dobijemo tip
-                        sql.Append(" AND EXISTS (SELECT 1 FROM Artikal a WHERE a.ID = fm.ArtikalID AND a.Tip = @ArtikalTip)");
-                        parameters.Add("@ArtikalTip", TipInt);
+                        sql.Append(" AND a.MagacinID = @TipArtikla");
+                        parameters.Add("@TipArtikla", TipInt);
                     }
                 }
 
@@ -147,7 +134,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajFinansijskiIzvestaj: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajFinansijskiIzvestaj");
                 throw;
             }
         }
@@ -214,7 +201,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnoSaldo: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnoSaldo");
                 return 0;
             }
         }
@@ -230,11 +217,9 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         SUM(ABS(COALESCE(o.Kolicina, 0))) as UkupnaKolicina
                     FROM Otpremnica o
                     LEFT JOIN Komitent k ON o.KomitentID = k.ID
-                    LEFT JOIN Artikal a ON o.ArtikalID = a.ID
                     WHERE o.Aktivno = 1
                       AND k.Aktivno = 1
-                      AND a.Aktivno = 1
-                      AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
+                      AND o.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
                       AND o.DokumentStatus IN (2, 3)  -- OTVORENO ILI ZATVORENO
                 ");
 
@@ -261,7 +246,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 ");
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
-                
+
                 return rezultat.ToDictionary(
                     x => (string)x.Komitent ?? "Nepoznato",
                     x => (decimal)x.UkupnaKolicina
@@ -269,7 +254,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajTopKupce: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajTopKupce");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -285,28 +270,13 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         SUM(ABS(COALESCE(p.Kolicina, 0))) as UkupnaKolicina
                     FROM Prijemnica p
                     LEFT JOIN Komitent k ON p.KomitentID = k.ID
-                    LEFT JOIN Artikal a ON p.ArtikalID = a.ID
                     WHERE p.Aktivno = 1
                       AND k.Aktivno = 1
-                      AND a.Aktivno = 1
-                      AND a.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
+                      AND p.MagacinID != 7  -- ISKLJUČI KALO I RASTUR
                       AND p.DokumentStatus IN (2, 3)  -- OTVORENO ILI ZATVORENO
                 ");
 
                 var parameters = new Dictionary<string, object>();
-
-                // Datum filteri
-                if (filterRequest.OdDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(fm.Datum) >= @OdDatum");
-                    parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
-                }
-
-                if (filterRequest.DoDatum.HasValue)
-                {
-                    sql.Append(" AND DATE(fm.Datum) <= @DoDatum");
-                    parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
-                }
 
                 // Datum filteri za Prijemnicu
                 if (filterRequest.OdDatum.HasValue)
@@ -329,7 +299,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 ");
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql.ToString(), parameters);
-                
+
                 return rezultat.ToDictionary(
                     x => (string)x.Komitent ?? "Nepoznato",
                     x => (decimal)x.UkupnaKolicina
@@ -337,7 +307,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajTopDobavljace: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajTopDobavljace");
                 return new Dictionary<string, decimal>();
             }
         }
@@ -383,7 +353,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupanPromet: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupanPromet");
                 return 0;
             }
         }
@@ -418,7 +388,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnuZaradu: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnuZaradu");
                 return 0;
             }
         }
@@ -466,7 +436,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnuZaduzenju: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnuZaduzenju");
                 return 0;
             }
         }
@@ -501,7 +471,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajUkupnoPotrazenost: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajUkupnoPotrazenost");
                 return 0;
             }
         }
@@ -521,7 +491,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                 ";
 
                 var rezultat = await _databaseService.QueryAsync<dynamic>(sql);
-                
+
                 return rezultat.ToDictionary(
                     x => (string)x.Mesec ?? "Nepoznato",
                     x => (decimal)x.UkupnoSaldo
@@ -529,8 +499,412 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška u UcitajSaldoPoMesecima: {ex.Message}");
+                _logger.LogError(ex, "Greška u UcitajSaldoPoMesecima");
                 return new Dictionary<string, decimal>();
+            }
+        }
+
+        // ========================================
+        // NOVO: BRZI PREGLED - ROBA NA ZALIHAMA
+        // ========================================
+        public async Task<List<RobaNaZalihamaModel>> UcitajRobuNaZalihama(
+            List<long> artikalIds,
+            DateTime? odDatum = null,
+            DateTime? doDatum = null)
+        {
+            try
+            {
+                if (artikalIds == null || !artikalIds.Any())
+                {
+                    _logger.LogInformation("Lista artikala je prazna!");
+                    return new List<RobaNaZalihamaModel>();
+                }
+
+                var rezultat = new List<RobaNaZalihamaModel>();
+
+                // Build parameterized IN clause (@ArtikalID0, @ArtikalID1, @ArtikalID2, ...)
+                var artikalIdParams = new List<string>();
+                var sharedParameters = new Dictionary<string, object>();
+                for (int i = 0; i < artikalIds.Count; i++)
+                {
+                    var paramName = $"@ArtikalID{i}";
+                    artikalIdParams.Add(paramName);
+                    sharedParameters.Add(paramName, artikalIds[i]);
+                }
+                var artikalIdsInClause = string.Join(",", artikalIdParams);
+
+                // === STEP 1: NABAVKA (KL- dokumenti) ===
+                var sqlNabavka = $@"
+                    SELECT
+                        vp.ArtikalID,
+                        vp.Artikal,
+                        SUM(ABS(vp.Kolicina)) as NabavkaKg,
+                        SUM(ABS(vp.Potrazuje)) as NabavkaVrednost
+                    FROM vPrometFinansijev9 vp
+                    WHERE vp.ArtikalID IN ({artikalIdsInClause})
+                      AND vp.Dokument LIKE 'KL-%'
+                      AND vp.DokumentStatus != 4
+                      AND vp.Cena > 0
+                ";
+
+                var parametersNabavka = new Dictionary<string, object>(sharedParameters);
+                if (odDatum.HasValue)
+                {
+                    sqlNabavka += " AND DATE(vp.Datum) >= @OdDatum";
+                    parametersNabavka.Add("@OdDatum", odDatum.Value.Date);
+                }
+                if (doDatum.HasValue)
+                {
+                    sqlNabavka += " AND DATE(vp.Datum) <= @DoDatum";
+                    parametersNabavka.Add("@DoDatum", doDatum.Value.Date);
+                }
+                sqlNabavka += " GROUP BY vp.ArtikalID, vp.Artikal";
+
+                var nabavkaData = await _databaseService.QueryAsync<dynamic>(sqlNabavka, parametersNabavka);
+
+                // === STEP 2: PRODAJA (FK- dokumenti) ===
+                var sqlProdaja = $@"
+                    SELECT
+                        vp.ArtikalID,
+                        SUM(ABS(vp.Kolicina)) as ProdajaKg,
+                        SUM(ABS(vp.Duguje)) as ProdajaVrednost
+                    FROM vPrometFinansijev9 vp
+                    WHERE vp.ArtikalID IN ({artikalIdsInClause})
+                      AND vp.Dokument LIKE 'FK-%'
+                      AND vp.DokumentStatus != 4
+                      AND vp.Cena > 0
+                ";
+
+                var parametersProdaja = new Dictionary<string, object>(sharedParameters);
+                if (odDatum.HasValue)
+                {
+                    sqlProdaja += " AND DATE(vp.Datum) >= @OdDatum";
+                    parametersProdaja.Add("@OdDatum", odDatum.Value.Date);
+                }
+                if (doDatum.HasValue)
+                {
+                    sqlProdaja += " AND DATE(vp.Datum) <= @DoDatum";
+                    parametersProdaja.Add("@DoDatum", doDatum.Value.Date);
+                }
+                sqlProdaja += " GROUP BY vp.ArtikalID";
+
+                var prodajaData = await _databaseService.QueryAsync<dynamic>(sqlProdaja, parametersProdaja);
+
+                // === STEP 3: LAGER + CENE ===
+                var sqlLager = $@"
+                    SELECT
+                        ml.ArtikalID,
+                        SUM(ml.Kolicina) as LagerKg,
+                        COALESCE(kac.BrutoCena, 0) as BrutoCena
+                    FROM vwMagacinLager ml
+                    LEFT JOIN KalkulacijaArtikalCena kac ON ml.ArtikalID = kac.ArtikalID
+                    WHERE ml.ArtikalID IN ({artikalIdsInClause})
+                    GROUP BY ml.ArtikalID, kac.BrutoCena
+                ";
+
+                var lagerData = await _databaseService.QueryAsync<dynamic>(sqlLager, sharedParameters);
+
+                // === STEP 4: KOMBINOVANJE PODATAKA ===
+                foreach (var nabavka in nabavkaData)
+                {
+                    var model = new RobaNaZalihamaModel
+                    {
+                        ArtikalID = Convert.ToInt64(nabavka.ArtikalID),
+                        Artikal = (string)nabavka.Artikal ?? "Nepoznato",
+                        NabavkaKg = (decimal)nabavka.NabavkaKg,
+                        NabavkaVrednost = (decimal)nabavka.NabavkaVrednost
+                    };
+
+                    // Dodaj prodaju ako postoji
+                    var prodaja = prodajaData.FirstOrDefault(p => Convert.ToInt64(p.ArtikalID) == model.ArtikalID);
+                    if (prodaja != null)
+                    {
+                        model.ProdajaKg = (decimal)prodaja.ProdajaKg;
+                        model.ProdajaVrednost = (decimal)prodaja.ProdajaVrednost;
+                    }
+
+                    // Dodaj lager ako postoji
+                    var lager = lagerData.FirstOrDefault(l => Convert.ToInt64(l.ArtikalID) == model.ArtikalID);
+                    if (lager != null)
+                    {
+                        model.LagerKg = (decimal)lager.LagerKg;
+                        model.BrutoCena = (decimal)lager.BrutoCena;
+                        model.LagerVrednost = model.LagerKg * model.BrutoCena;
+                    }
+
+                    rezultat.Add(model);
+                }
+
+                _logger.LogInformation($"Učitano {rezultat.Count} artikala za brzi pregled");
+                return rezultat;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška u UcitajRobuNaZalihama");
+                _logger.LogInformation($"Stack trace: {ex.StackTrace}");
+                return new List<RobaNaZalihamaModel>();
+            }
+        }
+        public async Task<List<ZbirniFinansijeModel>> UcitajZbirnePodatkePoRadnomDanu(FilterRequest filterRequest)
+        {
+        try
+        {
+        var sql = new StringBuilder();
+        sql.Append(@"
+            SELECT
+                DATE(DATE_SUB(vp.Datum, INTERVAL 4 HOUR)) as Datum,
+                k.ID as KomitentID,
+                k.Naziv as Komitent,
+                a.MagacinID as Artikal,
+                COUNT(DISTINCT vp.DokumentID) as BrojDokumenata,
+                SUM(vp.Kolicina) as UkupnaKolicina,
+                SUM(vp.Potrazuje) as UkupnoPotrazuje,
+                SUM(vp.Duguje) as UkupnoDuguje
+            FROM vPrometFinansijev9 vp
+            LEFT JOIN Komitent k ON vp.KomitentID = k.ID
+            LEFT JOIN Artikal a ON vp.ArtikalID = a.ID
+            WHERE vp.DokumentStatus = 3
+        ");
+
+        var parameters = new Dictionary<string, object>();
+
+        // Prilagođeni datumi za radni dan 04:00-03:59
+        if (filterRequest.OdDatum.HasValue)
+        {
+            var adjustedOdDatum = filterRequest.OdDatum.Value.AddHours(4);
+            sql.Append(" AND vp.Datum >= @OdDatum");
+            parameters.Add("@OdDatum", adjustedOdDatum);
+        }
+
+        if (filterRequest.DoDatum.HasValue)
+        {
+            var adjustedDoDatum = filterRequest.DoDatum.Value.AddDays(1).AddHours(4);
+            sql.Append(" AND vp.Datum < @DoDatum");
+            parameters.Add("@DoDatum", adjustedDoDatum);
+        }
+
+        if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
+        {
+            sql.Append(" AND vp.KomitentID = @KomitentId");
+            parameters.Add("@KomitentId", filterRequest.KomitentId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterRequest.KomitentTip))
+        {
+            sql.Append(" AND k.Tip = @KomitentTip");
+            parameters.Add("@KomitentTip", filterRequest.KomitentTip);
+        }
+
+        if (filterRequest.ArtikalId.HasValue && filterRequest.ArtikalId > 0)
+        {
+            sql.Append(" AND vp.ArtikalID = @ArtikalId");
+            parameters.Add("@ArtikalId", filterRequest.ArtikalId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterRequest.Tip))
+        {
+            sql.Append(" AND a.MagacinID = @Tip");
+            parameters.Add("@Tip", filterRequest.Tip);
+        }
+
+        // Isključi FK- i UP- dokumente
+        sql.Append(" AND vp.DokumentID NOT LIKE 'FK-%'");
+        sql.Append(" AND vp.DokumentID NOT LIKE 'UP-%'");
+
+        sql.Append(@"
+            GROUP BY DATE(DATE_SUB(vp.Datum, INTERVAL 4 HOUR)), k.ID, k.Naziv, a.MagacinID
+            ORDER BY Datum DESC, k.Naziv, a.MagacinID
+        ");
+
+        var rezultat = await _databaseService.QueryAsync<ZbirniFinansijeModel>(sql.ToString(), parameters);
+        return rezultat.ToList();
+        }
+        catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška u UcitajZbirnePodatkePoRadnomDanu");
+                return new List<ZbirniFinansijeModel>();
+            }
+        }
+
+        // ========================================
+        // ✨ NOVO: PREGLED SALDA PO KOMITENTIMA
+        // ========================================
+
+        /// <summary>
+        /// Učitava saldo po komitentima za period od 01.01.2023 do danas
+        /// Prikazuje samo komitente gde je apsolutno stanje > minimumStanje (default 1000 RSD)
+        /// </summary>
+        public async Task<List<SaldoPoKomitentuModel>> UcitajSaldoPoKomitentima(
+            FilterRequest filterRequest,
+            decimal minimumStanje = 1000)
+        {
+            try
+            {
+                // Default datumi: 01.01.2023 - danas
+                var odDatum = filterRequest.OdDatum ?? new DateTime(2023, 1, 1);
+                var doDatum = filterRequest.DoDatum ?? DateTime.Now.Date;
+
+                _logger.LogInformation($"🔍 UcitajSaldoPoKomitentima: {odDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}, MinimumStanje: {minimumStanje}");
+
+                var sql = CreateSqlBuilder(@"
+                    SELECT
+                        k.ID as KomitentID,
+                        k.Naziv as Komitent,
+
+                        -- POTRAŽUJE (šta oni duguju nama)
+                        -- FK-, IS- imaju vrednost u koloni Potrazuje
+                        COALESCE(SUM(
+                            CASE
+                                WHEN fm.Datum >= @OdDatum
+                                    AND fm.Datum <= @DoDatum
+                                    AND fm.DokumentStatus != 2
+                                    AND fm.DokumentStatus != 4
+                                THEN fm.Potrazuje
+                                ELSE 0
+                            END
+                        ), 0) as Potrazuje,
+
+                        -- DUGUJE (šta mi dugujemo njima)
+                        -- KL-, UP- imaju vrednost u koloni Duguje
+                        COALESCE(SUM(
+                            CASE
+                                WHEN fm.Datum >= @OdDatum
+                                    AND fm.Datum <= @DoDatum
+                                    AND fm.DokumentStatus != 2
+                                    AND fm.DokumentStatus != 4
+                                THEN fm.Duguje
+                                ELSE 0
+                            END
+                        ), 0) as Duguje
+
+                    FROM Komitent k
+                    LEFT JOIN vPrometFinansijev9 fm ON k.ID = fm.KomitentID
+                    WHERE k.Aktivno = 1
+                ");
+
+                var parameters = CreateParameters();
+                parameters.Add("@OdDatum", odDatum);
+                parameters.Add("@DoDatum", doDatum);
+
+                // Komitent filter
+                if (filterRequest.KomitentId.HasValue && filterRequest.KomitentId > 0)
+                {
+                    sql.Append(" AND k.ID = @KomitentId");
+                    parameters.Add("@KomitentId", filterRequest.KomitentId.Value);
+                }
+
+                // Komitent tip filter
+                if (!string.IsNullOrEmpty(filterRequest.KomitentTip))
+                {
+                    switch (filterRequest.KomitentTip.ToLower())
+                    {
+                        case "kupac":
+                            sql.Append(" AND fm.Kupac = 1");
+                            break;
+                        case "dobavljac":
+                            sql.Append(" AND fm.Dobavljac = 1");
+                            break;
+                        case "proizvodjac":
+                            sql.Append(" AND fm.Proizvodjac = 1");
+                            break;
+                        case "otkupljivac":
+                            sql.Append(" AND fm.Otkupljivac = 1");
+                            break;
+                    }
+                }
+
+                sql.Append(@"
+                    GROUP BY k.ID, k.Naziv
+                    HAVING ABS(Potrazuje - Duguje) > @MinimumStanje
+                    ORDER BY (Potrazuje - Duguje) DESC
+                ");
+
+                parameters.Add("@MinimumStanje", minimumStanje);
+
+                var rezultat = await _databaseService.QueryAsync<SaldoPoKomitentuModel>(sql.ToString(), parameters);
+                var lista = rezultat?.ToList() ?? new List<SaldoPoKomitentuModel>();
+
+                _logger.LogInformation($"✅ Učitano {lista.Count} komitenata sa saldom > {minimumStanje} RSD");
+
+                return lista;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška u UcitajSaldoPoKomitentima");
+                return new List<SaldoPoKomitentuModel>();
+            }
+        }
+
+        public async Task<List<FinansijskoStanjeModel>> UcitajFinansijskoStanje(
+            FilterRequest filterRequest,
+            string tipKomitenta,
+            decimal minimumStanje = 10000)
+        {
+            try
+            {
+                var odDatum = filterRequest.OdDatum ?? new DateTime(2022, 1, 1);
+                var doDatum = filterRequest.DoDatum ?? DateTime.Now.Date;
+
+                // Kolona u Komitent tabeli prema tipu
+                var tipKolona = tipKomitenta.ToLower() switch
+                {
+                    "kupac"       => "k.JeKupac",
+                    "dobavljac"   => "k.JeDobavljac",
+                    "proizvodjac" => "k.JeProizvodjac",
+                    "otkupljivac" => "k.JeOtkupljivac",
+                    _ => "k.JeKupac"
+                };
+
+                var sql = CreateSqlBuilder($@"
+                    SELECT
+                        k.ID AS KomitentID,
+                        k.Naziv,
+                        COALESCE(SUM(
+                            CASE
+                                WHEN fm.Datum >= @OdDatum AND fm.Datum <= @DoDatum
+                                     AND fm.DokumentStatus != 4
+                                THEN COALESCE(fm.Potrazuje, 0)
+                                ELSE 0
+                            END
+                        ), 0) AS Potrazuje,
+                        COALESCE(SUM(
+                            CASE
+                                WHEN fm.Datum >= @OdDatum AND fm.Datum <= @DoDatum
+                                     AND fm.DokumentStatus != 4
+                                THEN COALESCE(fm.Duguje, 0)
+                                ELSE 0
+                            END
+                        ), 0) AS Duguje,
+                        MAX(
+                            CASE
+                                WHEN fm.DokumentStatus != 4
+                                THEN fm.Datum
+                                ELSE NULL
+                            END
+                        ) AS DatumZadnjePromene
+                    FROM Komitent k
+                    LEFT JOIN vPrometFinansijev9 fm ON k.ID = fm.KomitentID
+                    WHERE k.Aktivno = 1
+                      AND {tipKolona} = 1");
+
+                var parameters = CreateParameters();
+                parameters.Add("@OdDatum", odDatum);
+                parameters.Add("@DoDatum", doDatum);
+
+                sql.Append(@"
+                    GROUP BY k.ID, k.Naziv
+                    HAVING ABS(Potrazuje - Duguje) > @MinimumStanje
+                    ORDER BY (Potrazuje - Duguje) DESC");
+
+                parameters.Add("@MinimumStanje", minimumStanje);
+
+                var rezultat = await _databaseService.QueryAsync<FinansijskoStanjeModel>(sql.ToString(), parameters);
+                return rezultat?.ToList() ?? new List<FinansijskoStanjeModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška u UcitajFinansijskoStanje za tip={Tip}", tipKomitenta);
+                return new List<FinansijskoStanjeModel>();
             }
         }
     }

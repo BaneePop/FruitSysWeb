@@ -1,279 +1,143 @@
-# 🍎 FruitSysWeb - Fruit Business Management System
+# FruitSysWeb - ODETTA DOO
 
-[![.NET 8](https://img.shields.io/badge/.NET-8.0-blue)](https://dotnet.microsoft.com/download/dotnet/8.0)
-[![Blazor Server](https://img.shields.io/badge/Blazor-Server-purple)](https://blazor.net/)
-[![MySQL](https://img.shields.io/badge/Database-MySQL-orange)](https://www.mysql.com/)
-[![Bootstrap 5](https://img.shields.io/badge/Bootstrap-5-purple)](https://getbootstrap.com/)
+ERP sistem za upravljanje operacijama prerade voća. Blazor Server aplikacija razvijena za kompaniju **ODETTA DOO**, Šabac.
 
-Kompletna web aplikacija za upravljanje voćarskim/prehrambenim biznisom sa Dashboard analitikom, finansijskim praćenjem, upravljanjem lagerom i proizvodnjom.
+## Tech Stack
 
-## 📊 Trenutni Status
+- **ASP.NET Core 8.0** + **Blazor Server** (SignalR)
+- **MySQL** (`fruitsysdb_v2`) + **Dapper** (micro-ORM, bez Entity Framework)
+- **QuestPDF** (PDF export) + **ClosedXML** (Excel export)
+- **Bootstrap 5.3** + **ApexCharts** + Custom dark theme
+- **Serilog** (logging) + **IIS** (Windows Server deployment)
 
-✅ **POTPUNO FUNKCIONALNO**
-- Dashboard sa statistikama i navigacijom
-- ApexCharts.NET grafički prikazi (Bar & Pie charts)
-- DashboardStats komponente
-- Navigation između modula
-- Responsive design (Desktop/Tablet/Mobile)
+## Moduli
 
-🔧 **U RAZVOJU**
-- Charts optimizacija (ApexCharts dependency trenutno zakomentarisana)
-- Finansije, Proizvodnja, Lager i Izveštaji moduli (postojeći kod)
+| Modul | Stranice | Pristup |
+|-------|----------|---------|
+| **Prerada** | Proizvodnja, Radni Nalozi, Smenski Izvestaji, Sledljivost, Kontrola RN | Svi |
+| **Kvalitet** | Sledljivost, Kontrole RN, Reklamacije, Paletni List Pregled | Svi |
+| **Lager** | Lager, Ambalaza, Roba, Lager Proizvodnje, Stanje Kesa Altiva | Svi |
+| **Troškovi** | Troškovi Proizvodnje, Radne Snage, Cena Koštanja | Svi |
+| **Troškovi** | Troškovi Ambalaze, Troškovi Poslovanja | Samo admin |
+| **Finansije** | Nabavka, Prodaja, Finansijski Pregled, Pregled Salda, Finansijsko Stanje | Samo admin |
+| **Poslovanje** | Promene, Fakture, Ugovori, Kartice Komitenata | Samo admin |
+| **Promet** | Izvestaj Prijem, Povratna Ambalaza, Paletni List Pregled | Svi |
 
-## 🚀 Brzo Pokretanje
+## Korisnici i Pristup
 
-### Preduslov
+**Ograničeni korisnici** (nema pristup Finansijama i Poslovanju):
+`zoran`, `jelena`, `pedja`, `radmila`, `masinska`, `BaneT`
+
+**Admin korisnici**: Pun pristup svim modulima.
+
+Sve stranice sa ograničenim pristupom imaju server-side redirect proveru — direktan URL pristup nije moguć bez ovlašćenja.
+
+## Pokretanje lokalno
+
 ```bash
-# .NET 8 SDK
-dotnet --version  # Trebalo bi biti 8.x.x
-
-# MySQL Server (lokalni ili remote)
-```
-
-### Pokretanje
-```bash
-# 1. Kloniraj projekat
-git clone [your-repo-url]
-cd FruitSysWeb
-
-# 2. Konfiguriši bazu podataka
-# Izmeni appsettings.json sa tvojim MySQL connection string-om
-
-# 3. Pokreni aplikaciju
+cd /Users/Bane/FruitSysWeb
+dotnet restore
 dotnet run
-
-# 4. Otvori browser
-# http://localhost:5073
+# Dostupno na: https://localhost:5001
 ```
 
-## 📁 Struktura Projekta
+```bash
+# Live reload tokom razvoja
+dotnet watch run
+```
+
+## Struktura projekta
 
 ```
 FruitSysWeb/
-├── 📊 Components/
-│   ├── Charts/               # ApexCharts.NET komponente
-│   │   ├── ApexBarChart.razor    # Bar chart komponenta
-│   │   ├── ApexPieChart.razor    # Pie chart komponenta  
-│   │   ├── ChartDataHelper.cs    # Utility za charts
-│   │   └── DashboardCharts.razor # Glavni dashboard charts
-│   ├── Layout/               # Layout komponente
-│   │   └── MainLayout.razor      # Glavna navigacija
-│   ├── Pages/                # Blazor stranice
-│   │   ├── Home.razor           # Dashboard stranica (/)
-│   │   ├── Home_TEST.razor      # Test stranica (/test)
-│   │   ├── ChartsTest.razor     # Charts test (/charts-test)
-│   │   ├── Proizvodnja.razor    # Proizvodnja modul
-│   │   ├── Lager.razor          # Lager modul
-│   │   ├── Funansije.razor      # Finansije modul
-│   │   └── Izvjestaji.razor     # Izveštaji modul
-│   └── Shared/               # Deljene komponente
-│       └── Layout/
-│           └── DashboardStats.razor # Statistike kartice
-├── 🔧 Services/              # Business logika
-├── 📝 Models/                # Data modeli
-├── 🎨 wwwroot/               # Static fajlovi
-└── 📚 Dokumentacija/
-    ├── APEXCHARTS_README.md      # Charts implementacija
-    ├── BUILD_FIX_README.md       # Build problemi i rešenja
-    ├── VERSION_FIX_README.md     # Package verzije
-    └── IMPLEMENTATION_SUMMARY.md # Kompletna implementacija
+├── Components/
+│   ├── Pages/          # 36+ Blazor stranica
+│   ├── Charts/         # ApexCharts komponente + ChartDataHelper
+│   ├── Shared/         # Filteri (DateFilter, KomitentFilter...), DataTable, ExportButtons
+│   └── Layout/         # MainLayout, NavMenu, EmptyLayout
+├── Services/
+│   ├── Core/           # DatabaseService, BaseService, CacheService, TypeMappingService
+│   ├── Interfaces/     # 20 service interfejsa
+│   └── Implementations/
+│       ├── IzvestajService/    # 13 report servisa (ProizvodnjaService, FinansijeService...)
+│       └── ExportService/      # SimpleExportService, SledljivostExcelService, SledljivostHtmlService
+├── Models/             # 49 modela + Filters/ + Sledljivost/
+├── Constants/          # MagacinTypes, DocumentStatus, SezonaConstants
+├── Extensions/         # ServiceCollectionExtensions (svi DI)
+└── Database/           # OptimizacijeIndeksi.sql, create_korisnik_aktivnost.sql
 ```
 
-## 🌟 Funkcionalnosti
+## Dokumentacija
 
-### 🏠 Dashboard (`/`)
-- **Quick Actions** - Kartice za brzu navigaciju (Finansije, Proizvodnja, Lager, Izveštaji)
-- **Dashboard Statistics** - 4 statistike kartice sa real-time podacima
-- **Charts Section** - 6 ApexCharts grafika:
-  - Top 5 Kupaca (Bar Chart)
-  - Top 5 Dobavljača (Bar Chart)
-  - Proizvodnja po Artiklima (Bar Chart)
-  - Struktura Sirovina (Pie Chart)
-  - Struktura Gotovih Proizvoda (Pie Chart)
-  - Struktura Ambalaže (Pie Chart)
-- **Recent Activity** - Pregled poslednje aktivnosti
+- [DOCS.md](DOCS.md) - Arhitektura, razvoj novih funkcionalnosti, baza podataka, best practices
+- [DEPLOY.md](DEPLOY.md) - Deployment na server, update aplikacije, troubleshooting
 
-### 🧪 Test Stranice
-- **`/test`** - Dashboard bez charts (za debug)
-- **`/charts-test`** - Charts testiranje sa mock podacima
+## Verzija
 
-### 📊 Chart Sistem (ApexCharts.NET)
-- **Responsive design** - Prilagođava se svim uređajima
-- **Real-time refresh** - Osvežavanje podataka
-- **Error handling** - Graceful fallback na mock podatke
-- **Loading states** - Visual loading indikatori
-- **Interaktivni charts** - Hover effects, tooltips
+**v1.5.0** (mart 2026) — Lager kretanje chart, Preostale Količine po Ugovoru, optimizacije.
 
-## 🛠️ Tehnologije
+### Šta je novo u v1.5.0
 
-| Kategorija | Tehnologija | Verzija | Opis |
-|------------|-------------|---------|------|
-| **Backend** | .NET | 8.0 | Web framework |
-| **Frontend** | Blazor Server | 8.0 | UI framework |
-| **Database** | MySQL | 8.0+ | Baza podataka |
-| **ORM** | Dapper | 2.1.28 | Data access |
-| **UI Framework** | Bootstrap | 5 | CSS framework |
-| **Charts** | Blazor-ApexCharts | 3.5.0 | Charts biblioteka |
-| **PDF Export** | QuestPDF | 2025.7.1 | PDF generisanje |
-| **Excel Export** | ClosedXML | 0.102.2 | Excel export |
-| **Database Driver** | MySqlConnector | 2.3.7 | MySQL konektor |
+**Area chart "Stanje Lagera po Vrsti Voća":**
+- Prikazuje kretanje lagera po vrsti voća (Malina, Kupina, Šljiva, Borovnica, Kajsija) od 01.06.2025 do danas
+- Selektor intervala: Dnevno / Nedeljno / Mesečno
+- Inicijalno stanje izračunato iz `MagacinLager` (trenutno stanje) minus promet od početka sezone
+- Identifikacija vrsta voća po `PrvaKlasifikacijaID` (ne po nazivu)
+- Količine iz `vPrometRobav6`: `LEFT(Dokument,2)='PR'` = Ulaz, `'OT'` = Izlaz, `DokumentStatus=3`
+- Ukupno badge u summaryju (zbir svih vrsta na lageru)
+- Chart dodat na stranice: **Prezentacija** i **LagerHome** (na vrhu)
 
-## 🎨 UI/UX Dizajn
+**Tabela "Preostale Količine po Ugovoru" na PoslovanjeHome:**
+- Prikazuje aktivne ugovore za isporuku: artikal, preostala količina, prosečna cena EUR, vrednost EUR
+- SQL: `UgovorProdaja JOIN UgovorProdajaStavka` minus isporučeno po `Otpremnica` sa `DokumentStatus=3`
+- Pozicionirana između kartica i Dnevnih Promena
+- Footer sa ukupnim vrednostima, link ka `/ugovori`
 
-### Responsive Breakpoints
-- **Desktop** (≥992px) - Full layout sa svim komponentama
-- **Tablet** (768px-991px) - Stacked layout  
-- **Mobile** (≤767px) - Single column design
-
-### Color Scheme
-- **Primary** - `#007bff` (Bootstrap Blue)
-- **Success** - `#28a745` (Green)
-- **Warning** - `#ffc107` (Yellow)
-- **Danger** - `#dc3545` (Red)
-- **Info** - `#17a2b8` (Cyan)
-
-### Charts Colors
-- **Kupci** - `#28a745` (Green)
-- **Dobavljači** - `#dc3545` (Red)
-- **Proizvodnja** - `#007bff` (Blue)
-- **Pie Charts** - Multi-color palette
-
-## 🔧 Konfiguracija
-
-### Database Connection
-```json
-// appsettings.json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=IP;Port=PORT;Database=fruitsysdb_v2;Uid=USER;Pwd=PASS;CharSet=utf8mb4;SslMode=None;"
-  }
-}
-```
-
-### Dependency Injection (Program.cs)
-```csharp
-// Servisi
-builder.Services.AddScoped<IProizvodnjaService, ProizvodnjaService>();
-builder.Services.AddScoped<IFinansijeService, FinansijeService>();
-builder.Services.AddScoped<IMagacinLagerService, MagacinLagerService>();
-builder.Services.AddScoped<IExportService, SimpleExportService>();
-
-// ApexCharts (trenutno zakomentarisano zbog dependency problema)
-// builder.Services.AddApexCharts();
-```
-
-## 🚨 Poznati Problemi i Rešenja
-
-### ✅ REŠENI PROBLEMI
-
-1. **@onclick JavaScript greška**
-   - **Problem**: `InvalidCharacterError: '@onclick' is not a valid attribute name`
-   - **Rešenje**: Blazor compiler problem sa ApexCharts dependency
-   - **Status**: ✅ Rešeno kroz testiranje i izolaciju
-
-2. **AddApexCharts dependency greška**
-   - **Problem**: `'IServiceCollection' does not contain a definition for 'AddApexCharts'`
-   - **Rešenje**: Zakomentarisana linija u Program.cs
-   - **Status**: ✅ Privremeno rešeno
-
-3. **CSS @ escaping**
-   - **Problem**: CSS @keyframes i @media sintaksa
-   - **Rešenje**: Escaped sa @@keyframes i @@media
-   - **Status**: ✅ Rešeno
-
-### 🔄 TRENUTNI FOKUS
-
-1. **ApexCharts Stabilizacija**
-   - Rešavanje dependency problema
-   - Optimizacija chart performansi
-   - Dodavanje više chart tipova
-
-2. **Database Integration**
-   - Finalizacija MySQL konekcije
-   - Optimizacija upita
-   - Error handling poboljšanja
-
-## 📋 Development Workflow
-
-### Build & Run
-```bash
-# Build
-dotnet build
-
-# Run (Development)
-dotnet run
-
-# Run (Production)
-dotnet run --environment Production
-```
-
-### Testing
-```bash
-# Test stranice
-http://localhost:5073/test         # Dashboard bez charts
-http://localhost:5073/charts-test  # Charts testiranje
-```
-
-### Git Workflow
-```bash
-# Poslednji commit
-git log -1 --oneline
-# Charts 2
-
-# Status
-git status
-
-# Commit changes
-git add .
-git commit -m "Your message"
-git push origin main
-```
-
-## 🎯 Roadmap
-
-### Kratkoročno (Sledeće nedelje)
-- [ ] Rešavanje ApexCharts dependency problema
-- [ ] Finalizacija Database integracije
-- [ ] Performance optimizacija
-- [ ] Mobile responsiveness poboljšanja
-
-### Srednjoročno (Sledeći mesec)
-- [ ] User authentication sistem
-- [ ] Real-time notifications
-- [ ] Advanced filtering opcije
-- [ ] Export funkcionalnosti (PDF/Excel)
-
-### Dugoročno (Naredni kvartali)
-- [ ] Mobile aplikacija
-- [ ] API za integracije
-- [ ] Advanced analytics
-- [ ] Multi-language support
-
-## 📞 Support
-
-### Debug Resources
-- **Console Logs** - Proverav browser Developer Tools (F12)
-- **Server Logs** - Proverav terminal output
-- **Test Stranice** - Koristi `/test` i `/charts-test` za debug
-
-### Documentation
-- `APEXCHARTS_README.md` - Kompletna charts dokumentacija
-- `BUILD_FIX_README.md` - Build problemi i rešenja
-- `VERSION_FIX_README.md` - Package verzije info
+**Optimizacije i čišćenje:**
+- Nabavka bar chart (Prezentacija) ubrzano — uklonjen JOIN između `vPrometRobav6` i `vPrometFinansijev9`
+- Uklonjen "Nabavka po Vrsti Voća" line chart sa Prezentacija stranice
+- Uklonjen "Nabavka po Vrsti Voća" i "Prodaja po Vrsti Voća" line chartovi sa LagerHome (kod sačuvan kao `_DISABLED` metode)
 
 ---
 
-## ⭐ Highlight Features
+**v1.4.0** (mart 2026) — Sledljivost HTML/Excel izvoz, reorganizacija Home stranica, Poslovanje meni.
 
-🎯 **Production Ready Dashboard** sa real-time podacima  
-📊 **Modern Charts** (ApexCharts.NET)  
-📱 **Responsive Design** za sve uređaje  
-🔧 **Modular Architecture** - lakše održavanje  
-⚡ **Performance Optimized** - brze stranice  
-🛡️ **Error Handling** - graceful fallbacks  
+### Šta je novo u v1.4.0
 
-**Status**: ✅ **Funkcionalna aplikacija spremna za dalje proširivanje!**
+**Sledljivost — novi HTML izvoz:**
+- Dugme "HTML Sledljivost" zamenjuje stare PDF i PDF Interaktivni dugmadi
+- Generiše standalone `.html` fajl koji se može poslati kupcu mejlom
+- Redosled sekcija: Otpremnice (Prodaja) → Evidencije Rada (Proizvodnja) → Prijemnice (Nabavka)
+- Klik na accordion karticu (Otpremnica, Evidencija, Prijemnica) razvija stavke i Paletne Listove
+- Klik na Paletni List otvara sve veze: Upstream (Prijemnica, LOT), Proizvodnja (Evidencija, Smenski, RN), Downstream (Otpremnica), Povezani PL sa artiklom i komitentom
+- Otpremnice prikazuju samo PL koji imaju pakovanje
+- Prijemnice prikazuju samo PL sirovine/ambalaze (bez gotove robe)
+- Printabilno iz browsera (sve sekcije otvorene u print modu)
+
+**Sledljivost — poboljšan Excel izvoz:**
+- Isti redosled kao HTML: Prodaja → Proizvodnja → Nabavka
+- Kolona "Veze/Napomene" sadrži sve dokumente vezane za PL (Prijemnica, LOT, Evidencija, RN, Otpremnica, Povezani PL sa artiklom i komitentom)
+- Otpremnice — PL samo sa pakovanjem
+- Uklonjene kolone Status
+
+**Reorganizacija Home stranica:**
+- `Home.razor` — 7 boksova u jednom redu: Prerada, Kvalitet, Finansije, Poslovanje, Lager, Troškovi, Promet Roba
+- `FinansijeHome.razor` — 6 boksova, uklonjen link ka Poslovanju
+- `PreradaHome.razor` — uklonjen boks Sledljivost
+- `KvalitetHome.razor` — dodat boks Paletni List Pregled
+- `LagerHome.razor` — dodat boks Stanje Kesa Altiva
+- `TroskoviHome.razor` — dodat boks Cena Koštanja, svi boksovi u jednom redu (5 kolona)
+
+**Navigacija — novi Poslovanje meni:**
+- Izdvojen iz Finansije u poseban dropdown: Promene, Fakture, Ugovori, Kartice Komitenata
+- Nova home stranica `/poslovanje` sa dnevnim prometom za tekući dan
+
+**Promene izveštaj:**
+- Popravljen PDF/Excel izvoz (ispravno JS ime funkcije i redosled parametara)
+- Prazne tabele se ne prikazuju (ULAZ/IZLAZ/FINANSIJE kartice skrivene ako nema podataka)
 
 ---
 
-*Poslednja izmena: Januar 2025*
+**v1.3.0** (mart 2026) — Fakture, Poslovanje modul, Paletni List Pregled (Kvalitet tab), zaštita stranica od direktnog URL pristupa.
+
+**v1.2.0** (22. decembar 2025) — Pregled Salda, Stanje Kese Altiva, centralizacija servisa.

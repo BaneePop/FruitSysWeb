@@ -3,18 +3,24 @@
 @using FruitSysWeb.Components.Charts
 @using Microsoft.AspNetCore.Components.Routing
 @using FruitSysWeb.Shared
+@using FruitSysWeb.Services.Implementations
+@using FruitSysWeb.Components.Layout
 
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(NavMenu)" />
+        @if (routeData.PageType == typeof(FruitSysWeb.Components.Pages.Login))
+        {
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(EmptyLayout)" />
+        }
+        else
+        {
+            <AuthorizeView>
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            </AuthorizeView>
+        }
     </Found>
     <NotFound>
-        <LayoutView Layout="@typeof(NavMenu)">
-            <div class="container mt-5">
-                <h1>Stranica nije pronađena</h1>
-                <p>Tražena stranica ne postoji.</p>
-                <a href="/" class="btn btn-primary">Nazad na početnu</a>
-            </div>
-        </LayoutView>
+        <PageTitle>404</PageTitle>
+        <p>Stranica nije pronađena.</p>
     </NotFound>
 </Router>

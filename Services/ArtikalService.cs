@@ -1,15 +1,18 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services
 {
     public class ArtikalService : IArtikalService
     {
         private readonly DatabaseService _databaseService;
+        private readonly ILogger<ArtikalService> _logger;
 
-        public ArtikalService(DatabaseService databaseService)
+        public ArtikalService(DatabaseService databaseService, ILogger<ArtikalService> logger)
         {
             _databaseService = databaseService;
+            _logger = logger;
         }
 
         public async Task<List<Artikal>> UcitajSveArtikle()
@@ -29,7 +32,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju artikala: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju artikala");
                 return new List<Artikal>();
             }
         }
@@ -50,7 +53,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju artikla: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju artikla");
                 return null;
             }
         }
@@ -72,7 +75,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju artikala po tipu: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju artikala po tipu");
                 return new List<Artikal>();
             }
         }
@@ -95,7 +98,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri pretrazi artikala: {ex.Message}");
+                _logger.LogError(ex, "Greška pri pretrazi artikala");
                 return new List<Artikal>();
             }
         }
@@ -107,13 +110,13 @@ namespace FruitSysWeb.Services
             {
                 var whereClause = "Aktivno = 1";
                 var parameters = new Dictionary<string, object>();
-                
+
                 if (!string.IsNullOrEmpty(pretraga))
                 {
                     whereClause += " AND Naziv LIKE @Pretraga";
                     parameters.Add("@Pretraga", $"%{pretraga}%");
                 }
-                
+
                 if (tip.HasValue)
                 {
                     whereClause += " AND Tip = @Tip";
@@ -133,7 +136,29 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju artikala po pretrazi i tipu: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju artikala po pretrazi i tipu");
+                return new List<Artikal>();
+            }
+
+        }
+        public async Task<List<Artikal>> UcitajAmbalazuPoTipu(int tip)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        ArtikalTip as Tip, Naziv, Tip, JedinicaMereID, Kreirano
+                    FROM Artikal
+                    WHERE Aktivno = 1 AND Tip = @Tip
+                    ORDER BY Naziv
+                ";
+
+                var rezultat = await _databaseService.QueryAsync<Artikal>(sql, new { Tip = tip });
+                return rezultat.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Greška pri učitavanju Ambalaze po tipu");
                 return new List<Artikal>();
             }
         }

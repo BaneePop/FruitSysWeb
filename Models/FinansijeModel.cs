@@ -7,7 +7,7 @@ namespace FruitSysWeb.Models
     {
         public long ID { get; set; }
         public long KomitentID { get; set; }
-        
+
         [Display(Name = "Komitent")]
         public string? Komitent { get; set; } = string.Empty;
 
@@ -16,7 +16,7 @@ namespace FruitSysWeb.Models
         public bool Dobavljac { get; set; }
         public bool Kupac { get; set; }
         public long DokumentID { get; set; }
-        
+
         [Display(Name = "Datum")]
         public DateTime? Datum { get; set; }
 
@@ -26,12 +26,15 @@ namespace FruitSysWeb.Models
         public string? DokumentTip { get; set; }
         public string? DokumentStatus { get; set; }
         public long ArtikalID { get; set; }
-        
+
         [Display(Name = "Artikal")]
         public string? Artikal { get; set; } = string.Empty;
 
         public long? ArtikalPrvaKlasifikacijaID { get; set; }
-        
+
+        [Display(Name = "Magacin ID")]
+        public int? ArtikalMagacinId { get; set; }
+
         [Display(Name = "Količina")]
         public decimal Kolicina { get; set; }
 

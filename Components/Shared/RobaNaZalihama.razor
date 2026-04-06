@@ -1,0 +1,425 @@
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@inject IFinansijeService FinansijeService
+@inject IArtikalService ArtikalService
+@inject ITypeMappingService TypeMapping
+@inject IExportService ExportService
+@inject IJSRuntime JSRuntime
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+            <i class="bi bi-box-seam me-2"></i>Brzi Pregled - Roba na Zalihama
+        </h5>
+    </div>
+    
+    <div class="card-body">
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Učitavanje...</span>
+                </div>
+                <p class="mt-3 text-muted">Učitavanje podataka...</p>
+            </div>
+        }
+        else
+        {
+            <!-- FILTERI -->
+            <div class="row g-3 mb-4">
+                <!-- Multi-select Artikli -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-box me-1"></i>Izaberi Artikle (max 20):
+                    </label>
+                    <select multiple class="form-select" style="height: 150px;" @onchange="OnArtikliChanged">
+                        @if (sviArtikliLista != null)
+                        {
+                            @foreach (var artikal in sviArtikliLista)
+                            {
+                                <option value="@artikal.Id" selected="@izabraniArtikliIds.Contains(artikal.Id)">
+                                    @artikal.Naziv (ID: @artikal.Id)
+                                </option>
+                            }
+                        }
+                    </select>
+                    <small class="form-text text-muted">
+                        Drži Ctrl/Cmd za višestruki izbor | Izabrano: @izabraniArtikliIds.Count
+                    </small>
+                    
+                    <!-- BRZI IZBOR DUGMAD -->
+                    <div class="mt-2">
+                        <label class="form-label fw-bold">Brzi Izbor:</label>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-primary" @onclick="() => IzaberiPoTipu(448)">
+                                <i class="bi bi-check2"></i> Malina (448)
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick="() => IzaberiPoTipu(489)">
+                                <i class="bi bi-check2"></i> Kupina (489)
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick="() => IzaberiPoTipu(65)">
+                                <i class="bi bi-check2"></i> Šljiva (65)
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick="() => IzaberiPoTipu(129)">
+                                <i class="bi bi-check2"></i> Kajsija (129)
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick="() => IzaberiPoTipu(45)">
+                                <i class="bi bi-check2"></i> Višnja (45)
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick="() => IzaberiPoTipu(508)">
+                                <i class="bi bi-check2"></i> Usluga (508)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datum filteri i akcije -->
+                <div class="col-md-6">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-calendar me-1"></i>Od Datuma:
+                            </label>
+                            <input type="date" class="form-control" 
+                                   value="@odDatum?.ToString("yyyy-MM-dd")"
+                                   @onchange="@(e => odDatum = DateTime.TryParse(e.Value?.ToString(), out var d) ? d : null)" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-calendar-check me-1"></i>Do Datuma:
+                            </label>
+                            <input type="date" class="form-control" 
+                                   value="@doDatum?.ToString("yyyy-MM-dd")"
+                                   @onchange="@(e => doDatum = DateTime.TryParse(e.Value?.ToString(), out var d) ? d : null)" />
+                        </div>
+
+                        <!-- Akcije -->
+                        <div class="col-12">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary btn-lg" @onclick="UcitajPodatke" disabled="@(!izabraniArtikliIds.Any())">
+                                    <i class="bi bi-search me-2"></i>Prikaži Izveštaj
+                                </button>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-outline-secondary" @onclick="ResetFilter">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                                    </button>
+                                    <button class="btn btn-outline-success" @onclick="ExportToExcel" disabled="@(podatci == null || !podatci.Any())">
+                                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REZULTATI TABELA -->
+            @if (podatci != null && podatci.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Artikal</th>
+                                <th class="text-end">Nabavka kg</th>
+                                <th class="text-end">Nabavka RSD</th>
+                                <th class="text-end">Prodaja kg</th>
+                                <th class="text-end">Prodaja RSD</th>
+                                <th class="text-end">Lager kg</th>
+                                <th class="text-end">Lager Vrednost</th>
+                                <th class="text-end">Razlika kg</th>
+                                <th class="text-end">Profit</th>
+                                <th class="text-end">% Marže</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in podatci)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@item.Artikal</strong>
+                                        <br />
+                                        <small class="text-muted">ID: @item.ArtikalID</small>
+                                    </td>
+                                    <td class="text-end">@TypeMapping.FormatDecimal(item.NabavkaKg)</td>
+                                    <td class="text-end">@TypeMapping.FormatCurrency(item.NabavkaVrednost)</td>
+                                    <td class="text-end">@TypeMapping.FormatDecimal(item.ProdajaKg)</td>
+                                    <td class="text-end">@TypeMapping.FormatCurrency(item.ProdajaVrednost)</td>
+                                    <td class="text-end">@TypeMapping.FormatDecimal(item.LagerKg)</td>
+                                    <td class="text-end">@TypeMapping.FormatCurrency(item.LagerVrednost)</td>
+                                    <td class="text-end">
+                                        <span class="badge @item.RazlikaBadgeClass">
+                                            @TypeMapping.FormatDecimal(item.RazlikaKg)
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge @item.ProfitBadgeClass">
+                                            @TypeMapping.FormatCurrency(item.Profit)
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        @TypeMapping.FormatDecimal(item.ProcentMarze)%
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-secondary fw-bold">
+                            <tr>
+                                <td>UKUPNO</td>
+                                <td class="text-end">@TypeMapping.FormatDecimal(podatci.Sum(x => x.NabavkaKg))</td>
+                                <td class="text-end">@TypeMapping.FormatCurrency(podatci.Sum(x => x.NabavkaVrednost))</td>
+                                <td class="text-end">@TypeMapping.FormatDecimal(podatci.Sum(x => x.ProdajaKg))</td>
+                                <td class="text-end">@TypeMapping.FormatCurrency(podatci.Sum(x => x.ProdajaVrednost))</td>
+                                <td class="text-end">@TypeMapping.FormatDecimal(podatci.Sum(x => x.LagerKg))</td>
+                                <td class="text-end">@TypeMapping.FormatCurrency(podatci.Sum(x => x.LagerVrednost))</td>
+                                <td class="text-end">@TypeMapping.FormatDecimal(podatci.Sum(x => x.RazlikaKg))</td>
+                                <td class="text-end">@TypeMapping.FormatCurrency(podatci.Sum(x => x.Profit))</td>
+                                <td class="text-end">-</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- STATISTIKE -->
+                <div class="row g-3 mt-3">
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">Ukupna Nabavka</h6>
+                                <h4>@TypeMapping.FormatCurrency(podatci.Sum(x => x.NabavkaVrednost))</h4>
+                                <small>@TypeMapping.FormatDecimal(podatci.Sum(x => x.NabavkaKg)) kg</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-dark">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">Ukupna Prodaja</h6>
+                                <h4>@TypeMapping.FormatCurrency(podatci.Sum(x => x.ProdajaVrednost))</h4>
+                                <small>@TypeMapping.FormatDecimal(podatci.Sum(x => x.ProdajaKg)) kg</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">Vrednost Lagera</h6>
+                                <h4>@TypeMapping.FormatCurrency(podatci.Sum(x => x.LagerVrednost))</h4>
+                                <small>@TypeMapping.FormatDecimal(podatci.Sum(x => x.LagerKg)) kg</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card @(podatci.Sum(x => x.Profit) > 0 ? "bg-success" : "bg-danger") text-white">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">Ukupan Profit</h6>
+                                <h4>@TypeMapping.FormatCurrency(podatci.Sum(x => x.Profit))</h4>
+                                @{
+                                    var ukupnaMarza = podatci.Sum(x => x.NabavkaVrednost) > 0 
+                                        ? (podatci.Sum(x => x.Profit) / podatci.Sum(x => x.NabavkaVrednost)) * 100 
+                                        : 0;
+                                }
+                                <small>Marža: @TypeMapping.FormatDecimal(ukupnaMarza)%</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (podatci != null && !podatci.Any())
+            {
+                <div class="alert alert-warning text-center">
+                    <i class="bi bi-exclamation-triangle fs-1"></i>
+                    <h5 class="mt-3">Nema podataka za prikaz</h5>
+                    <p>Izaberite artikle i kliknite "Prikaži Izveštaj"</p>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private List<Artikal>? sviArtikliLista;
+    private List<long> izabraniArtikliIds = new List<long>();
+    private List<RobaNaZalihamaModel>? podatci;
+    
+    private DateTime? odDatum;
+    private DateTime? doDatum;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Postavi default datume
+            var (startDate, endDate) = SystemConstants.GetDefaultDateRange();
+            odDatum = startDate;
+            doDatum = endDate;
+
+            // Učitaj sve artikle
+            await UcitajArtikle();
+            
+            isLoading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška u OnInitializedAsync: {ex.Message}");
+            isLoading = false;
+        }
+    }
+
+    private async Task UcitajArtikle()
+    {
+        try
+        {
+            Console.WriteLine("Učitavam sve artikle...");
+            var sviArtikli = await ArtikalService.UcitajSveArtikle();
+            
+            // Filtriraj samo aktivne artikle
+            sviArtikliLista = sviArtikli
+                .Where(a => a.Aktivan == 1)
+                .OrderBy(a => a.Naziv)
+                .ToList();
+            
+            Console.WriteLine($"Učitano {sviArtikliLista.Count} artikala");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju artikala: {ex.Message}");
+            sviArtikliLista = new List<Artikal>();
+        }
+    }
+
+    private void OnArtikliChanged(ChangeEventArgs e)
+    {
+        try
+        {
+            if (e.Value is string[] selectedValues)
+            {
+                izabraniArtikliIds = selectedValues
+                    .Select(v => long.TryParse(v, out var id) ? id : 0)
+                    .Where(id => id > 0)
+                    .Take(20) // Max 20 artikala
+                    .ToList();
+                
+                Console.WriteLine($"Izabrano {izabraniArtikliIds.Count} artikala");
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri promeni artikala: {ex.Message}");
+        }
+    }
+
+    private void IzaberiPoTipu(long artikalId)
+    {
+        try
+        {
+            if (izabraniArtikliIds.Contains(artikalId))
+            {
+                // Ako je već izabran, ukloni ga
+                izabraniArtikliIds.Remove(artikalId);
+            }
+            else
+            {
+                // Dodaj ako nije izabran i ima mesta
+                if (izabraniArtikliIds.Count < 20)
+                {
+                    izabraniArtikliIds.Add(artikalId);
+                }
+            }
+            
+            Console.WriteLine($"Brzi izbor - Artikal {artikalId}: {(izabraniArtikliIds.Contains(artikalId) ? "Dodat" : "Uklonjen")}");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri brzom izboru: {ex.Message}");
+        }
+    }
+
+    private async Task UcitajPodatke()
+    {
+        try
+        {
+            if (!izabraniArtikliIds.Any())
+            {
+                Console.WriteLine("Nema izabranih artikala!");
+                return;
+            }
+
+            isLoading = true;
+            StateHasChanged();
+
+            Console.WriteLine($"Učitavam podatke za {izabraniArtikliIds.Count} artikala...");
+            Console.WriteLine($"Period: {odDatum:yyyy-MM-dd} - {doDatum:yyyy-MM-dd}");
+
+            podatci = await FinansijeService.UcitajRobuNaZalihama(
+                izabraniArtikliIds, 
+                odDatum, 
+                doDatum
+            );
+
+            Console.WriteLine($"Učitano {podatci?.Count ?? 0} rezultata");
+            
+            isLoading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju podataka: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            podatci = new List<RobaNaZalihamaModel>();
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ResetFilter()
+    {
+        izabraniArtikliIds.Clear();
+        podatci = null;
+        var (startDate, endDate) = SystemConstants.GetDefaultDateRange();
+        odDatum = startDate;
+        doDatum = endDate;
+        StateHasChanged();
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            if (podatci == null || !podatci.Any())
+            {
+                return;
+            }
+
+            // Definiši samo kolone koje se prikazuju u tabeli
+            var columns = new Dictionary<string, string>
+            {
+                { "Artikal", "Artikal" },
+                { "NabavkaKg", "Nabavka kg" },
+                { "NabavkaVrednost", "Nabavka RSD" },
+                { "ProdajaKg", "Prodaja kg" },
+                { "ProdajaVrednost", "Prodaja RSD" },
+                { "LagerKg", "Lager kg" },
+                { "LagerVrednost", "Lager Vrednost" },
+                { "RazlikaKg", "Razlika kg" },
+                { "Profit", "Profit" },
+                { "ProcentMarze", "% Marže" }
+            };
+
+            var fileName = TypeMapping.GenerateExportFileName("RobaNaZalihama", ".xlsx");
+            var bytes = ExportService.ExportToExcelWithColumns(podatci, columns);
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(bytes));
+
+            Console.WriteLine($"Export uspešan: {fileName}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri exportu: {ex.Message}");
+        }
+    }
+}

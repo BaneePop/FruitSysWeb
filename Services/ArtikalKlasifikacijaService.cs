@@ -1,15 +1,18 @@
 using FruitSysWeb.Models;
 using FruitSysWeb.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace FruitSysWeb.Services
 {
     public class ArtikalKlasifikacijaService : IArtikalKlasifikacijaService
     {
         private readonly DatabaseService _databaseService;
+        private readonly ILogger<ArtikalKlasifikacijaService> _logger;
 
-        public ArtikalKlasifikacijaService(DatabaseService databaseService)
+        public ArtikalKlasifikacijaService(DatabaseService databaseService, ILogger<ArtikalKlasifikacijaService> logger)
         {
             _databaseService = databaseService;
+            _logger = logger;
         }
 
         public async Task<List<ArtikalKlasifikacija>> UcitajSveKlasifikacije()
@@ -47,27 +50,27 @@ namespace FruitSysWeb.Services
                 ";
 
                 var rezultat = await _databaseService.QueryAsync<ArtikalKlasifikacija>(sql);
-                Console.WriteLine($"Učitano {rezultat.Count()} voćnih klasifikacija iz baze");
-                
+                _logger.LogInformation($"Učitano {rezultat.Count()} voćnih klasifikacija iz baze");
+
                 if (rezultat.Any())
                 {
                     foreach (var klasifikacija in rezultat)
                     {
-                        Console.WriteLine($"- {klasifikacija.Id}: {klasifikacija.Naziv}");
+                        _logger.LogInformation($"- {klasifikacija.Id}: {klasifikacija.Naziv}");
                     }
                     return rezultat.ToList();
                 }
                 else
                 {
                     // Fallback - vrati hardkodovane voćne klasifikacije
-                    Console.WriteLine("Nema voćnih podataka u tabeli, koristim fallback");
+                    _logger.LogInformation("Nema voćnih podataka u tabeli, koristim fallback");
                     return GetFallbackVocneKlasifikacije();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju klasifikacija: {ex.Message}");
-                Console.WriteLine("Koristim fallback voćne klasifikacije");
+                _logger.LogError(ex, "Greška pri učitavanju klasifikacija");
+                _logger.LogInformation("Koristim fallback voćne klasifikacije");
                 return GetFallbackVocneKlasifikacije();
             }
         }
@@ -111,7 +114,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri učitavanju klasifikacije: {ex.Message}");
+                _logger.LogError(ex, "Greška pri učitavanju klasifikacije");
                 return null;
             }
         }
@@ -138,7 +141,7 @@ namespace FruitSysWeb.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Greška pri pretrazi klasifikacija: {ex.Message}");
+                _logger.LogError(ex, "Greška pri pretrazi klasifikacija");
                 return new List<ArtikalKlasifikacija>();
             }
         }

@@ -1,0 +1,372 @@
+@page "/troskovi-ambalaze"
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Models
+@using FruitSysWeb.Constants
+@inject IFinansijeService FinansijeService
+@inject ITypeMappingService TypeMapping
+@inject ILogger<TroskoviAmbalaze> Logger
+
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="troskovi-header p-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-2">
+                    <i class="bi bi-box-seam me-2"></i>Troškovi Ambalaže
+                </h2>
+                <p class="mb-0 text-white-50">
+                    Pregled troškova primarne i sekundarne ambalaže (kutije, kese) i repromaterijala po sezoni
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="sezona-info">
+                    <small class="text-white-50">Trenutna sezona:</small>
+                    <div class="fs-5 fw-bold">@SezonaConstants.GetNazivTrenutneSezone()</div>
+                    <small class="text-white-50">
+                        @SezonaConstants.GetPocetakTrenutneSezone().ToString("dd.MM.yyyy") -
+                        @SezonaConstants.GetKrajTrenutneSezone().ToString("dd.MM.yyyy")
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs mb-4" id="ambalazaTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(ActiveTab == "kutije" ? "active" : "")"
+                    id="kutije-tab"
+                    type="button"
+                    role="tab"
+                    @onclick="@(() => SetActiveTab("kutije"))">
+                <i class="bi bi-box me-2"></i>Troškovi Kutija
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(ActiveTab == "kese" ? "active" : "")"
+                    id="kese-tab"
+                    type="button"
+                    role="tab"
+                    @onclick="@(() => SetActiveTab("kese"))">
+                <i class="bi bi-bag me-2"></i>Troškovi Kesa
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(ActiveTab == "repromaterijal" ? "active" : "")"
+                    id="repromaterijal-tab"
+                    type="button"
+                    role="tab"
+                    @onclick="@(() => SetActiveTab("repromaterijal"))">
+                <i class="bi bi-tools me-2"></i>Troškovi Repromaterijala
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="ambalazaTabContent">
+        @if (IsLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Učitavanje...</span>
+                </div>
+                <p class="mt-2 text-muted">Učitavam podatke...</p>
+            </div>
+        }
+        else if (HasError)
+        {
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Došlo je do greške pri učitavanju podataka.
+            </div>
+        }
+        else
+        {
+            <!-- Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">Ukupno Artikala</h6>
+                            <h3 class="mb-0">@FilteredData.Count</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">Ukupna Količina</h6>
+                            <h3 class="mb-0">@FilteredData.Sum(x => x.Kolicina).ToString("N2")</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">Prosečna Cena</h6>
+                            <h3 class="mb-0">
+                                @if (FilteredData.Any() && FilteredData.Sum(x => x.Kolicina) > 0)
+                                {
+                                    var avgPrice = FilteredData.Sum(x => x.Potrazuje) / FilteredData.Sum(x => x.Kolicina);
+                                    @avgPrice.ToString("N2")
+                                }
+                                else
+                                {
+                                    <text>0.00</text>
+                                }
+                                <small class="text-muted"> RSD</small>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm border-success">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">Ukupan Trošak</h6>
+                            <h3 class="mb-0 text-success">
+                                @FilteredData.Sum(x => x.Potrazuje).ToString("N2")
+                                <small class="text-muted"> RSD</small>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-table me-2"></i>
+                            @if (ActiveTab == "kutije")
+                            {
+                                <text>Troškovi Kutija</text>
+                            }
+                            else if (ActiveTab == "kese")
+                            {
+                                <text>Troškovi Kesa</text>
+                            }
+                            else
+                            {
+                                <text>Troškovi Repromaterijala</text>
+                            }
+                        </h5>
+                        <button class="btn btn-sm btn-outline-success" @onclick="RefreshData">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Osveži
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    @if (FilteredData.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Artikal</th>
+                                        <th class="text-end">Količina</th>
+                                        <th class="text-end">Cena</th>
+                                        <th class="text-end">Trošak</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var group in FilteredData
+                                        .GroupBy(x => x.Artikal)
+                                        .Select(g => new
+                                        {
+                                            Artikal = g.Key,
+                                            Kolicina = g.Sum(x => x.Kolicina),
+                                            Trosak = g.Sum(x => x.Potrazuje),
+                                            Cena = g.Sum(x => x.Kolicina) > 0 ? g.Sum(x => x.Potrazuje) / g.Sum(x => x.Kolicina) : 0
+                                        })
+                                        .OrderByDescending(x => x.Trosak))
+                                    {
+                                        <tr>
+                                            <td>@group.Artikal</td>
+                                            <td class="text-end">@group.Kolicina.ToString("N2")</td>
+                                            <td class="text-end">@group.Cena.ToString("N2") RSD</td>
+                                            <td class="text-end fw-bold text-success">@group.Trosak.ToString("N2") RSD</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr class="fw-bold">
+                                        <td>UKUPNO:</td>
+                                        <td class="text-end">@FilteredData.Sum(x => x.Kolicina).ToString("N2")</td>
+                                        <td class="text-end">-</td>
+                                        <td class="text-end text-success">@FilteredData.Sum(x => x.Potrazuje).ToString("N2") RSD</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-5 text-center text-muted">
+                            <i class="bi bi-inbox fs-1"></i>
+                            <p class="mt-2">Nema podataka za prikaz</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .troskovi-header {
+        background: linear-gradient(135deg, #1a2332, #232d3f);
+        border-radius: 12px;
+        border: 1px solid #374151;
+    }
+
+    .sezona-info {
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+    }
+
+    .nav-tabs .nav-link {
+        color: #6c757d;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+    }
+
+    .nav-tabs .nav-link:hover {
+        color: #3e6b1f;
+        border-color: #3e6b1f;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #3e6b1f;
+        background-color: transparent;
+        border-color: #3e6b1f;
+    }
+
+    .card {
+        transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+    }
+
+    .table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+        background-color: rgba(62, 107, 31, 0.05);
+    }
+</style>
+
+@code {
+    // State
+    private string ActiveTab = "kutije";
+    private bool IsLoading = true;
+    private bool HasError = false;
+
+    // Data
+    private List<FinansijeModel> AllData = new();
+    private List<FinansijeModel> FilteredData => GetFilteredData();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        IsLoading = true;
+        HasError = false;
+        StateHasChanged();
+
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = SezonaConstants.GetPocetakTrenutneSezone(),
+                DoDatum = SezonaConstants.GetKrajTrenutneSezone()
+            };
+
+            AllData = await FinansijeService.UcitajFinansijskiIzvestaj(filter);
+
+            Logger.LogInformation($"Učitano {AllData.Count} finansijskih zapisa");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju podataka za Troškove Ambalaze");
+            HasError = true;
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private List<FinansijeModel> GetFilteredData()
+    {
+        if (ActiveTab == "repromaterijal")
+        {
+            // MagacinID 9 = Repromaterijal
+            return AllData
+                .Where(x => x.ArtikalID > 0)
+                .Where(x => x.ArtikalMagacinId == 9)
+                .Where(x => x.Potrazuje > 0) // Samo troškovi (nabavke)
+                .ToList();
+        }
+        else
+        {
+            // MagacinID 4 = Ambalaza
+            var ambalazeData = AllData
+                .Where(x => x.ArtikalID > 0)
+                .Where(x => x.ArtikalMagacinId == 4)
+                .Where(x => x.Potrazuje > 0) // Samo troškovi (nabavke)
+                .ToList();
+
+            // Filtriranje po AmbalazaTip koristeci naziv artikla
+            if (ActiveTab == "kutije")
+            {
+                // Artikli koji sadrže "kutija" ili "karton" u nazivu
+                return ambalazeData
+                    .Where(x => x.Artikal != null &&
+                           (x.Artikal.ToLower().Contains("kutija") ||
+                            x.Artikal.ToLower().Contains("karton")))
+                    .ToList();
+            }
+            else if (ActiveTab == "kese")
+            {
+                // Artikli koji sadrže "kesa", "vreca" ili "džak" u nazivu
+                return ambalazeData
+                    .Where(x => x.Artikal != null &&
+                           (x.Artikal.ToLower().Contains("kesa") ||
+                            x.Artikal.ToLower().Contains("vreća") ||
+                            x.Artikal.ToLower().Contains("vreca") ||
+                            x.Artikal.ToLower().Contains("džak") ||
+                            x.Artikal.ToLower().Contains("dzak")))
+                    .ToList();
+            }
+        }
+
+        return new List<FinansijeModel>();
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        ActiveTab = tab;
+        StateHasChanged();
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadData();
+    }
+}

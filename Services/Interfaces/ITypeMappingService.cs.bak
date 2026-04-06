@@ -1,0 +1,36 @@
+using FruitSysWeb.Models;
+using Microsoft.AspNetCore.Components;
+
+namespace FruitSysWeb.Services.Core
+{
+    /// <summary>
+    /// Interface for centralized type mapping and formatting services
+    /// </summary>
+    public interface ITypeMappingService
+    {
+        // Magacin Type Methods
+        string GetMagacinDisplayName(int magacinId);
+        string GetMagacinBadgeClass(int magacinId);
+        List<DropdownOption> GetMagacinDropdownOptions();
+        List<QuickFilter> GetMagacinQuickFilters();
+        
+        // Document Status Methods  
+        string GetStatusDisplayName(int statusId);
+        string GetStatusBadgeClass(int statusId);
+        List<DropdownOption> GetStatusDropdownOptions();
+        
+        // Formatting Methods
+        string FormatDecimal(decimal value);
+        string FormatInteger(int value);
+        string FormatDate(DateTime? date);
+        string FormatDateTime(DateTime dateTime);
+        
+        // UI Helper Methods
+        string GetQuantityStatusClass(string status);
+        string GetSaldoBadgeClass(decimal saldo);
+        
+        // Advanced Methods
+        MarkupString BuildDropdown(List<DropdownOption> options, string defaultText = "", string? selectedValue = null);
+        List<DropdownOption> GetFilteredMagacinOptions(params int[] excludeIds);
+    }
+}
