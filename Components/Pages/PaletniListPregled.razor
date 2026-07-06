@@ -1,9 +1,11 @@
 @page "/paletni-list-pregled"
+@page "/pregled-iskoriscenja"
 @rendermode @(new InteractiveServerRenderMode())
 @using FruitSysWeb.Models
 @using FruitSysWeb.Services.Interfaces
 
 @inject IPaletniListService PaletniListService
+@inject IPregledIskoriscenjaService IskoriscenjeService
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
 @inject ILogger<PaletniListPregled> Logger
@@ -73,6 +75,12 @@ else
                     {
                         <span class="badge bg-secondary ms-1">@podaciKvalitet.Count</span>
                     }
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(aktivniTab == "iskoriscenje" ? "active" : "")"
+                        @onclick='() => PredjNaTab("iskoriscenje")'>
+                    <i class="bi bi-layers-half me-1"></i>Iskorišćenje
                 </button>
             </li>
         </ul>
@@ -876,6 +884,315 @@ else
                 }
             }
 
+            <!-- ═══ TAB: ISKORIŠĆENJE ═══ -->
+            @if (aktivniTab == "iskoriscenje")
+            {
+                <!-- Podtabovi -->
+                <ul class="nav nav-pills mb-3">
+                    <li class="nav-item">
+                        <button class="nav-link @(iskPodtab == 1 ? "active" : "")" @onclick="() => iskPodtab = 1">
+                            <i class="bi bi-search me-1"></i>Sledljivost po šifri
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(iskPodtab == 2 ? "active" : "")" @onclick="() => iskPodtab = 2">
+                            <i class="bi bi-list-check me-1"></i>Lista iskorišćenosti
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(iskPodtab == 3 ? "active" : "")" @onclick="() => iskPodtab = 3">
+                            <i class="bi bi-bar-chart-steps me-1"></i>PL Statistika
+                        </button>
+                    </li>
+                </ul>
+
+                @if (!iskUcitan)
+                {
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                }
+                else
+                {
+                    <!-- ── Podtab 1: Sledljivost po šifri ── -->
+                    @if (iskPodtab == 1)
+                    {
+                        <div class="card shadow-sm mb-3">
+                            <div class="card-body">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-5">
+                                        <label class="form-label fw-semibold">Šifra paletnog lista</label>
+                                        <input type="text" class="form-control" placeholder="npr. NB-2024-001234"
+                                               @bind="iskUnosSifre" @bind:event="oninput"
+                                               @onkeydown="OnIskSifraKeyDown" />
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-primary" @onclick="IskTraziPL" disabled="@iskUcitavanjeSledljivosti">
+                                            @if (iskUcitavanjeSledljivosti) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                            <i class="bi bi-search me-1"></i>Pretraži
+                                        </button>
+                                    </div>
+                                    @if (iskSledljivostModel != null)
+                                    {
+                                        <div class="col-auto">
+                                            <button class="btn btn-outline-secondary" @onclick="IskOcistiSledljivost">
+                                                <i class="bi bi-x-circle me-1"></i>Obriši
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(iskGreska1))
+                                {
+                                    <div class="alert alert-warning mt-2 mb-0 py-2">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>@iskGreska1
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        @if (iskSledljivostModel != null)
+                        {
+                            <div class="card shadow-sm mb-3 border-primary">
+                                <div class="card-header bg-primary text-white py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold fs-6"><i class="bi bi-layers me-2"></i>@iskSledljivostModel.Sifra</span>
+                                        <span class="badge @IskTipBadgeClass(iskSledljivostModel.PaletniListTip)">@IskTipNaziv(iskSledljivostModel.PaletniListTip)</span>
+                                    </div>
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row g-2 small">
+                                        <div class="col-md-3"><span class="text-muted">Artikal:</span> <span class="fw-semibold ms-1">@iskSledljivostModel.Artikal</span></div>
+                                        <div class="col-md-3"><span class="text-muted">Komitent:</span> <span class="fw-semibold ms-1">@(iskSledljivostModel.Komitent ?? "—")</span></div>
+                                        <div class="col-md-2"><span class="text-muted">Neto:</span> <span class="fw-semibold ms-1">@iskSledljivostModel.Tezina.ToString("N2", srLatnIsk) kg</span></div>
+                                        <div class="col-md-2"><span class="text-muted">Datum:</span> <span class="fw-semibold ms-1">@iskSledljivostModel.DatumKreiranja.ToString("dd.MM.yyyy")</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card shadow-sm mb-3">
+                                <div class="card-header py-2 bg-danger bg-opacity-10">
+                                    <span class="fw-semibold text-danger">
+                                        <i class="bi bi-arrow-up-circle me-1"></i>Utrošen u evidencijama rada
+                                        <span class="badge bg-danger ms-1">@iskSledljivostModel.UtroseniU.Count</span>
+                                    </span>
+                                </div>
+                                <div class="card-body p-0">
+                                    @if (!iskSledljivostModel.UtroseniU.Any())
+                                    {
+                                        <div class="text-center text-muted py-4 small"><i class="bi bi-info-circle me-1"></i>Ovaj PL nije utrošen ni u jednoj evidenciji rada</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover mb-0">
+                                                <thead class="table-light">
+                                                    <tr><th>Evidencija</th><th>Radni nalog</th><th>Smenski izv.</th><th>Smena</th><th>Poslovođa</th><th>Proces</th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var ev in iskSledljivostModel.UtroseniU)
+                                                    {
+                                                        <tr>
+                                                            <td class="small"><span class="fw-semibold text-danger">@ev.EvidencijaSifra</span><br /><span class="text-muted">@ev.EvidencijaDatum.ToString("dd.MM.yyyy")</span></td>
+                                                            <td class="small fw-semibold">@ev.RadniNalogSifra</td>
+                                                            <td class="small"><span class="fw-semibold">@ev.SmenskiIzvestajBroj</span><br /><span class="text-muted">@ev.SmenskiDatum.ToString("dd.MM.yyyy")</span></td>
+                                                            <td class="small">@IskSmenaText(ev.Smena)</td>
+                                                            <td class="small">@ev.PoslovodjaNaziv</td>
+                                                            <td class="small text-muted">@ev.RadniProcesNaziv</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (iskSledljivostModel.PovezaniProizvodni.Any())
+                            {
+                                <div class="card shadow-sm mb-3">
+                                    <div class="card-header py-2 bg-info bg-opacity-10">
+                                        <span class="fw-semibold text-info">
+                                            <i class="bi bi-diagram-3 me-1"></i>Paletni listovi koji su koristili ovaj PL
+                                            <span class="badge bg-info ms-1">@iskSledljivostModel.PovezaniProizvodni.Count</span>
+                                        </span>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover mb-0">
+                                                <thead class="table-light">
+                                                    <tr><th>Šifra PL</th><th>Artikal</th><th>Komitent</th><th>Radni nalog</th><th class="text-end">Količina</th><th>Datum</th><th></th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var pvz in iskSledljivostModel.PovezaniProizvodni)
+                                                    {
+                                                        <tr>
+                                                            <td class="small fw-semibold">@pvz.Sifra</td>
+                                                            <td class="small">@pvz.Artikal</td>
+                                                            <td class="small">@(pvz.Komitent ?? "—")</td>
+                                                            <td class="small fw-semibold">@(pvz.RadniNalogSifra ?? "—")</td>
+                                                            <td class="small text-end">@pvz.Kolicina.ToString("N2", srLatnIsk)</td>
+                                                            <td class="small text-muted">@pvz.DatumKreiranja.ToString("dd.MM.yyyy")</td>
+                                                            <td><button class="btn btn-link btn-sm p-0" @onclick="() => IskTraziPovezani(pvz.Sifra)"><i class="bi bi-search"></i></button></td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+
+                    <!-- ── Podtab 2: Lista iskorišćenosti ── -->
+                    @if (iskPodtab == 2)
+                    {
+                        <div class="card shadow-sm mb-3">
+                            <div class="card-body">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-2"><label class="form-label fw-semibold small">Od datuma</label><input type="date" class="form-control form-control-sm" @bind="iskFilter.OdDatum" /></div>
+                                    <div class="col-md-2"><label class="form-label fw-semibold small">Do datuma</label><input type="date" class="form-control form-control-sm" @bind="iskFilter.DoDatum" /></div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">Artikal</label>
+                                        <select class="form-select form-select-sm" @bind="iskFilterArtikalId">
+                                            <option value="">— Svi artikli —</option>
+                                            @foreach (var a in iskSviArtikli) { <option value="@a.ID">@a.Naziv</option> }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label fw-semibold small">Komitent</label>
+                                        <select class="form-select form-select-sm" @bind="iskFilterKomitentId">
+                                            <option value="">— Svi —</option>
+                                            @foreach (var k in iskKomitenti) { <option value="@k.ID">@k.Naziv</option> }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-1 d-flex align-items-end">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="chkNiPL" @bind="iskFilterSamoNeiskorisceni" />
+                                            <label class="form-check-label small fw-semibold" for="chkNiPL">Samo neiskor.</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto d-flex gap-2 align-items-end">
+                                        <button class="btn btn-primary btn-sm" @onclick="IskPrikaziListu" disabled="@iskUcitavanjeListe">
+                                            @if (iskUcitavanjeListe) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                            <i class="bi bi-filter me-1"></i>Prikaži
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="IskOcistiFiltere"><i class="bi bi-x-circle me-1"></i>Resetuj</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (iskListaIskoriscenja != null)
+                        {
+                            <div class="row g-2 mb-3">
+                                <div class="col-auto"><div class="card shadow-sm border-0 bg-light px-3 py-2"><small class="text-muted">Ukupno PL</small><div class="fw-bold fs-5">@iskListaIskoriscenja.Count</div></div></div>
+                                <div class="col-auto"><div class="card shadow-sm border-0 bg-success bg-opacity-10 px-3 py-2"><small class="text-muted">Iskorišćeno</small><div class="fw-bold fs-5 text-success">@iskListaIskoriscenja.Count(x => x.JeIskoriscen)</div></div></div>
+                                <div class="col-auto"><div class="card shadow-sm border-0 bg-warning bg-opacity-10 px-3 py-2"><small class="text-muted">Neiskorišćeno</small><div class="fw-bold fs-5 text-warning">@iskListaIskoriscenja.Count(x => !x.JeIskoriscen)</div></div></div>
+                                <div class="col-auto"><div class="card shadow-sm border-0 bg-primary bg-opacity-10 px-3 py-2"><small class="text-muted">Ukupno kg</small><div class="fw-bold fs-5">@iskListaIskoriscenja.Sum(x => x.Tezina).ToString("N0", srLatnIsk)</div></div></div>
+                            </div>
+                            <div class="card shadow-sm">
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover mb-0">
+                                            <thead class="table-dark">
+                                                <tr><th>Šifra PL</th><th>Vrsta</th><th>Artikal</th><th>Komitent</th><th>Datum</th><th class="text-end">Količina</th><th class="text-center">Iskorišćen</th><th class="text-center">Br. evid.</th><th></th></tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var pl in iskListaIskoriscenja)
+                                                {
+                                                    <tr class="@(!pl.JeIskoriscen ? "table-warning" : "")">
+                                                        <td class="small fw-semibold">@pl.Sifra</td>
+                                                        <td class="small text-muted">@(pl.VrstaArtikla ?? "—")</td>
+                                                        <td class="small">@pl.Artikal</td>
+                                                        <td class="small">@(pl.Komitent ?? "—")</td>
+                                                        <td class="small text-muted">@pl.DatumKreiranja.ToString("dd.MM.yyyy")</td>
+                                                        <td class="small text-end">@pl.Tezina.ToString("N2", srLatnIsk)</td>
+                                                        <td class="text-center">@if (pl.JeIskoriscen) { <i class="bi bi-check-circle-fill text-success"></i> } else { <i class="bi bi-x-circle-fill text-warning"></i> }</td>
+                                                        <td class="text-center small">@if (pl.BrojEvidencijaUtroseno > 0) { <span class="badge bg-success">@pl.BrojEvidencijaUtroseno</span> } else { <span class="text-muted">—</span> }</td>
+                                                        <td><button class="btn btn-outline-primary btn-sm py-0" @onclick="() => IskOtvoriSledljivost(pl.Sifra)" title="Otvori sledljivost"><i class="bi bi-search"></i></button></td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    <!-- ── Podtab 3: PL Statistika ── -->
+                    @if (iskPodtab == 3)
+                    {
+                        <div class="card shadow-sm mb-3">
+                            <div class="card-body">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-2"><label class="form-label fw-semibold small">Od datuma</label><input type="date" class="form-control form-control-sm" @bind="iskFilterStat.OdDatum" /></div>
+                                    <div class="col-md-2"><label class="form-label fw-semibold small">Do datuma</label><input type="date" class="form-control form-control-sm" @bind="iskFilterStat.DoDatum" /></div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">Artikal</label>
+                                        <select class="form-select form-select-sm" @bind="iskFilterStatArtikalId">
+                                            <option value="">— Svi artikli —</option>
+                                            @foreach (var a in iskSviArtikli) { <option value="@a.ID">@a.Naziv</option> }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label fw-semibold small">Komitent</label>
+                                        <select class="form-select form-select-sm" @bind="iskFilterStatKomitentId">
+                                            <option value="">— Svi —</option>
+                                            @foreach (var k in iskKomitenti) { <option value="@k.ID">@k.Naziv</option> }
+                                        </select>
+                                    </div>
+                                    <div class="col-auto d-flex gap-2 align-items-end">
+                                        <button class="btn btn-primary btn-sm" @onclick="IskPrikaziStatistiku" disabled="@iskUcitavanjeStat">
+                                            @if (iskUcitavanjeStat) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                            <i class="bi bi-filter me-1"></i>Prikaži
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="IskOcistiFiltereStat"><i class="bi bi-x-circle me-1"></i>Resetuj</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (iskStatistika != null)
+                        {
+                            <div class="row g-2 mb-3">
+                                <div class="col-auto"><div class="card shadow-sm border-0 bg-light px-3 py-2"><small class="text-muted">Ukupno PL</small><div class="fw-bold fs-5">@iskStatistika.Count</div></div></div>
+                                <div class="col-auto"><div class="card shadow-sm border-0 bg-warning bg-opacity-10 px-3 py-2"><small class="text-muted">Sirovine</small><div class="fw-bold fs-5 text-warning">@iskStatistika.Count(x => !x.JeAmbalaža)</div></div></div>
+                                <div class="col-auto"><div class="card shadow-sm border-0 bg-danger bg-opacity-10 px-3 py-2"><small class="text-muted">Ambalaža</small><div class="fw-bold fs-5 text-danger">@iskStatistika.Count(x => x.JeAmbalaža)</div></div></div>
+                            </div>
+                            <div class="card shadow-sm">
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover mb-0">
+                                            <thead class="table-dark">
+                                                <tr><th>Šifra PL</th><th>Vrsta</th><th>Artikal</th><th>Komitent</th><th>Datum</th><th class="text-end">Količina</th><th class="text-center">Br. RN</th><th class="text-center">Br. evid.</th><th></th></tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var pl in iskStatistika)
+                                                {
+                                                    <tr class="@(pl.JeAmbalaža ? "table-danger" : "table-warning") bg-opacity-25">
+                                                        <td class="small fw-semibold">@pl.Sifra</td>
+                                                        <td class="small text-muted">@(pl.VrstaArtikla ?? "—")</td>
+                                                        <td class="small">@pl.Artikal</td>
+                                                        <td class="small">@(pl.Komitent ?? "—")</td>
+                                                        <td class="small text-muted">@pl.DatumKreiranja.ToString("dd.MM.yyyy")</td>
+                                                        <td class="small text-end">@pl.Tezina.ToString("N2", srLatnIsk)</td>
+                                                        <td class="text-center"><span class="badge @(pl.BrojRadnihNaloga > 2 ? "bg-danger" : "bg-secondary")">@pl.BrojRadnihNaloga</span></td>
+                                                        <td class="text-center"><span class="badge @(pl.BrojEvidencija > 2 ? "bg-danger" : "bg-secondary")">@pl.BrojEvidencija</span></td>
+                                                        <td><button class="btn btn-outline-primary btn-sm py-0" @onclick="() => IskOtvoriSledljivost(pl.Sifra)" title="Otvori sledljivost"><i class="bi bi-search"></i></button></td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                }
+            }
+
         </div>
 
         <!-- Breadcrumb -->
@@ -976,11 +1293,12 @@ else
         }
     }
 
-    private void PredjNaTab(string tab)
+    private async void PredjNaTab(string tab)
     {
         aktivniTab = tab;
         dokumentiResult = null;
         kliknutiDokument = null;
+        if (tab == "iskoriscenje") await UcitajIskoriscenjeDropdownove();
     }
 
     private async Task OsvjeziPrijemnice()
@@ -1119,4 +1437,119 @@ else
         prijemniceKvalitet = await PaletniListService.UcitajPrijemniceZaPeriodKvalitet(filterKvalitet.OdDatum, filterKvalitet.DoDatum);
         filterKvalitet.Prijemnica = null;
     }
+
+    // ── ISKORIŠĆENJE TAB ───────────────────────────────────
+    private static readonly System.Globalization.CultureInfo srLatnIsk =
+        System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS");
+
+    private int iskPodtab = 1;
+    private bool iskUcitan = false;
+
+    // Podtab 1
+    private string iskUnosSifre = "";
+    private PLSledljivostModel? iskSledljivostModel;
+    private bool iskUcitavanjeSledljivosti = false;
+    private string? iskGreska1;
+
+    // Podtab 2
+    private PLIskoriscenjeFilter iskFilter = new() { OdDatum = DateTime.Today.AddDays(-30), DoDatum = DateTime.Today };
+    private string iskFilterArtikalId = "";
+    private string iskFilterKomitentId = "";
+    private bool iskFilterSamoNeiskorisceni = false;
+    private List<PLIskoriscenjeListaModel>? iskListaIskoriscenja;
+    private bool iskUcitavanjeListe = false;
+
+    // Podtab 3
+    private PLIskoriscenjeFilter iskFilterStat = new() { OdDatum = DateTime.Today.AddDays(-30), DoDatum = DateTime.Today };
+    private string iskFilterStatArtikalId = "";
+    private string iskFilterStatKomitentId = "";
+    private List<PLStatistikaModel>? iskStatistika;
+    private bool iskUcitavanjeStat = false;
+
+    // Deljeni dropdown podaci
+    private List<(long ID, string Naziv)> iskSviArtikli = new();
+    private List<(long ID, string Naziv)> iskKomitenti = new();
+
+    private async Task UcitajIskoriscenjeDropdownove()
+    {
+        if (iskSviArtikli.Any()) return;
+        try
+        {
+            iskSviArtikli = await IskoriscenjeService.UcitajArtikle();
+            iskKomitenti = await IskoriscenjeService.UcitajKomitente();
+        }
+        catch { }
+        iskUcitan = true;
+    }
+
+    private async Task OnIskSifraKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await IskTraziPL();
+    }
+
+    private async Task IskTraziPL()
+    {
+        iskGreska1 = null;
+        if (string.IsNullOrWhiteSpace(iskUnosSifre)) { iskGreska1 = "Unesite šifru paletnog lista."; return; }
+        iskUcitavanjeSledljivosti = true;
+        try
+        {
+            iskSledljivostModel = await IskoriscenjeService.UcitajSledljivostPL(iskUnosSifre.Trim());
+            if (iskSledljivostModel == null) iskGreska1 = $"Paletni list '{iskUnosSifre.Trim()}' nije pronađen.";
+        }
+        catch (Exception ex) { iskGreska1 = $"Greška: {ex.Message}"; }
+        finally { iskUcitavanjeSledljivosti = false; }
+    }
+
+    private void IskOcistiSledljivost() { iskSledljivostModel = null; iskUnosSifre = ""; iskGreska1 = null; }
+
+    private async Task IskTraziPovezani(string sifra) { iskUnosSifre = sifra; await IskTraziPL(); }
+
+    private async Task IskOtvoriSledljivost(string sifra) { iskPodtab = 1; iskUnosSifre = sifra; await IskTraziPL(); }
+
+    private async Task IskPrikaziListu()
+    {
+        iskUcitavanjeListe = true;
+        try
+        {
+            iskFilter.PrvaKlasifikacijaID = null;
+            iskFilter.ArtikalID = string.IsNullOrEmpty(iskFilterArtikalId) ? null : long.Parse(iskFilterArtikalId);
+            iskFilter.KomitentID = string.IsNullOrEmpty(iskFilterKomitentId) ? null : long.Parse(iskFilterKomitentId);
+            iskFilter.SamoNeiskorisceni = iskFilterSamoNeiskorisceni;
+            iskListaIskoriscenja = await IskoriscenjeService.UcitajListuIskoriscenja(iskFilter);
+        }
+        catch (Exception ex) { Logger.LogError(ex, "Greška isk lista"); }
+        finally { iskUcitavanjeListe = false; }
+    }
+
+    private void IskOcistiFiltere()
+    {
+        iskFilter = new() { OdDatum = DateTime.Today.AddDays(-30), DoDatum = DateTime.Today };
+        iskFilterArtikalId = ""; iskFilterKomitentId = ""; iskFilterSamoNeiskorisceni = false;
+        iskListaIskoriscenja = null;
+    }
+
+    private async Task IskPrikaziStatistiku()
+    {
+        iskUcitavanjeStat = true;
+        try
+        {
+            iskFilterStat.ArtikalID = string.IsNullOrEmpty(iskFilterStatArtikalId) ? null : long.Parse(iskFilterStatArtikalId);
+            iskFilterStat.KomitentID = string.IsNullOrEmpty(iskFilterStatKomitentId) ? null : long.Parse(iskFilterStatKomitentId);
+            iskStatistika = await IskoriscenjeService.UcitajStatistikuPL(iskFilterStat);
+        }
+        catch (Exception ex) { Logger.LogError(ex, "Greška isk statistika"); }
+        finally { iskUcitavanjeStat = false; }
+    }
+
+    private void IskOcistiFiltereStat()
+    {
+        iskFilterStat = new() { OdDatum = DateTime.Today.AddDays(-30), DoDatum = DateTime.Today };
+        iskFilterStatArtikalId = ""; iskFilterStatKomitentId = "";
+        iskStatistika = null;
+    }
+
+    private string IskTipBadgeClass(int tip) => tip switch { 1 => "bg-success", 2 => "bg-primary", 3 => "bg-warning text-dark", _ => "bg-secondary" };
+    private string IskTipNaziv(int tip) => tip switch { 1 => "Nabavka", 2 => "Proizvodnja", 3 => "Prodaja", _ => "Nepoznato" };
+    private string IskSmenaText(int smena) => smena switch { 1 => "1. smena", 2 => "2. smena", 3 => "3. smena", _ => smena.ToString() };
 }

@@ -1,0 +1,585 @@
+/* Solar modul — dark industrial energy dashboard */
+
+.solar-dashboard {
+    position: relative;
+    overflow: hidden;
+    padding: 14px 18px 20px;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    min-height: auto;
+    color: var(--text-main);
+    background:
+        radial-gradient(circle at 12% 8%, rgba(250, 204, 21, 0.08), transparent 26%),
+        radial-gradient(circle at 88% 12%, rgba(56, 189, 248, 0.08), transparent 28%),
+        var(--bg-main);
+}
+
+.solar-dashboard > * {
+    position: relative;
+    z-index: 1;
+}
+
+.solar-card {
+    background: linear-gradient(145deg, rgba(15, 31, 53, 0.96), rgba(8, 18, 32, 0.96));
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+    padding: 18px;
+}
+
+/* ── Header ── */
+
+.solar-dashboard .solar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+}
+
+.solar-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+}
+
+.solar-subtitle {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.solar-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.28);
+    color: #86efac;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-pill-offline {
+    background: rgba(100, 116, 139, 0.14);
+    border-color: rgba(148, 163, 184, 0.22);
+    color: var(--text-muted);
+}
+
+.solar-last-read {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.solar-last-read strong {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.solar-filter-pills {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.filter-pill {
+    padding: 6px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    color: var(--text-soft);
+    background: rgba(15, 31, 53, 0.5);
+}
+
+.filter-pill-active {
+    color: var(--text-main);
+    border-color: rgba(56, 189, 248, 0.35);
+    background: rgba(56, 189, 248, 0.12);
+}
+
+.btn-solar-refresh {
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(16, 36, 61, 0.8);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.btn-solar-refresh:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+    background: rgba(56, 189, 248, 0.1);
+}
+
+/* ── Decision strip ── */
+
+.sd-decision {
+    border-radius: 18px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border-soft);
+}
+
+.sd-decision-compact {
+    margin-bottom: 0;
+    padding: 12px 14px;
+}
+
+.sd-decision-title {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+
+.sd-decision-sub {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.sd-status-good {
+    background: rgba(34, 197, 94, 0.14);
+    border-color: rgba(34, 197, 94, 0.24);
+}
+
+.sd-status-good .sd-decision-title { color: #86efac; }
+
+.sd-status-normal {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.22);
+}
+
+.sd-status-normal .sd-decision-title { color: var(--electric-blue); }
+
+.sd-status-wait {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.22);
+}
+
+.sd-status-wait .sd-decision-title { color: #fca5a5; }
+
+/* ── KPI grid — uvek 5 u redu na desktopu ── */
+
+.solar-dashboard .solar-kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 10px;
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+.solar-dashboard .solar-kpi-card {
+    background: linear-gradient(145deg, rgba(15, 31, 53, 0.96), rgba(8, 18, 32, 0.96));
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 12px;
+    padding: 10px 12px;
+    min-height: 0;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.solar-kpi-label {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.solar-kpi-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #e5edf7;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+}
+
+.solar-kpi-value-sm {
+    font-size: 15px;
+    line-height: 1.15;
+}
+
+.kpi-unit {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.kpi-power .solar-kpi-value { color: var(--solar-yellow); }
+.kpi-factory .solar-kpi-value { color: var(--electric-blue); }
+.kpi-grid-kw .solar-kpi-value { color: var(--red); }
+.kpi-coverage .solar-kpi-value { color: var(--solar-yellow); }
+.kpi-period .solar-kpi-value { color: var(--cyan); }
+
+/* ── Chart row: ~70% chart + 30% preporuka ── */
+
+.solar-dashboard .solar-chart-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 7fr) minmax(220px, 3fr)) !important;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: stretch;
+}
+
+.solar-chart-section {
+    padding: 14px 16px 10px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, rgba(15, 31, 53, 0.96), rgba(8, 18, 32, 0.96));
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    min-width: 0;
+}
+
+.solar-chart-title {
+    font-size: 16px;
+    font-weight: 800;
+    margin: 0 0 2px;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+}
+
+.solar-advice-card {
+    border-radius: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.solar-advice-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.solar-advice-card .sd-decision-title {
+    font-size: 13px;
+    line-height: 1.25;
+}
+
+.solar-advice-card .sd-decision-sub {
+    font-size: 11px;
+    margin-top: 0;
+}
+
+.solar-advice-metrics {
+    display: grid;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.solar-advice-metrics div {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.solar-advice-label {
+    color: var(--text-soft);
+}
+
+.solar-advice-metrics strong {
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+/* ── 3 mini stat kartice ispod charta ── */
+
+.solar-dashboard .solar-mini-stats {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.solar-mini-stat {
+    background: linear-gradient(145deg, rgba(15, 31, 53, 0.96), rgba(8, 18, 32, 0.96));
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 64px;
+}
+
+.solar-mini-stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.solar-mini-stat-value {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--text-main);
+}
+
+.solar-mini-stat-yellow { color: var(--solar-yellow); }
+.solar-mini-stat-cyan { color: var(--cyan); }
+.solar-mini-stat-red { color: var(--red); }
+
+/* ── Detalji (sklopivo) ── */
+
+.solar-details {
+    margin-top: 4px;
+}
+
+.solar-details > summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 8px 4px;
+    list-style: none;
+}
+
+.solar-details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.solar-details[open] > summary {
+    margin-bottom: 10px;
+    color: var(--text-main);
+}
+
+.solar-details .solar-bottom-grid {
+    margin-top: 0;
+}
+
+.panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.panel-meta {
+    font-size: 12px;
+    color: var(--text-soft);
+}
+
+.sd-chart-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.sd-chart-period {
+    font-size: 12px;
+    color: var(--text-soft);
+    margin: 0 0 4px;
+}
+
+.solar-bottom-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.solar-bottom-grid .solar-card {
+    padding: 12px 14px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.solar-bottom-grid .panel-title {
+    margin-bottom: 12px;
+}
+
+.inverter-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.inverter-table th {
+    color: var(--text-soft);
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 6px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.inverter-table td {
+    color: var(--text-main);
+    padding: 9px 6px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.inverter-table td.muted {
+    color: var(--text-soft);
+}
+
+.status-online {
+    display: inline-block;
+    color: #86efac;
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.22);
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
+.status-offline {
+    display: inline-block;
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.22);
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
+.metric-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.metric-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    font-size: 13px;
+}
+
+.metric-list li:last-child {
+    border-bottom: none;
+}
+
+.metric-list span:first-child {
+    color: var(--text-soft);
+}
+
+.metric-list span:last-child {
+    color: var(--text-main);
+    font-weight: 700;
+    text-align: right;
+}
+
+.metric-list .val-yellow { color: var(--solar-yellow); }
+.metric-list .val-blue { color: var(--electric-blue); }
+.metric-list .val-red { color: var(--red); }
+.metric-list .val-green { color: var(--green); }
+.metric-list .val-cyan { color: var(--cyan); }
+
+.alarm-count {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.alarm-count-ok { color: var(--green); }
+.alarm-count-warn { color: var(--red); }
+
+.solar-dashboard .alert {
+    border-radius: 14px;
+    border-color: var(--border-soft);
+    background: rgba(15, 31, 53, 0.85);
+    color: var(--text-muted);
+}
+
+.solar-dashboard .alert-warning {
+    border-color: rgba(250, 204, 21, 0.3);
+    color: #fde68a;
+}
+
+/* ApexCharts unutar solar dashboard-a */
+.solar-dashboard .apexcharts-canvas {
+    touch-action: pan-x;
+}
+
+.solar-dashboard .apexcharts-legend-text {
+    color: var(--text-muted) !important;
+}
+
+/* ── Responsive — NE ruši KPI u jednu kolonu na tabletu ── */
+
+@media (max-width: 1100px) {
+    .solar-dashboard .solar-chart-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    .solar-advice-card {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .solar-advice-card .sd-decision-title,
+    .solar-advice-card .sd-decision-sub {
+        flex: 1 1 100%;
+    }
+
+    .solar-advice-metrics {
+        flex: 1 1 100%;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .solar-bottom-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .solar-dashboard .solar-kpi-grid {
+        grid-template-columns: repeat(5, minmax(118px, 1fr)) !important;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+    }
+
+    .solar-dashboard .solar-mini-stats {
+        grid-template-columns: 1fr !important;
+    }
+
+    .solar-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .solar-advice-metrics {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* SolarPregled — kompatibilnost */
+.solar-pregled-page .card.bg-dark {
+    background: var(--bg-card) !important;
+    border-color: var(--border-soft) !important;
+    backdrop-filter: blur(14px);
+}

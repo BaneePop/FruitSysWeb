@@ -1,0 +1,587 @@
+@page "/troskovi-proizvodnje"
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Models
+@using FruitSysWeb.Constants
+
+@inject NavigationManager NavigationManager
+@inject IPreradaService PreradaService
+@inject ITypeMappingService TypeMapping
+@inject IJSRuntime JSRuntime
+@inject ILogger<TroskoviProizvodnje> Logger
+
+@* All styles moved to wwwroot/css/shared-components.css *@
+
+<!-- Header -->
+<div class="troskovi-header text-white py-4 mb-4">
+    <div class="container-fluid">
+        <h1 class="h2 mb-1">
+            <i class="bi bi-gear-wide-connected me-2"></i>Troškovi Proizvodnje
+        </h1>
+        <p class="mb-0 opacity-75">Analiza ukupnih troškova prerade po sezoni — radna snaga, materijal, ambalaža i režija po radnim nalozima</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Sezona Info -->
+    <div class="sezona-info">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="sezona-badge">@SezonaConstants.GetNazivTrenutneSezone()</span>
+                <span class="ms-3 text-muted">
+                    <i class="bi bi-calendar-event me-1"></i>
+                    Početak sezone: @TypeMapping.FormatDate(SezonaConstants.GetPocetakTrenutneSezone())
+                </span>
+                <span class="ms-3 text-muted">
+                    <i class="bi bi-calendar-check me-1"></i>
+                    Trenutno: @TypeMapping.FormatDate(DateTime.Now)
+                </span>
+            </div>
+            <button class="btn btn-sm btn-success" @onclick="RefreshAllCharts" disabled="@IsRefreshing">
+                <i class="bi bi-arrow-clockwise @(IsRefreshing ? "spin" : "")"></i>
+                @(IsRefreshing ? "Osvežavam..." : "Osveži sve")
+            </button>
+        </div>
+    </div>
+
+    <!-- Row 1: Troškovi po radnom nalogu -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart
+                Title="Troškovi po RN - Zadnjih 10 Završenih"
+                Icon="bi bi-clipboard-check"
+                SeriesName="Troškovi"
+                Unit="RSD"
+                Data="@TroskoviPoRN_Zadnjih10"
+                IsLoading="@IsLoadingRN10"
+                HasError="@HasErrorRN10"
+                ShowSummary="true"
+                OnRefresh="@RefreshRN_Zadnjih10" />
+        </div>
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart
+                Title="Troškovi po RN - 10 Najskupljih (Od Početka Sezone)"
+                Icon="bi bi-graph-up-arrow"
+                SeriesName="Troškovi"
+                Unit="RSD"
+                Data="@TroskoviPoRN_NajskupljiSezona"
+                IsLoading="@IsLoadingRNNajskuplji"
+                HasError="@HasErrorRNNajskuplji"
+                ShowSummary="true"
+                OnRefresh="@RefreshRN_NajskupljiSezona" />
+        </div>
+    </div>
+
+    <!-- Row 2: Troškovi po smenskom izveštaju -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart
+                Title="Troškovi po Smeni - Zadnjih 20"
+                Icon="bi bi-clock-history"
+                SeriesName="Troškovi"
+                Unit="RSD"
+                Data="@TroskoviPoSmeni_Zadnjih20"
+                IsLoading="@IsLoadingSmena20"
+                HasError="@HasErrorSmena20"
+                ShowSummary="true"
+                OnRefresh="@RefreshSmena_Zadnjih20" />
+        </div>
+        <div class="col-lg-6 mb-3">
+            <ApexBarChart
+                Title="Troškovi po Smeni - 10 Najskupljih (Od Početka Sezone)"
+                Icon="bi bi-exclamation-diamond"
+                SeriesName="Troškovi"
+                Unit="RSD"
+                Data="@TroskoviPoSmeni_NajskupljiSezona"
+                IsLoading="@IsLoadingSmenaNajskuplji"
+                HasError="@HasErrorSmenaNajskuplji"
+                ShowSummary="true"
+                OnRefresh="@RefreshSmena_NajskupljiSezona" />
+        </div>
+    </div>
+
+    <!-- Row 3: Troškovi po proizvodnim procesima i gotovom proizvodu -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-gear-wide-connected me-2"></i>Troškovi po Proizvodnim Procesima
+                        </h5>
+                        <div class="tab-buttons">
+                            <button class="tab-button @(ActiveTab7Dana ? "active" : "")" @onclick="@(() => SetProcesPeriod(7))">
+                                7 Dana
+                            </button>
+                            <button class="tab-button @(!ActiveTab7Dana ? "active" : "")" @onclick="@(() => SetProcesPeriod(30))">
+                                30 Dana
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ApexBarChart
+                        Title=""
+                        Icon=""
+                        SeriesName="Troškovi"
+                        Unit="RSD"
+                        Data="@TroskoviPoProcesima"
+                        IsLoading="@IsLoadingProcesi"
+                        HasError="@HasErrorProcesi"
+                        ShowSummary="true"
+                        OnRefresh="@RefreshProcesi" />
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-tools me-2"></i>Troškovi po Radnim Procesima (Top 5)
+                        </h5>
+                        <div class="tab-buttons">
+                            <button class="tab-button @(ActiveTabRadniProces7Dana ? "active" : "")" @onclick="@(() => SetRadniProcesPeriod(7))">
+                                7 Dana
+                            </button>
+                            <button class="tab-button @(!ActiveTabRadniProces7Dana ? "active" : "")" @onclick="@(() => SetRadniProcesPeriod(30))">
+                                30 Dana
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ApexBarChart
+                        Title=""
+                        Icon=""
+                        SeriesName="Troškovi"
+                        Unit="RSD"
+                        Data="@TroskoviPoRadnimProcesima"
+                        IsLoading="@IsLoadingRadniProcesi"
+                        HasError="@HasErrorRadniProcesi"
+                        ShowSummary="true"
+                        OnRefresh="@RefreshRadniProcesi" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Početna</a></li>
+            <li class="breadcrumb-item"><a href="/troskovihome">Troškovi</a></li>
+            <li class="breadcrumb-item active">Troškovi Proizvodnje</li>
+        </ol>
+    </nav>
+</div>
+
+@code {
+    // Chart Data
+    private List<ChartDataPoint>? TroskoviPoRN_Zadnjih10;
+    private List<ChartDataPoint>? TroskoviPoRN_NajskupljiSezona;
+    private List<ChartDataPoint>? TroskoviPoSmeni_Zadnjih20;
+    private List<ChartDataPoint>? TroskoviPoSmeni_NajskupljiSezona;
+    private List<ChartDataPoint>? TroskoviPoProcesima;
+    private List<ChartDataPoint>? TroskoviPoRadnimProcesima;
+
+    // Loading States
+    private bool IsLoadingRN10 = false;
+    private bool IsLoadingRNNajskuplji = false;
+    private bool IsLoadingSmena20 = false;
+    private bool IsLoadingSmenaNajskuplji = false;
+    private bool IsLoadingProcesi = false;
+    private bool IsLoadingRadniProcesi = false;
+    private bool IsRefreshing = false;
+
+    // Error States
+    private bool HasErrorRN10 = false;
+    private bool HasErrorRNNajskuplji = false;
+    private bool HasErrorSmena20 = false;
+    private bool HasErrorSmenaNajskuplji = false;
+    private bool HasErrorProcesi = false;
+    private bool HasErrorRadniProcesi = false;
+
+    // Tab state
+    private bool ActiveTab7Dana = false; // Default 30 dana za Proizvodni Proces
+    private int ProcesPeriodDana = 30;
+    private bool ActiveTabRadniProces7Dana = false; // Default 30 dana za Radni Proces
+    private int RadniProcesPeriodDana = 30;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAllCharts();
+    }
+
+    private async Task RefreshAllCharts()
+    {
+        IsRefreshing = true;
+        StateHasChanged();
+
+        try
+        {
+            await Task.WhenAll(
+                RefreshRN_Zadnjih10(),
+                RefreshRN_NajskupljiSezona(),
+                RefreshSmena_Zadnjih20(),
+                RefreshSmena_NajskupljiSezona(),
+                RefreshProcesi(),
+                RefreshRadniProcesi()
+            );
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing all charts");
+        }
+        finally
+        {
+            IsRefreshing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshRN_Zadnjih10()
+    {
+        if (IsLoadingRN10) return;
+
+        IsLoadingRN10 = true;
+        HasErrorRN10 = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(100);
+
+            // Učitaj zadnjih 10 završenih radnih naloga
+            var filter = new FilterRequest
+            {
+                DokumentStatus = 3, // Završeni
+                DoDatum = DateTime.Now
+            };
+
+            var radniNalozi = await PreradaService.UcitajRadniNalogIzvestaj(filter);
+
+            // Grupisati po RadniNalog i sabrati troškove - sortirati po poslednja 4 broja (RN-25-0259 -> 0259)
+            var grupisaniPodaci = radniNalozi
+                .Where(rn => !string.IsNullOrEmpty(rn.RadniNalog))
+                .GroupBy(rn => rn.RadniNalog)
+                .Select(g => new
+                {
+                    RadniNalog = g.Key,
+                    VrstaArtikla = g.First().VrstaArtikla ?? "",
+                    UkupnoTroskovi = g.Sum(x => x.TrosakPoRadnomNalogu),
+                    // Izvući poslednja 4 broja iz RN-25-0259
+                    BrojNaloga = g.Key.Split('-').LastOrDefault() ?? "0000"
+                })
+                .OrderByDescending(x => x.BrojNaloga)
+                .Take(10)
+                .ToList();
+
+            // Kreirati ChartDataPoint sa VrstaArtikla u labelu
+            TroskoviPoRN_Zadnjih10 = grupisaniPodaci
+                .Select(x => new ChartDataPoint
+                {
+                    Label = $"{x.VrstaArtikla} ({x.RadniNalog})",
+                    Value = x.UkupnoTroskovi,
+                    Color = ChartDataHelper.GetFruitColor(x.VrstaArtikla)
+                })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading RN zadnjih 10");
+            HasErrorRN10 = true;
+            TroskoviPoRN_Zadnjih10 = ChartDataHelper.GetMockData("RN", 10);
+        }
+        finally
+        {
+            IsLoadingRN10 = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshRN_NajskupljiSezona()
+    {
+        if (IsLoadingRNNajskuplji) return;
+
+        IsLoadingRNNajskuplji = true;
+        HasErrorRNNajskuplji = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(150);
+
+            // Učitaj od početka sezone
+            var filter = new FilterRequest
+            {
+                OdDatum = SezonaConstants.GetPocetakTrenutneSezone(),
+                DoDatum = DateTime.Now,
+                DokumentStatus = 3 // Završeni
+            };
+
+            var radniNalozi = await PreradaService.UcitajRadniNalogIzvestaj(filter);
+
+            var grupisaniPodaci = radniNalozi
+                .Where(rn => !string.IsNullOrEmpty(rn.RadniNalog))
+                .GroupBy(rn => rn.RadniNalog)
+                .Select(g => new
+                {
+                    RadniNalog = g.Key,
+                    VrstaArtikla = g.First().VrstaArtikla ?? "",
+                    UkupnoTroskovi = g.Sum(rn => rn.TrosakPoRadnomNalogu)
+                })
+                .OrderByDescending(x => x.UkupnoTroskovi)
+                .Take(10)
+                .OrderBy(x => x.UkupnoTroskovi)
+                .ToList();
+
+            // Kreirati ChartDataPoint sa VrstaArtikla u labelu
+            TroskoviPoRN_NajskupljiSezona = grupisaniPodaci
+                .Select(x => new ChartDataPoint
+                {
+                    Label = $"{x.VrstaArtikla} ({x.RadniNalog})",
+                    Value = x.UkupnoTroskovi,
+                    Color = ChartDataHelper.GetFruitColor(x.VrstaArtikla)
+                })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading RN najskuplji");
+            HasErrorRNNajskuplji = true;
+            TroskoviPoRN_NajskupljiSezona = ChartDataHelper.GetMockData("RN", 10);
+        }
+        finally
+        {
+            IsLoadingRNNajskuplji = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshSmena_Zadnjih20()
+    {
+        if (IsLoadingSmena20) return;
+
+        IsLoadingSmena20 = true;
+        HasErrorSmena20 = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(200);
+
+            var filter = new FilterRequest { DoDatum = DateTime.Now };
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            // Grupisati po BrojIzvestaja i sabrati troškove - sortirati po datumu od najnovijeg ka najstarijem
+            TroskoviPoSmeni_Zadnjih20 = smene
+                .Where(s => !string.IsNullOrEmpty(s.BrojIzvestaja))
+                .GroupBy(s => s.BrojIzvestaja)
+                .Select(g => new
+                {
+                    BrojIzvestaja = g.Key,
+                    UkupnoTroskovi = g.Sum(x => x.TrosakPoRadnomNalogu),
+                    // SI-251016/1 -> Izvući 251016 i 1, spojiti u 2510161 za sortiranje po datumu
+                    SortKey = g.Key.Replace("SI-", "").Replace("/", "")
+                })
+                .OrderByDescending(x => x.SortKey) // Sortiraj od najnovijeg ka najstarijem
+                .Take(20)
+                .Select(x => new ChartDataPoint
+                {
+                    Label = x.BrojIzvestaja,
+                    Value = x.UkupnoTroskovi
+                })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading smena zadnjih 20");
+            HasErrorSmena20 = true;
+            TroskoviPoSmeni_Zadnjih20 = ChartDataHelper.GetMockData("Smena", 20);
+        }
+        finally
+        {
+            IsLoadingSmena20 = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshSmena_NajskupljiSezona()
+    {
+        if (IsLoadingSmenaNajskuplji) return;
+
+        IsLoadingSmenaNajskuplji = true;
+        HasErrorSmenaNajskuplji = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(250);
+
+            var filter = new FilterRequest
+            {
+                OdDatum = SezonaConstants.GetPocetakTrenutneSezone(),
+                DoDatum = DateTime.Now
+            };
+
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            // Grupisati po BrojIzvestaja i sabrati troškove
+            var troskoviDict = smene
+                .Where(s => !string.IsNullOrEmpty(s.BrojIzvestaja))
+                .GroupBy(s => s.BrojIzvestaja)
+                .Select(g => new
+                {
+                    BrojIzvestaja = g.Key,
+                    UkupnoTroskovi = g.Sum(x => x.TrosakPoRadnomNalogu)
+                })
+                .OrderByDescending(x => x.UkupnoTroskovi)
+                .Take(10)
+                .OrderBy(x => x.UkupnoTroskovi)
+                .ToDictionary(
+                    x => x.BrojIzvestaja,
+                    x => (decimal)x.UkupnoTroskovi
+                );
+
+            TroskoviPoSmeni_NajskupljiSezona = ChartDataHelper.FromDictionary(troskoviDict, 10);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading smena najskuplji");
+            HasErrorSmenaNajskuplji = true;
+            TroskoviPoSmeni_NajskupljiSezona = ChartDataHelper.GetMockData("Smena", 20);
+        }
+        finally
+        {
+            IsLoadingSmenaNajskuplji = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SetProcesPeriod(int dana)
+    {
+        ProcesPeriodDana = dana;
+        ActiveTab7Dana = (dana == 7);
+        _ = RefreshProcesi();
+    }
+
+    private async Task RefreshProcesi()
+    {
+        if (IsLoadingProcesi) return;
+
+        IsLoadingProcesi = true;
+        HasErrorProcesi = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(180);
+
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-ProcesPeriodDana),
+                DoDatum = DateTime.Now
+            };
+
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            // Grupisanje po ProizvodniProces
+            var troskoviDict = smene
+                .Where(s => !string.IsNullOrEmpty(s.ProizvodniProces))
+                .GroupBy(s => s.ProizvodniProces)
+                .Select(g => new
+                {
+                    Proces = g.Key,
+                    Troskovi = g.Sum(s => s.TrosakPoRadnomNalogu)
+                })
+                .OrderByDescending(x => x.Troskovi)
+                .Take(15)
+                .OrderBy(x => x.Troskovi)
+                .ToDictionary(
+                    x => x.Proces,
+                    x => (decimal)x.Troskovi
+                );
+
+            TroskoviPoProcesima = ChartDataHelper.FromDictionary(troskoviDict, 15);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading procesi");
+            HasErrorProcesi = true;
+            TroskoviPoProcesima = ChartDataHelper.GetMockData("Proces", 15);
+        }
+        finally
+        {
+            IsLoadingProcesi = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SetRadniProcesPeriod(int dana)
+    {
+        RadniProcesPeriodDana = dana;
+        ActiveTabRadniProces7Dana = (dana == 7);
+        _ = RefreshRadniProcesi();
+    }
+
+    private async Task RefreshRadniProcesi()
+    {
+        if (IsLoadingRadniProcesi) return;
+
+        IsLoadingRadniProcesi = true;
+        HasErrorRadniProcesi = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(220);
+
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-RadniProcesPeriodDana),
+                DoDatum = DateTime.Now
+            };
+
+            // Koristiti UcitajEvidencijeIzvestaj - sad ima RadniProces i CenaKostanjaDirektanRad
+            var evidencije = await PreradaService.UcitajEvidencijeIzvestaj(filter);
+
+            Logger.LogInformation($"Radni Procesi: Ukupno {evidencije.Count} evidencija učitano");
+
+            // Grupisati po RadniProces i sabrati troškove
+            var troskoviDict = evidencije
+                .Where(e => !string.IsNullOrEmpty(e.RadniProces) && e.RadniProces != "Nepoznato")
+                .GroupBy(e => e.RadniProces)
+                .Select(g => new
+                {
+                    Proces = g.Key,
+                    Troskovi = g.Sum(e => e.CenaKostanjaDirektanRad)
+                })
+                .OrderByDescending(x => x.Troskovi)
+                .Take(5)
+                .ToDictionary(
+                    x => x.Proces,
+                    x => (decimal)x.Troskovi
+                );
+
+            Logger.LogInformation($"Radni Procesi: {troskoviDict.Count} radnih procesa sa troškovima");
+            TroskoviPoRadnimProcesima = ChartDataHelper.FromDictionary(troskoviDict, 5);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading radni procesi");
+            HasErrorRadniProcesi = true;
+            TroskoviPoRadnimProcesima = ChartDataHelper.GetMockData("Radni Proces", 5);
+        }
+        finally
+        {
+            IsLoadingRadniProcesi = false;
+            StateHasChanged();
+        }
+    }
+}

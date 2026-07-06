@@ -1,0 +1,84 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio 
+.vs/
+.vscode/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET Core
+wwwroot/dist/
+
+# Mac
+.DS_Store
+
+# Documentation files (keep only README.md)
+*_README.md
+*_SUMMARY.md
+*IMPLEMENTATION*.md
+*PROGRESS*.md
+*PLAN*.md
+final_*.md
+implementacija_*.md
+
+# Shell scripts
+*.sh
+!setup.sh
+
+# Backup files
+*.bundle
+*.backup
+*.bak
+
+# Temp files
+*.tmp
+*.temp
+
+.fakepublish/
+
+.fake
+
+# Publish folder (deployment artifacts)
+publish/
+publish_output/
+publish_new/
+
+# Deployment archives
+*.zip
+
+# Data folder (local data)
+Data/
+
+# Deployment scripts and temp folders
+deploy-*.ps1
+quick-*.ps1
+quick-deploy-temp/

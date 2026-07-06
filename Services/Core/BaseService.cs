@@ -24,7 +24,7 @@ public abstract class BaseService
     /// var sql = new StringBuilder("SELECT * FROM Fakture");
     /// var parameters = new Dictionary&lt;string, object&gt;();
     /// ApplyDateFilter(sql, parameters, filterRequest, "f.Datum", useAnd: false);
-    /// // Result: SELECT * FROM Fakture WHERE DATE(f.Datum) >= @OdDatum AND DATE(f.Datum) <= @DoDatum
+    /// // Result: SELECT * FROM Fakture WHERE f.Datum >= @OdDatum AND f.Datum < @DoDatum
     /// </code>
     /// </example>
     protected void ApplyDateFilter(
@@ -37,15 +37,15 @@ public abstract class BaseService
         if (filterRequest.OdDatum.HasValue)
         {
             sql.Append(useAnd ? " AND" : " WHERE");
-            sql.Append($" DATE({dateColumnName}) >= @OdDatum");
+            sql.Append($" {dateColumnName} >= @OdDatum");
             parameters.Add("@OdDatum", filterRequest.OdDatum.Value.Date);
         }
 
         if (filterRequest.DoDatum.HasValue)
         {
             sql.Append(useAnd || filterRequest.OdDatum.HasValue ? " AND" : " WHERE");
-            sql.Append($" DATE({dateColumnName}) <= @DoDatum");
-            parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date);
+            sql.Append($" {dateColumnName} < @DoDatum");
+            parameters.Add("@DoDatum", filterRequest.DoDatum.Value.Date.AddDays(1));
         }
     }
 

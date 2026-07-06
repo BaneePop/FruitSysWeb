@@ -12,6 +12,8 @@
 @inject PrijemnicaPdfService PrijemnicaPdf
 @inject OtpremnicaPdfService OtpremnicaPdf
 @inject RadniNalogIzvodPdfService RadniNalogPdf
+@inject OtkupniListPdfService OtkupniListPdf
+@inject PaletniListPdfService PaletniListPdf
 @inject IJSRuntime JSRuntime
 @inject ILogger<IzvodDokumenata> Logger
 
@@ -45,6 +47,24 @@
             <button class="nav-link @(aktivniTab == "radni-nalozi" ? "active" : "")"
                     @onclick='() => PrebacíTab("radni-nalozi")'>
                 <i class="bi bi-clipboard-data me-1"></i>Radni Nalozi
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(aktivniTab == "otkupni-listovi" ? "active" : "")"
+                    @onclick='() => PrebacíTab("otkupni-listovi")'>
+                <i class="bi bi-receipt me-1"></i>Otkupni Listovi
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(aktivniTab == "paletni-nabavka" ? "active" : "")"
+                    @onclick='() => PrebacíTab("paletni-nabavka")'>
+                <i class="bi bi-upc-scan me-1"></i>PL Nabavka
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(aktivniTab == "paletni-gotova-roba" ? "active" : "")"
+                    @onclick='() => PrebacíTab("paletni-gotova-roba")'>
+                <i class="bi bi-upc-scan me-1"></i>PL Gotova Roba
             </button>
         </li>
     </ul>
@@ -525,6 +545,336 @@
             }
         }
 
+        @if (aktivniTab == "otkupni-listovi")
+        {
+            <div class="card border-0 bg-light mb-3">
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Od datuma:</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   value="@FOL_OdDatum"
+                                   @onchange="e => FOL_OdDatum = e.Value?.ToString() ?? string.Empty" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Do datuma:</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   value="@FOL_DoDatum"
+                                   @onchange="e => FOL_DoDatum = e.Value?.ToString() ?? string.Empty" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Komitent:</label>
+                            <select class="form-select form-select-sm" @bind="FOL_KomitentId">
+                                <option value="0">Svi komitenti</option>
+                                @foreach (var k in komitenti)
+                                {
+                                    <option value="@k.Id">@k.Naziv</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Artikal:</label>
+                            <select class="form-select form-select-sm" @bind="FOL_ArtikalId">
+                                <option value="0">Svi artikli</option>
+                                @foreach (var a in artikli)
+                                {
+                                    <option value="@a.Id">@a.Naziv</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12 d-flex gap-2 mt-1">
+                            <button class="btn btn-primary btn-sm" @onclick="UcitajOtkupneListove" disabled="@ucitavaOtkupneListove">
+                                <i class="bi bi-search me-1"></i>Pretraži
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="ResetOtkupneListove">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Resetuj
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (ucitavaOtkupneListove)
+            {
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-2 text-muted">Učitavanje...</div>
+                </div>
+            }
+            else if (otkupniListovi.Count == 0)
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>Nema rezultata za zadati filter.
+                </div>
+            }
+            else
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                        <span class="fw-bold">
+                            <i class="bi bi-list-ul me-1"></i>Otkupni listovi
+                            <span class="badge bg-secondary ms-1">@otkupniListovi.Count</span>
+                        </span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Dokument</th>
+                                        <th>Datum</th>
+                                        <th>Komitent</th>
+                                        <th>Artikal</th>
+                                        <th class="text-end">Iznos ukupno</th>
+                                        <th style="width:90px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ol in otkupniListovi)
+                                    {
+                                        <tr style="border-bottom: 1px solid #dee2e6;">
+                                            <td><span class="badge bg-success">@ol.Sifra</span></td>
+                                            <td>@ol.DatumFormatted</td>
+                                            <td>@ol.Komitent</td>
+                                            <td>@ol.Artikal</td>
+                                            <td class="text-end"><strong>@ol.IznosUkupnoFormatted</strong></td>
+                                            <td class="text-end">
+                                                <button class="btn btn-danger btn-sm"
+                                                        @onclick="() => ExportOtkupniList(ol.ID, ol.Sifra)"
+                                                        disabled="@exportujeOtkupniList">
+                                                    <i class="bi bi-file-earmark-pdf me-1"></i>Izvoz
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        @if (aktivniTab == "paletni-nabavka")
+        {
+            <div class="card border-0 bg-light mb-3">
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Od datuma:</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   value="@FPN_OdDatum"
+                                   @onchange="e => FPN_OdDatum = e.Value?.ToString() ?? string.Empty" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Do datuma:</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   value="@FPN_DoDatum"
+                                   @onchange="e => FPN_DoDatum = e.Value?.ToString() ?? string.Empty" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Komitent:</label>
+                            <select class="form-select form-select-sm" @bind="FPN_KomitentId">
+                                <option value="0">Svi komitenti</option>
+                                @foreach (var k in komitenti)
+                                {
+                                    <option value="@k.Id">@k.Naziv</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Artikal:</label>
+                            <select class="form-select form-select-sm" @bind="FPN_ArtikalId">
+                                <option value="0">Svi artikli</option>
+                                @foreach (var a in artikli)
+                                {
+                                    <option value="@a.Id">@a.Naziv</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Šifra PL:</label>
+                            <input type="text" class="form-control form-control-sm" placeholder="N-26-..."
+                                   @bind="FPN_Sifra" />
+                        </div>
+                        <div class="col-12 d-flex gap-2 mt-1">
+                            <button class="btn btn-primary btn-sm" @onclick="UcitajPaletneListoveNabavke" disabled="@ucitavaPLNabavka">
+                                <i class="bi bi-search me-1"></i>Pretraži
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="ResetPLNabavka">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Resetuj
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (ucitavaPLNabavka)
+            {
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-2 text-muted">Učitavanje...</div>
+                </div>
+            }
+            else if (paletniListoviNabavka.Count == 0)
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>Nema rezultata za zadati filter.
+                </div>
+            }
+            else
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                        <span class="fw-bold">
+                            <i class="bi bi-list-ul me-1"></i>Paletni listovi nabavka
+                            <span class="badge bg-secondary ms-1">@paletniListoviNabavka.Count</span>
+                        </span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Paletni List</th>
+                                        <th>Komitent</th>
+                                        <th class="text-end">Neto (kg)</th>
+                                        <th style="width:90px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pl in paletniListoviNabavka)
+                                    {
+                                        <tr style="border-bottom: 1px solid #dee2e6;">
+                                            <td><span class="badge bg-info text-dark">@pl.Sifra</span></td>
+                                            <td>@pl.Komitent</td>
+                                            <td class="text-end"><strong>@pl.KolicinaFormatted</strong></td>
+                                            <td class="text-end">
+                                                <button class="btn btn-danger btn-sm"
+                                                        @onclick="() => ExportPaletniListNabavka(pl.ID, pl.Sifra)"
+                                                        disabled="@exportujePLNabavka">
+                                                    <i class="bi bi-file-earmark-pdf me-1"></i>Izvoz
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        @if (aktivniTab == "paletni-gotova-roba")
+        {
+            <div class="card border-0 bg-light mb-3">
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Od datuma:</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   value="@FPGR_OdDatum"
+                                   @onchange="e => FPGR_OdDatum = e.Value?.ToString() ?? string.Empty" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Do datuma:</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   value="@FPGR_DoDatum"
+                                   @onchange="e => FPGR_DoDatum = e.Value?.ToString() ?? string.Empty" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Komitent:</label>
+                            <select class="form-select form-select-sm" @bind="FPGR_KomitentId">
+                                <option value="0">Svi komitenti</option>
+                                @foreach (var k in komitenti)
+                                {
+                                    <option value="@k.Id">@k.Naziv</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Artikal:</label>
+                            <select class="form-select form-select-sm" @bind="FPGR_ArtikalId">
+                                <option value="0">Svi artikli</option>
+                                @foreach (var a in artikli)
+                                {
+                                    <option value="@a.Id">@a.Naziv</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1">Šifra PL:</label>
+                            <input type="text" class="form-control form-control-sm" placeholder="P-26-..."
+                                   @bind="FPGR_Sifra" />
+                        </div>
+                        <div class="col-12 d-flex gap-2 mt-1">
+                            <button class="btn btn-primary btn-sm" @onclick="UcitajPaletneListoveGotovaRoba" disabled="@ucitavaPLGotovaRoba">
+                                <i class="bi bi-search me-1"></i>Pretraži
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="ResetPLGotovaRoba">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Resetuj
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (ucitavaPLGotovaRoba)
+            {
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-2 text-muted">Učitavanje...</div>
+                </div>
+            }
+            else if (paletniListoviGotovaRoba.Count == 0)
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>Nema rezultata za zadati filter.
+                </div>
+            }
+            else
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                        <span class="fw-bold">
+                            <i class="bi bi-list-ul me-1"></i>Paletni listovi gotova roba
+                            <span class="badge bg-secondary ms-1">@paletniListoviGotovaRoba.Count</span>
+                        </span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Paletni List</th>
+                                        <th>Komitent</th>
+                                        <th class="text-end">Neto (kg)</th>
+                                        <th style="width:90px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pl in paletniListoviGotovaRoba)
+                                    {
+                                        <tr style="border-bottom: 1px solid #dee2e6;">
+                                            <td><span class="badge bg-warning text-dark">@pl.Sifra</span></td>
+                                            <td>@pl.Komitent</td>
+                                            <td class="text-end"><strong>@pl.KolicinaFormatted</strong></td>
+                                            <td class="text-end">
+                                                <button class="btn btn-danger btn-sm"
+                                                        @onclick="() => ExportPaletniListGotovaRoba(pl.ID, pl.Sifra)"
+                                                        disabled="@exportujePLGotovaRoba">
+                                                    <i class="bi bi-file-earmark-pdf me-1"></i>Izvoz
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
     </div>
 </div>
 
@@ -575,6 +925,38 @@
     private bool exportujeRadniNalog = false;
     private List<IzvodRadniNalogRow> radniNalozi = new();
 
+    // ── OTKUPNI LISTOVI ─────────────────────────────────────────────────────
+    private string FOL_OdDatum = DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd");
+    private string FOL_DoDatum = DateTime.Today.ToString("yyyy-MM-dd");
+    private int FOL_KomitentId = 0;
+    private int FOL_ArtikalId = 0;
+
+    private bool ucitavaOtkupneListove = false;
+    private bool exportujeOtkupniList = false;
+    private List<IzvodOtkupniListRow> otkupniListovi = new();
+
+    // ── PALETNI LISTOVI NABAVKA ──────────────────────────────────────────────
+    private string FPN_OdDatum = DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd");
+    private string FPN_DoDatum = DateTime.Today.ToString("yyyy-MM-dd");
+    private int FPN_KomitentId = 0;
+    private int FPN_ArtikalId = 0;
+    private string FPN_Sifra = string.Empty;
+
+    private bool ucitavaPLNabavka = false;
+    private bool exportujePLNabavka = false;
+    private List<IzvodPaletniListRow> paletniListoviNabavka = new();
+
+    // ── PALETNI LISTOVI GOTOVA ROBA ──────────────────────────────────────────
+    private string FPGR_OdDatum = DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd");
+    private string FPGR_DoDatum = DateTime.Today.ToString("yyyy-MM-dd");
+    private int FPGR_KomitentId = 0;
+    private int FPGR_ArtikalId = 0;
+    private string FPGR_Sifra = string.Empty;
+
+    private bool ucitavaPLGotovaRoba = false;
+    private bool exportujePLGotovaRoba = false;
+    private List<IzvodPaletniListRow> paletniListoviGotovaRoba = new();
+
     // ── LIFECYCLE ───────────────────────────────────────────────────────────
 
     protected override async Task OnInitializedAsync()
@@ -594,13 +976,18 @@
     private async Task PrebacíTab(string tab)
     {
         aktivniTab = tab;
-        // Auto-učitaj pri prvom prelasku
         if (tab == "prijemnice" && prijemnice.Count == 0 && !ucitavaPrijemnice)
             await UcitajPrijemnice();
         else if (tab == "otpremnice" && otpremnice.Count == 0 && !ucitavaOtpremnice)
             await UcitajOtpremnice();
         else if (tab == "radni-nalozi" && radniNalozi.Count == 0 && !ucitavaRadneNaloge)
             await UcitajRadneNaloge();
+        else if (tab == "otkupni-listovi" && otkupniListovi.Count == 0 && !ucitavaOtkupneListove)
+            await UcitajOtkupneListove();
+        else if (tab == "paletni-nabavka" && paletniListoviNabavka.Count == 0 && !ucitavaPLNabavka)
+            await UcitajPaletneListoveNabavke();
+        else if (tab == "paletni-gotova-roba" && paletniListoviGotovaRoba.Count == 0 && !ucitavaPLGotovaRoba)
+            await UcitajPaletneListoveGotovaRoba();
     }
 
     // ── PRIJEMNICE ──────────────────────────────────────────────────────────
@@ -795,6 +1182,133 @@
         KomitentId = FRN_KomitentId > 0 ? FRN_KomitentId : null,
         RadniNalog = string.IsNullOrWhiteSpace(FRN_RadniNalog) ? null : FRN_RadniNalog,
         TipArtikla = string.IsNullOrEmpty(FRN_TipArtikla) ? null : FRN_TipArtikla
+    };
+
+    // ── OTKUPNI LISTOVI ─────────────────────────────────────────────────────
+
+    private async Task UcitajOtkupneListove()
+    {
+        ucitavaOtkupneListove = true;
+        try { otkupniListovi = await IzvodService.UcitajOtkupneListove(BuildFilterOtkupneListove()); }
+        catch (Exception ex) { Logger.LogError(ex, "Greška pri učitavanju otkupnih listova"); otkupniListovi = new(); }
+        finally { ucitavaOtkupneListove = false; }
+    }
+
+    private void ResetOtkupneListove()
+    {
+        FOL_OdDatum = DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd");
+        FOL_DoDatum = DateTime.Today.ToString("yyyy-MM-dd");
+        FOL_KomitentId = 0;
+        FOL_ArtikalId = 0;
+        otkupniListovi = new();
+    }
+
+    private async Task ExportOtkupniList(long id, string sifra)
+    {
+        exportujeOtkupniList = true;
+        try
+        {
+            var detalji = await IzvodService.UcitajOtkupniListDetalji(id);
+            if (detalji == null) return;
+            var pdf = OtkupniListPdf.Generisi(detalji);
+            await DownloadFile(pdf, $"OtkupniList-{sifra}.pdf");
+        }
+        catch (Exception ex) { Logger.LogError(ex, "Greška export otkupnog lista {Id}", id); }
+        finally { exportujeOtkupniList = false; }
+    }
+
+    private IzvodDokumenataFilter BuildFilterOtkupneListove() => new()
+    {
+        OdDatum = DateTime.TryParse(FOL_OdDatum, out var od) ? od : null,
+        DoDatum = DateTime.TryParse(FOL_DoDatum, out var do_) ? do_ : null,
+        KomitentId = FOL_KomitentId > 0 ? FOL_KomitentId : null,
+        ArtikalId = FOL_ArtikalId > 0 ? FOL_ArtikalId : null
+    };
+
+    // ── PALETNI LISTOVI NABAVKA ──────────────────────────────────────────────
+
+    private async Task UcitajPaletneListoveNabavke()
+    {
+        ucitavaPLNabavka = true;
+        try { paletniListoviNabavka = await IzvodService.UcitajPaletneListoveNabavke(BuildFilterPLNabavka()); }
+        catch (Exception ex) { Logger.LogError(ex, "Greška pri učitavanju PL nabavke"); paletniListoviNabavka = new(); }
+        finally { ucitavaPLNabavka = false; }
+    }
+
+    private void ResetPLNabavka()
+    {
+        FPN_OdDatum = DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd");
+        FPN_DoDatum = DateTime.Today.ToString("yyyy-MM-dd");
+        FPN_KomitentId = 0;
+        FPN_ArtikalId = 0;
+        FPN_Sifra = string.Empty;
+        paletniListoviNabavka = new();
+    }
+
+    private async Task ExportPaletniListNabavka(long id, string sifra)
+    {
+        exportujePLNabavka = true;
+        try
+        {
+            var detalji = await IzvodService.UcitajPaletniListNabavkaDetalji(id);
+            if (detalji == null) return;
+            var pdf = PaletniListPdf.Generisi(detalji);
+            await DownloadFile(pdf, $"PaletniList-{sifra}.pdf");
+        }
+        catch (Exception ex) { Logger.LogError(ex, "Greška export PL nabavke {Id}", id); }
+        finally { exportujePLNabavka = false; }
+    }
+
+    private IzvodDokumenataFilter BuildFilterPLNabavka() => new()
+    {
+        OdDatum = DateTime.TryParse(FPN_OdDatum, out var od) ? od : null,
+        DoDatum = DateTime.TryParse(FPN_DoDatum, out var do_) ? do_ : null,
+        KomitentId = FPN_KomitentId > 0 ? FPN_KomitentId : null,
+        ArtikalId = FPN_ArtikalId > 0 ? FPN_ArtikalId : null,
+        RadniNalog = string.IsNullOrWhiteSpace(FPN_Sifra) ? null : FPN_Sifra
+    };
+
+    // ── PALETNI LISTOVI GOTOVA ROBA ──────────────────────────────────────────
+
+    private async Task UcitajPaletneListoveGotovaRoba()
+    {
+        ucitavaPLGotovaRoba = true;
+        try { paletniListoviGotovaRoba = await IzvodService.UcitajPaletneListoveGotovaRoba(BuildFilterPLGotovaRoba()); }
+        catch (Exception ex) { Logger.LogError(ex, "Greška pri učitavanju PL gotove robe"); paletniListoviGotovaRoba = new(); }
+        finally { ucitavaPLGotovaRoba = false; }
+    }
+
+    private void ResetPLGotovaRoba()
+    {
+        FPGR_OdDatum = DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd");
+        FPGR_DoDatum = DateTime.Today.ToString("yyyy-MM-dd");
+        FPGR_KomitentId = 0;
+        FPGR_ArtikalId = 0;
+        FPGR_Sifra = string.Empty;
+        paletniListoviGotovaRoba = new();
+    }
+
+    private async Task ExportPaletniListGotovaRoba(long id, string sifra)
+    {
+        exportujePLGotovaRoba = true;
+        try
+        {
+            var detalji = await IzvodService.UcitajPaletniListGotovaRobaDetalji(id);
+            if (detalji == null) return;
+            var pdf = PaletniListPdf.Generisi(detalji);
+            await DownloadFile(pdf, $"PaletniList-{sifra}.pdf");
+        }
+        catch (Exception ex) { Logger.LogError(ex, "Greška export PL gotove robe {Id}", id); }
+        finally { exportujePLGotovaRoba = false; }
+    }
+
+    private IzvodDokumenataFilter BuildFilterPLGotovaRoba() => new()
+    {
+        OdDatum = DateTime.TryParse(FPGR_OdDatum, out var od) ? od : null,
+        DoDatum = DateTime.TryParse(FPGR_DoDatum, out var do_) ? do_ : null,
+        KomitentId = FPGR_KomitentId > 0 ? FPGR_KomitentId : null,
+        ArtikalId = FPGR_ArtikalId > 0 ? FPGR_ArtikalId : null,
+        RadniNalog = string.IsNullOrWhiteSpace(FPGR_Sifra) ? null : FPGR_Sifra
     };
 
     // ── SHARED ───────────────────────────────────────────────────────────────

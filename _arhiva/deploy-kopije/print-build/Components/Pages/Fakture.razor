@@ -1,0 +1,669 @@
+@page "/fakture"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Implementations.ExportService
+@inject IFakturaService FakturaService
+@inject FakturaPdfService PdfService
+@inject FakturaExcelService ExcelService
+@inject IJSRuntime JSRuntime
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>@(naEngleskom ? "Invoices" : "Pregled Faktura") — FruitSysWeb</PageTitle>
+
+<main class="container-fluid mt-4">
+
+    @* ─── HEADER ─── *@
+    <header class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="bi bi-receipt me-2"></i>@(naEngleskom ? "Invoices" : "Fakture")
+                    </h1>
+                    <p class="text-muted mb-0">
+                        @(naEngleskom
+                            ? "Overview of issued invoices with PDF and Excel export"
+                            : "Pregled izdatih faktura kupcima sa detaljima stavki i mogućnošću exporta u PDF i Excel")
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @* Toggle jezik *@
+                    <div class="btn-group" role="group">
+                        <button class="btn @(naEngleskom ? "btn-outline-secondary" : "btn-primary") btn-sm"
+                                @onclick="() => naEngleskom = false"
+                                title="Srpski jezik">
+                            🇷🇸 SR
+                        </button>
+                        <button class="btn @(naEngleskom ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                                @onclick="() => naEngleskom = true"
+                                title="English language">
+                            🇬🇧 EN
+                        </button>
+                    </div>
+                    @* Export liste *@
+                    <button class="btn btn-success btn-sm" @onclick="ExportListaExcel"
+                            disabled="@(ucitavanje || fakture == null || !fakture.Any())">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    @* ─── FILTERI ─── *@
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white py-2">
+                    <i class="bi bi-funnel me-2"></i>@(naEngleskom ? "Search Filters" : "Filteri pretrage")
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">@(naEngleskom ? "From Date" : "Od datuma")</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   @onchange="OnOdDatumChanged"
+                                   value="@(filter.OdDatum?.ToString("yyyy-MM-dd") ?? "")" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">@(naEngleskom ? "To Date" : "Do datuma")</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   @onchange="OnDoDatumChanged"
+                                   value="@(filter.DoDatum?.ToString("yyyy-MM-dd") ?? "")" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">@(naEngleskom ? "Customer" : "Kupac")</label>
+                            <select class="form-select form-select-sm" @onchange="OnKupacChanged">
+                                <option value="">— @(naEngleskom ? "All customers" : "Svi kupci") —</option>
+                                @if (kupci != null)
+                                {
+                                    @foreach (var k in kupci)
+                                    {
+                                        <option value="@k.ID">@k.Naziv @(k.Ino ? "(INO)" : "")</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">@(naEngleskom ? "Status" : "Status")</label>
+                            <select class="form-select form-select-sm" @bind="filterStatus">
+                                <option value="0">— @(naEngleskom ? "All" : "Svi") —</option>
+                                <option value="2">@(naEngleskom ? "Open" : "Otvoren")</option>
+                                <option value="3">@(naEngleskom ? "Closed" : "Zaključen")</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">@(naEngleskom ? "Type" : "Tip")</label>
+                            <select class="form-select form-select-sm" @bind="filterIno">
+                                <option value="">— @(naEngleskom ? "All" : "Svi") —</option>
+                                <option value="false">@(naEngleskom ? "Domestic" : "Domaći")</option>
+                                <option value="true">@(naEngleskom ? "Foreign (INO)" : "Inostrani (INO)")</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button class="btn btn-primary btn-sm w-100" @onclick="UcitajFakture"
+                                    disabled="@ucitavanje">
+                                @if (ucitavanje)
+                                {
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-search"></i>
+                                }
+                            </button>
+                        </div>
+                        <div class="col-md-auto">
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="ResetujFiltere">
+                                <i class="bi bi-x-circle me-1"></i>@(naEngleskom ? "Reset" : "Resetuj")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ─── GREŠKA ─── *@
+    @if (!string.IsNullOrEmpty(greska))
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@greska
+            <button type="button" class="btn-close" @onclick="() => greska = null"></button>
+        </div>
+    }
+
+    @* ─── UČITAVANJE ─── *@
+    @if (ucitavanje)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+            <p class="mt-3 text-muted">@(naEngleskom ? "Loading invoices..." : "Učitavam fakture...")</p>
+        </div>
+    }
+
+    @* ─── SUMMARY KARTICE ─── *@
+    @if (fakture != null && !ucitavanje)
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm text-center h-100">
+                    <div class="card-body py-3">
+                        <i class="bi bi-receipt text-primary" style="font-size: 1.8rem;"></i>
+                        <h4 class="mt-2 mb-0 text-primary">@fakture.Count</h4>
+                        <small class="text-muted">@(naEngleskom ? "Invoices" : "Fakture")</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm text-center h-100">
+                    <div class="card-body py-3">
+                        <i class="bi bi-cash-stack text-success" style="font-size: 1.8rem;"></i>
+                        <h4 class="mt-2 mb-0 text-success">@FormatBroj(fakture.Sum(f => f.Bruto))</h4>
+                        <small class="text-muted">@(naEngleskom ? "Total RSD" : "Ukupno RSD")</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm text-center h-100">
+                    <div class="card-body py-3">
+                        <i class="bi bi-currency-euro text-info" style="font-size: 1.8rem;"></i>
+                        <h4 class="mt-2 mb-0 text-info">@FormatBroj(fakture.Sum(f => f.BrutoEur ?? 0))</h4>
+                        <small class="text-muted">@(naEngleskom ? "Total EUR" : "Ukupno EUR")</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm text-center h-100">
+                    <div class="card-body py-3">
+                        <i class="bi bi-globe text-warning" style="font-size: 1.8rem;"></i>
+                        <h4 class="mt-2 mb-0 text-warning">@fakture.Count(f => f.Valuta == "EUR")</h4>
+                        <small class="text-muted">@(naEngleskom ? "INO invoices" : "INO fakture")</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ─── TABELA ─── *@
+        @if (!fakture.Any())
+        {
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>
+                @(naEngleskom ? "No invoices found for selected filters." : "Nema faktura za izabrane filtere.")
+            </div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 32px;"></th>
+                                    <th>@(naEngleskom ? "Invoice No" : "Šifra")</th>
+                                    <th>@(naEngleskom ? "Date" : "Datum")</th>
+                                    <th>@(naEngleskom ? "Customer" : "Kupac")</th>
+                                    <th class="text-end">@(naEngleskom ? "Net RSD" : "Neto RSD")</th>
+                                    <th class="text-end">@(naEngleskom ? "Total RSD" : "Bruto RSD")</th>
+                                    <th class="text-end">@(naEngleskom ? "Total EUR" : "Bruto EUR")</th>
+                                    <th class="text-center">@(naEngleskom ? "Status" : "Status")</th>
+                                    <th class="text-center" style="min-width: 230px;">@(naEngleskom ? "Export" : "Export")</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var f in fakture)
+                                {
+                                    var jeOtvoren = expandovane.Contains(f.ID);
+                                    <tr class="cursor-pointer" @onclick="() => ToggleDetalje(f.ID)"
+                                        style="border-left: 3px solid @GetStatusBoja(f.DokumentStatus)">
+                                        <td class="text-center">
+                                            <i class="bi @(jeOtvoren ? "bi-chevron-up" : "bi-chevron-down") text-muted"></i>
+                                        </td>
+                                        <td><strong>@f.Sifra</strong></td>
+                                        <td>@f.Datum.ToString("dd.MM.yyyy")</td>
+                                        <td>
+                                            @f.Komitent
+                                            @if (f.Valuta == "EUR")
+                                            {
+                                                <span class="badge bg-info ms-1 small">INO</span>
+                                            }
+                                        </td>
+                                        <td class="text-end font-monospace small">@FormatBroj(f.Neto)</td>
+                                        <td class="text-end font-monospace small fw-semibold">@FormatBroj(f.Bruto)</td>
+                                        <td class="text-end font-monospace small text-info">
+                                            @(f.BrutoEur.HasValue && f.BrutoEur > 0 ? FormatBroj(f.BrutoEur.Value) : "—")
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-@f.StatusBoja">@f.Status</span>
+                                        </td>
+                                        <td class="text-center" @onclick:stopPropagation="true">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button class="btn btn-outline-danger btn-sm" title="@(naEngleskom ? "Invoice PDF" : "Faktura PDF")"
+                                                        @onclick="() => ExportPdfFaktura(f.ID, false)">
+                                                    <i class="bi bi-file-earmark-pdf"></i> @(naEngleskom ? "Invoice" : "Faktura")
+                                                </button>
+                                                <button class="btn btn-outline-warning btn-sm" title="@(naEngleskom ? "Pro-forma PDF" : "Profaktura PDF")"
+                                                        @onclick="() => ExportPdfProfaktura(f.ID, false)">
+                                                    <i class="bi bi-file-earmark-text"></i> @(naEngleskom ? "Pro-forma" : "Profaktura")
+                                                </button>
+                                                <button class="btn btn-outline-success btn-sm" title="Excel"
+                                                        @onclick="() => ExportDetaljiExcel(f.ID)">
+                                                    <i class="bi bi-file-earmark-excel"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    @* ─── EXPANDED RED — detalji i stavke ─── *@
+                                    @if (jeOtvoren)
+                                    {
+                                        <tr class="bg-light">
+                                            <td colspan="9" class="p-0">
+                                                @if (ucitavanjeDetalja.Contains(f.ID))
+                                                {
+                                                    <div class="text-center py-3">
+                                                        <span class="spinner-border spinner-border-sm text-primary"></span>
+                                                        <span class="ms-2 text-muted small">
+                                                            @(naEngleskom ? "Loading details..." : "Učitavam detalje...")
+                                                        </span>
+                                                    </div>
+                                                }
+                                                else if (detaljiCache.TryGetValue(f.ID, out var det) && det != null)
+                                                {
+                                                    <div class="p-3">
+                                                        @* Info red *@
+                                                        <div class="row g-2 mb-3">
+                                                            @if (det.Otpremnica != null)
+                                                            {
+                                                                <div class="col-auto">
+                                                                    <span class="text-muted small">
+                                                                        <i class="bi bi-truck me-1"></i>
+                                                                        @(naEngleskom ? "Delivery Note" : "Otpremnica"):
+                                                                        <strong>@det.Otpremnica.Sifra</strong>
+                                                                        (@det.Otpremnica.Datum.ToString("dd.MM.yyyy"))
+                                                                        @if (!string.IsNullOrEmpty(det.Otpremnica.Vozilo))
+                                                                        {
+                                                                            <span class="ms-1">| @det.Otpremnica.Vozilo</span>
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                            }
+                                                            @if (det.Ugovor != null)
+                                                            {
+                                                                <div class="col-auto">
+                                                                    <span class="text-muted small">
+                                                                        <i class="bi bi-file-earmark-text me-1"></i>
+                                                                        @(naEngleskom ? "Contract" : "Ugovor"):
+                                                                        <strong>@det.Ugovor.BrojUgovora</strong>
+                                                                        @if (!string.IsNullOrEmpty(det.Ugovor.Paritet))
+                                                                        {
+                                                                            <span class="ms-1">| @(naEngleskom ? "Terms" : "Paritet"): @det.Ugovor.Paritet</span>
+                                                                        }
+                                                                        @if (!string.IsNullOrEmpty(det.Ugovor.Placanje))
+                                                                        {
+                                                                            <span class="ms-1">| @(naEngleskom ? "Payment" : "Plaćanje"): @det.Ugovor.Placanje</span>
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                            }
+                                                        </div>
+
+                                                        @* Tabela stavki *@
+                                                        @if (det.Stavke.Any())
+                                                        {
+                                                            <div class="table-responsive">
+                                                                <table class="table table-sm table-bordered align-middle mb-0" style="font-size: 0.82rem;">
+                                                                    <thead class="table-secondary">
+                                                                        <tr>
+                                                                            <th>#</th>
+                                                                            <th>@(naEngleskom ? "Description" : "Artikal")</th>
+                                                                            <th>Lot</th>
+                                                                            <th>@(naEngleskom ? "Packaging" : "Pakovanje")</th>
+                                                                            <th class="text-end">@(naEngleskom ? "Qty (kg)" : "Kol. (kg)")</th>
+                                                                            <th class="text-end">@(naEngleskom ? "Pcs" : "Kom.")</th>
+                                                                            <th class="text-end">@(naEngleskom ? "Unit Price" : "Jed. Cena")</th>
+                                                                            @if (det.ImaEurIznose)
+                                                                            {
+                                                                                <th class="text-end">@(naEngleskom ? "Unit Price EUR" : "Jed. Cena EUR")</th>
+                                                                            }
+                                                                            <th class="text-end">@(naEngleskom ? "Net RSD" : "Neto RSD")</th>
+                                                                            @if (det.ImaEurIznose)
+                                                                            {
+                                                                                <th class="text-end">@(naEngleskom ? "Net EUR" : "Neto EUR")</th>
+                                                                            }
+                                                                            <th class="text-end">PDV%</th>
+                                                                            <th class="text-end">@(naEngleskom ? "Total RSD" : "Bruto RSD")</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        @for (int i = 0; i < det.Stavke.Count; i++)
+                                                                        {
+                                                                            var s = det.Stavke[i];
+                                                                            <tr>
+                                                                                <td class="text-center text-muted">@(i + 1)</td>
+                                                                                <td><strong>@s.ArtikalNaziv</strong></td>
+                                                                                <td><code class="small">@(s.Lot ?? "—")</code></td>
+                                                                                <td>@(s.Pakovanje ?? "—")</td>
+                                                                                <td class="text-end font-monospace">@s.KolicinaFormatted</td>
+                                                                                <td class="text-end">@s.BrojPakovanja</td>
+                                                                                <td class="text-end font-monospace">@s.JedinicnaCenaFormatted</td>
+                                                                                @if (det.ImaEurIznose)
+                                                                                {
+                                                                                    <td class="text-end font-monospace text-info">@s.JedinicnaCenaEurFormatted</td>
+                                                                                }
+                                                                                <td class="text-end font-monospace">@s.NetoIznosFormatted</td>
+                                                                                @if (det.ImaEurIznose)
+                                                                                {
+                                                                                    <td class="text-end font-monospace text-info">@s.NetoIznosEurFormatted</td>
+                                                                                }
+                                                                                <td class="text-end text-muted">@s.PorezStopaFormatted</td>
+                                                                                <td class="text-end font-monospace fw-semibold">@s.BrutoIznosFormatted</td>
+                                                                            </tr>
+                                                                        }
+                                                                    </tbody>
+                                                                    <tfoot class="table-light fw-bold">
+                                                                        <tr>
+                                                                            <td colspan="4" class="text-end">@(naEngleskom ? "TOTAL:" : "UKUPNO:")</td>
+                                                                            <td class="text-end font-monospace">@det.UkupnoKolicina.ToString("N3")</td>
+                                                                            <td class="text-end">@det.UkupnoBrojPakovanja</td>
+                                                                            <td></td>
+                                                                            @if (det.ImaEurIznose) { <td></td> }
+                                                                            <td class="text-end font-monospace">@det.UkupnoNetoFormatted</td>
+                                                                            @if (det.ImaEurIznose)
+                                                                            {
+                                                                                <td class="text-end font-monospace text-info">@det.UkupnoNetoEurFormatted</td>
+                                                                            }
+                                                                            <td></td>
+                                                                            <td class="text-end font-monospace text-success">@det.UkupnoBrutoFormatted</td>
+                                                                        </tr>
+                                                                    </tfoot>
+                                                                </table>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <p class="text-muted small mb-0">
+                                                                <i class="bi bi-info-circle me-1"></i>
+                                                                @(naEngleskom ? "No line items found." : "Nema stavki za ovu fakturu.")
+                                                            </p>
+                                                        }
+                                                    </div>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+</main>
+
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .cursor-pointer:hover { background-color: rgba(0,0,0,0.03); }
+    .font-monospace { font-family: 'Courier New', monospace; }
+</style>
+
+@code {
+    // ── State ──
+    private List<FakturaModel>? fakture;
+    private List<KomitentDropdownModel>? kupci;
+    private Dictionary<long, FakturaDetaljiModel?> detaljiCache = new();
+    private HashSet<long> expandovane = new();
+    private HashSet<long> ucitavanjeDetalja = new();
+
+    // ── Filteri ──
+    private FilterRequest filter = new()
+    {
+        OdDatum = new DateTime(DateTime.Now.Year, 1, 1),
+        DoDatum = DateTime.Now
+    };
+    private int filterStatus = 0;
+    private string filterIno = "";
+    private bool naEngleskom = false;
+
+    // ── UI ──
+    private bool ucitavanje = false;
+    private string? greska;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Provjeri pristup
+        var user = await AuthService.GetCurrentUser();
+        if (user == null || !user.ImaPuniPristup())
+        {
+            Navigation.NavigateTo("/home-ograniceni", forceLoad: true);
+            return;
+        }
+
+        kupci = await FakturaService.UcitajKupce();
+        await UcitajFakture();
+    }
+
+    private async Task UcitajFakture()
+    {
+        ucitavanje = true;
+        greska = null;
+        expandovane.Clear();
+        detaljiCache.Clear();
+        StateHasChanged();
+
+        try
+        {
+            filter.DokumentStatus = filterStatus > 0 ? filterStatus : null;
+
+            bool? samoIno = filterIno switch
+            {
+                "true" => true,
+                "false" => false,
+                _ => null
+            };
+
+            fakture = await FakturaService.UcitajFakture(filter, samoIno);
+        }
+        catch (Exception ex)
+        {
+            greska = naEngleskom
+                ? $"Error loading invoices: {ex.Message}"
+                : $"Greška pri učitavanju faktura: {ex.Message}";
+            fakture = new List<FakturaModel>();
+        }
+        finally
+        {
+            ucitavanje = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ResetujFiltere()
+    {
+        filter = new FilterRequest
+        {
+            OdDatum = new DateTime(DateTime.Now.Year, 1, 1),
+            DoDatum = DateTime.Now
+        };
+        filterStatus = 0;
+        filterIno = "";
+    }
+
+    private void OnOdDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+            filter.OdDatum = d;
+    }
+
+    private void OnDoDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+            filter.DoDatum = d;
+    }
+
+    private void OnKupacChanged(ChangeEventArgs e)
+    {
+        if (long.TryParse(e.Value?.ToString(), out var id) && id > 0)
+            filter.KomitentId = id;
+        else
+            filter.KomitentId = null;
+    }
+
+    // ── Expandovanje ──
+    private async Task ToggleDetalje(long fakturaId)
+    {
+        if (expandovane.Contains(fakturaId))
+        {
+            expandovane.Remove(fakturaId);
+            return;
+        }
+
+        expandovane.Add(fakturaId);
+
+        if (!detaljiCache.ContainsKey(fakturaId))
+        {
+            ucitavanjeDetalja.Add(fakturaId);
+            StateHasChanged();
+
+            try
+            {
+                var det = await FakturaService.UcitajDetalje(fakturaId);
+                detaljiCache[fakturaId] = det;
+            }
+            catch
+            {
+                detaljiCache[fakturaId] = null;
+            }
+            finally
+            {
+                ucitavanjeDetalja.Remove(fakturaId);
+            }
+        }
+    }
+
+    // ── EXPORTI ──
+    private async Task ExportListaExcel()
+    {
+        if (fakture == null || !fakture.Any()) return;
+        try
+        {
+            var bytes = ExcelService.GenerisiListuFaktura(fakture, naEngleskom);
+            var naziv = $"fakture_{DateTime.Now:yyyyMMdd}.xlsx";
+            await DownloadFile(bytes, naziv, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        catch (Exception ex)
+        {
+            greska = $"Greška pri Excel exportu: {ex.Message}";
+        }
+    }
+
+    private async Task ExportPdfFaktura(long fakturaId, bool profaktura)
+    {
+        await ExportPdf(fakturaId, profaktura);
+    }
+
+    private async Task ExportPdfProfaktura(long fakturaId, bool _)
+    {
+        await ExportPdf(fakturaId, isProfaktura: true);
+    }
+
+    private async Task ExportPdf(long fakturaId, bool isProfaktura)
+    {
+        try
+        {
+            FakturaDetaljiModel? det;
+            if (detaljiCache.ContainsKey(fakturaId))
+                det = detaljiCache[fakturaId];
+            else
+            {
+                det = await FakturaService.UcitajDetalje(fakturaId);
+                detaljiCache[fakturaId] = det;
+            }
+
+            if (det == null)
+            {
+                greska = naEngleskom ? "Invoice not found." : "Faktura nije pronađena.";
+                return;
+            }
+
+            // Auto-detect jezik ako nije ručno promenjen: Ino kupac → engleski
+            bool koristiEn = naEngleskom || det.JeInoKupac;
+
+            byte[] bytes;
+            string naziv;
+            if (isProfaktura)
+            {
+                bytes = PdfService.GenerisiProfakturu(det, koristiEn);
+                naziv = $"profaktura_{det.Faktura.Sifra.Replace("/", "-")}_{(koristiEn ? "EN" : "SR")}.pdf";
+            }
+            else
+            {
+                bytes = PdfService.GenerisiFakturu(det, koristiEn);
+                naziv = $"faktura_{det.Faktura.Sifra.Replace("/", "-")}_{(koristiEn ? "EN" : "SR")}.pdf";
+            }
+
+            await DownloadFile(bytes, naziv, "application/pdf");
+        }
+        catch (Exception ex)
+        {
+            greska = $"Greška pri PDF exportu: {ex.Message}";
+        }
+    }
+
+    private async Task ExportDetaljiExcel(long fakturaId)
+    {
+        try
+        {
+            FakturaDetaljiModel? det;
+            if (detaljiCache.ContainsKey(fakturaId))
+                det = detaljiCache[fakturaId];
+            else
+            {
+                det = await FakturaService.UcitajDetalje(fakturaId);
+                detaljiCache[fakturaId] = det;
+            }
+
+            if (det == null)
+            {
+                greska = naEngleskom ? "Invoice not found." : "Faktura nije pronađena.";
+                return;
+            }
+
+            var bytes = ExcelService.GenerisiDetalje(det, naEngleskom || det.JeInoKupac);
+            var naziv = $"faktura_{det.Faktura.Sifra.Replace("/", "-")}.xlsx";
+            await DownloadFile(bytes, naziv, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        catch (Exception ex)
+        {
+            greska = $"Greška pri Excel exportu: {ex.Message}";
+        }
+    }
+
+    private async Task DownloadFile(byte[] bytes, string fileName, string contentType)
+    {
+        var base64 = Convert.ToBase64String(bytes);
+        await JSRuntime.InvokeVoidAsync("eval",
+            $"(function(){{var a=document.createElement('a');" +
+            $"a.href='data:{contentType};base64,{base64}';" +
+            $"a.download='{fileName}';document.body.appendChild(a);a.click();document.body.removeChild(a);}})()");
+    }
+
+    // ── Helpers ──
+    private static string FormatBroj(decimal value)
+    {
+        return value.ToString("N2", new System.Globalization.CultureInfo("sr-Latn-RS"));
+    }
+
+    private static string GetStatusBoja(int status) => status switch
+    {
+        2 => "#ffc107",
+        3 => "#198754",
+        4 => "#dc3545",
+        _ => "#6c757d"
+    };
+}

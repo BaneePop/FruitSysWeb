@@ -28,5 +28,12 @@ namespace FruitSysWeb.Services.Interfaces
 
         // Stanje lagera po vrsti voća kroz vreme (kumulativno: ulazi - izlazi)
         Task<Dictionary<string, Dictionary<string, decimal>>> UcitajLagerKretanjePoVociAsync(DateTime odDatum, DateTime doDatum, string interval = "dnevno");
+
+        /// <summary>Prenos zaliha na dan pre pocetka sezone (TrenutnoStanje − NetoPromet).</summary>
+        Task<Dictionary<int, decimal>> IzracunajPrenosZalihaAsync(
+            DateTime pocetakSezone,
+            bool usluga = false,
+            bool samoSirovine = false,
+            bool ukljuciBorovnicu = true);
     }
 }

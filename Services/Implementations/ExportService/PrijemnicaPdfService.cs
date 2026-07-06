@@ -338,7 +338,7 @@ namespace FruitSysWeb.Services.Implementations.ExportService
 
         private static void CheckBox(RowDescriptor row, string label, bool filled)
         {
-            row.ConstantItem(26).Row(r =>
+            row.ConstantItem(46).Row(r =>
             {
                 r.ConstantItem(14).Border(0.5f).BorderColor(Colors.Grey.Darken1).Padding(1)
                     .AlignCenter().AlignMiddle()

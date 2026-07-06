@@ -1,0 +1,57 @@
+@using Microsoft.AspNetCore.Components.Web
+@using ApexCharts
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services
+@using Microsoft.AspNetCore.Components
+
+@using FruitSysWeb.Components
+@inject ArtikalService ArtikalService
+
+<div class="col-md-@Size mb-3">
+    <label class="form-label fw-bold">@Label</label>
+    <select class="form-select" value="@SelectedValue" @onchange="OnSelectionChanged">
+        <option value="">@DefaultText</option>
+        @foreach (var artikal in artikli)
+        {
+            <option value="@artikal.Id">@artikal.Naziv</option>
+        }
+    </select>
+</div>
+
+@code {
+    private List<Artikal> artikli = new();
+
+    [Parameter] public string Label { get; set; } = "Artikal";
+    [Parameter] public string DefaultText { get; set; } = "Svi artikli";
+    [Parameter] public long? SelectedArtikalId { get; set; }
+    [Parameter] public EventCallback<long?> SelectedArtikalIdChanged { get; set; }
+    [Parameter] public int Size { get; set; } = 2;
+
+    private string SelectedValue => SelectedArtikalId?.ToString() ?? "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            artikli = await ArtikalService.UcitajSveArtikle();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju artikala: {ex.Message}");
+            artikli = new List<Artikal>();
+        }
+    }
+
+    private async Task OnSelectionChanged(ChangeEventArgs e)
+    {
+        if (string.IsNullOrEmpty(e.Value?.ToString()))
+        {
+            await SelectedArtikalIdChanged.InvokeAsync(null);
+        }
+        else if (long.TryParse(e.Value.ToString(), out var id))
+        {
+            await SelectedArtikalIdChanged.InvokeAsync(id);
+        }
+    }
+}

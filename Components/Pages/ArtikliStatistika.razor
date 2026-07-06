@@ -1,0 +1,335 @@
+@page "/artikli-statistika"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Implementations.ExportService
+@using System.Globalization
+
+@inject IArtikliStatistikaService Service
+@inject ArtikliStatistikaExcelService ExcelService
+@inject ArtikliStatistikaPdfService PdfService
+@inject IAuthService AuthService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Artikli Statistika</PageTitle>
+
+@if (!autorizovan)
+{
+    <div class="alert alert-danger mt-4">Nemate pristup ovoj stranici.</div>
+    return;
+}
+
+<div class="container-fluid px-3 py-3">
+
+    <!-- Naslov i filter -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="bi bi-bar-chart-line me-2 text-primary"></i>Artikli Statistika
+            </h4>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-auto">
+                            <label class="form-label small mb-1 fw-semibold">Od datuma</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   @bind="filter.OdDatum" @bind:format="yyyy-MM-dd" />
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1 fw-semibold">Do datuma</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   @bind="filter.DoDatum" @bind:format="yyyy-MM-dd" />
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-primary btn-sm" @onclick="Pretrazi" disabled="@ucitava">
+                                @if (ucitava)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-search me-1"></i>
+                                }
+                                Pretraži
+                            </button>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bg-light text-muted border">
+                                <i class="bi bi-calendar3 me-1"></i>
+                                Sezona: @filter.OdDatum.ToString("dd.MM.yyyy") – @filter.DoDatum.ToString("dd.MM.yyyy")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabovi -->
+    <ul class="nav nav-tabs mb-0" id="statTabs">
+        <li class="nav-item">
+            <button class="nav-link @(aktivniTab == "nabavka-voce" ? "active" : "")"
+                    @onclick='() => PredjNaTab("nabavka-voce")'>
+                <i class="bi bi-truck me-1"></i>Nabavka Voće
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(aktivniTab == "nabavka-ambalaza" ? "active" : "")"
+                    @onclick='() => PredjNaTab("nabavka-ambalaza")'>
+                <i class="bi bi-box-seam me-1"></i>Nabavka Ambalaža
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(aktivniTab == "prodaja-voce" ? "active" : "")"
+                    @onclick='() => PredjNaTab("prodaja-voce")'>
+                <i class="bi bi-cart-check me-1"></i>Prodaja Voće
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white shadow-sm">
+
+        <!-- TAB: Nabavka Voće -->
+        @if (aktivniTab == "nabavka-voce")
+        {
+            if (grupeNabavkaVoce == null)
+            {
+                <div class="text-muted py-4 text-center">
+                    <i class="bi bi-search me-1"></i>Kliknite <strong>Pretraži</strong> da učitate podatke.
+                </div>
+            }
+            else if (grupeNabavkaVoce.Count == 0)
+            {
+                <div class="alert alert-info mt-2">Nema podataka za odabrani period.</div>
+            }
+            else
+            {
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-success btn-sm" @onclick='() => ExportExcel("nabavka-voce")' disabled="@izvozi">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-danger btn-sm" @onclick='() => ExportPdf("nabavka-voce")' disabled="@izvozi">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                    </button>
+                </div>
+                @foreach (var grupa in grupeNabavkaVoce)
+                {
+                    @PrikaziGrupu(grupa)
+                }
+            }
+        }
+
+        <!-- TAB: Nabavka Ambalaža -->
+        @if (aktivniTab == "nabavka-ambalaza")
+        {
+            if (grupeNabavkaAmbalaza == null)
+            {
+                <div class="text-muted py-4 text-center">
+                    <i class="bi bi-search me-1"></i>Kliknite <strong>Pretraži</strong> da učitate podatke.
+                </div>
+            }
+            else if (grupeNabavkaAmbalaza.Count == 0)
+            {
+                <div class="alert alert-info mt-2">Nema podataka za odabrani period.</div>
+            }
+            else
+            {
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-success btn-sm" @onclick='() => ExportExcel("nabavka-ambalaza")' disabled="@izvozi">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-danger btn-sm" @onclick='() => ExportPdf("nabavka-ambalaza")' disabled="@izvozi">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                    </button>
+                </div>
+                @foreach (var grupa in grupeNabavkaAmbalaza)
+                {
+                    @PrikaziGrupu(grupa)
+                }
+            }
+        }
+
+        <!-- TAB: Prodaja Voće -->
+        @if (aktivniTab == "prodaja-voce")
+        {
+            if (grupeProdajaVoce == null)
+            {
+                <div class="text-muted py-4 text-center">
+                    <i class="bi bi-search me-1"></i>Kliknite <strong>Pretraži</strong> da učitate podatke.
+                </div>
+            }
+            else if (grupeProdajaVoce.Count == 0)
+            {
+                <div class="alert alert-info mt-2">Nema podataka za odabrani period.</div>
+            }
+            else
+            {
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-success btn-sm" @onclick='() => ExportExcel("prodaja-voce")' disabled="@izvozi">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-danger btn-sm" @onclick='() => ExportPdf("prodaja-voce")' disabled="@izvozi">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                    </button>
+                </div>
+                @foreach (var grupa in grupeProdajaVoce)
+                {
+                    @PrikaziGrupu(grupa)
+                }
+            }
+        }
+
+    </div>
+</div>
+
+@code {
+    private static readonly CultureInfo SrLatn = new("sr-Latn-RS");
+
+    private string aktivniTab = "nabavka-voce";
+    private bool ucitava = false;
+    private bool izvozi = false;
+    private bool autorizovan = false;
+
+    private ArtikliStatistikaFilter filter = new();
+
+    private List<ArtikliStatistikaGrupa>? grupeNabavkaVoce;
+    private List<ArtikliStatistikaGrupa>? grupeNabavkaAmbalaza;
+    private List<ArtikliStatistikaGrupa>? grupeProdajaVoce;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var korisnik = await AuthService.GetCurrentUser();
+        autorizovan = korisnik?.ImaPuniPristup() ?? false;
+        if (!autorizovan) return;
+
+        filter = IzracunajSezonskiFilter();
+        await Pretrazi();
+    }
+
+    private ArtikliStatistikaFilter IzracunajSezonskiFilter()
+    {
+        var danas = DateTime.Today;
+        int godinaPocetka = danas.Month >= 6 ? danas.Year : danas.Year - 1;
+        return new ArtikliStatistikaFilter
+        {
+            OdDatum = new DateTime(godinaPocetka, 6, 1),
+            DoDatum = new DateTime(godinaPocetka + 1, 5, 31)
+        };
+    }
+
+    private void PredjNaTab(string tab) => aktivniTab = tab;
+
+    private async Task Pretrazi()
+    {
+        ucitava = true;
+        try
+        {
+            var tNabVoce  = Service.UcitajNabavkuVoce(filter);
+            var tNabAmb   = Service.UcitajNabavkuAmbalaza(filter);
+            var tProdVoce = Service.UcitajProdajuVoce(filter);
+
+            await Task.WhenAll(tNabVoce, tNabAmb, tProdVoce);
+
+            grupeNabavkaVoce   = tNabVoce.Result;
+            grupeNabavkaAmbalaza = tNabAmb.Result;
+            grupeProdajaVoce   = tProdVoce.Result;
+        }
+        finally
+        {
+            ucitava = false;
+        }
+    }
+
+    private async Task ExportExcel(string tab)
+    {
+        var (grupe, naziv) = ResolveTab(tab);
+        if (grupe == null || grupe.Count == 0) return;
+
+        izvozi = true;
+        try
+        {
+            var bytes = ExcelService.Generisi(grupe, naziv, filter);
+            var fileName = $"ArtikliStatistika_{naziv.Replace(" ", "_")}_{filter.OdDatum:yyyyMMdd}-{filter.DoDatum:yyyyMMdd}.xlsx";
+            await DownloadFile(bytes, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        finally
+        {
+            izvozi = false;
+        }
+    }
+
+    private async Task ExportPdf(string tab)
+    {
+        var (grupe, naziv) = ResolveTab(tab);
+        if (grupe == null || grupe.Count == 0) return;
+
+        izvozi = true;
+        try
+        {
+            var bytes = PdfService.Generisi(grupe, naziv, filter);
+            var fileName = $"ArtikliStatistika_{naziv.Replace(" ", "_")}_{filter.OdDatum:yyyyMMdd}-{filter.DoDatum:yyyyMMdd}.pdf";
+            await DownloadFile(bytes, fileName, "application/pdf");
+        }
+        finally
+        {
+            izvozi = false;
+        }
+    }
+
+    private (List<ArtikliStatistikaGrupa>? grupe, string naziv) ResolveTab(string tab) => tab switch
+    {
+        "nabavka-voce"     => (grupeNabavkaVoce,      "Nabavka Voce"),
+        "nabavka-ambalaza" => (grupeNabavkaAmbalaza,   "Nabavka Ambalaza"),
+        "prodaja-voce"     => (grupeProdajaVoce,       "Prodaja Voce"),
+        _                  => (null, "")
+    };
+
+    private async Task DownloadFile(byte[] bytes, string fileName, string contentType)
+    {
+        var base64 = Convert.ToBase64String(bytes);
+        await JSRuntime.InvokeVoidAsync("eval",
+            $"(function(){{var a=document.createElement('a');" +
+            $"a.href='data:{contentType};base64,{base64}';" +
+            $"a.download='{fileName}';document.body.appendChild(a);a.click();document.body.removeChild(a);}})()");
+    }
+
+    private RenderFragment PrikaziGrupu(ArtikliStatistikaGrupa grupa) => __builder =>
+    {
+        <div class="mb-4">
+            <h6 class="fw-bold text-primary mb-2">
+                <i class="bi bi-layers me-1"></i>@grupa.NazivGrupe
+            </h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Artikal</th>
+                            <th class="text-end">Količina (kg)</th>
+                            <th class="text-end">Prosečna cena</th>
+                            <th class="text-end">Vrednost (RSD)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var red in grupa.Stavke)
+                        {
+                            <tr>
+                                <td>@red.Artikal</td>
+                                <td class="text-end">@red.Kolicina.ToString("N2", SrLatn)</td>
+                                <td class="text-end">@red.ProsecnaCena.ToString("N2", SrLatn)</td>
+                                <td class="text-end">@red.Vrednost.ToString("N2", SrLatn)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-secondary fw-bold">
+                        <tr>
+                            <td>Ukupno</td>
+                            <td class="text-end">@grupa.UkupnoKolicina.ToString("N2", SrLatn)</td>
+                            <td class="text-end">@grupa.ProsecnaCenaUkupno.ToString("N2", SrLatn)</td>
+                            <td class="text-end">@grupa.UkupnoVrednost.ToString("N2", SrLatn)</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    };
+}

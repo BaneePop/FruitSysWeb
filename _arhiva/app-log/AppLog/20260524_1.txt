@@ -1,0 +1,666 @@
+2026-05-24 13:10:32:065 [iC******er] FSAppDelegate.m               :  88 [1   ] [Info ] isRunOnce: 1
+2026-05-24 13:10:32:067 [iC******er] FusionCommon.m                : 301 [1   ] [Info ] systemLanguage: sr-Latn-RS
+2026-05-24 13:10:32:068 [iC******er] FSAppDelegate.m               : 542 [1   ] [Info ] systemlanguageStr: sr
+2026-05-24 13:10:32:068 [iC******er] FSAppDelegate.m               : 563 [1   ] [Info ] currentLanguage: sr
+2026-05-24 13:10:32:069 [iC******er] BundleEx.m                    :  56 [1   ] [Info ] [i18n] SWITCH LANGUAGE TO sr
+2026-05-24 13:10:32:069 [iC******er] FSAppDelegate.m               : 570 [1   ] [Info ] current month: 5
+2026-05-24 13:10:32:069 [iC******er] FSAppDelegate.m               : 215 [1   ] [Info ] [Config] Current version is not a white box version
+2026-05-24 13:10:32:072 [iC******er] SILinkManagerment.m           : 124 [1   ] [Info ] SILinkManagerment init
+2026-05-24 13:10:32:077 [iC******er] SILinkManagerment.m           : 396 [1   ] [Info ] locCrtPath
+2026-05-24 13:10:32:078 [iC******er] SILinkManagerment.m           : 402 [1   ] [Info ] locEnergyPath
+2026-05-24 13:10:32:078 [iC******er] SILinkManagerment.m           : 408 [1   ] [Info ] locRootEnergyPath
+2026-05-24 13:10:32:080 [iC******er] SILinkManagerment.m           : 145 [1   ] [Info ] SILinkManagerment setLinkData
+2026-05-24 13:10:32:081 [iC******er] ECCFunsionChargeConfig.m      :  16 [1   ] [Info ] ECCFusionChargeVersion=====12.29
+2026-05-24 13:10:32:081 [iC******er] ECCFunsionChargeConfig.m      :  21 [1   ] [Info ] className==FCConnectTool
+2026-05-24 13:10:32:082 [iC******er] ECCFunsionChargeConfig.m      :  28 [1   ] [Info ] appLogPath==/var/mobile/Containers/Data/Application/D5E7E7C4-A3C1-4D81-BCC7-16A61C7BE202/Library/Documentation/SolarApp/AppLog
+2026-05-24 13:10:32:082 [iC******er] ECCFunsionChargeConfig.m      :  42 [1   ] [Info ] appZipUpgrade==/var/mobile/Containers/Data/Application/D5E7E7C4-A3C1-4D81-BCC7-16A61C7BE202/Library/Documentation/SolarMate/upGradePatch
+2026-05-24 13:10:32:083 [iC******er] ECCFunsionChargeConfig.m      :  50 [1   ] [Info ] appGZUpgrade==/var/mobile/Containers/Data/Application/D5E7E7C4-A3C1-4D81-BCC7-16A61C7BE202/Library/Documentation/SolarMate/CertificatePath/fi_cerZip
+2026-05-24 13:10:32:083 [iC******er] ECCFunsionChargeConfig.m      :  58 [1   ] [Info ] mateLog==/var/mobile/Containers/Data/Application/D5E7E7C4-A3C1-4D81-BCC7-16A61C7BE202/Library/Documentation/SolarMate/mateLog
+2026-05-24 13:10:32:085 [iC******er] FusionCommon.m                :1240 [1   ] [Info ] resetLibraryCachesWebKitHSTS
+2026-05-24 13:10:32:096 [iC******er] FSLoginInfoModel.m            : 914 [1   ] [Info ] [zone..] old: (null)  new: 971aaedd-99b***9dbe7b9ee002
+2026-05-24 13:10:32:099 [iC******er] SIAppDelegate.m               : 391 [1   ] [Info ] isForceLandscape: 0
+2026-05-24 13:10:32:099 [iC******er] SIAppDelegate.m               : 391 [1   ] [Info ] isForceLandscape: 0
+2026-05-24 13:10:32:100 [iC******er] SIAppDelegate.m               : 391 [1   ] [Info ] isForceLandscape: 0
+2026-05-24 13:10:32:100 [iC******er] FSAppDelegate.m               : 633 [1   ] [Info ] switch keywindow rootviewcontroller: FSLoadingViewController
+2026-05-24 13:10:32:100 [iC******er] SIAppDelegate.m               : 139 [1   ] [Info ] appType: 0
+2026-05-24 13:10:32:103 [iC******er] SIAppDelegate.m               : 150 [1   ] [Info ] SI_didFinishLaunchingWithOptions
+2026-05-24 13:10:32:103 [iC******er] SIAppDelegate.m               : 158 [1   ] [Info ] isRunOnce: 1
+2026-05-24 13:10:32:104 [iC******er] SIAppDelegate.m               : 111 [1   ] [Info ] dbResourcePath: /var/containers/Bundle/Application/D7673953-C2D3-4E68-8664-AD2A0D0C2E55/iCleanPower.app/S****2000Bundle.bundle/appdb.db
+2026-05-24 13:10:32:106 [iC******er] SIDbUpdateUtil.m              : 517 [1   ] [Info ] DbVersion = 
+2026-05-24 13:10:32:107 [iC******er] SIDbUpdateUtil.m              : 517 [1   ] [Info ] DbVersion = 
+2026-05-24 13:10:32:108 [iC******er] SIAppDelegate.m               : 413 [1   ] [Info ] [Config] first enter APP。。。。。。App_BVerSion：APP iOS 26.1.2.008
+2026-05-24 13:10:32:108 [iC******er] SIAppDelegate.m               : 414 [1   ] [Info ] [Config] platform version：GSE T300-D12 V100R001C00B102
+2026-05-24 13:10:32:108 [iC******er] SIAppDelegate.m               : 415 [1   ] [Info ] [Config] platform build time：May 20 2026 15:47:43
+2026-05-24 13:10:32:109 [iC******er] SIAppDelegate.m               : 416 [1   ] [Info ] [Config] first enter ---------Framework_BVersion：Framework_Version B003
+2026-05-24 13:10:32:109 [iC******er] SIAppDelegate.m               : 417 [1   ] [Info ] [Config] first enter ~~~~~~~~~IOS systemVersion：26.5
+2026-05-24 13:10:32:109 [iC******er] SIAppDelegate.m               : 418 [1   ] [Info ] [Config] first enter ~~~~~~~~~iphone model：iPhone18,1
+2026-05-24 13:10:32:109 [iC******er] SIAppDelegate.m               : 502 [1   ] [Info ] configUpgradeFile
+2026-05-24 13:10:32:110 [iC******er] SIAppDelegate.m               : 513 [1   ] [Info ] upgradeArray: (
+    "README.md",
+    "solar_huawei_com.cer"
+)
+2026-05-24 13:10:32:110 [iC******er] SIAppDelegate.m               : 516 [1   ] [Info ] version is no same, create file
+2026-05-24 13:10:32:112 [iC******er] SIAppDelegate.m               : 530 [8   ] [Info ] saveLocationPackage
+2026-05-24 13:10:32:113 [iC******er] HMXLanguageUtil.m             : 162 [1   ] [Info ] languageType = en
+2026-05-24 13:10:32:114 [iC******er] SIAppDelegate.m               : 541 [8   ] [Info ] save success, next
+2026-05-24 13:10:32:114 [iC******er] SIAppDelegate.m               : 530 [8   ] [Info ] saveLocationPackage
+2026-05-24 13:10:32:116 [iC******er] SIAppDelegate.m               : 541 [8   ] [Info ] save success, next
+2026-05-24 13:10:32:124 [iC******er] HMXCommonStorage.m            :  41 [1   ] [Info ] dbPath  path: /var/mobile/Containers/Data/Application/D5E7E7C4-A3C1-4D81-BCC7-16A61C7BE202/Library/Documentation/app_26.1.2008_690.db
+2026-05-24 13:10:32:131 [iC******er] HMXCommonStorage.m            :  49 [1   ] [Info ] first db copy success.CurrentName:app_26.1.2008_690.db
+2026-05-24 13:10:32:145 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-23, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:145 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-23, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:146 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-22, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:146 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-22, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:147 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-21, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:147 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-21, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:147 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-20, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:148 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-20, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:149 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-19, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:149 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-19, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:151 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-18, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:151 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-18, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:151 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-17, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:151 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-17, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:152 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-16, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:152 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-16, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:152 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-15, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:152 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-15, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:153 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-14, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:153 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-14, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:154 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-13, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:154 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-13, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:154 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-12, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:155 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-12, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:155 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-11, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:155 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-11, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:156 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-10, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:156 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-10, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:157 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-09, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:157 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-09, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:157 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-08, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:158 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-08, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:158 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-07, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:159 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-07, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:159 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-06, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:159 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-06, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:160 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-05, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:160 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-05, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:161 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-04, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:161 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-04, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:161 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-03, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:162 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-03, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:162 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-02, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:163 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-02, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:163 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-01, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:163 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-05-01, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:164 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-30, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:164 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-30, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:165 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-29, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:165 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-29, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:166 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-28, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:166 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-28, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:167 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-27, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:167 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-27, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:168 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-26, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:168 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-26, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:168 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-25, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:169 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-25, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:169 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-24, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:169 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-24, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:170 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-23, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:170 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-22, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:171 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-21, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:171 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-20, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:171 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-19, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:172 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-18, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:172 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-17, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:173 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-16, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:173 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-15, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:174 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-14, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:174 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-13, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:174 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-12, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:175 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-11, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:175 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-10, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:176 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-09, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:176 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-08, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:176 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-07, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:177 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-06, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:177 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-05, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:178 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-04, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:178 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-03, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:178 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-02, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:179 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-04-01, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:179 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-03-31, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:180 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-03-30, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:180 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-03-29, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:181 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-03-28, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:181 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-03-27, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:181 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-03-26, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:182 [iC******er] NSDateFormatter+Friend.m      :  53 [1   ] [Info ] dateStr: 2026-03-25, formatterString: yyyy-MM-dd
+2026-05-24 13:10:32:182 [iC******er] SIAppDelegate.m               : 184 [1   ] [Info ] PrivacyPolicy_save_version：Privacy_Statement_V005 current version：Privacy_Statement_V005
+2026-05-24 13:10:32:184 [iC******er] SIAppDelegate.m               : 497 [1   ] [Info ] rooted:n
+2026-05-24 13:10:32:185 [iC******er] FSLogManager.m                : 168 [1   ] [Info ] [FusionsolarApp] : {
+1. AppVersion : 26.1.2.008
+2. BuildCode : 690
+3. SystemVersion : 26.5
+4. iphoneModel : iPhone18,1
+}
+2026-05-24 13:10:32:237 [iC******er] FSLoadingViewController.m     : 164 [1   ] [Info ] prisonBreakProgress->:0 0
+2026-05-24 13:10:32:241 [iC******er] FSLoadingViewController.m     : 102 [1   ] [Info ] [Action] checkSetupDomain
+2026-05-24 13:10:32:241 [iC******er] FSLoadingViewController.m     : 181 [1   ] [Info ] [Action] checkPrivacyProgress
+2026-05-24 13:10:32:242 [iC******er] FSLoadingViewController.m     : 189 [1   ] [Info ] [Action] have areaid，not first, enter guide view
+2026-05-24 13:10:32:242 [iC******er] FSLoadingViewController.m     : 280 [1   ] [Info ] check web language config: 0
+2026-05-24 13:10:32:245 [iC******er] ECSConfigUseCase.m            :  28 [1   ] [Info ] current domain name: uni005eu5.fusionsolar.huawei.com
+2026-05-24 13:10:32:247 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][32244] GET uni005eu5~:32800/rest/dp/pvms/pvmswebsite/v1/languages  
+2026-05-24 13:10:32:248 [iC******er] FSLoadingViewController.m     : 351 [1   ] [Info ] [Action] guideViewProgress
+2026-05-24 13:10:32:248 [iC******er] FSLoadingViewController.m     : 390 [1   ] [Info ] detectLoginMode:token normal
+2026-05-24 13:10:32:249 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][32248] POST intl~:32800/rest/pvms/web/server/v1/servermgmt/list-unforbidden-server  
+2026-05-24 13:10:32:250 [iC******er] FSLoadingViewController.m     : 373 [1   ] [Info ] [Action] registerNotificationProgress
+2026-05-24 13:10:32:265 [iC******er] AppDelegate.m                 :  81 [1   ] [Info ] 清除webView缓存完成
+2026-05-24 13:10:32:268 [iC******er] FSAppDelegate.m               : 294 [1   ] [Info ] apns token : 7211****
+2026-05-24 13:10:32:419 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][32244][200] GET uni005eu5~:32800/rest/dp/pvms/pvmswebsite/v1/languages (174ms) lubanops-gtrace-id:v-216802-1779621032359-67373422 
+2026-05-24 13:10:32:420 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:32:421 [iC******er] FusionCommon.m                : 240 [1   ] [Info ] from NSUserDefaults
+2026-05-24 13:10:32:433 [iC******er] ECSConfigUseCase.m            :  31 [1   ] [Info ] request language config result: (
+    "zh_CN",
+    "en_US",
+    "ja_JP",
+    "it_IT",
+    "nl_NL",
+    "pt_BR",
+    "de_DE",
+    "fr_FR",
+    "es_ES",
+    "pl_PL",
+    "vi_VN",
+    "ko_KR",
+    "uk_UA",
+    "hu_HU",
+    "tr_TR",
+    "zh_TW",
+    "ro_RO",
+    "cs_CZ",
+    "sv_SE",
+    "da_DK",
+    "fi_FI",
+    "sr_RS",
+    "sl_SI",
+    "hr_HR",
+    "bg_BG",
+    "sk_SK"
+)
+2026-05-24 13:10:32:434 [iC******er] FSLoadingViewController.m     : 284 [1   ] [Info ] check web language config - result
+2026-05-24 13:10:32:434 [iC******er] FusionCommon.m                : 301 [1   ] [Info ] systemLanguage: sr-Latn-RS
+2026-05-24 13:10:32:434 [iC******er] FSLoadingViewController.m     : 287 [1   ] [Info ] languageStr:sr currentLanguage:sr
+2026-05-24 13:10:32:435 [iC******er] FSLoadingViewController.m     : 299 [1   ] [Info ] isWebSupportCurrentLanguage: 1 [languageStr isEqualToString:currentLanguage]: 1 isAlertUserChangeLanguage:1 isStartAppHasEnterLoginOrHome:0
+2026-05-24 13:10:32:451 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][32248][200] POST intl~:32800/rest/pvms/web/server/v1/servermgmt/list-unforbidden-server (202ms)  {"data":[]}
+2026-05-24 13:10:32:451 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:32:452 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][32451] GET intl~:32800/rest/pvmswebservice/security/v1/config/japan-privacy-enable  
+2026-05-24 13:10:32:452 [iC******er] FSLoadingViewController.m     : 417 [1   ] [Info ] [Action] autoLoginProgress
+2026-05-24 13:10:32:453 [iC******er] FSLoginManager.m              :  68 [1   ] [Info ] AUTH - loginWithUserNameTokenLength: 130
+2026-05-24 13:10:32:453 [iC******er] FSLoginManager.m              :  79 [1   ] [Info ] AUTH - loginWithUserName isRenew
+2026-05-24 13:10:32:454 [iC******er] FSLoginManager.m              : 106 [1   ] [Info ] userloginwith:isNormal
+2026-05-24 13:10:32:454 [iC******er] FSAuthUseCase.m               : 310 [1   ] [Info ] AUTH - requestAuthWithParamRtLength:130  ACI:BE994|09D9B
+2026-05-24 13:10:32:455 [iC******er] FSAuthUseCase.m               : 312 [1   ] [Info ] AUTH - requestAuthWithParamRtLength:130----rtvalue:r-46n|k45fw
+2026-05-24 13:10:32:455 [iC******er] FSAuthUseCase.m               : 315 [1   ] [Info ] AUTH - requestAuthWithParamRtLength:64----rtvalue:305cb|121a5
+2026-05-24 13:10:32:456 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][32455] POST intl~:32800/rest/neteco/appauthen/v1/smapp/app/token  
+2026-05-24 13:10:32:491 [iC******er] ECCNetManager.m               :  91 [1   ] [Info ] [Network] Error Domain=NSCocoaErrorDomain Code=3840 "Invalid value around line 1, column 0." UserInfo={NSDebugDescription=Invalid value around line 1, column 0., NSJSONSerializationErrorIndex=0}
+2026-05-24 13:10:32:491 [iC******er] NetWorkHandler.m              :1631 [1   ] [Info ] [Network] [TRACE][Response][32451][404] GET intl~:32800/rest/pvmswebservice/security/v1/config/japan-privacy-enable (39ms)   error: -1011
+2026-05-24 13:10:32:492 [iC******er] FSHttpResp.m                  :  27 [1   ] [Info ] [Network] Error Domain=NSCocoaErrorDomain Code=3840 "Invalid value around line 1, column 0." UserInfo={NSDebugDescription=Invalid value around line 1, column 0., NSJSONSerializationErrorIndex=0}
+2026-05-24 13:10:32:708 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][32455][200] POST intl~:32800/rest/neteco/appauthen/v1/smapp/app/token (250ms)  {"description":"success","data":{"expires":1800,"regionFive":true},"code":0}
+2026-05-24 13:10:32:710 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:32:712 [iC******er] FSAuthUseCase.m               : 344 [1   ] [Info ] AUTH - requestAuthWithUrlResultRtLength:130
+2026-05-24 13:10:32:714 [iC******er] FSAuthUseCase.m               : 346 [1   ] [Info ] AUTH - requestAuthWithUrlResultRtLength:130----rtvalue:r-7st|4lgfy
+2026-05-24 13:10:32:715 [iC******er] FSLoginManager.m              : 114 [1   ] [Info ] AUTH - [LOGIN CODE]:0
+2026-05-24 13:10:32:716 [iC******er] FSLoginManager.m              : 125 [1   ] [Info ] is OC region : 1
+2026-05-24 13:10:32:717 [iC******er] FSLoginManager.m              : 476 [1   ] [Info ] firstPrivacyProcess
+2026-05-24 13:10:32:720 [iC******er] ECSPrivacyItem.m              :  50 [1   ] [Info ] getDictionaryDataWithType dicParam--->:{
+    applySite = "";
+    clientAppVersion = "26.1.2.008";
+    legalClauseTypes = "privacy-statement,user-terms";
+}
+2026-05-24 13:10:32:721 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][32720] GET uni005eu5~:32800/rest/dpcloud/privacy/v1/clauses/releases {"clientAppVersion":"26.1.2.008","applySite":"","legalClauseTypes":"privacy-statement,user-terms"} 
+2026-05-24 13:10:32:886 [iC******er] SIAppDelegate.m               : 279 [1   ] [Info ] SI_applicationDidEnterBackground
+2026-05-24 13:10:32:888 [iC******er] HMXAppDelegate.m              : 102 [1   ] [Info ] applicationDidEnterBackground......
+2026-05-24 13:10:32:889 [iC******er] ECCAppDelegate.m              :  75 [1   ] [Info ] ECC_applicationDidEnterBackground
+2026-05-24 13:10:33:010 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][32720][200] GET uni005eu5~:32800/rest/dpcloud/privacy/v1/clauses/releases (287ms) lubanops-gtrace-id:v-218653-1779621032805-15514473 []
+2026-05-24 13:10:33:010 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:33:011 [iC******er] ECSPrivacyItem.m              :  77 [1   ] [Info ] result--->:/rest/dpcloud/privacy/v1/clauses/releases 1 (
+)
+2026-05-24 13:10:33:013 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][33011] GET uni005eu5~:32800/rest/dpcloud/privacy/v1/clauses/user/confirmations  
+2026-05-24 13:10:33:094 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][33011][200] GET uni005eu5~:32800/rest/dpcloud/privacy/v1/clauses/user/confirmations (79ms) lubanops-gtrace-id:v-218566-1779621033012-15474882 [{"id":"0ca40604-b5f2-4b4b-8235-232ed786e336","type":"user-terms"},{"id":"38211486-57eb-4882-a615-e81cdc5c1758","type":"privacy-statement"}]
+2026-05-24 13:10:33:096 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:33:108 [iC******er] ECSPrivacyItem.m              :  96 [1   ] [Info ] result--->:/rest/dpcloud/privacy/v1/clauses/user/confirmations 1 (
+        {
+        archivedTime = "2025-09-30";
+        historyToggle = 1;
+        id = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+        legalClauseGroupId = "pvms-legal-Europe";
+        names =         (
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "cs-cz";
+                translation = "Podm\U00ednky pou\U017eit\U00ed";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "de-de";
+                translation = Nutzungsbedingungen;
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "en-us";
+                translation = "Terms of Use";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "es-es";
+                translation = "Condiciones de uso";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "fr-fr";
+                translation = "Conditions d'utilisation";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "hu-hu";
+                translation = "Haszn\U00e1lati felt\U00e9telek";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "it-it";
+                translation = "Termini d'uso";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "ja-jp";
+                translation = "\U5229\U7528\U898f\U7d04";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "ko-kr";
+                translation = "\Uc774\Uc6a9 \Uc57d\Uad00";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "nl-nl";
+                translation = Gebruiksvoorwaarden;
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "pl-pl";
+                translation = "Warunki korzystania";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "pt-br";
+                translation = "Termos de uso";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "ro-ro";
+                translation = "Condi\U021bii de utilizare";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "tr-tr";
+                translation = "Kullan\U0131m \U015eartlar\U0131";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "uk-ua";
+                translation = "\U0423\U043c\U043e\U0432\U0438 \U0432\U0438\U043a\U043e\U0440\U0438\U0441\U0442\U0430\U043d\U043d\U044f";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "vi-vn";
+                translation = "\U0110i\U1ec1u kho\U1ea3n s\U1eed d\U1ee5ng";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "zh-cn";
+                translation = "\U4f7f\U7528\U6761\U6b3e";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "zh-tw";
+                translation = "\U4f7f\U7528\U689d\U6b3e";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "sv-se";
+                translation = "Anv\U00e4ndaravtal";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "da-dk";
+                translation = Brugeraftale;
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "fi-fi";
+                translation = "K\U00e4ytt\U00f6sopimus";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "sr-rs";
+                translation = "\U041a\U043e\U0440\U0438\U0441\U043d\U0438\U0447\U043a\U0438 \U0443\U0433\U043e\U0432\U043e\U0440";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "sl-si";
+                translation = "Uporabni\U0161ka pogodba";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "hr-hr";
+                translation = "Korisni\U010dki ugovor";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "bg-bg";
+                translation = "\U041f\U043e\U0442\U0440\U0435\U0431\U0438\U0442\U0435\U043b\U0441\U043a\U043e\U0442\U043e \U0441\U043f\U043e\U0440\U0430\U0437\U0443\U043c\U0435\U043d\U0438\U0435";
+            },
+                        {
+                legalClauseId = "0ca40604-b5f2-4b4b-8235-232ed786e336";
+                locale = "sk-sk";
+                translation = "Zmluva s pou\U017e\U00edvate\U013eom";
+            }
+        );
+        supportedClientAppVersion =         (
+        );
+        tooltipToggle = 1;
+        type = "user-terms";
+    },
+        {
+        archivedTime = "2025-09-30";
+        historyToggle = 1;
+        id = "38211486-57eb-4882-a615-e81cdc5c1758";
+        legalClauseGroupId = "pvms-legal-Europe";
+        names =         (
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "cs-cz";
+                translation = "Z\U00e1sady ochrany osobn\U00edch \U00fadaj\U016f";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "de-de";
+                translation = Datenschutzrichtlinie;
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "en-us";
+                translation = "Privacy Policy";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "es-es";
+                translation = "Pol\U00edtica de privacidad";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "fr-fr";
+                translation = "Politique de confidentialit\U00e9";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "hu-hu";
+                translation = "Adatv\U00e9delmi ir\U00e1nyelvek";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "it-it";
+                translation = "Informativa sulla protezione della privacy";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "ja-jp";
+                translation = "\U500b\U4eba\U60c5\U5831\U4fdd\U8b77\U65b9\U91dd";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "ko-kr";
+                translation = "\Uac1c\Uc778\Uc815\Ubcf4 \Ubcf4\Ud638\Uc815\Ucc45";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "nl-nl";
+                translation = Privacybeleid;
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "pl-pl";
+                translation = "Zasady ochrony prywatno\U015bci";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "pt-br";
+                translation = "Pol\U00edtica privac";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "ro-ro";
+                translation = "Politica de confiden\U021bialitate";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "tr-tr";
+                translation = "Gizlilik Politikas\U0131";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "uk-ua";
+                translation = "\U041f\U043e\U043b\U0456\U0442\U0438\U043a\U0430 \U043a\U043e\U043d\U0444\U0456\U0434\U0435\U043d\U0446\U0456\U0439\U043d\U043e\U0441\U0442\U0456";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "vi-vn";
+                translation = "Ch\U00ednh s\U00e1ch quy\U1ec1n ri\U00eang t\U01b0";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "zh-cn";
+                translation = "\U9690\U79c1\U653f\U7b56";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "zh-tw";
+                translation = "\U96b1\U79c1\U6b0a\U653f\U7b56";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "sv-se";
+                translation = Sekretessmeddelande;
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "da-dk";
+                translation = "Erkl\U00e6ring om beskyttelse af personlige oplysninger";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "fi-fi";
+                translation = Tietosuojalausunto;
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "sr-rs";
+                translation = "\U0418\U0437\U0458\U0430\U0432\U0430 \U043e \U043f\U0440\U0438\U0432\U0430\U0442\U043d\U043e\U0441\U0442\U0438";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "sl-si";
+                translation = "Izjava o zasebnosti";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "hr-hr";
+                translation = "Izjava o za\U0161titi privatnosti";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "bg-bg";
+                translation = "\U0414\U0435\U043a\U043b\U0430\U0440\U0430\U0446\U0438\U044f \U0437\U0430 \U043f\U043e\U0432\U0435\U0440\U0438\U0442\U0435\U043b\U043d\U043e\U0441\U0442";
+            },
+                        {
+                legalClauseId = "38211486-57eb-4882-a615-e81cdc5c1758";
+                locale = "sk-sk";
+                translation = "Vyhl\U00e1senie o ochrane osobn\U00fdch \U00fadajov";
+            }
+        );
+        supportedClientAppVersion =         (
+        );
+        tooltipToggle = 1;
+        type = "privacy-statement";
+    }
+)
+2026-05-24 13:10:33:110 [iC******er] FusionCommon.m                : 301 [1   ] [Info ] systemLanguage: sr-Latn-RS
+2026-05-24 13:10:33:111 [iC******er] FusionCommon.m                : 289 [1   ] [Info ] getCurrentSystemLanguageStr: sr
+2026-05-24 13:10:33:113 [iC******er] ECSPrivacyItem.m              : 277 [1   ] [Info ] urlString-->:/dpcloud/privacy/smartpvms_pvms-legal-Europe_sr-rs_user-terms_2025-09-30.html?releasedTime=1759183200000&appVersion=26.1.2.008&from=iOS
+2026-05-24 13:10:33:113 [iC******er] FusionCommon.m                : 301 [1   ] [Info ] systemLanguage: sr-Latn-RS
+2026-05-24 13:10:33:114 [iC******er] FusionCommon.m                : 289 [1   ] [Info ] getCurrentSystemLanguageStr: sr
+2026-05-24 13:10:33:115 [iC******er] ECSPrivacyItem.m              : 277 [1   ] [Info ] urlString-->:/dpcloud/privacy/smartpvms_pvms-legal-Europe_sr-rs_privacy-statement_2025-09-30.html?releasedTime=1759183200000&appVersion=26.1.2.008&from=iOS
+2026-05-24 13:10:33:116 [iC******er] FSLoginManager.m              : 900 [1   ] [Info ] requestZoneID
+2026-05-24 13:10:33:119 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][33117] GET uni005eu5~:32800/rest/dpcloud/tenant/web/v1/zone-list  
+2026-05-24 13:10:33:283 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][33117][200] GET uni005eu5~:32800/rest/dpcloud/tenant/web/v1/zone-list (164ms) lubanops-gtrace-id:v-218598-1779621033213-7580919 [{"zoneId":"971aaedd-99bb-4bc7-a88b-9dbe7b9ee002"}]
+2026-05-24 13:10:33:285 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:33:287 [iC******er] FSLoginInfoModel.m            : 914 [1   ] [Info ] [zone..] old: 971aaedd-99b***9dbe7b9ee002  new: 971aaedd-99b***9dbe7b9ee002
+2026-05-24 13:10:33:288 [iC******er] FSLoginManager.m              : 683 [1   ] [Info ] requestDemoUsrer
+2026-05-24 13:10:33:289 [iC******er] FSLoginManager.m              : 685 [1   ] [Info ] loginType: 2
+2026-05-24 13:10:33:290 [iC******er] FSLoginManager.m              : 692 [1   ] [Info ] request local enviinfo with auto log in, local: en_US
+2026-05-24 13:10:33:292 [iC******er] FSFeatureManager.m            : 172 [1   ] [Info ] getNewFeatures
+2026-05-24 13:10:33:303 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][33300] GET uni005eu5~:32800/rest/neteco/phoneapp/v2/common/commoner {} 
+2026-05-24 13:10:33:307 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][33304] GET uni005eu5~:32800/fusionsolar/m/config/supportConfig.json  
+2026-05-24 13:10:33:498 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][33304][200] GET uni005eu5~:32800/fusionsolar/m/config/supportConfig.json (191ms)  
+2026-05-24 13:10:33:500 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:33:509 [iC******er] FSLoginManager.m              : 745 [1   ] [Info ] requestUserDetail
+2026-05-24 13:10:33:512 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][33509] GET uni005eu5~:32800/rest/neteco/phoneapp/v1/datacenter/getuserdetailinfo  
+2026-05-24 13:10:33:514 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][33300][200] GET uni005eu5~:32800/rest/neteco/phoneapp/v2/common/commoner (211ms) lubanops-gtrace-id:v-216794-1779621033433-16174603 {"data":[{"support":"1","featureName":"AI_EMMA_SMARTEMO_DST_SHOW"},{"support":"1","featureName":"AI_FORECAST_CONTROL"},{"support":"1","featureName":"AI_GOD_REV_V2"},{"support":"1","featureName":"AI_SMARTEMO_SHOW"},{"support":"1","featureName":"ALARM_EXT_SUPPORT"},{"support":"1","featureName":"ALARM_PAGE_COMBINATION"},{"support":"1","featureName":"APP_COMMON_CONFIG"},{"support":"1","featureName":"APP_FEATURE_CODE1"},{"support":"1","featureName":"APP_PERMISSIONS_BASELINE"},{"support":"1","featureName":"APP_PRE_BOUND"},{"support":"1","featureName":"APP_REMOTE_VERIFICATION_CODE"},{"support":"1","featureName":"APP_REMOTE_VERIFICATION_CODE_INVERTER"},{"support":"1","featureName":"APPROVE_PLANT_TASK"},{"support":"1","featureName":"BATTERY_2_GRID"},{"support":"1","featureName":"CHANGE_CURRENCY"},{"support":"1","featureName":"CHARGE_POWER_STATISTICS"},{"support":"1","featureName":"CHARGE_PRIORITY"},{"support":"1","featureName":"CHARGE_RECORD"},{"support":"1","featureName":"CHARGE_SHARE"},{"support":"1","featureName":"CHARGEONE_APP_FAQ_PATH"},{"support":"1","featureName":"COMPONENT_DIAGNOSIS"},{"support":"1","featureName":"CREATE_PLANT_FROM_SMARTDESIGN"},{"support":"1","featureName":"CREATE_REPORT_SUMMARY_TASK"},{"support":"1","featureName":"CREATE_USER_REMOVE_PWD"},{"support":"1","featureName":"DARK_MODE"},{"support":"1","featureName":"DEPLOYMENT_SUPPORT_ADDRESS_AND_POSTCODE"},{"support":"1","featureName":"DEREGISTER_USER"},{"support":"1","featureName":"DEVICE_ON_CLOUD_STATISTICS"},{"support":"1","featureName":"DEVICE_TYPE"},{"support":"1","featureName":"ELE_TIME_INTERVAL"},{"support":"1","featureName":"ELECTR_PRICE_SET_GAINS_REMITTANCE"},{"support":"0","featureName":"ELECTRICITY_PRICE"},{"support":"0","featureName":"ELECTRICITY_PRICE_NEW"},{"support":"1","featureName":"ELECTRICITY_PRICE_NEW_H5"},{"support":"1","featureName":"EMMA_AI_REVENUE_NEW"},{"support":"1","featureName":"EMMA_DEVICE_NEW_NAME"},{"support":"1","featureName":"EMMA_NEW_NAME"},{"support":"1","featureName":"EMMA_OWNER_EXPERIENCE_OPTIMIZATION"},{"support":"1","featureName":"EMMA_SUPPORT_ANALYSIS"},{"support":"1","featureName":"ENERGY_STORAGE_ENVIRONMENT"},{"support":"1","featureName":"ESSENTIAL_EVENT_FEATURE"},{"support":"1","featureName":"FEED_BACK"},{"support":"1","featureName":"FORCE_COMPANY_BIND"},{"support":"1","featureName":"GENERATOR_GENERATION_COST"},{"support":"1","featureName":"INSTALLER_APPLY_ADMIN"},{"support":"1","featureName":"IS_SUPPORT_ANNUAL_REPORT"},{"support":"1","featureName":"IS_SUPPORT_COMMPANY_BIND"},{"support":"1","featureName":"IS_SUPPORT_O_AUTH2"},{"support":"1","featureName":"IS_SUPPORT_PVMS_ALARM"},{"support":"1","featureName":"IS_UPGRADE_BUSINESS_INCOME"},{"support":"1","featureName":"IS_UPGRADE_BUSINESS_OVERVIEW"},{"support":"0","featureName":"LARGE_CAPACITY"},{"support":"1","featureName":"LARGE_CAPACITY_STATION"},{"support":"1","featureName":"LAYOUT_SCHEME_FROM_DESIGN"},{"support":"1","featureName":"LIVE_DATA"},{"support":"0","featureName":"MANAGEMENT_HAVE_ELECTRICITY_PRICE_NEW"},{"support":"0","featureName":"MANAGEMENT_HAVE_NEW_ELECTRICITY_PRICE"},{"support":"1","featureName":"MODIFY_EMAIL"},{"support":"1","featureName":"MODIFY_PHONE"},{"support":"1","featureName":"MODIFY_PROVIDER"},{"support":"1","featureName":"MULTI_SAAS_DELETE"},{"support":"1","featureName":"NEGATIVE_RATE_OPTIMIZE"},{"support":"1","featureName":"NEW_HOME_PAGE"},{"support":"1","featureName":"NEXT_TRIP"},{"support":"1","featureName":"NOTIFICATIONS_ON_ACTIVITIES"},{"support":"1","featureName":"OWNERNEWPAGE"},{"support":"10","featureName":"OWNERNEWPAGESIZE"},{"support":"1","featureName":"PLANT_AUTHORIZED_OPERATION"},{"support":"1","featureName":"QUERY_APPROVAL_LIST"},{"support":"1","featureName":"QUERY_PLANT_TASK_DETAIL"},{"support":"1","featureName":"QUESTIONNAIRE"},{"support":"1","featureName":"RATE_ENABLE"},{"support":"1","featureName":"REDUCE_COST"},{"support":"1","featureName":"REDUCE_COST_FEATURE"},{"support":"1","featureName":"REGKEY_CODE"},{"support":"1","featureName":"RELEASE_NOTES"},{"support":"1","featureName":"REMOTE_DOWNLOAD_SUPPORT"},{"support":"1","featureName":"REMOTE_POWER_ON_OR_OFF"},{"support":"1","featureName":"ROLE_INTER"},{"support":"1","featureName":"SMARTLOAD_PROTOCOL"},{"support":"0","featureName":"STATION_ARCHIVES"},{"support":"1","featureName":"STATION_CAPACITY_LIMIT"},{"support":"1","featureName":"STATION_INVITE_USER"},{"support":"1","featureName":"SUPPORT_ADD_ESS_ANALYSIS"},{"support":"1","featureName":"SUPPORT_AI_ASSISTANT"},{"support":"1","featureName":"SUPPORT_CHARGE_RECORD_EXPORT"},{"support":"1","featureName":"SUPPORT_DPA"},{"support":"1","featureName":"SUPPORT_ENERGY_ELECTRICITY_SALE"},{"support":"1","featureName":"SUPPORT_LAYOUT_SYNC_POST"},{"support":"1","featureName":"SUPPORT_LOGGER_V5"},{"support":"1","featureName":"SUPPORT_MANUAL_SOH_CHECK"},{"support":"1","featureName":"SUPPORT_MESSAGE_CONFIG_H5"},{"support":"1","featureName":"SUPPORT_MICROGRID_SCENE"},{"support":"0","featureName":"SUPPORT_RISK"},{"support":"1","featureName":"SUPPORT_ROLE_EVOLUTION"},{"support":"1","featureName":"SUPPORT_STATION_UPGRADE"},{"support":"0","featureName":"SUPPORT_TRAFFIC_RECHARGE"},{"support":"1","featureName":"THREE_PHASE_WHOLE_HOUSE_BACKUP_POWER"},{"support":"1","featureName":"TIMEZONE_ID_BY_AREA_ID"},{"support":"1","featureName":"UNIACCOUNT"},{"support":"2","featureName":"UPLOAD_COUNTRY"},{"support":"1","featureName":"VIEW_DATA"},{"support":"1","featureName":"WITHDRAW_TERMS_OF_USE"}],"code":0}
+2026-05-24 13:10:33:516 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:33:526 [iC******er] FSAnalyticsManager.m          : 148 [1   ] [Info ] enableAnalytics : 0
+2026-05-24 13:10:33:527 [iC******er] FSBaseUseCase.m               :  42 [1   ] [Info ] dealloc FSServerUseCase
+2026-05-24 13:10:33:545 [iC******er] FSBaseUseCase.m               :  42 [1   ] [Info ] dealloc FSServerUseCase
+2026-05-24 13:10:33:735 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][33509][200] GET uni005eu5~:32800/rest/neteco/phoneapp/v1/datacenter/getuserdetailinfo (222ms) lubanops-gtrace-id:v-216771-1779621033612-16147213 {"roles":[{"id":46,"name":"G***t"}],"userId":"1***5","userType":0}
+2026-05-24 13:10:33:737 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:33:742 [iC******er] FSLoginManager.m              : 774 [1   ] [Info ] requestCompanyDetail
+2026-05-24 13:10:33:747 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][33742] GET uni005eu5~:32800/rest/neteco/phoneapp/v2/fusionsolarbusiness/company/getorganizationcompanybyuser  
+2026-05-24 13:10:33:873 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][33742][200] GET uni005eu5~:32800/rest/neteco/phoneapp/v2/fusionsolarbusiness/company/getorganizationcompanybyuser (128ms) lubanops-gtrace-id:v-216794-1779621033745-16174607 {"description":"success","data":{"name":"F***m","description":""},"code":0}
+2026-05-24 13:10:33:874 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:33:879 [iC******er] FSLoginManager.m              : 872 [1   ] [Info ] requestRoleOperation
+2026-05-24 13:10:33:898 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][33879] GET uni005eu5~:32800/rest/neteco/phoneapp/v1/authenticate/v1/queryOperationSet  
+2026-05-24 13:10:33:899 [iC******er] FSLoginManager.m              : 915 [1   ] [Info ] requestRegisterApns
+2026-05-24 13:10:33:901 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][33899] POST uni005eu5~:32800/rest/neteco/phoneapp/v1/authenticate/v1/gettopic {"deviceType":"IOS","appPackageName":"com.huawei.smartpvms","languageType":"sr_RS"} 
+2026-05-24 13:10:33:959 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][33879][200] GET uni005eu5~:32800/rest/neteco/phoneapp/v1/authenticate/v1/queryOperationSet (78ms) lubanops-gtrace-id:v-216791-1779621033896-16163077 
+2026-05-24 13:10:33:959 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:33:962 [iC******er] FSLoginManager.m              : 814 [1   ] [Info ] requestRolePermission
+2026-05-24 13:10:33:964 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][33961] POST uni005eu5~:32800/rest/neteco/phoneapp/v1/datacenter/roleopers  
+2026-05-24 13:10:33:965 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][33899][200] POST uni005eu5~:32800/rest/neteco/phoneapp/v1/authenticate/v1/gettopic (64ms) lubanops-gtrace-id:v-216757-1779621033901-7694149 {"code":0}
+2026-05-24 13:10:33:966 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:33:968 [iC******er] FSCommonUnitTool.m            :  22 [1   ] [Info ] isResultSuccess:(
+    description,
+    code
+)
+2026-05-24 13:10:33:969 [iC******er] FSServerUseCase.m             : 424 [1   ] [Error] requestRegisterServerApnsCompletion:result error:{
+    code = 0;
+    description = success;
+}
+2026-05-24 13:10:34:035 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][33961][200] POST uni005eu5~:32800/rest/neteco/phoneapp/v1/datacenter/roleopers (72ms) lubanops-gtrace-id:v-216771-1779621033978-16147216 {}
+2026-05-24 13:10:34:037 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:34:074 [iC******er] FSLoginManager.m              : 254 [1   ] [Info ] AUTH - [LOGIN RESULT]:login_success
+2026-05-24 13:10:34:079 [iC******er] FSLoginInfoModel.m            : 914 [1   ] [Info ] [zone..] old: (null)  new: 971aaedd-99b***9dbe7b9ee002
+2026-05-24 13:10:34:082 [iC******er] FSLoginInfoModel.m            : 733 [1   ] [Info ] saveAllLoginData:(
+    permissionInfo,
+    isHaveDataAES,
+    noRemindSyncDomain,
+    userLoginName,
+    companyDetail,
+    tokenInfo,
+    isSingleOwner,
+    needSignDPA,
+    rolePermissionInfo,
+    isAlreadyDisplayedLocationAuthorizationGuide,
+    isHaveAnnualReport,
+    userDetail,
+    zoneID
+)
+2026-05-24 13:10:34:086 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][34084] GET uni005eu5~:32800/rest/dp/pvms/device/activation/v1/battery-security-protocol  
+2026-05-24 13:10:34:087 [iC******er] FSLoadingViewController.m     : 434 [1   ] [Error] autoLogin errorCode: login_success
+2026-05-24 13:10:34:093 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][34091] GET uni005eu5~:32800/rest/dp/elecpriceservice/v1/currency  
+2026-05-24 13:10:34:094 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][34092] POST uni005eu5~:32800/rest/pvms/web/server/v1/servermgmt/list-unforbidden-server  
+2026-05-24 13:10:34:095 [iC******er] ECSHandoverManager.m          :  73 [1   ] [Info ] handoverModule
+2026-05-24 13:10:34:097 [iC******er] ECSHandoverManager.m          :  91 [1   ] [Info ] handoverModule:notowner
+2026-05-24 13:10:34:099 [iC******er] UIView+ECSStatusView.m        :  42 [1   ] [Info ] hideLoadingView mark:language change end
+2026-05-24 13:10:34:209 [iC******er] ECSStationViewController.m    : 209 [1   ] [Info ] initTabView
+2026-05-24 13:10:34:233 [iC******er] ECSStationViewController.m    : 310 [1   ] [Info ] initButtons
+2026-05-24 13:10:34:238 [iC******er] ECSStationViewController.m    : 186 [1   ] [Info ] setupViewControllers
+2026-05-24 13:10:34:253 [iC******er] ECSAIOpticalStorageManager.m  :  31 [1   ] [Info ] stationUseCase did load
+2026-05-24 13:10:34:256 [iC******er] ECSStationMonitorViewModel.m  : 127 [1   ] [Info ] stationUseCase did load
+2026-05-24 13:10:34:258 [iC******er] ECSOwnerHomeViewModel.m       : 255 [1   ] [Info ] support feature : KEY_ALARM_EXT_SUPPORT
+2026-05-24 13:10:34:265 [iC******er] ECSStationListViewController.m: 490 [1   ] [Info ] [Action] initSearchBar
+2026-05-24 13:10:34:270 [iC******er] ECSStationListViewController.m: 368 [1   ] [Info ] [Action] initStationCountBar
+2026-05-24 13:10:34:274 [iC******er] ECSStationListViewController.m: 515 [1   ] [Info ] [Action] initStationListTable
+2026-05-24 13:10:34:282 [iC******er] FusionCommon.m                : 301 [1   ] [Info ] systemLanguage: sr-Latn-RS
+2026-05-24 13:10:34:284 [iC******er] FusionCommon.m                : 289 [1   ] [Info ] getCurrentSystemLanguageStr: sr
+2026-05-24 13:10:34:285 [iC******er] FusionCommon.m                : 301 [1   ] [Info ] systemLanguage: sr-Latn-RS
+2026-05-24 13:10:34:287 [iC******er] FusionCommon.m                : 289 [1   ] [Info ] getCurrentSystemLanguageStr: sr
+2026-05-24 13:10:34:310 [iC******er] ECSStationListViewController.m: 152 [1   ] [Info ] [Action] creatListTimer
+2026-05-24 13:10:34:312 [iC******er] ECSAlarmVideosManager.m       :  29 [1   ] [Info ] requestAlarmVideosData: is not installer
+2026-05-24 13:10:34:314 [iC******er] ECSStationViewController.m    : 322 [1   ] [Info ] showListButtons
+2026-05-24 13:10:34:320 [iC******er] ECSStationStatisticViewController.m:  80 [1   ] [Info ] [Action] initView
+2026-05-24 13:10:34:323 [iC******er] FusionCommon.m                : 301 [1   ] [Info ] systemLanguage: sr-Latn-RS
+2026-05-24 13:10:34:325 [iC******er] FusionCommon.m                : 289 [1   ] [Info ] getCurrentSystemLanguageStr: sr
+2026-05-24 13:10:34:326 [iC******er] FusionCommon.m                : 301 [1   ] [Info ] systemLanguage: sr-Latn-RS
+2026-05-24 13:10:34:328 [iC******er] FusionCommon.m                : 289 [1   ] [Info ] getCurrentSystemLanguageStr: sr
+2026-05-24 13:10:34:344 [iC******er] ECSStationStatisticViewController.m: 346 [1   ] [Info ] [Action] getTimeStringWithCurrentDate
+2026-05-24 13:10:34:391 [iC******er] SIAppDelegate.m               : 391 [1   ] [Info ] isForceLandscape: 0
+2026-05-24 13:10:34:400 [iC******er] SIAppDelegate.m               : 391 [1   ] [Info ] isForceLandscape: 0
+2026-05-24 13:10:34:403 [iC******er] SIAppDelegate.m               : 391 [1   ] [Info ] isForceLandscape: 0
+2026-05-24 13:10:34:405 [iC******er] SIAppDelegate.m               : 391 [1   ] [Info ] isForceLandscape: 0
+2026-05-24 13:10:34:407 [iC******er] FSAppDelegate.m               : 633 [1   ] [Info ] switch keywindow rootviewcontroller: ECSNavgationController -> ECSMainTabbarController
+2026-05-24 13:10:34:410 [iC******er] ECSAutoDownloadPackageForWlan.m:  23 [1   ] [Info ] auto download, downloadPackage
+2026-05-24 13:10:34:412 [iC******er] ECSAutoDownloadPackageForWlan.m:  26 [1   ] [Info ] auto download, current user no need download
+2026-05-24 13:10:34:415 [iC******er] FSLoginManager.m              : 845 [1   ] [Info ] Permission supportFusionAppHoupSearch NO
+2026-05-24 13:10:34:420 [iC******er] ECSBaseViewController.m       : 103 [1   ] [Info ] dealloc ECSOperationViewController
+2026-05-24 13:10:34:421 [iC******er] DPBaseViewController.m        :  78 [1   ] [Info ] [Page] ECSOperationViewController dealloc
+2026-05-24 13:10:34:436 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][34092][200] POST uni005eu5~:32800/rest/pvms/web/server/v1/servermgmt/list-unforbidden-server (341ms) lubanops-gtrace-id:v-216784-1779621034181-27902730 {"data":[]}
+2026-05-24 13:10:34:437 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:34:446 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][34442] GET uni005eu5~:32800/rest/dp/pvms/pvmsextwebservice/v1/ai-assistant/feature/toggle  
+2026-05-24 13:10:34:451 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][34091][200] GET uni005eu5~:32800/rest/dp/elecpriceservice/v1/currency (354ms) lubanops-gtrace-id:v-216809-1779621034187-21357664 [{"id":"1","Abbreviation":"CNY","symbol":"¥","i18n":"CNY"},{"id":"2","Abbreviation":"USD","symbol":"$","i18n":"USD"},{"id":"3","Abbreviation":"JPY","symbol":"￥","i18n":"JPY"},{"id":"4","Abbreviation":"EUR","symbol":"€","i18n":"EUR"},{"id":"5","Abbreviation":"GBP","symbol":"£","i18n":"GBP"},{"id":"6","Abbreviation":"INR","symbol":"Rs.","i18n":"INR"},{"id":"7","Abbreviation":"AUD","symbol":"A$","i18n":"AUD"},{"id":"8","Abbreviation":"AED","symbol":"AED","i18n":"LYD"},{"id":"9","Abbreviation":"ZAR","symbol":"R.","i18n":"ZAR"},{"id":"10","Abbreviation":"EGP","symbol":"£E.","i18n":"EGP"},{"id":"11","Abbreviation":"ARS","symbol":"Arg.P.","i18n":"ARS"},{"id":"12","Abbreviation":"TRL","symbol":"£T.","i18n":"TRY"},{"id":"13","Abbreviation":"MXN","symbol":"Mex$","i18n":"MXN"},{"id":"14","Abbreviation":"BRL","symbol":"R$","i18n":"BRL"},{"id":"15","Abbreviation":"ESP","symbol":"Pes.","i18n":"Peseta"},{"id":"16","Abbreviation":"CAD","symbol":"Can.$","i18n":"CAD"},{"id":"17","Abbreviation":"KRW","symbol":"₩","i18n":"KRW"},{"id":"18","Abbreviation":"MAD","symbol":"DH.","i18n":"MAD"},{"id":"19","Abbreviation":"CLP","symbol":"P.","i18n":"CLP"},{"id":"20","Abbreviation":"PKR","symbol":"PKR","i18n":"PKR"},{"id":"21","Abbreviation":"SAR","symbol":"S.R.","i18n":"SAR"},{"id":"22","Abbreviation":"THB","symbol":"฿","i18n":"THB"},{"id":"23","Abbreviation":"MYR","symbol":"Mal.$","i18n":"MYR"},{"id":"24","Abbreviation":"SGD","symbol":"S$","i18n":"SGD"},{"id":"25","Abbreviation":"VND","symbol":"₫","i18n":"VND"},{"id":"26","Abbreviation":"PHP","symbol":"₱","i18n":"PHP"},{"id":"27","Abbreviation":"HKD","symbol":"HK$","i18n":"HKD"},{"id":"28","Abbreviation":"PLN","symbol":"zł","i18n":"PLN"},{"id":"29","Abbreviation":"CHF","symbol":"CHF","i18n":"CHF"},{"id":"30","Abbreviation":"TWD","symbol":"TW$","i18n":"TWD"},{"id":"31","Abbreviation":"HUF","symbol":"FT.","i18n":"HUF"},{"id":"32","Abbreviation":"YTL","symbol":"₺","i18n":"TRY"},{"id":"34","Abbreviation":"UAH","symbol":"₪","i18n":"UAH"},{"id":"35","Abbreviation":"NZD","symbol":"$","i18n":"NZD"},{"id":"36","Abbreviation":"IDR","symbol":"Rp","i18n":"IDR"},{"id":"37","Abbreviation":"GTQ","symbol":"Q","i18n":"GTQ"},{"id":"38","Abbreviation":"HNL","symbol":"L","i18n":"HNL"},{"id":"39","Abbreviation":"SVC","symbol":"₡","i18n":"SVC"},{"id":"40","Abbreviation":"PAB","symbol":"B","i18n":"PAB"},{"id":"41","Abbreviation":"DOP","symbol":"RD$","i18n":"DOP"},{"id":"42","Abbreviation":"VEF","symbol":"VEF","i18n":"VEF"},{"id":"43","Abbreviation":"COP","symbol":"$","i18n":"COP"},{"id":"44","Abbreviation":"PEN","symbol":"S\/.","i18n":"PEN"},{"id":"45","Abbreviation":"BOB","symbol":"Bs","i18n":"BOB"},{"id":"46","Abbreviation":"DKK","symbol":"kr","i18n":"DKK"},{"id":"47","Abbreviation":"NOK","symbol":"kr","i18n":"NOK"},{"id":"48","Abbreviation":"SEK","symbol":"kr","i18n":"SEK"},{"id":"49","Abbreviation":"KZT","symbol":"₸","i18n":"KZT"},{"id":"50","Abbreviation":"UZS","symbol":"лв","i18n":"UZS"},{"id":"51","Abbreviation":"CZK","symbol":"Kč","i18n":"CZK"},{"id":"52","Abbreviation":"NGN","symbol":"₦","i18n":"NGN"}]
+2026-05-24 13:10:34:453 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:34:470 [iC******er] ECSCurrencyManager.m          :  71 [1   ] [Info ] updataCurrencyList : success , 51
+2026-05-24 13:10:34:476 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][34084][200] GET uni005eu5~:32800/rest/dp/pvms/device/activation/v1/battery-security-protocol (388ms) lubanops-gtrace-id:v-216725-1779621034190-6485556 
+2026-05-24 13:10:34:478 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:34:506 [iC******er] ECSHandoverManager.m          : 101 [1   ] [Info ] networkChanged:2
+2026-05-24 13:10:34:508 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][34505] POST uni005eu5~:32800/rest/pvms/web/server/v1/servermgmt/list-unforbidden-server  
+2026-05-24 13:10:34:518 [iC******er] FSBaseUseCase.m               :  42 [1   ] [Info ] dealloc FSDeviceUseCase
+2026-05-24 13:10:34:521 [iC******er] FSBaseUseCase.m               :  42 [1   ] [Info ] dealloc FSExternalDownloadUseCase
+2026-05-24 13:10:34:555 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][34505][200] POST uni005eu5~:32800/rest/pvms/web/server/v1/servermgmt/list-unforbidden-server (47ms) lubanops-gtrace-id:v-216784-1779621034498-27902739 {"data":[]}
+2026-05-24 13:10:34:557 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:34:607 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][34442][200] GET uni005eu5~:32800/rest/dp/pvms/pvmsextwebservice/v1/ai-assistant/feature/toggle (161ms) lubanops-gtrace-id:v-216813-1779621034542-11240414 {"featureStatus":false}
+2026-05-24 13:10:34:609 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:34:614 [iC******er] ECSAIButton.m                 : 515 [1   ] [Info ] requestAiAssistantSwitch success:1 , result:{
+    featureStatus = 0;
+}
+2026-05-24 13:10:34:621 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][34617] GET uni005eu5~:32800/rest/dp/pvms/pvmsextwebservice/v1/ai-assistant/users/toggle {} 
+2026-05-24 13:10:34:623 [iC******er] FSBaseUseCase.m               :  42 [1   ] [Info ] dealloc FSUserCenterUseCase
+2026-05-24 13:10:34:793 [iC******er] NetWorkHandler.m              :1558 [1   ] [Info ] [Network] [TRACE][Response][34617][200] GET uni005eu5~:32800/rest/dp/pvms/pvmsextwebservice/v1/ai-assistant/users/toggle (172ms) lubanops-gtrace-id:v-216818-1779621034725-11254248 {"assistantToggle":true}
+2026-05-24 13:10:34:795 [iC******er] FSLoginInfoModel.m            :1125 [1   ] [Info ] [Network] [Cookie] updateServerCookie
+2026-05-24 13:10:34:800 [iC******er] ECSAIButton.m                 : 534 [1   ] [Info ] requestAiAssistantSwitchBlock success:1 , result:{
+    assistantToggle = 1;
+}
+2026-05-24 13:10:34:804 [iC******er] NetWorkHandler.m              :1548 [1   ] [Info ] [Network] [TRACE][Request][34801] GET uni005eu5~:32800/rest/dp/pvms/pvmsextwebservice/v1/ai-assistant/functions  
+2026-05-24 13:10:34:807 [iC******er] FSBaseUseCase.m               :  42 [1   ] [Info ] dealloc FSUserCenterUseCase
+2026-05-24 13:10:34:976 [iC******er] NetWorkHandler.m              :1631 [1   ] [Info ] [Network] [TRACE][Response][34801][500] GET uni005eu5~:32800/rest/dp/pvms/pvmsextwebservice/v1/ai-assistant/functions (171ms) lubanops-gtrace-id:216817-1779621034909-2209633 {
+    adviceArgs = "<null>";
+    descArgs = "<null>";
+    detailArgs = "<null>";
+    exceptionId = "framwork.remote.SystemError";
+    exceptionType = "ROA_EXFRAME_EXCEPTION";
+    reasonArgs = "<null>";
+} error: -1011
+2026-05-24 13:10:34:979 [iC******er] ECSAIButton.m                 : 570 [1   ] [Info ] requestAIFunctionBlock success:0 , result:{
+}
+2026-05-24 13:10:34:981 [iC******er] ECSAIButton.m                 : 145 [1   ] [Info ] ECSAiButton showAiButton
+2026-05-24 13:10:35:163 [iC******er] ECSMainTabbarController.m     :  85 [1   ] [Info ] Main Check - execCheckTask by applicationDidNetworkCheckReloadData

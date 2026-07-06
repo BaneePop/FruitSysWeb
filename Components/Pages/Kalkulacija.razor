@@ -1,0 +1,782 @@
+@page "/kalkulacija"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Core
+
+@inject IKalkulacijaService KalkulacijaService
+@inject KalkulacijaKonfiguracijaService KonfiguracijaService
+@inject NavigationManager Navigation
+
+<PageTitle>Kalkulacija — Sezona</PageTitle>
+
+<div class="container-fluid mt-3">
+
+    @* ── HEADER ──────────────────────────────────────────────── *@
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
+            <h5 class="mb-0">
+                <i class="bi bi-calculator me-2"></i>Kalkulacija — Obračun Sezone
+            </h5>
+            <div class="d-flex align-items-center gap-3">
+                @if (izvestajUcitan)
+                {
+                    <small class="text-white-50">
+                        <i class="bi bi-calendar-check me-1"></i>
+                        @odDatum.ToString("dd.MM.yyyy") – @doDatum.ToString("dd.MM.yyyy")
+                    </small>
+                }
+                <a href="/kalkulacija-konfiguracija" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-gear me-1"></i>Konfiguracija
+                </a>
+            </div>
+        </div>
+
+        @* ── PERIOD FILTER ───────────────────────────────────── *@
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label fw-semibold mb-1 small">Od datuma</label>
+                    <input type="date" class="form-control form-control-sm"
+                           value="@odDatum.ToString("yyyy-MM-dd")"
+                           @onchange="@(e => odDatum = DateTime.Parse(e.Value!.ToString()!))" />
+                </div>
+                <div class="col-auto">
+                    <label class="form-label fw-semibold mb-1 small">Do datuma</label>
+                    <input type="date" class="form-control form-control-sm"
+                           value="@doDatum.ToString("yyyy-MM-dd")"
+                           @onchange="@(e => doDatum = DateTime.Parse(e.Value!.ToString()!))" />
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary btn-sm" @onclick="UcitajIzvestaj" disabled="@ucitava">
+                        @if (ucitava)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-search me-1"></i>
+                        }
+                        Prikaži
+                    </button>
+                </div>
+                <div class="col-auto ms-2">
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="PostaviTekucuSezonu" title="Postavi period tekuće sezone (jun–danas)">
+                        <i class="bi bi-calendar2-week me-1"></i>Tekuća sezona
+                    </button>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(greska))
+            {
+                <div class="alert alert-danger mt-3 mb-0 py-2">
+                    <i class="bi bi-exclamation-triangle me-2"></i>@greska
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ── TABELA 1: STANJE ROBE ───────────────────────────────── *@
+    @if (ucitava)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2">Učitavanje podataka...</p>
+        </div>
+    }
+    else if (stanjeRobe != null)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white py-2">
+                <h6 class="mb-0">
+                    <i class="bi bi-boxes me-2"></i>1. Stanje Robe
+                    <small class="ms-2 fw-normal opacity-75">— period: @odDatum.ToString("dd.MM.yyyy") – @doDatum.ToString("dd.MM.yyyy")</small>
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-bordered mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="text-start ps-3">Vrsta Voća</th>
+                                <th class="text-end" title="KL- od @odDatum.ToString("dd.MM.yyyy"): sveža, sirovine, poluproizvodi, gotova roba; Potražuje &gt; 0; bez ALTIVA/FRIKOS">Kupljeno (kg)</th>
+                                <th class="text-end" title="Stanje lagera na dan pre početka sezone">Prenos Zaliha (kg)</th>
+                                <th class="text-end" title="Prodato u sezoni (FK- dokumenti, bez usluge)">Prodato (kg)</th>
+                                <th class="text-end" title="(Kupljeno + Prenos Zaliha sirovine) × % po vrsti">Kalo (kg)</th>
+                                <th class="text-end pe-3" title="Trenutno stanje u svim magacinima (bez usluge)">Na Zalihama (kg)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var red in stanjeRobe.Redovi)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-semibold">@red.VrstaVoca</td>
+                                    <td class="text-end">@red.Kupljeno.ToString("N2", kultura)</td>
+                                    <td class="text-end @(red.PrenosaZaliha > 0 ? "text-info" : "text-muted")">
+                                        @red.PrenosaZaliha.ToString("N2", kultura)
+                                    </td>
+                                    <td class="text-end">@red.Prodato.ToString("N2", kultura)</td>
+                                    <td class="text-end text-warning">
+                                        @if (red.Kalo > 0)
+                                        {
+                                            @red.Kalo.ToString("N2", kultura)
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-3 fw-bold @red.NaZalihama_CssClass">
+                                        @red.NaZalihama.ToString("N2", kultura)
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-secondary fw-bold">
+                            <tr>
+                                <td class="ps-3">UKUPNO</td>
+                                <td class="text-end">@stanjeRobe.UkupnoKupljeno.ToString("N2", kultura)</td>
+                                <td class="text-end">@stanjeRobe.UkupnoPrenosaZaliha.ToString("N2", kultura)</td>
+                                <td class="text-end">@stanjeRobe.UkupnoProdato.ToString("N2", kultura)</td>
+                                <td class="text-end">@stanjeRobe.UkupnoKalo.ToString("N2", kultura)</td>
+                                <td class="text-end pe-3">@stanjeRobe.UkupnoNaZalihama.ToString("N2", kultura)</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer text-muted small">
+                <i class="bi bi-info-circle me-1"></i>
+                Kalo: Malina/Jagoda 2%, Kupina 3%, Višnja 5%, Šljiva 7%, Kajsija 8% od (Kupljeno + Prenos Zaliha sirovine).
+                Kupljeno: KL- od @odDatum.ToString("dd.MM.yyyy"), sveža + sirovine + poluproizvodi + gotova roba, Potražuje &gt; 0, bez ALTIVA/FRIKOS.
+                Prenos Zaliha: zbir redova na @odDatum.AddDays(-1).ToString("dd.MM.yyyy") minus označeni artikli (Sekcija 5). Zbir svih redova po vrsti = ukupno kao LagerHome.
+                Na Zalihama: Kupljeno + Prenos Zaliha − Prodato − Kalo.
+            </div>
+        </div>
+
+        @* ── TABELA USLUGA ───────────────────────────────────────── *@
+        @if (usluga != null && usluga.Redovi.Count > 0)
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info bg-opacity-75 text-white py-2">
+                    <h6 class="mb-0">
+                        <i class="bi bi-arrow-repeat me-2"></i>Usluga — Uslužna Prerada (ALTIVA / FRIKOS)
+                        <small class="ms-2 fw-normal opacity-75">— period: @odDatum.ToString("dd.MM.yyyy") – @doDatum.ToString("dd.MM.yyyy")</small>
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-bordered mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-start ps-3">Vrsta Voća</th>
+                                    <th class="text-end" title="Primljeno na usluzi (KL- dokumenti)">Kupljeno (kg)</th>
+                                    <th class="text-end" title="Prenos zaliha usluge sa prethodnog perioda">Prenos Zaliha (kg)</th>
+                                    <th class="text-end" title="Otpremljeno nazad kupcu (FK- dokumenti)">Prodato (kg)</th>
+                                    <th class="text-end pe-3" title="Trenutno stanje uslužne robe u magacinima">Na Zalihama (kg)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var red in usluga.Redovi)
+                                {
+                                    <tr>
+                                        <td class="ps-3 fw-semibold">@red.VrstaVoca</td>
+                                        <td class="text-end">@red.Kupljeno.ToString("N2", kultura)</td>
+                                        <td class="text-end @(red.PrenosaZaliha > 0 ? "text-info" : "text-muted")">
+                                            @red.PrenosaZaliha.ToString("N2", kultura)
+                                        </td>
+                                        <td class="text-end">@red.Prodato.ToString("N2", kultura)</td>
+                                        <td class="text-end pe-3 fw-bold">@red.NaZalihama.ToString("N2", kultura)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-secondary fw-bold">
+                                <tr>
+                                    <td class="ps-3">UKUPNO</td>
+                                    <td class="text-end">@usluga.UkupnoKupljeno.ToString("N2", kultura)</td>
+                                    <td class="text-end">@usluga.UkupnoPrenosaZaliha.ToString("N2", kultura)</td>
+                                    <td class="text-end">@usluga.UkupnoProdato.ToString("N2", kultura)</td>
+                                    <td class="text-end pe-3">@usluga.UkupnoNaZalihama.ToString("N2", kultura)</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Roba koja se preradjuje uslužno — nije u vlasništvu ODETTA DOO, nije uključena u Obračun Otkupa ni Poslovanja.
+                </div>
+            </div>
+        }
+
+        @* ── TABELA 2: OBRAČUN OTKUPA ─────────────────────────────── *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white py-2 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-people me-2"></i>2. Obračun Otkupa
+                </h6>
+                <button class="btn btn-outline-light btn-sm" @onclick="ToggleIzborDobavljaca">
+                    <i class="bi bi-gear me-1"></i>Izbor dobavljača
+                </button>
+            </div>
+
+            @* Panel za izbor dobavljača i unos početnog stanja *@
+            @if (prikazIzboraDobavljaca)
+            {
+                <div class="card-body border-bottom bg-light py-3">
+                    <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Izaberite dobavljače (max 10). Podaci se čuvaju globalno.
+                        </p>
+                        <span class="badge bg-secondary ms-auto">@privremeniIzabraniDobavljaci.Count / 10 izabrano</span>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group input-group-sm" style="max-width: 320px">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" placeholder="Pretraga po nazivu..."
+                                   @bind="pretragaDobavljaca" @bind:event="oninput" />
+                            @if (!string.IsNullOrEmpty(pretragaDobavljaca))
+                            {
+                                <button class="btn btn-outline-secondary" @onclick="@(() => pretragaDobavljaca = string.Empty)" title="Obriši pretragu">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                    @* Lista svih dobavljača za izbor *@
+                    <div class="row g-2 mb-3">
+                        @foreach (var dobavljac in FilterovanIDobavljaci)
+                        {
+                            bool izabran = privremeniIzabraniDobavljaci.Contains(dobavljac.ID);
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="form-check p-2 rounded border @(izabran ? "border-primary bg-white" : "bg-white")">
+                                    <input class="form-check-input" type="checkbox"
+                                           id="dob_@dobavljac.ID"
+                                           checked="@izabran"
+                                           disabled="@(!izabran && privremeniIzabraniDobavljaci.Count >= 10)"
+                                           @onchange="@(e => ToggleDobavljac(dobavljac.ID, (bool)e.Value!))" />
+                                    <label class="form-check-label small fw-semibold" for="dob_@dobavljac.ID">
+                                        @dobavljac.Naziv
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @* Početno stanje po dobavljaču *@
+                    @if (privremeniIzabraniDobavljaci.Count > 0)
+                    {
+                        <div class="mt-2">
+                            <p class="fw-semibold small mb-2">
+                                <i class="bi bi-bank me-1"></i>Početno stanje na dan pre sezone
+                                <span class="text-muted fw-normal">— negativno = mi dugujemo, pozitivno = oni duguju</span>
+                            </p>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0" style="max-width: 420px">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th>Dobavljač</th>
+                                            <th class="text-end">Početno Stanje (RSD)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var id in privremeniIzabraniDobavljaci)
+                                        {
+                                            var naziv = sviDobavljaci.FirstOrDefault(d => d.ID == id).Naziv ?? id.ToString();
+                                            var ps = privременoPocetnoStanje.TryGetValue(id, out var v) ? v : 0m;
+                                            <tr>
+                                                <td class="fw-semibold small align-middle">@naziv</td>
+                                                <td class="p-1">
+                                                    <input type="number"
+                                                           class="form-control form-control-sm text-end"
+                                                           style="min-width:140px"
+                                                           placeholder="0"
+                                                           step="0.01"
+                                                           value="@(ps != 0m ? ps.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                                           @onchange="@(e => PostaviPocetnoStanje(id, e.Value?.ToString()))" />
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                    <div class="mt-3 d-flex gap-2">
+                        <button class="btn btn-primary btn-sm" @onclick="SacuvajIzborDobavljaca">
+                            <i class="bi bi-check-lg me-1"></i>Sačuvaj izbor
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleIzborDobavljaca">
+                            Otkaži
+                        </button>
+                    </div>
+                </div>
+            }
+
+            <div class="card-body p-0">
+                @if (obracunOtkupa == null || obracunOtkupa.Redovi.Count == 0)
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-person-plus fs-4 d-block mb-2"></i>
+                        @if (izabraniDobavljaci.Count == 0)
+                        {
+                            <span>Kliknite <strong>Izbor dobavljača</strong> da biste izabrali dobavljače.</span>
+                        }
+                        else
+                        {
+                            <span>Nema podataka za izabrane dobavljače u ovom periodu.</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-bordered mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-start ps-3">Dobavljač</th>
+                                    <th class="text-end" title="Vrednost nabavke (SUM Potrazuje na KL- dokumentima)">Vrednost Robe</th>
+                                    <th class="text-end" title="Saldo na dan pre početka sezone (ručni unos)">Početno Stanje</th>
+                                    <th class="text-end" title="Ukupno isplaćeno dobavljaču (SUM Duguje na IS- dokumentima)">Isplata</th>
+                                    <th class="text-end pe-3" title="(Isplata − Vrednost Robe) + Početno Stanje">Stanje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var red in obracunOtkupa.Redovi)
+                                {
+                                    <tr>
+                                        <td class="ps-3 fw-semibold">@red.Dobavljac</td>
+                                        <td class="text-end">@red.VrednostSaMarzom.ToString("N2", kultura)</td>
+                                        <td class="text-end @(red.PocetnoStanje < 0 ? "text-danger" : red.PocetnoStanje > 0 ? "text-success" : "text-muted")">
+                                            @red.PocetnoStanje.ToString("N2", kultura)
+                                        </td>
+                                        <td class="text-end">@red.Isplata.ToString("N2", kultura)</td>
+                                        <td class="text-end pe-3 fw-bold @(red.StanjeFinal >= 0 ? "text-success" : "text-danger")">
+                                            @red.StanjeFinal.ToString("N2", kultura)
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-secondary fw-bold">
+                                <tr>
+                                    <td class="ps-3">UKUPNO</td>
+                                    <td class="text-end">@obracunOtkupa.UkupnoVrednostSaMarzom.ToString("N2", kultura)</td>
+                                    <td class="text-end @(obracunOtkupa.UkupnoPocetnoStanje < 0 ? "text-danger" : obracunOtkupa.UkupnoPocetnoStanje > 0 ? "text-success" : "text-muted")">
+                                        @obracunOtkupa.UkupnoPocetnoStanje.ToString("N2", kultura)
+                                    </td>
+                                    <td class="text-end">@obracunOtkupa.UkupnoIsplata.ToString("N2", kultura)</td>
+                                    <td class="text-end pe-3 @(obracunOtkupa.UkupnoStanjeFinal >= 0 ? "text-success" : "text-danger")">
+                                        @obracunOtkupa.UkupnoStanjeFinal.ToString("N2", kultura)
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* ── TABELA 3: OBRAČUN POSLOVANJA ───────────────────────── *@
+        @if (obracunPoslovanja != null)
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white py-2">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>3. Obračun Poslovanja
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-bordered mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-start ps-3" style="width:40%">Stavka</th>
+                                    <th class="text-end pe-3">Vrednost (RSD)</th>
+                                    <th class="text-start ps-3 text-muted small">Napomena</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @* Red 1: Nabavna vrednost sezona *@
+                                <tr>
+                                    <td class="ps-3 fw-semibold">1. Nabavna Vrednost Sezona</td>
+                                    <td class="text-end pe-3 fw-bold">@obracunPoslovanja.NabavnaVrednostSezona.ToString("N2", kultura)</td>
+                                    <td class="text-muted small ps-3">KL- dokumenti, Potražuje − PorezIznos</td>
+                                </tr>
+
+                                @* Red 2: Prenete Zalihe Vrednost *@
+                                <tr class="table-light">
+                                    <td class="ps-3 fw-semibold">2. Prenete Zalihe Vrednost</td>
+                                    <td class="text-end pe-3 fw-bold @(obracunPoslovanja.NabavnaVrednostLager == 0 ? "text-warning" : "")">
+                                        @obracunPoslovanja.NabavnaVrednostLager.ToString("N2", kultura)
+                                    </td>
+                                    <td class="text-muted small ps-3">
+                                        Prenos zaliha × prosečna nabavna cena bez PDV
+                                        @if (obracunPoslovanja.LagerDetalji.Any(d => d.CenaPoKg == 0 && d.Kg > 0))
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1" title="Neke vrste nemaju cenu — unesi ručno u Konfiguraciji">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Nedostaje cena
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+
+                                @* Red 3: Prerada *@
+                                <tr>
+                                    <td class="ps-3 fw-semibold">3. Prerada</td>
+                                    <td class="text-end pe-3 fw-bold @(obracunPoslovanja.Prerada == 0 && obracunPoslovanja.PreradeDetalji.Count == 0 ? "text-muted" : "")">
+                                        @obracunPoslovanja.Prerada.ToString("N2", kultura)
+                                    </td>
+                                    <td class="text-muted small ps-3">
+                                        Kupljeno kg × cena prerade/kg sirovine
+                                        @if (!obracunPoslovanja.PreradeDetalji.Any())
+                                        {
+                                            <span class="badge bg-secondary ms-1">unesi cene u Konfiguraciji</span>
+                                        }
+                                    </td>
+                                </tr>
+                                @foreach (var p in obracunPoslovanja.PreradeDetalji)
+                                {
+                                    <tr>
+                                        <td class="text-muted small" style="padding-left:2.5rem!important">
+                                            ↳ @p.VrstaVoca
+                                        </td>
+                                        <td class="text-end pe-3 small">@p.Vrednost.ToString("N2", kultura)</td>
+                                        <td class="text-muted small ps-3">
+                                            @p.KgSirovine.ToString("N0", kultura) kg × @p.CenaPrerade.ToString("N2", kultura) din/kg
+                                        </td>
+                                    </tr>
+                                }
+
+                                @* Red 4: Prodaja *@
+                                <tr class="table-light">
+                                    <td class="ps-3 fw-semibold">4. Prodaja</td>
+                                    <td class="text-end pe-3 fw-bold">@obracunPoslovanja.Prodaja.ToString("N2", kultura)</td>
+                                    <td class="text-muted small ps-3">FK- bez PDV (domaći ×10/11, ino puna vrednost)</td>
+                                </tr>
+
+                                @* Red 5: Vrednost Robe na Zalihama *@
+                                @if (vrednostZaliha != null)
+                                {
+                                    <tr class="table-light">
+                                        <td class="ps-3 fw-semibold">5. Vrednost Robe na Zalihama</td>
+                                        <td class="text-end pe-3 fw-bold @(vrednostZaliha.NedostajuCene ? "text-warning" : "")">
+                                            @vrednostZaliha.UkupnoVrednost.ToString("N2", kultura)
+                                            @if (vrednostZaliha.NedostajuCene)
+                                            {
+                                                <i class="bi bi-exclamation-triangle ms-1" title="Nekim gotovim_robama nedostaje prodajna cena"></i>
+                                            }
+                                        </td>
+                                        <td class="text-muted small ps-3">
+                                            @if (!vrednostZaliha.Redovi.Any())
+                                            {
+                                                <span class="text-warning">Unesi formulu iskorišćenja u <a href="/kalkulacija-konfiguracija">Konfiguraciji</a>.</span>
+                                            }
+                                            else
+                                            {
+                                                <span>Sirovine na lageru × formula + gotova roba × cena</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    @foreach (var r in vrednostZaliha.Redovi)
+                                    {
+                                        <tr class="@(r.CenaPoKg == 0 ? "table-warning" : "")">
+                                            <td class="ps-4 small text-muted">
+                                                @r.NazivGotovog
+                                                @if (!string.IsNullOrEmpty(r.VrstaVoca))
+                                                {
+                                                    <span class="badge bg-secondary ms-1">@r.VrstaVoca</span>
+                                                }
+                                            </td>
+                                            <td class="text-end pe-3 small">
+                                                @if (r.CenaPoKg > 0)
+                                                {
+                                                    @r.Vrednost.ToString("N2", kultura)
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>nema cene</span>
+                                                }
+                                            </td>
+                                            <td class="text-muted small ps-3">
+                                                @r.UkupnoKg.ToString("N0", kultura) kg
+                                                @if (r.KgIzSirovine > 0 && r.KgDirektno > 0)
+                                                {
+                                                    <span class="ms-1">(@r.KgIzSirovine.ToString("N0", kultura) iz formule + @r.KgDirektno.ToString("N0", kultura) direktno)</span>
+                                                }
+                                                else if (r.KgDirektno > 0)
+                                                {
+                                                    <span class="ms-1">(direktno na lageru)</span>
+                                                }
+                                                @if (r.CenaPoKg > 0)
+                                                {
+                                                    <span class="ms-1">× @r.CenaPoKg.ToString("N2", kultura) din/kg</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+
+                                @* Redovi 6–8: Profit (samo ako imamo sve podatke) *@
+                                @if (vrednostZaliha != null && stanjeRobe != null)
+                                {
+                                    decimal troskovi    = obracunPoslovanja.NabavnaVrednostSezona
+                                                        + obracunPoslovanja.NabavnaVrednostLager
+                                                        + obracunPoslovanja.Prerada;
+                                    decimal prihodi     = obracunPoslovanja.Prodaja + vrednostZaliha.UkupnoVrednost;
+                                    decimal profit      = prihodi - troskovi;
+                                    decimal profitStopa = troskovi > 0 ? profit / troskovi * 100m : 0m;
+                                    decimal ukupnoKg    = stanjeRobe.UkupnoKupljeno + stanjeRobe.UkupnoPrenosaZaliha;
+                                    decimal profitPoKg  = ukupnoKg > 0 ? profit / ukupnoKg : 0m;
+                                    string profitCss    = profit >= 0 ? "text-success" : "text-danger";
+                                    string stopaCss     = profitStopa >= 0 ? "text-success" : "text-danger";
+
+                                    <tr class="table-secondary">
+                                        <td colspan="3" class="ps-3 fw-semibold small text-muted">
+                                            ── Rezultat ──────────────────────────────────────────────────────────────────────
+                                        </td>
+                                    </tr>
+
+                                    @* Red 6: Profit *@
+                                    <tr>
+                                        <td class="ps-3 fw-bold">6. Profit</td>
+                                        <td class="text-end pe-3 fw-bold fs-5 @profitCss">
+                                            @profit.ToString("N2", kultura)
+                                        </td>
+                                        <td class="text-muted small ps-3">
+                                            (Prodaja @obracunPoslovanja.Prodaja.ToString("N2", kultura)
+                                             + Zalihe @vrednostZaliha.UkupnoVrednost.ToString("N2", kultura))
+                                            − (Nab.Sezona + Nab.Lager + Prerada @troskovi.ToString("N2", kultura))
+                                        </td>
+                                    </tr>
+
+                                    @* Red 7: Profitna Stopa *@
+                                    <tr>
+                                        <td class="ps-3 fw-semibold">7. Profitna Stopa</td>
+                                        <td class="text-end pe-3 fw-bold @stopaCss">
+                                            @profitStopa.ToString("N2", kultura) %
+                                        </td>
+                                        <td class="text-muted small ps-3">
+                                            Profit / Troškovi × 100
+                                            @if (troskovi == 0)
+                                            {
+                                                <span class="text-warning ms-1">(troškovi = 0)</span>
+                                            }
+                                        </td>
+                                    </tr>
+
+                                    @* Red 8: Profit/kg *@
+                                    <tr>
+                                        <td class="ps-3 fw-semibold">8. Profit / kg</td>
+                                        <td class="text-end pe-3 fw-bold @profitCss">
+                                            @profitPoKg.ToString("N2", kultura) din/kg
+                                        </td>
+                                        <td class="text-muted small ps-3">
+                                            Profit / @ukupnoKg.ToString("N0", kultura) kg
+                                            (Kupljeno + Prenos Zaliha)
+                                            @if (ukupnoKg == 0)
+                                            {
+                                                <span class="text-warning ms-1">(kg = 0)</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Cene prerade, nabavne cene, formula iskorišćenja i prodajne cene se podešavaju u
+                    <a href="/kalkulacija-konfiguracija" class="text-decoration-none">Konfiguraciji kalkulacije</a>.
+                    Redovi 6–8 (Profit, Profitna stopa...) dolaze u sledećoj fazi.
+                </div>
+            </div>
+        }
+    }
+    else if (izvestajUcitan && stanjeRobe == null)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>Nema podataka za izabrani period.
+        </div>
+    }
+
+</div>
+
+@code {
+    private static readonly System.Globalization.CultureInfo kultura =
+        System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS");
+
+    // ── Period ───────────────────────────────────────────────────
+    private DateTime odDatum = DateTime.Today;
+    private DateTime doDatum = DateTime.Today;
+    private bool ucitava = false;
+    private bool izvestajUcitan = false;
+    private string? greska;
+
+    // ── Tabela 1 ─────────────────────────────────────────────────
+    private KalkulacijaStanjeRobeResult? stanjeRobe;
+    private KalkulacijaUslugaResult? usluga;
+
+    // ── Tabela 3 ─────────────────────────────────────────────────
+    private KalkulacijaObracunPosloResult? obracunPoslovanja;
+    private KalkulacijaVrednostZalihaResult? vrednostZaliha;
+    private Dictionary<string, decimal> ceneNabavke = new();
+    private Dictionary<string, decimal> cenePrerade = new();
+    private Dictionary<string, List<FruitSysWeb.Services.Core.FormulaIskoriscenjaStavka>> formulaIskoriscenja = new();
+    private Dictionary<string, decimal> prodajneCene = new();
+
+    // ── Tabela 2 ─────────────────────────────────────────────────
+    private KalkulacijaObracunOtkupaResult? obracunOtkupa;
+    private List<(int ID, string Naziv)> sviDobavljaci = new();
+    private List<int> izabraniDobavljaci = new();
+    // KomitentID → početno stanje pre sezone (negativno = mi dugujemo)
+    private Dictionary<int, decimal> pocetnoStanjePoDobaveljacu = new();
+
+    // UI state za panel izbora
+    private bool prikazIzboraDobavljaca = false;
+    private List<int> privremeniIzabraniDobavljaci = new();
+    private Dictionary<int, decimal> privременoPocetnoStanje = new();
+    private string pretragaDobavljaca = string.Empty;
+
+    private IEnumerable<(int ID, string Naziv)> FilterovanIDobavljaci =>
+        string.IsNullOrWhiteSpace(pretragaDobavljaca)
+            ? sviDobavljaci
+            : sviDobavljaci.Where(d => d.Naziv.Contains(pretragaDobavljaca, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        PostaviTekucuSezonu();
+
+        var tDobavljaci = KalkulacijaService.UcitajDobavljace();
+        var tConfig     = KonfiguracijaService.UcitajKonfiguraciju();
+        await Task.WhenAll(tDobavljaci, tConfig);
+
+        sviDobavljaci = tDobavljaci.Result;
+
+        var config = tConfig.Result;
+        izabraniDobavljaci           = new List<int>(config.IzabraniDobavljaci);
+        pocetnoStanjePoDobaveljacu   = new Dictionary<int, decimal>(config.PocetnoStanjePoDobaveljacu);
+        ceneNabavke          = new Dictionary<string, decimal>(config.CeneNabavke);
+        cenePrerade          = new Dictionary<string, decimal>(config.CenaPrerade);
+        formulaIskoriscenja  = config.FormulaIskoriscenja;
+        prodajneCene         = new Dictionary<string, decimal>(config.ProdajneCene);
+
+        if (config.OdDatum.HasValue && config.DoDatum.HasValue)
+        {
+            odDatum = config.OdDatum.Value;
+            doDatum = config.DoDatum.Value;
+            await UcitajIzvestaj();
+        }
+    }
+
+    private void PostaviTekucuSezonu()
+    {
+        var danas = DateTime.Today;
+        int godinaPocetka = danas.Month >= 6 ? danas.Year : danas.Year - 1;
+        odDatum = new DateTime(godinaPocetka, 6, 1);
+        doDatum = danas;
+    }
+
+    private async Task UcitajIzvestaj()
+    {
+        if (odDatum > doDatum)
+        {
+            greska = "Datum 'od' ne može biti posle datuma 'do'.";
+            return;
+        }
+
+        greska = null;
+        ucitava = true;
+        stanjeRobe        = null;
+        usluga            = null;
+        obracunOtkupa     = null;
+        obracunPoslovanja = null;
+        vrednostZaliha    = null;
+        izvestajUcitan    = false;
+        StateHasChanged();
+
+        try
+        {
+            var period = new KalkulacijaPeriod { OdDatum = odDatum, DoDatum = doDatum };
+
+            var cfgIskluceni = await KonfiguracijaService.UcitajKonfiguraciju();
+            var iskluceniPrenosZaliha = cfgIskluceni.IskluceniArtikliPrenosZaliha ?? new List<int>();
+            var tStanje      = KalkulacijaService.UcitajStanjeRobe(period, iskluceniPrenosZaliha);
+            var tUsluga      = KalkulacijaService.UcitajUslugu(period);
+            var tOtkup       = KalkulacijaService.UcitajObracunOtkupa(period, izabraniDobavljaci, pocetnoStanjePoDobaveljacu);
+            var tPoslovanje  = KalkulacijaService.UcitajObracunPoslovanja(period, ceneNabavke, cenePrerade, iskluceniPrenosZaliha);
+            var tZalihe      = KalkulacijaService.UcitajVrednostZaliha(formulaIskoriscenja, prodajneCene);
+            await Task.WhenAll(tStanje, tUsluga, tOtkup, tPoslovanje, tZalihe);
+
+            stanjeRobe        = await tStanje;
+            usluga            = await tUsluga;
+            obracunOtkupa     = await tOtkup;
+            obracunPoslovanja = await tPoslovanje;
+            vrednostZaliha    = await tZalihe;
+            izvestajUcitan    = true;
+
+            var config = await KonfiguracijaService.UcitajKonfiguraciju();
+            config.OdDatum = odDatum;
+            config.DoDatum = doDatum;
+            await KonfiguracijaService.SacuvajKonfiguraciju(config);
+        }
+        catch (Exception ex)
+        {
+            greska = $"Greška pri učitavanju: {ex.Message}";
+        }
+        finally
+        {
+            ucitava = false;
+        }
+    }
+
+    // ── Dobavljači — panel za izbor ──────────────────────────────
+
+    private void ToggleIzborDobavljaca()
+    {
+        prikazIzboraDobavljaca = !prikazIzboraDobavljaca;
+        if (prikazIzboraDobavljaca)
+        {
+            privremeniIzabraniDobavljaci = new List<int>(izabraniDobavljaci);
+            privременoPocetnoStanje      = new Dictionary<int, decimal>(pocetnoStanjePoDobaveljacu);
+            pretragaDobavljaca           = string.Empty;
+        }
+    }
+
+    private void ToggleDobavljac(int id, bool izabran)
+    {
+        if (izabran && !privremeniIzabraniDobavljaci.Contains(id) && privremeniIzabraniDobavljaci.Count < 10)
+            privremeniIzabraniDobavljaci.Add(id);
+        else if (!izabran)
+            privremeniIzabraniDobavljaci.Remove(id);
+    }
+
+    private void PostaviPocetnoStanje(int komitentId, string? vrednost)
+    {
+        if (decimal.TryParse(vrednost?.Replace(',', '.'),
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out decimal stanje) && stanje != 0m)
+            privременoPocetnoStanje[komitentId] = stanje;
+        else
+            privременoPocetnoStanje.Remove(komitentId);
+    }
+
+    private async Task SacuvajIzborDobavljaca()
+    {
+        izabraniDobavljaci         = new List<int>(privremeniIzabraniDobavljaci);
+        pocetnoStanjePoDobaveljacu = new Dictionary<int, decimal>(privременoPocetnoStanje);
+        prikazIzboraDobavljaca     = false;
+
+        var config = await KonfiguracijaService.UcitajKonfiguraciju();
+        config.IzabraniDobavljaci           = izabraniDobavljaci;
+        config.PocetnoStanjePoDobaveljacu   = pocetnoStanjePoDobaveljacu;
+        await KonfiguracijaService.SacuvajKonfiguraciju(config);
+
+        if (izvestajUcitan)
+        {
+            var period = new KalkulacijaPeriod { OdDatum = odDatum, DoDatum = doDatum };
+            obracunOtkupa = await KalkulacijaService.UcitajObracunOtkupa(period, izabraniDobavljaci, pocetnoStanjePoDobaveljacu);
+        }
+    }
+}

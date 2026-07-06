@@ -1,0 +1,26 @@
+@using Microsoft.AspNetCore.Components.Web
+@using ApexCharts
+@using FruitSysWeb.Components.Charts
+@using Microsoft.AspNetCore.Components.Routing
+@using FruitSysWeb.Shared
+@using FruitSysWeb.Services.Implementations
+@using FruitSysWeb.Components.Layout
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        @if (routeData.PageType == typeof(FruitSysWeb.Components.Pages.Login))
+        {
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(EmptyLayout)" />
+        }
+        else
+        {
+            <AuthorizeView>
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            </AuthorizeView>
+        }
+    </Found>
+    <NotFound>
+        <PageTitle>404</PageTitle>
+        <p>Stranica nije pronađena.</p>
+    </NotFound>
+</Router>

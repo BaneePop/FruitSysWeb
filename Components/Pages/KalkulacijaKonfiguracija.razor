@@ -1,0 +1,838 @@
+@page "/kalkulacija-konfiguracija"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Core
+
+@inject IKalkulacijaService KalkulacijaService
+@inject KalkulacijaKonfiguracijaService KonfiguracijaService
+
+<PageTitle>Konfiguracija Kalkulacije</PageTitle>
+
+<div class="container-fluid mt-3">
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-gear me-2"></i>Konfiguracija Kalkulacije
+            </h5>
+            <a href="/kalkulacija" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Nazad na Kalkulaciju
+            </a>
+        </div>
+        <div class="card-body py-2">
+            <div class="alert alert-warning py-2 mb-0">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Promene važe za SVE korisnike.</strong>
+                Podaci se čuvaju globalno u JSON fajlu na serveru.
+            </div>
+        </div>
+    </div>
+
+    @if (ucitava)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2">Učitavanje podataka...</p>
+        </div>
+    }
+    else
+    {
+        @* ── SEKCIJA 1: CENE PRERADE ──────────────────────────────── *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white py-2">
+                <h6 class="mb-0"><i class="bi bi-tools me-2"></i>1. Cene Prerade (din/kg sirovine)</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Unesite cenu prerade po kg <strong>sirovine</strong> za svaku vrstu voća.
+                    Koristi se za računanje ukupnog troška prerade u Obračunu Poslovanja.
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered" style="max-width:400px">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Vrsta Voća</th>
+                                <th class="text-end">Cena (din/kg)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var vrsta in VrsteVoca)
+                            {
+                                <tr>
+                                    <td class="align-middle fw-semibold">@vrsta</td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm text-end"
+                                               step="0.01" min="0" placeholder="0,00"
+                                               value="@(cenePrerade.TryGetValue(vrsta, out var cp) && cp > 0 ? cp.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                               @onchange="@(e => PostaviCenuPrerade(vrsta, e.Value?.ToString()))" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn btn-primary btn-sm mt-2" @onclick="SacuvajCenePrerade" disabled="@sacuvaPrerada">
+                    @if (sacuvaPrerada)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-check-lg me-1"></i>
+                    }
+                    Sačuvaj cene prerade
+                </button>
+                @if (porukaPrerada != null)
+                {
+                    <span class="ms-3 small @(porukaPreradaUspeh ? "text-success" : "text-danger")">
+                        <i class="bi @(porukaPreradaUspeh ? "bi-check-circle" : "bi-x-circle") me-1"></i>@porukaPrerada
+                    </span>
+                }
+            </div>
+        </div>
+
+        @* ── SEKCIJA 2: NABAVNE CENE NA LAGERU ───────────────────── *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white py-2">
+                <h6 class="mb-0"><i class="bi bi-currency-exchange me-2"></i>2. Nabavne Cene Zaliha</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Tabela prikazuje artikle iz <strong>Prenetih Zaliha</strong> (roba prenesena iz prethodne sezone)
+                    sa automatski izračunatom prosečnom nabavnom cenom bez PDV (iz KL- dokumenata 12 meseci pre sezone).
+                    Ako cena nedostaje ili je netačna — unesi ručnu cenu koja će se koristiti za <em>Prenete Zalihe Vrednost</em>.
+                </p>
+
+                @if (!artikliNaLageru.Any())
+                {
+                    <div class="alert alert-info py-2">
+                        <i class="bi bi-info-circle me-2"></i>Nema artikala na lageru ili period nije podešen.
+                        <a href="/kalkulacija" class="alert-link ms-1">Podesiti period na Kalkulaciji.</a>
+                    </div>
+                }
+                else
+                {
+                    decimal ukupnoVrednostSve = 0m;
+                    decimal ukupnoKgSve = 0m;
+                    foreach (var grupa in artikliNaLageru.GroupBy(a => a.VrstaVoca))
+                    {
+                        decimal sumaKg = 0m;
+                        decimal sumaVrednost = 0m;
+                        <h6 class="fw-semibold mt-3 mb-1">@grupa.Key</h6>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-bordered table-hover mb-0">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th class="text-start ps-3">Artikal</th>
+                                        <th>Magacin</th>
+                                        <th class="text-end">Na lageru (kg)</th>
+                                        <th class="text-end" title="Prosečna nabavna cena iz KL- dokumenata prethodnih 12 meseci">Cena iz baze (din/kg)</th>
+                                        <th class="text-end" title="Ručno uneta cena — koristi se ako je veća od 0">Ručna cena (din/kg)</th>
+                                        <th class="text-center">Aktivna cena</th>
+                                        <th class="text-end">Vrednost (din)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var a in grupa)
+                                    {
+                                        var rucna = ceneNabavkeUnos.TryGetValue(a.ArtikalID.ToString(), out var rv) ? rv : 0m;
+                                        var aktivna = rucna > 0 ? rucna : a.CenaIzBaze;
+                                        var vrednost = a.KgNaLageru * aktivna;
+                                        sumaKg += a.KgNaLageru;
+                                        sumaVrednost += vrednost;
+                                        <tr>
+                                            <td class="ps-3 fw-semibold">@a.Naziv</td>
+                                            <td class="small">
+                                                <span class="badge @(a.NazivMagacina == "Gotova Roba" ? "bg-success" : "bg-secondary")">@a.NazivMagacina</span>
+                                            </td>
+                                            <td class="text-end">@a.KgNaLageru.ToString("N0", kultura)</td>
+                                            <td class="text-end @(a.CenaIzBaze == 0 ? "text-warning" : "")">
+                                                @if (a.CenaIzBaze > 0)
+                                                {
+                                                    @a.CenaIzBaze.ToString("N2", kultura)
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>nema</span>
+                                                }
+                                            </td>
+                                            <td class="p-1" style="min-width:130px">
+                                                <input type="number" class="form-control form-control-sm text-end"
+                                                       step="0.01" min="0" placeholder="0,00"
+                                                       value="@(rucna > 0 ? rucna.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                                       @onchange="@(e => PostaviCenuNabavke(a.ArtikalID.ToString(), e.Value?.ToString()))" />
+                                            </td>
+                                            <td class="text-center">
+                                                @if (aktivna > 0)
+                                                {
+                                                    <span class="fw-semibold">@aktivna.ToString("N2", kultura)</span>
+                                                    if (rucna > 0)
+                                                    {
+                                                        <span class="badge bg-info text-dark ms-1 small">ručno</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-danger small"><i class="bi bi-x-circle me-1"></i>nema cene</span>
+                                                }
+                                            </td>
+                                            <td class="text-end @(vrednost == 0 ? "text-muted" : "fw-semibold")">
+                                                @vrednost.ToString("N0", kultura)
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-light fw-bold">
+                                    <tr>
+                                        <td class="ps-3" colspan="2">Ukupno @grupa.Key</td>
+                                        <td class="text-end">@sumaKg.ToString("N0", kultura)</td>
+                                        <td colspan="3"></td>
+                                        <td class="text-end">@sumaVrednost.ToString("N0", kultura)</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        ukupnoKgSve += sumaKg;
+                        ukupnoVrednostSve += sumaVrednost;
+                    }
+                    <div class="alert alert-dark d-flex justify-content-between align-items-center py-2 mb-3">
+                        <span class="fw-bold">UKUPNO SVE VRSTE</span>
+                        <span>
+                            <span class="me-4">@ukupnoKgSve.ToString("N0", kultura) kg</span>
+                            <span class="fw-bold fs-6">@ukupnoVrednostSve.ToString("N0", kultura) din</span>
+                        </span>
+                    </div>
+
+                    <button class="btn btn-primary btn-sm mt-2" @onclick="SacuvajCeneNabavke" disabled="@sacuvaNabavka">
+                        @if (sacuvaNabavka)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-check-lg me-1"></i>
+                        }
+                        Sačuvaj ručne cene
+                    </button>
+                    @if (porukaNabavka != null)
+                    {
+                        <span class="ms-3 small @(porukaNabavkaUspeh ? "text-success" : "text-danger")">
+                            <i class="bi @(porukaNabavkaUspeh ? "bi-check-circle" : "bi-x-circle") me-1"></i>@porukaNabavka
+                        </span>
+                    }
+                }
+            </div>
+        </div>
+
+        @* ── SEKCIJA 3: FORMULA ISKORIŠĆENJA ──────────────────────── *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white py-2">
+                <h6 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>3. Formula Iskorišćenja (Sirovina → Gotov Proizvod)</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Za svaku vrstu voća definišite koji gotovi proizvodi nastaju preradom i u kojim procentima od kg sirovine.
+                    Suma % ne mora biti 100% (otpad se ne broji kao vrednost).
+                </p>
+
+                @foreach (var vrsta in VrsteVoca)
+                {
+                    var stavke = formulaEdit.TryGetValue(vrsta, out var fs) ? fs : new List<(int ArtikalID, decimal Procenat)>();
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="fw-semibold me-3" style="min-width:80px">@vrsta</span>
+                            <button class="btn btn-outline-secondary btn-sm py-0" @onclick="@(() => DodajFormulaStavku(vrsta))">
+                                <i class="bi bi-plus-circle me-1"></i>Dodaj gotov proizvod
+                            </button>
+                        </div>
+                        @if (stavke.Any())
+                        {
+                            <table class="table table-sm table-bordered" style="max-width:600px">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Gotov Proizvod</th>
+                                        <th class="text-end" style="width:130px">% iskorišćenja</th>
+                                        <th style="width:46px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < stavke.Count; i++)
+                                    {
+                                        var localIdx = i;
+                                        var stavka = stavke[localIdx];
+                                        <tr>
+                                            <td class="p-1">
+                                                @{
+                                                    var klasId = VoceGrupeMap.TryGetValue(vrsta, out var kid) ? kid : 0;
+                                                    var opcije = klasId > 0 && artikliZaFormulu.TryGetValue(klasId, out var ao) ? ao : new List<(int ID, string Naziv)>();
+                                                }
+                                                <select class="form-select form-select-sm"
+                                                        value="@stavka.ArtikalID"
+                                                        @onchange="@(e => PostaviFormulaArtikal(vrsta, localIdx, e.Value?.ToString()))">
+                                                    <option value="0">-- odaberi --</option>
+                                                    @foreach (var a in opcije)
+                                                    {
+                                                        <option value="@a.ID" selected="@(stavka.ArtikalID == a.ID)">@a.Naziv</option>
+                                                    }
+                                                </select>
+                                            </td>
+                                            <td class="p-1">
+                                                <input type="number" class="form-control form-control-sm text-end"
+                                                       min="0" max="100" step="0.01" placeholder="0,00"
+                                                       value="@(stavka.Procenat > 0 ? stavka.Procenat.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                                       @onchange="@(e => PostaviFormulaProcenat(vrsta, localIdx, e.Value?.ToString()))" />
+                                            </td>
+                                            <td class="text-center p-1">
+                                                <button class="btn btn-outline-danger btn-sm py-0" @onclick="@(() => ObrisiFormulaStavku(vrsta, localIdx))">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p class="text-muted small ms-1 mb-0">Nema formula za @vrsta.</p>
+                        }
+                    </div>
+                    <hr class="my-2" />
+                }
+
+                <button class="btn btn-primary btn-sm mt-1" @onclick="SacuvajFormule" disabled="@sacuvaFormula">
+                    @if (sacuvaFormula) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    else { <i class="bi bi-check-lg me-1"></i> }
+                    Sačuvaj formule
+                </button>
+                @if (porukaFormula != null)
+                {
+                    <span class="ms-3 small @(porukaFormulaUspeh ? "text-success" : "text-danger")">
+                        <i class="bi @(porukaFormulaUspeh ? "bi-check-circle" : "bi-x-circle") me-1"></i>@porukaFormula
+                    </span>
+                }
+            </div>
+        </div>
+
+        @* ── SEKCIJA 4: PRODAJNE CENE ───────────────────────────────── *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white py-2">
+                <h6 class="mb-0"><i class="bi bi-tag me-2"></i>4. Prodajne Cene Gotove Robe (din/kg)</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Unesite prodajnu cenu po kg za svaki gotov proizvod.
+                    Koristi se za računanje vrednosti robe na zalihama.
+                </p>
+                @{
+                    // Samo artikli koji su izabrani u formuli (unique po ArtikalID, sorted by name)
+                    var artiklIzFormule = formulaEdit.Values
+                        .SelectMany(stavke => stavke)
+                        .Where(s => s.ArtikalID > 0)
+                        .Select(s => (
+                            ID: s.ArtikalID,
+                            Naziv: artikliZaFormulu.Values.SelectMany(x => x)
+                                       .FirstOrDefault(a => a.ID == s.ArtikalID).Naziv
+                                   ?? s.ArtikalID.ToString()
+                        ))
+                        .DistinctBy(a => a.ID)
+                        .OrderBy(a => a.Naziv)
+                        .ToList();
+                }
+                @if (!artiklIzFormule.Any())
+                {
+                    <div class="alert alert-info py-2">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Nema izabranih artikala u formuli. Prvo definiši formulu iskorišćenja (Sekcija 3).
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover" style="max-width:500px">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-start ps-3">Gotov Proizvod</th>
+                                    <th class="text-end" style="min-width:140px">Cena (din/kg)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in artiklIzFormule)
+                                {
+                                    <tr>
+                                        <td class="ps-3 fw-semibold">@a.Naziv</td>
+                                        <td class="p-1">
+                                            <input type="number" class="form-control form-control-sm text-end"
+                                                   step="0.01" min="0" placeholder="0,00"
+                                                   value="@(prodajneCeneUnos.TryGetValue(a.ID.ToString(), out var pv) && pv > 0 ? pv.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                                   @onchange="@(e => PostaviProdajnuCenu(a.ID.ToString(), e.Value?.ToString()))" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-primary btn-sm mt-2" @onclick="SacuvajProdajneCene" disabled="@sacuvaProdajneCene">
+                        @if (sacuvaProdajneCene) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        else { <i class="bi bi-check-lg me-1"></i> }
+                        Sačuvaj prodajne cene
+                    </button>
+                    @if (porukaProdajneCene != null)
+                    {
+                        <span class="ms-3 small @(porukaProdajneCeneUspeh ? "text-success" : "text-danger")">
+                            <i class="bi @(porukaProdajneCeneUspeh ? "bi-check-circle" : "bi-x-circle") me-1"></i>@porukaProdajneCene
+                        </span>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+
+    @* ── SEKCIJA 5: Prenos Zaliha — artikli za isključivanje ── *@
+    @if (!ucitava)
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="bi bi-funnel me-2"></i>
+                    5. Prenos Zaliha — Artikli za Isključivanje
+                </span>
+                <small class="text-white-50">
+                    Stanje na @datumPrenosaKonf.ToString("dd.MM.yyyy") — svi magacini i proizvodnja; označite šta se oduzima od Prenos Zaliha
+                </small>
+            </div>
+            <div class="card-body">
+                @if (ucitavaPrenosKonf)
+                {
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-secondary"></div>
+                        <span class="ms-2 text-muted small">Učitavanje lagera...</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                        <input type="text" class="form-control form-control-sm" style="max-width:220px"
+                               placeholder="Pretraga po nazivu..."
+                               @bind="pretragaPrenosKonf" @bind:event="oninput" />
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="PreselektujAltivaFrikos"
+                                title="Automatski označi sve artikle koji u nazivu imaju ALTIVA ili FRIKOS">
+                            <i class="bi bi-magic me-1"></i>Preselektuj ALTIVA/FRIKOS
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" @onclick="OdznakiSve">
+                            <i class="bi bi-x-circle me-1"></i>Odznači sve
+                        </button>
+                        <span class="text-muted small ms-auto">
+                            @artikliZaPrenosKonf.Count(a => a.Iskljuci) označeno od @FilterovaniPrenosKonf.Count()
+                        </span>
+                    </div>
+
+                    <div class="table-responsive" style="max-height:400px;overflow-y:auto">
+                        <table class="table table-sm table-hover table-bordered mb-0">
+                            <thead class="table-secondary sticky-top">
+                                <tr>
+                                    <th style="width:44px" class="text-center">Isklj.</th>
+                                    <th>Artikal</th>
+                                    <th>Vrsta</th>
+                                    <th>Magacin</th>
+                                    <th>Komitent</th>
+                                    <th class="text-end">Kol. @datumPrenosaKonf.ToString("dd.MM.yy") (kg)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in FilterovaniPrenosKonf)
+                                {
+                                    <tr class="@(a.Iskljuci ? "table-warning" : "")">
+                                        <td class="text-center">
+                                            <input type="checkbox" class="form-check-input"
+                                                   checked="@a.Iskljuci"
+                                                   @onchange="e => a.Iskljuci = (bool)(e.Value ?? false)" />
+                                        </td>
+                                        <td class="small">@a.Naziv</td>
+                                        <td class="small">@a.VrstaVoca</td>
+                                        <td class="small">
+                                            @if (a.JeLagerProizvodnje)
+                                            {
+                                                <span class="badge bg-info text-dark">@a.NazivMagacina</span>
+                                            }
+                                            else
+                                            {
+                                                @a.NazivMagacina
+                                            }
+                                        </td>
+                                        <td class="small text-muted">@(a.NazivKomitenta ?? "—")</td>
+                                        <td class="text-end small">@a.Kolicina.ToString("N2", kultura)</td>
+                                    </tr>
+                                }
+                                @if (!FilterovaniPrenosKonf.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-3 small">
+                                            Nema artikala koji odgovaraju pretrazi.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button class="btn btn-primary btn-sm mt-3" @onclick="SacuvajPrenosKonf" disabled="@sacuvaPrenosKonf">
+                        @if (sacuvaPrenosKonf) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        else { <i class="bi bi-check-lg me-1"></i> }
+                        Sačuvaj isključivanja
+                    </button>
+                    @if (porukaPrenosKonf != null)
+                    {
+                        <span class="ms-3 small @(porukaPrenosKonfUspeh ? "text-success" : "text-danger")">
+                            <i class="bi @(porukaPrenosKonfUspeh ? "bi-check-circle" : "bi-x-circle") me-1"></i>@porukaPrenosKonf
+                        </span>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+</div>
+
+@code {
+    private static readonly System.Globalization.CultureInfo kultura =
+        System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS");
+
+    private static readonly string[] VrsteVoca =
+        { "Malina", "Kupina", "Višnja", "Šljiva", "Kajsija", "Jagoda" };
+
+    private bool ucitava = true;
+
+    // Sekcija 1 — cene prerade
+    private Dictionary<string, decimal> cenePrerade = new();
+    private bool sacuvaPrerada = false;
+    private string? porukaPrerada;
+    private bool porukaPreradaUspeh;
+
+    // Sekcija 2 — nabavne cene
+    private List<KalkulacijaArtikalNaCeniRed> artikliNaLageru = new();
+    private Dictionary<string, decimal> ceneNabavkeUnos = new();
+    private bool sacuvaNabavka = false;
+    private string? porukaNabavka;
+    private bool porukaNabavkaUspeh;
+
+    // Sekcija 3 — formula iskorišćenja
+    // Sve artikle grupisane po PrvaKlasifikacijaID — za dropdown po vrsti voća
+    private Dictionary<int, List<(int ID, string Naziv)>> artikliZaFormulu = new();
+    private Dictionary<string, List<(int ArtikalID, decimal Procenat)>> formulaEdit = new();
+
+    // Mapiranje naziv vrste voća → PrvaKlasifikacijaID
+    private static readonly Dictionary<string, int> VoceGrupeMap = new()
+    {
+        { "Malina",  6  },
+        { "Kupina",  10 },
+        { "Višnja",  11 },
+        { "Šljiva",  15 },
+        { "Kajsija", 28 },
+        { "Jagoda",  34 },
+    };
+    private bool sacuvaFormula = false;
+    private string? porukaFormula;
+    private bool porukaFormulaUspeh;
+
+    // Sekcija 4 — prodajne cene
+    private Dictionary<string, decimal> prodajneCeneUnos = new();
+    private bool sacuvaProdajneCene = false;
+    private string? porukaProdajneCene;
+    private bool porukaProdajneCeneUspeh;
+
+    // Sekcija 5 — Prenos Zaliha isključivanja
+    private List<KalkulacijaLagerPrenosStavka> artikliZaPrenosKonf = new();
+    private DateTime datumPrenosaKonf = DateTime.Today;
+    private string pretragaPrenosKonf = string.Empty;
+    private bool ucitavaPrenosKonf = true;
+    private bool sacuvaPrenosKonf = false;
+    private string? porukaPrenosKonf;
+    private bool porukaPrenosKonfUspeh;
+
+    private IEnumerable<KalkulacijaLagerPrenosStavka> FilterovaniPrenosKonf =>
+        string.IsNullOrWhiteSpace(pretragaPrenosKonf)
+            ? artikliZaPrenosKonf
+            : artikliZaPrenosKonf.Where(a =>
+                a.Naziv.Contains(pretragaPrenosKonf, StringComparison.OrdinalIgnoreCase) ||
+                a.VrstaVoca.Contains(pretragaPrenosKonf, StringComparison.OrdinalIgnoreCase) ||
+                (a.NazivKomitenta?.Contains(pretragaPrenosKonf, StringComparison.OrdinalIgnoreCase) ?? false));
+
+    protected override async Task OnInitializedAsync()
+    {
+        var tConfig = KonfiguracijaService.UcitajKonfiguraciju();
+
+        // Period za prosečne cene — učitajmo iz konfiguracije
+        var config = await tConfig;
+        cenePrerade      = new Dictionary<string, decimal>(config.CenaPrerade);
+        ceneNabavkeUnos  = new Dictionary<string, decimal>(config.CeneNabavke);
+        prodajneCeneUnos = new Dictionary<string, decimal>(config.ProdajneCene);
+
+        // Formula iskorišćenja → edit state
+        foreach (var vrsta in VrsteVoca)
+        {
+            if (config.FormulaIskoriscenja.TryGetValue(vrsta, out var stavke))
+                formulaEdit[vrsta] = stavke.Select(s => (s.ArtikalID, s.Procenat)).ToList();
+            else
+                formulaEdit[vrsta] = new List<(int, decimal)>();
+        }
+
+        // Artikli na lageru — koristimo sačuvani period ili tekuću sezonu
+        var danas = DateTime.Today;
+        int godinaPocetka = danas.Month >= 6 ? danas.Year : danas.Year - 1;
+        var period = new KalkulacijaPeriod
+        {
+            OdDatum = config.OdDatum ?? new DateTime(godinaPocetka, 6, 1),
+            DoDatum = config.DoDatum ?? danas
+        };
+
+        var iskluceniArtikli = config.IskluceniArtikliPrenosZaliha;
+        var tArtikli    = KalkulacijaService.UcitajArtikleZaCeneNabavke(period, iskluceniArtikli);
+        var tZaFormulu  = KalkulacijaService.UcitajArtikleZaFormulu();
+        var tPrenosKonf = KalkulacijaService.UcitajLagerZaPrenosKonfiguraciju(period);
+        await Task.WhenAll(tArtikli, tZaFormulu, tPrenosKonf);
+
+        artikliNaLageru  = tArtikli.Result;
+        artikliZaFormulu = tZaFormulu.Result;
+
+        // Popuni ručne cene u redovima
+        foreach (var a in artikliNaLageru)
+            a.CenaRucna = ceneNabavkeUnos.TryGetValue(a.ArtikalID.ToString(), out var rv) ? rv : 0m;
+
+        // Sekcija 5: lager za prenos, preselektuj iz konfiguracije
+        datumPrenosaKonf = period.OdDatum.AddDays(-1);
+        var iskluceniIds = new HashSet<int>(iskluceniArtikli);
+        artikliZaPrenosKonf = tPrenosKonf.Result;
+        foreach (var a in artikliZaPrenosKonf)
+            a.Iskljuci = iskluceniIds.Contains(a.ArtikalID);
+        ucitavaPrenosKonf = false;
+
+        ucitava = false;
+    }
+
+    // ── Sekcija 1 ─────────────────────────────────────────────────
+
+    private void PostaviCenuPrerade(string vrsta, string? vrednost)
+    {
+        if (decimal.TryParse(vrednost?.Replace(',', '.'),
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out decimal cena) && cena > 0)
+            cenePrerade[vrsta] = cena;
+        else
+            cenePrerade.Remove(vrsta);
+    }
+
+    private async Task SacuvajCenePrerade()
+    {
+        sacuvaPrerada = true;
+        porukaPrerada = null;
+        try
+        {
+            var config = await KonfiguracijaService.UcitajKonfiguraciju();
+            config.CenaPrerade = new Dictionary<string, decimal>(cenePrerade);
+            await KonfiguracijaService.SacuvajKonfiguraciju(config);
+            porukaPrerada = "Sačuvano.";
+            porukaPreradaUspeh = true;
+        }
+        catch
+        {
+            porukaPrerada = "Greška pri čuvanju.";
+            porukaPreradaUspeh = false;
+        }
+        finally
+        {
+            sacuvaPrerada = false;
+        }
+    }
+
+    // ── Sekcija 2 ─────────────────────────────────────────────────
+
+    private void PostaviCenuNabavke(string artikalId, string? vrednost)
+    {
+        if (decimal.TryParse(vrednost?.Replace(',', '.'),
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out decimal cena) && cena > 0)
+            ceneNabavkeUnos[artikalId] = cena;
+        else
+            ceneNabavkeUnos.Remove(artikalId);
+    }
+
+    private async Task SacuvajCeneNabavke()
+    {
+        sacuvaNabavka = true;
+        porukaNabavka = null;
+        try
+        {
+            var config = await KonfiguracijaService.UcitajKonfiguraciju();
+            config.CeneNabavke = new Dictionary<string, decimal>(ceneNabavkeUnos);
+            await KonfiguracijaService.SacuvajKonfiguraciju(config);
+            porukaNabavka = "Sačuvano.";
+            porukaNabavkaUspeh = true;
+        }
+        catch
+        {
+            porukaNabavka = "Greška pri čuvanju.";
+            porukaNabavkaUspeh = false;
+        }
+        finally
+        {
+            sacuvaNabavka = false;
+        }
+    }
+
+    // ── Sekcija 3 ─────────────────────────────────────────────────
+
+    private void DodajFormulaStavku(string vrsta)
+    {
+        if (!formulaEdit.ContainsKey(vrsta))
+            formulaEdit[vrsta] = new();
+        formulaEdit[vrsta].Add((0, 0m));
+    }
+
+    private void ObrisiFormulaStavku(string vrsta, int idx)
+    {
+        if (formulaEdit.TryGetValue(vrsta, out var stavke) && idx < stavke.Count)
+            stavke.RemoveAt(idx);
+    }
+
+    private void PostaviFormulaArtikal(string vrsta, int idx, string? val)
+    {
+        if (!formulaEdit.TryGetValue(vrsta, out var stavke) || idx >= stavke.Count) return;
+        if (int.TryParse(val, out int artId))
+        {
+            var current = stavke[idx];
+            stavke[idx] = (artId, current.Procenat);
+        }
+    }
+
+    private void PostaviFormulaProcenat(string vrsta, int idx, string? val)
+    {
+        if (!formulaEdit.TryGetValue(vrsta, out var stavke) || idx >= stavke.Count) return;
+        if (decimal.TryParse(val?.Replace(',', '.'), System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out decimal pct))
+        {
+            var current = stavke[idx];
+            stavke[idx] = (current.ArtikalID, pct);
+        }
+    }
+
+    private async Task SacuvajFormule()
+    {
+        sacuvaFormula = true;
+        porukaFormula = null;
+        try
+        {
+            var config = await KonfiguracijaService.UcitajKonfiguraciju();
+            config.FormulaIskoriscenja = formulaEdit
+                .Where(kv => kv.Value.Any(s => s.ArtikalID > 0 && s.Procenat > 0))
+                .ToDictionary(
+                    kv => kv.Key,
+                    kv => kv.Value
+                        .Where(s => s.ArtikalID > 0 && s.Procenat > 0)
+                        .Select(s =>
+                        {
+                            var naziv = artikliZaFormulu.Values
+                                .SelectMany(x => x)
+                                .FirstOrDefault(a => a.ID == s.ArtikalID).Naziv ?? "";
+                            return new FormulaIskoriscenjaStavka
+                                { ArtikalID = s.ArtikalID, Naziv = naziv, Procenat = s.Procenat };
+                        })
+                        .ToList());
+            await KonfiguracijaService.SacuvajKonfiguraciju(config);
+            porukaFormula = "Sačuvano.";
+            porukaFormulaUspeh = true;
+        }
+        catch
+        {
+            porukaFormula = "Greška pri čuvanju.";
+            porukaFormulaUspeh = false;
+        }
+        finally
+        {
+            sacuvaFormula = false;
+        }
+    }
+
+    // ── Sekcija 4 ─────────────────────────────────────────────────
+
+    private void PostaviProdajnuCenu(string artikalId, string? val)
+    {
+        if (decimal.TryParse(val?.Replace(',', '.'), System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out decimal cena) && cena > 0)
+            prodajneCeneUnos[artikalId] = cena;
+        else
+            prodajneCeneUnos.Remove(artikalId);
+    }
+
+    private async Task SacuvajProdajneCene()
+    {
+        sacuvaProdajneCene = true;
+        porukaProdajneCene = null;
+        try
+        {
+            var config = await KonfiguracijaService.UcitajKonfiguraciju();
+            config.ProdajneCene = new Dictionary<string, decimal>(prodajneCeneUnos);
+            await KonfiguracijaService.SacuvajKonfiguraciju(config);
+            porukaProdajneCene = "Sačuvano.";
+            porukaProdajneCeneUspeh = true;
+        }
+        catch
+        {
+            porukaProdajneCene = "Greška pri čuvanju.";
+            porukaProdajneCeneUspeh = false;
+        }
+        finally
+        {
+            sacuvaProdajneCene = false;
+        }
+    }
+
+    // ── Sekcija 5 ─────────────────────────────────────────────────
+
+    private void PreselektujAltivaFrikos()
+    {
+        foreach (var a in artikliZaPrenosKonf)
+        {
+            if (a.Naziv.Contains("ALTIVA", StringComparison.OrdinalIgnoreCase) ||
+                a.Naziv.Contains("FRIKOS", StringComparison.OrdinalIgnoreCase) ||
+                (a.NazivKomitenta?.Contains("FRIKOS", StringComparison.OrdinalIgnoreCase) ?? false))
+                a.Iskljuci = true;
+        }
+    }
+
+    private void OdznakiSve()
+    {
+        foreach (var a in artikliZaPrenosKonf)
+            a.Iskljuci = false;
+    }
+
+    private async Task SacuvajPrenosKonf()
+    {
+        sacuvaPrenosKonf = true;
+        porukaPrenosKonf = null;
+        try
+        {
+            var config = await KonfiguracijaService.UcitajKonfiguraciju();
+            config.IskluceniArtikliPrenosZaliha = artikliZaPrenosKonf
+                .Where(a => a.Iskljuci)
+                .Select(a => a.ArtikalID)
+                .Distinct()
+                .ToList();
+            await KonfiguracijaService.SacuvajKonfiguraciju(config);
+            porukaPrenosKonf = $"Sačuvano. Isključeno artikala: {config.IskluceniArtikliPrenosZaliha.Count}.";
+            porukaPrenosKonfUspeh = true;
+        }
+        catch
+        {
+            porukaPrenosKonf = "Greška pri čuvanju.";
+            porukaPrenosKonfUspeh = false;
+        }
+        finally
+        {
+            sacuvaPrenosKonf = false;
+        }
+    }
+}

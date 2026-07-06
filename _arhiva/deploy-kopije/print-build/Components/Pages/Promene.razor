@@ -1,0 +1,564 @@
+@page "/promene"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Implementations.ExportService
+@inject IPromenService PromenService
+@inject PromeneExcelService ExcelService
+@inject PromenePdfService PdfService
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+@code {
+    private bool pristupDozvoljen = false;
+    private bool ucitavanje = false;
+    private string aktivniTab = "dnevne";
+
+    private DateTime dnevniDatum = DateTime.Today;
+    private DateTime nedeljniOd = PonedeljakOveSedmice();
+    private DateTime nedeljniDo = NedeljaOveSedmice();
+    private DateTime mesecniOd = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime mesecniDo = DateTime.Today;
+
+    private static DateTime PonedeljakOveSedmice()
+    {
+        var danas = DateTime.Today;
+        int danUNedelji = (int)danas.DayOfWeek; // 0=Nedelja, 1=Pon, ..., 6=Sub
+        int daniDoPonetka = danUNedelji == 0 ? 6 : danUNedelji - 1;
+        return danas.AddDays(-daniDoPonetka);
+    }
+
+    private static DateTime NedeljaOveSedmice()
+    {
+        return PonedeljakOveSedmice().AddDays(6);
+    }
+
+    private void NedeljniOdChanged(DateTime noviOd)
+    {
+        nedeljniOd = noviOd;
+        nedeljniDo = noviOd.AddDays(6);
+    }
+
+    private PromenPeriodData? dnevniData;
+    private PromenPeriodData? nedeljniData;
+    private PromenPeriodData? mesecniData;
+
+    private static readonly System.Globalization.CultureInfo SrCulture =
+        System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS");
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await AuthService.IsAdministrator())
+        {
+            Navigation.NavigateTo("/finansijehome");
+            return;
+        }
+        pristupDozvoljen = true;
+        await UcitajPodatke();
+    }
+
+    private async Task UcitajPodatke()
+    {
+        ucitavanje = true;
+        StateHasChanged();
+        try
+        {
+            switch (aktivniTab)
+            {
+                case "dnevne":
+                    dnevniData = await PromenService.UcitajPromene(new PromenFilter
+                    {
+                        OdDatum = dnevniDatum,
+                        DoDatum = dnevniDatum
+                    });
+                    break;
+                case "nedeljne":
+                    nedeljniData = await PromenService.UcitajPromene(new PromenFilter
+                    {
+                        OdDatum = nedeljniOd,
+                        DoDatum = nedeljniDo
+                    });
+                    break;
+                case "mesecne":
+                    mesecniData = await PromenService.UcitajPromene(new PromenFilter
+                    {
+                        OdDatum = mesecniOd,
+                        DoDatum = mesecniDo
+                    });
+                    break;
+            }
+        }
+        finally
+        {
+            ucitavanje = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PredjNaTab(string tab)
+    {
+        aktivniTab = tab;
+        await UcitajPodatke();
+    }
+
+    private (string naslov, string opis, PromenPeriodData? data) TrenutniTab() => aktivniTab switch
+    {
+        "dnevne" => ("Dnevne Promene", dnevniDatum.ToString("dd.MM.yyyy"), dnevniData),
+        "nedeljne" => ("Nedeljne Promene", $"{nedeljniOd:dd.MM.yyyy} – {nedeljniDo:dd.MM.yyyy}", nedeljniData),
+        "mesecne" => ("Mesečne Promene", $"{mesecniOd:dd.MM.yyyy} – {mesecniDo:dd.MM.yyyy}", mesecniData),
+        _ => ("Promene", "", null)
+    };
+
+    private async Task ExportExcel()
+    {
+        var (naslov, opis, data) = TrenutniTab();
+        if (data == null) return;
+        var bytes = ExcelService.Generisi(data, naslov, opis);
+        await JS.InvokeVoidAsync("downloadFile",
+            Convert.ToBase64String(bytes),
+            $"Promene_{aktivniTab}_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    }
+
+    private async Task ExportPdf()
+    {
+        var (naslov, opis, data) = TrenutniTab();
+        if (data == null) return;
+        var bytes = PdfService.Generisi(data, naslov, opis);
+        await JS.InvokeVoidAsync("downloadFile",
+            Convert.ToBase64String(bytes),
+            $"Promene_{aktivniTab}_{DateTime.Now:yyyyMMdd_HHmm}.pdf",
+            "application/pdf");
+    }
+
+    private string Fmt(decimal v) => v.ToString("N2", SrCulture);
+}
+
+@if (!pristupDozvoljen)
+{
+    <div class="alert alert-danger m-4"><i class="bi bi-lock me-2"></i>Nemate pristup ovoj stranici.</div>
+    return;
+}
+
+<!-- ══════ PAGE HEADER ══════ -->
+<div class="bg-dark text-white py-3 mb-0">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <h1 class="h3 mb-0"><i class="bi bi-arrow-left-right me-2"></i>Promene</h1>
+                <small class="text-white-50">Pregled svih magacinskih i finansijskih promena — dnevni, nedeljni i mesečni izveštaj</small>
+            </div>
+            <div class="col-md-5 text-end">
+                @{ var (_, _, hData) = TrenutniTab(); }
+                @if (hData != null && !ucitavanje)
+                {
+                    <button class="btn btn-success btn-sm me-2" @onclick="ExportExcel">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-danger btn-sm" @onclick="ExportPdf">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════ TABS + FILTER BAR ══════ -->
+<div style="background-color:#455a64;" class="text-white">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-5">
+                <ul class="nav nav-tabs border-0 pt-2">
+                    <li class="nav-item">
+                        <button class="nav-link @(aktivniTab=="dnevne" ? "active bg-white text-dark fw-bold" : "text-white")"
+                                @onclick='()=>PredjNaTab("dnevne")'>
+                            <i class="bi bi-calendar-day me-1"></i>Dnevne
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(aktivniTab=="nedeljne" ? "active bg-white text-dark fw-bold" : "text-white")"
+                                @onclick='()=>PredjNaTab("nedeljne")'>
+                            <i class="bi bi-calendar-week me-1"></i>Nedeljne
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(aktivniTab=="mesecne" ? "active bg-white text-dark fw-bold" : "text-white")"
+                                @onclick='()=>PredjNaTab("mesecne")'>
+                            <i class="bi bi-calendar-month me-1"></i>Mesečne
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-7 py-2">
+                @if (aktivniTab == "dnevne")
+                {
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="text-white mb-0 small fw-bold">Datum:</label>
+                        <input type="date" class="form-control form-control-sm" style="max-width:165px"
+                               value="@dnevniDatum.ToString("yyyy-MM-dd")"
+                               @onchange="@(e => { dnevniDatum = DateTime.Parse(e.Value!.ToString()!); })" />
+                        <button class="btn btn-light btn-sm" @onclick="UcitajPodatke" disabled="@ucitavanje">
+                            <i class="bi bi-search"></i> Pretraži
+                        </button>
+                    </div>
+                }
+                else if (aktivniTab == "nedeljne")
+                {
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <label class="text-white mb-0 small fw-bold">Od:</label>
+                        <input type="date" class="form-control form-control-sm" style="max-width:150px"
+                               value="@nedeljniOd.ToString("yyyy-MM-dd")"
+                               @onchange="@(e => { NedeljniOdChanged(DateTime.Parse(e.Value!.ToString()!)); })" />
+                        <label class="text-white mb-0 small fw-bold">Do:</label>
+                        <input type="date" class="form-control form-control-sm" style="max-width:150px"
+                               value="@nedeljniDo.ToString("yyyy-MM-dd")"
+                               @onchange="@(e => { nedeljniDo = DateTime.Parse(e.Value!.ToString()!); })" />
+                        <button class="btn btn-light btn-sm" @onclick="UcitajPodatke" disabled="@ucitavanje">
+                            <i class="bi bi-search"></i> Pretraži
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <label class="text-white mb-0 small fw-bold">Od:</label>
+                        <input type="date" class="form-control form-control-sm" style="max-width:150px"
+                               value="@mesecniOd.ToString("yyyy-MM-dd")"
+                               @onchange="@(e => { mesecniOd = DateTime.Parse(e.Value!.ToString()!); })" />
+                        <label class="text-white mb-0 small fw-bold">Do:</label>
+                        <input type="date" class="form-control form-control-sm" style="max-width:150px"
+                               value="@mesecniDo.ToString("yyyy-MM-dd")"
+                               @onchange="@(e => { mesecniDo = DateTime.Parse(e.Value!.ToString()!); })" />
+                        <button class="btn btn-light btn-sm" @onclick="UcitajPodatke" disabled="@ucitavanje">
+                            <i class="bi bi-search"></i> Pretraži
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════ SADRŽAJ ══════ -->
+<div class="container-fluid mt-3">
+    @if (ucitavanje)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-dark" role="status"></div>
+            <p class="mt-3 text-muted">Učitavanje podataka...</p>
+        </div>
+    }
+    else
+    {
+        var (_, _, tabData) = TrenutniTab();
+
+        @if (tabData == null)
+        {
+            <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Nema podataka.</div>
+        }
+        else
+        {
+            <!-- ─── SUMARNI BOKSOVI ─── -->
+            var sumUlaz = tabData.UlazSirovineProizvodi.Sum(x => x.Vrednost)
+                        + tabData.UlazAmbalaza.Sum(x => x.Vrednost)
+                        + tabData.UlazRepromaterijal.Sum(x => x.Vrednost);
+            var sumIzlaz = tabData.IzlazGotovaRobaSirovine.Sum(x => x.Vrednost)
+                         + tabData.IzlazAmbalaza.Sum(x => x.Vrednost)
+                         + tabData.IzlazRepromaterijal.Sum(x => x.Vrednost);
+            var sumUplate = tabData.Finansije.Sum(x => x.Uplata);
+            var sumIsplate = tabData.Finansije.Sum(x => x.Isplata);
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #0d47a1 !important;">
+                        <div class="card-body py-2 px-3">
+                            <div class="text-muted small fw-bold text-uppercase" style="font-size:0.72rem;">Ukupno Ulaz</div>
+                            <div class="fw-bold fs-6" style="color:#0d47a1;">@Fmt(sumUlaz) <span class="small fw-normal text-muted">RSD</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #b71c1c !important;">
+                        <div class="card-body py-2 px-3">
+                            <div class="text-muted small fw-bold text-uppercase" style="font-size:0.72rem;">Ukupno Izlaz</div>
+                            <div class="fw-bold fs-6" style="color:#b71c1c;">@Fmt(sumIzlaz) <span class="small fw-normal text-muted">RSD</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #1b5e20 !important;">
+                        <div class="card-body py-2 px-3">
+                            <div class="text-muted small fw-bold text-uppercase" style="font-size:0.72rem;">Ukupne Uplate</div>
+                            <div class="fw-bold fs-6" style="color:#1b5e20;">@Fmt(sumUplate) <span class="small fw-normal text-muted">RSD</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #e65100 !important;">
+                        <div class="card-body py-2 px-3">
+                            <div class="text-muted small fw-bold text-uppercase" style="font-size:0.72rem;">Ukupne Isplate</div>
+                            <div class="fw-bold fs-6" style="color:#e65100;">@Fmt(sumIsplate) <span class="small fw-normal text-muted">RSD</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── ULAZ ─── -->
+            @if (tabData.UlazSirovineProizvodi.Any() || tabData.UlazAmbalaza.Any() || tabData.UlazRepromaterijal.Any())
+            {
+                <div class="card mb-3 border-0 shadow-sm">
+                    <div class="card-header fw-bold text-white" style="background-color:#0d47a1;">
+                        <i class="bi bi-arrow-down-circle me-2"></i>ULAZ
+                    </div>
+                    <div class="card-body p-2">
+
+                        @if (tabData.UlazSirovineProizvodi.Any())
+                        {
+                            <p class="fw-bold mb-1 px-2" style="color:#1565c0;">Sirovine i Proizvodi</p>
+                            @RenderUlazTabela(tabData.UlazSirovineProizvodi, "Dobavljač")
+                        }
+
+                        @if (tabData.UlazAmbalaza.Any())
+                        {
+                            @if (tabData.UlazSirovineProizvodi.Any())
+                            {
+                                <hr class="my-2" />
+                            }
+                            <p class="fw-bold mb-1 px-2" style="color:#1565c0;">Ambalaza (nepovratna)</p>
+                            @RenderUlazTabela(tabData.UlazAmbalaza, "Dobavljač")
+                        }
+
+                        @if (tabData.UlazRepromaterijal.Any())
+                        {
+                            @if (tabData.UlazSirovineProizvodi.Any() || tabData.UlazAmbalaza.Any())
+                            {
+                                <hr class="my-2" />
+                            }
+                            <p class="fw-bold mb-1 px-2" style="color:#1565c0;">Repromaterijal</p>
+                            @RenderUlazTabela(tabData.UlazRepromaterijal, "Dobavljač")
+                        }
+
+                        @{ var ukUlaz = tabData.UlazSirovineProizvodi.Sum(x=>x.Vrednost)
+                                       + tabData.UlazAmbalaza.Sum(x=>x.Vrednost)
+                                       + tabData.UlazRepromaterijal.Sum(x=>x.Vrednost); }
+                        <div class="d-flex justify-content-end mt-2">
+                            <div class="px-4 py-2 text-white fw-bold rounded" style="background-color:#0d47a1; font-size:0.95rem;">
+                                UKUPNO ULAZ: @Fmt(ukUlaz) RSD
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- ─── IZLAZ ─── -->
+            @if (tabData.IzlazGotovaRobaSirovine.Any() || tabData.IzlazAmbalaza.Any() || tabData.IzlazRepromaterijal.Any())
+            {
+                <div class="card mb-3 border-0 shadow-sm">
+                    <div class="card-header fw-bold text-white" style="background-color:#b71c1c;">
+                        <i class="bi bi-arrow-up-circle me-2"></i>IZLAZ
+                    </div>
+                    <div class="card-body p-2">
+
+                        @if (tabData.IzlazGotovaRobaSirovine.Any())
+                        {
+                            <p class="fw-bold mb-1 px-2" style="color:#c62828;">Gotova Roba i Sirovine</p>
+                            @RenderIzlazTabela(tabData.IzlazGotovaRobaSirovine, "Kupac")
+                        }
+
+                        @if (tabData.IzlazAmbalaza.Any())
+                        {
+                            @if (tabData.IzlazGotovaRobaSirovine.Any())
+                            {
+                                <hr class="my-2" />
+                            }
+                            <p class="fw-bold mb-1 px-2" style="color:#c62828;">Ambalaza</p>
+                            @RenderIzlazTabela(tabData.IzlazAmbalaza, "Kupac")
+                        }
+
+                        @if (tabData.IzlazRepromaterijal.Any())
+                        {
+                            @if (tabData.IzlazGotovaRobaSirovine.Any() || tabData.IzlazAmbalaza.Any())
+                            {
+                                <hr class="my-2" />
+                            }
+                            <p class="fw-bold mb-1 px-2" style="color:#c62828;">Repromaterijal</p>
+                            @RenderIzlazTabela(tabData.IzlazRepromaterijal, "Kupac")
+                        }
+
+                        @{ var ukIzlaz = tabData.IzlazGotovaRobaSirovine.Sum(x=>x.Vrednost)
+                                        + tabData.IzlazAmbalaza.Sum(x=>x.Vrednost)
+                                        + tabData.IzlazRepromaterijal.Sum(x=>x.Vrednost); }
+                        <div class="d-flex justify-content-end mt-2">
+                            <div class="px-4 py-2 text-white fw-bold rounded" style="background-color:#b71c1c; font-size:0.95rem;">
+                                UKUPNO IZLAZ: @Fmt(ukIzlaz) RSD
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- ─── FINANSIJE ─── -->
+            @if (tabData.Finansije.Any())
+            {
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header fw-bold text-white" style="background-color:#1b5e20;">
+                        <i class="bi bi-cash-coin me-2"></i>FINANSIJE
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover table-sm mb-0">
+                                <thead style="background-color:#2e7d32; color:white; font-size:0.82rem;">
+                                    <tr>
+                                        <th>Rb.</th>
+                                        <th>Dokument</th>
+                                        <th>Datum</th>
+                                        <th>Tip Prometa</th>
+                                        <th>Komitent</th>
+                                        <th class="text-end">Uplata (RSD)</th>
+                                        <th class="text-end">Isplata (RSD)</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="font-size:0.82rem;">
+                                    @{ int rb = 1; }
+                                    @foreach (var f in tabData.Finansije)
+                                    {
+                                        <tr>
+                                            <td class="text-muted">@(rb++)</td>
+                                            <td><code class="small">@f.Dokument</code></td>
+                                            <td>@f.Datum.ToString("dd.MM.yyyy")</td>
+                                            <td>
+                                                @if (f.TipPrometa == "Uplata")
+                                                {
+                                                    <span class="badge bg-success">Uplata</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Isplata</span>
+                                                }
+                                            </td>
+                                            <td>@f.Komitent</td>
+                                            <td class="text-end text-success fw-semibold">
+                                                @(f.Uplata > 0 ? Fmt(f.Uplata) : "")
+                                            </td>
+                                            <td class="text-end text-danger fw-semibold">
+                                                @(f.Isplata > 0 ? Fmt(f.Isplata) : "")
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="fw-bold" style="background-color:#c8e6c9;">
+                                    <tr>
+                                        <td colspan="5" class="text-end">Ukupno:</td>
+                                        <td class="text-end text-success">@Fmt(tabData.Finansije.Sum(x=>x.Uplata))</td>
+                                        <td class="text-end text-danger">@Fmt(tabData.Finansije.Sum(x=>x.Isplata))</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    }
+</div>
+
+@* ──── Helper Render funkcije ──── *@
+@functions {
+    RenderFragment RenderUlazTabela(List<PromenUlazModel> stavke, string partnerLabel) =>
+        @<div>
+            @if (!stavke.Any())
+            {
+                <p class="text-muted small ps-2 mb-1">— nema podataka —</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-hover mb-0" style="font-size:0.82rem;">
+                        <thead class="table-primary" style="font-size:0.78rem;">
+                            <tr>
+                                <th style="width:40px">Rb.</th>
+                                <th>Dokument</th>
+                                <th>Datum</th>
+                                <th>Vrsta Proizvoda</th>
+                                <th>@partnerLabel</th>
+                                <th class="text-end">Količina</th>
+                                <th class="text-end">Cena (RSD)</th>
+                                <th class="text-end">Vrednost (RSD)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int i = 1; }
+                            @foreach (var s in stavke)
+                            {
+                                <tr>
+                                    <td class="text-muted">@(i++)</td>
+                                    <td><code class="small">@s.Dokument</code></td>
+                                    <td>@s.Datum.ToString("dd.MM.yyyy")</td>
+                                    <td>@s.VrstaProizvoda</td>
+                                    <td>@s.Dobavljac</td>
+                                    <td class="text-end">@Fmt(s.Kolicina)</td>
+                                    <td class="text-end">@Fmt(s.Cena)</td>
+                                    <td class="text-end fw-semibold">@Fmt(s.Vrednost)</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-info fw-bold">
+                            <tr>
+                                <td colspan="7" class="text-end">Ukupno:</td>
+                                <td class="text-end">@Fmt(stavke.Sum(x => x.Vrednost))</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+        </div>;
+
+    RenderFragment RenderIzlazTabela(List<PromenIzlazModel> stavke, string partnerLabel) =>
+        @<div>
+            @if (!stavke.Any())
+            {
+                <p class="text-muted small ps-2 mb-1">— nema podataka —</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-hover mb-0" style="font-size:0.82rem;">
+                        <thead class="table-danger" style="font-size:0.78rem;">
+                            <tr>
+                                <th style="width:40px">Rb.</th>
+                                <th>Dokument</th>
+                                <th>Datum</th>
+                                <th>Vrsta Proizvoda</th>
+                                <th>@partnerLabel</th>
+                                <th class="text-end">Količina</th>
+                                <th class="text-end">Cena (RSD)</th>
+                                <th class="text-end">Vrednost (RSD)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int i = 1; }
+                            @foreach (var s in stavke)
+                            {
+                                <tr>
+                                    <td class="text-muted">@(i++)</td>
+                                    <td><code class="small">@s.Dokument</code></td>
+                                    <td>@s.Datum.ToString("dd.MM.yyyy")</td>
+                                    <td>@s.VrstaProizvoda</td>
+                                    <td>@s.Kupac</td>
+                                    <td class="text-end">@Fmt(s.Kolicina)</td>
+                                    <td class="text-end">@Fmt(s.Cena)</td>
+                                    <td class="text-end fw-semibold">@Fmt(s.Vrednost)</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-warning fw-bold">
+                            <tr>
+                                <td colspan="7" class="text-end">Ukupno:</td>
+                                <td class="text-end">@Fmt(stavke.Sum(x => x.Vrednost))</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+        </div>;
+}

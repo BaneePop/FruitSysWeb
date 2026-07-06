@@ -1,4 +1,7 @@
 @page "/lager"
+@page "/lager-proizvodnje"
+@page "/ambalaza"
+@page "/roba"
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
 @using FruitSysWeb.Models
@@ -74,22 +77,34 @@
         <div class="col-12">
             <ul class="nav nav-tabs" id="lagerTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="magacin-tab" data-bs-toggle="tab" data-bs-target="#magacin" type="button" role="tab">
-                        <i class="bi bi-warehouse me-2"></i>Magacin Lager
+                    <button class="nav-link @(aktivniTab == "magacin" ? "active" : "")" type="button" role="tab" @onclick='() => PrebaciiNaTab("magacin")'>
+                        <i class="bi bi-archive me-2"></i>Magacin Lager
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="proizvodnja-tab" data-bs-toggle="tab" data-bs-target="#proizvodnja" type="button" role="tab" @onclick="UcitajLagerProizvodnje">
+                    <button class="nav-link @(aktivniTab == "proizvodnja" ? "active" : "")" type="button" role="tab" @onclick='() => PrebaciiNaTab("proizvodnja")'>
                         <i class="bi bi-gear me-2"></i>Lager Proizvodnje
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(aktivniTab == "ambalaza" ? "active" : "")" type="button" role="tab" @onclick='() => PrebaciiNaTab("ambalaza")'>
+                        <i class="bi bi-box-seam me-2"></i>Lager Ambalaže
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(aktivniTab == "sirovine" ? "active" : "")" type="button" role="tab" @onclick='() => PrebaciiNaTab("sirovine")'>
+                        <i class="bi bi-droplet me-2"></i>Lager Sirovina
                     </button>
                 </li>
             </ul>
         </div>
     </div>
 
-    <div class="tab-content" id="lagerTabContent">
+    <div>
         <!-- MAGACIN LAGER TAB -->
-        <div class="tab-pane fade show active" id="magacin" role="tabpanel">
+        @if (aktivniTab == "magacin")
+        {
+        <div role="tabpanel">
             <!-- REFAKTORISANI Filter Section - koristi TypeMappingService -->
             <div class="row mb-4">
                 <div class="col-12">
@@ -216,8 +231,11 @@
             }
         </div>
 
+        }
         <!-- LAGER PROIZVODNJE TAB -->
-        <div class="tab-pane fade" id="proizvodnja" role="tabpanel">
+        @if (aktivniTab == "proizvodnja")
+        {
+        <div role="tabpanel">
             <div class="row">
                 <div class="col-12">
                     <div class="card">
@@ -294,26 +312,327 @@
                 </div>
             </div>
         </div>
+        }
+
+        <!-- LAGER AMBALAŽE TAB -->
+        @if (aktivniTab == "ambalaza")
+        {
+        <div role="tabpanel">
+            <!-- Podtabovi: Kutije / Kese -->
+            <ul class="nav nav-pills mb-3">
+                <li class="nav-item">
+                    <button class="nav-link @(ambalazaPodtab == "kutije" ? "active" : "")" @onclick='() => UcitajAmbalazuTab("kutije")'>
+                        <i class="bi bi-box me-1"></i>Kutije
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link @(ambalazaPodtab == "kese" ? "active" : "")" @onclick='() => UcitajAmbalazuTab("kese")'>
+                        <i class="bi bi-bag me-1"></i>Kese
+                    </button>
+                </li>
+            </ul>
+
+            @{
+                var ambalazaLista = ambalazaPodtab == "kutije" ? kutijeStanje : keseStanje;
+                var ambalazaExportNaziv = ambalazaPodtab == "kutije" ? "ambalaza_kutije" : "ambalaza_kese";
+            }
+
+            <div class="row mb-3">
+                <div class="col-12 text-end">
+                    <div class="btn-group">
+                        <button class="btn btn-success btn-sm" @onclick="() => ExportAmbalazaExcel(ambalazaLista, ambalazaExportNaziv)" disabled="@(ambalazaLista?.Count == 0)">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                        </button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => ExportAmbalazaPdf(ambalazaLista, ambalazaExportNaziv)" disabled="@(ambalazaLista?.Count == 0)">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body text-center">
+                            <h5>Ukupno artikala</h5>
+                            <h3>@(ambalazaLista?.Count ?? 0)</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h5>Na lageru</h5>
+                            <h3>@TypeMapping.FormatDecimal(ambalazaLista?.Sum(x => x.Kolicina) ?? 0)</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h5>U proizvodnji</h5>
+                            <h3>@(ambalazaLista?.Sum(x => decimal.TryParse(x.Pakovanje, out var v) ? v : 0).ToString("N0") ?? "0")</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5>Dostupno</h5>
+                            <h3>@(ambalazaLista?.Sum(x => decimal.TryParse(x.Lot, out var v) ? v : 0).ToString("N0") ?? "0")</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (ambalazaLista == null)
+            {
+                <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Učitavanje podataka...</div>
+            }
+            else if (!ambalazaLista.Any())
+            {
+                <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Nema podataka.</div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Artikal</th>
+                                        <th class="text-end">Količina</th>
+                                        <th class="text-end">U Proizvodnji</th>
+                                        <th class="text-end">Za najavljene Utovare</th>
+                                        <th class="text-end">Dostupno</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in ambalazaLista)
+                                    {
+                                        decimal ukupno = 0; decimal.TryParse(item.Lot ?? "0", out ukupno);
+                                        var stockClass = GetStockClass(ukupno, 100);
+                                        var (stockStatus, stockBadgeClass, stockIcon) = TypeMapping.GetQuantityStatus(ukupno);
+                                        <tr class="@stockClass">
+                                            <td><strong>@item.Artikal</strong></td>
+                                            <td class="text-end"><span class="fw-bold">@TypeMapping.FormatDecimal(item.Kolicina)</span></td>
+                                            <td class="text-end"><span class="badge bg-primary">@item.Pakovanje</span></td>
+                                            <td class="text-end"><span class="badge bg-info">@(item.ZaNajavljeneUtovare ?? "0")</span></td>
+                                            <td class="text-end"><strong class="text-success">@item.Lot</strong></td>
+                                            <td><span class="badge @stockBadgeClass"><i class="@stockIcon"></i> @stockStatus</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-secondary">
+                                    <tr>
+                                        <th class="text-end">UKUPNO:</th>
+                                        <th class="text-end text-primary">@TypeMapping.FormatDecimal(ambalazaLista.Sum(x => x.Kolicina))</th>
+                                        <th class="text-end text-warning">@ambalazaLista.Sum(x => decimal.TryParse(x.Pakovanje, out var v) ? v : 0).ToString("N0")</th>
+                                        <th class="text-end text-danger">@ambalazaLista.Sum(x => decimal.TryParse(x.ZaNajavljeneUtovare, out var v) ? v : 0).ToString("N0")</th>
+                                        <th class="text-end text-success">@ambalazaLista.Sum(x => decimal.TryParse(x.Lot, out var v) ? v : 0).ToString("N0")</th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        }
+
+        <!-- LAGER SIROVINA TAB -->
+        @if (aktivniTab == "sirovine")
+        {
+        <div role="tabpanel">
+            <!-- Podtabovi: Sirovine / Poluproizvodi -->
+            <ul class="nav nav-pills mb-3">
+                <li class="nav-item">
+                    <button class="nav-link @(sirovinePodtab == "sirovine" ? "active" : "")" @onclick='() => UcitajSirovineTab("sirovine")'>
+                        <i class="bi bi-droplet me-1"></i>Sirovine
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link @(sirovinePodtab == "poluproizvodi" ? "active" : "")" @onclick='() => UcitajSirovineTab("poluproizvodi")'>
+                        <i class="bi bi-layers me-1"></i>Poluproizvodi
+                    </button>
+                </li>
+            </ul>
+
+            @{
+                var sirovineLista = sirovinePodtab == "sirovine" ? sirovineStanje : poluproizvodiStanje;
+                var sirovineExportNaziv = sirovinePodtab == "sirovine" ? "roba_sirovine" : "roba_poluproizvodi";
+            }
+
+            <div class="row mb-3">
+                <div class="col-12 text-end">
+                    <div class="btn-group">
+                        <button class="btn btn-success btn-sm" @onclick="() => ExportSirovineExcel(sirovineLista, sirovineExportNaziv)" disabled="@(sirovineLista?.Count == 0)">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                        </button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => ExportSirovinePdf(sirovineLista, sirovineExportNaziv)" disabled="@(sirovineLista?.Count == 0)">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @if (sirovineLista == null)
+            {
+                <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Učitavanje podataka...</div>
+            }
+            else if (!sirovineLista.Any())
+            {
+                <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Nema podataka.</div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Artikal</th>
+                                        <th class="text-end">Količina</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in sirovineLista)
+                                    {
+                                        var stockClass = GetStockClass(item.Kolicina, 100);
+                                        var (stockStatus, stockBadgeClass, stockIcon) = TypeMapping.GetQuantityStatus(item.Kolicina);
+                                        <tr class="@stockClass">
+                                            <td><strong>@item.Artikal</strong></td>
+                                            <td class="text-end"><span class="fw-bold">@TypeMapping.FormatDecimal(item.Kolicina)</span></td>
+                                            <td><span class="badge @stockBadgeClass"><i class="@stockIcon"></i> @stockStatus</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-secondary">
+                                    <tr>
+                                        <th class="text-end">UKUPNO:</th>
+                                        <th class="text-end text-primary">@TypeMapping.FormatDecimal(sirovineLista.Sum(x => x.Kolicina))</th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        }
+
     </div>
 </div>
 
 @code {
+    private string aktivniTab = "magacin";
+
+    // Magacin Lager
     private List<MagacinLagerModel>? lagerStanje;
     private List<RadniNalogLagerModel>? lagerProizvodnje;
     private List<string>? pakovanjeLista;
     private FilterRequest filterRequest = new FilterRequest();
     private decimal ukupnaVrednostLager = 0;
-    
-    // DODATO: Quick filter state tracking
     private List<QuickFilter> quickFilters = new();
+
+    // Ambalaža
+    private string ambalazaPodtab = "kutije";
+    private List<MagacinLagerModel>? kutijeStanje;
+    private List<MagacinLagerModel>? keseStanje;
+
+    // Sirovine
+    private string sirovinePodtab = "sirovine";
+    private List<MagacinLagerModel>? sirovineStanje;
+    private List<MagacinLagerModel>? poluproizvodiStanje;
 
     protected override async Task OnInitializedAsync()
     {
-        // REFAKTORISANO: Load quick filters from TypeMapping
         quickFilters = TypeMapping.GetMagacinQuickFilters();
-        
         await UcitajListeZaFiltriranje();
         await UcitajPodatke();
+    }
+
+    private async Task PrebaciiNaTab(string tab)
+    {
+        aktivniTab = tab;
+        switch (tab)
+        {
+            case "proizvodnja" when lagerProizvodnje == null:
+                await UcitajLagerProizvodnje();
+                break;
+            case "ambalaza" when kutijeStanje == null:
+                await UcitajAmbalazuTab("kutije");
+                break;
+            case "sirovine" when sirovineStanje == null:
+                await UcitajSirovineTab("sirovine");
+                break;
+        }
+    }
+
+    private async Task UcitajAmbalazuTab(string podtab)
+    {
+        ambalazaPodtab = podtab;
+        try
+        {
+            if (podtab == "kutije" && kutijeStanje == null)
+                kutijeStanje = await LagerService.UcitajKutije(new FilterRequest());
+            else if (podtab == "kese" && keseStanje == null)
+                keseStanje = await LagerService.UcitajKese(new FilterRequest());
+            StateHasChanged();
+        }
+        catch (Exception ex) { Console.WriteLine($"Greška ambalaža: {ex.Message}"); }
+    }
+
+    private async Task UcitajSirovineTab(string podtab)
+    {
+        sirovinePodtab = podtab;
+        try
+        {
+            if (podtab == "sirovine" && sirovineStanje == null)
+                sirovineStanje = await LagerService.UcitajSirovine(new FilterRequest());
+            else if (podtab == "poluproizvodi" && poluproizvodiStanje == null)
+                poluproizvodiStanje = await LagerService.UcitajPoluproizvode(new FilterRequest());
+            StateHasChanged();
+        }
+        catch (Exception ex) { Console.WriteLine($"Greška sirovine: {ex.Message}"); }
+    }
+
+    private async Task ExportAmbalazaExcel(List<MagacinLagerModel>? lista, string naziv)
+    {
+        if (lista == null || !lista.Any()) return;
+        var columns = new Dictionary<string, string> { { "Artikal", "Artikal" }, { "Kolicina", "Količina" }, { "Pakovanje", "U Proizvodnji" }, { "ZaNajavljeneUtovare", "Za najavljene Utovare" }, { "Lot", "Dostupno" } };
+        var data = ExportService.ExportToExcelWithColumns(lista, columns);
+        await DownloadFile(data, TypeMapping.GenerateExportFileName(naziv, SystemConstants.Export.EXCEL_EXTENSION), SystemConstants.Export.EXCEL_MIME_TYPE);
+    }
+
+    private async Task ExportAmbalazaPdf(List<MagacinLagerModel>? lista, string naziv)
+    {
+        if (lista == null || !lista.Any()) return;
+        var columns = new Dictionary<string, string> { { "Artikal", "Artikal" }, { "Kolicina", "Količina" }, { "Pakovanje", "U Proizvodnji" }, { "ZaNajavljeneUtovare", "Za najavljene Utovare" }, { "Lot", "Dostupno" } };
+        var data = ExportService.ExportToPdfWithColumns(lista, columns);
+        await DownloadFile(data, TypeMapping.GenerateExportFileName(naziv, SystemConstants.Export.PDF_EXTENSION), SystemConstants.Export.PDF_MIME_TYPE);
+    }
+
+    private async Task ExportSirovineExcel(List<MagacinLagerModel>? lista, string naziv)
+    {
+        if (lista == null || !lista.Any()) return;
+        var columns = new Dictionary<string, string> { { "Artikal", "Artikal" }, { "Kolicina", "Količina" } };
+        var data = ExportService.ExportToExcelWithColumns(lista, columns);
+        await DownloadFile(data, TypeMapping.GenerateExportFileName(naziv, SystemConstants.Export.EXCEL_EXTENSION), SystemConstants.Export.EXCEL_MIME_TYPE);
+    }
+
+    private async Task ExportSirovinePdf(List<MagacinLagerModel>? lista, string naziv)
+    {
+        if (lista == null || !lista.Any()) return;
+        var columns = new Dictionary<string, string> { { "Artikal", "Artikal" }, { "Kolicina", "Količina" } };
+        var data = ExportService.ExportToPdfWithColumns(lista, columns);
+        await DownloadFile(data, TypeMapping.GenerateExportFileName(naziv, SystemConstants.Export.PDF_EXTENSION), SystemConstants.Export.PDF_MIME_TYPE);
     }
 
     private async Task UcitajListeZaFiltriranje()

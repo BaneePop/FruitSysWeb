@@ -1,0 +1,589 @@
+@page "/izvestaj-proizvodnje"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@inject IIzvestajProizvodnjeService IzvestajService
+
+<PageTitle>Izveštaj Proizvodnje</PageTitle>
+
+<!-- ── Zaglavlje ── -->
+<div class="container-fluid px-3 pt-3 pb-2">
+    <div class="d-flex align-items-center gap-3 flex-wrap mb-3">
+        <h4 class="mb-0 fw-semibold">
+            <i class="bi bi-clipboard-data me-2 text-primary"></i>Izveštaj Proizvodnje
+        </h4>
+        <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+            <label class="fw-semibold small mb-0">Datum:</label>
+            <input type="date" class="form-control form-control-sm" style="width:145px"
+                   value="@_odabranDatum.ToString("yyyy-MM-dd")"
+                   @onchange="OnDatumChange" />
+            <button class="btn btn-sm btn-primary" @onclick="UcitajPodatke" disabled="@_ucitavam">
+                @if (_ucitavam)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                }
+                else
+                {
+                    <i class="bi bi-search me-1"></i>
+                }
+                Prikaži
+            </button>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-0" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link @(AktivniTab == "dnevni" ? "active" : "")"
+                    @onclick='() => PostaviTab("dnevni")'>
+                <i class="bi bi-calendar-day me-1"></i>Dnevni
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(AktivniTab == "nedeljni" ? "active" : "")"
+                    @onclick='() => PostaviTab("nedeljni")'>
+                <i class="bi bi-calendar-week me-1"></i>Nedeljni
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(AktivniTab == "mesecni" ? "active" : "")"
+                    @onclick='() => PostaviTab("mesecni")'>
+                <i class="bi bi-calendar-month me-1"></i>Mesečni
+            </button>
+        </li>
+    </ul>
+</div>
+
+<!-- ── Sadržaj ── -->
+<div class="container-fluid px-3 pb-4">
+    @if (_greska is not null)
+    {
+        <div class="alert alert-danger mt-3">@_greska</div>
+    }
+    else if (_model is null && !_ucitavam)
+    {
+        <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle me-2"></i>Odaberite datum i kliknite <strong>Prikaži</strong>.
+        </div>
+    }
+    else if (_ucitavam)
+    {
+        <div class="text-center py-5">
+            <span class="spinner-border text-primary" role="status"></span>
+            <p class="mt-2 text-muted">Učitavam izveštaj...</p>
+        </div>
+    }
+    else if (_model is not null)
+    {
+        <p class="text-muted small mt-2 mb-3">
+            Period: <strong>@_periodOd.ToString("dd.MM.yyyy")</strong> – <strong>@_periodDo.ToString("dd.MM.yyyy")</strong>
+        </p>
+
+        @if (AktivniTab == "dnevni")
+        {
+            <!-- ══ DNEVNI: tabele 1 i 2 jedna pored druge ══ -->
+            <div class="row g-3 mb-3">
+                <!-- 1. Dobijena gotova roba -->
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-success text-white fw-semibold py-2">
+                            <i class="bi bi-box-seam me-2"></i>1. Dobijena gotova roba
+                        </div>
+                        <div class="card-body p-0">
+                            @if (_model.GotovaRoba.Count == 0)
+                            {
+                                <p class="text-muted p-3 mb-0">Nema podataka.</p>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover table-striped mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Datum</th>
+                                                <th>Artikal</th>
+                                                <th class="text-end">Količina (kg)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var r in _model.GotovaRoba)
+                                            {
+                                                <tr>
+                                                    <td>@r.Datum.ToString("dd.MM.yyyy")</td>
+                                                    <td>@r.Artikal</td>
+                                                    <td class="text-end">@r.Kolicina.ToString("N2", _kultura)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot class="table-dark fw-semibold">
+                                            <tr>
+                                                <td colspan="2"><strong>SVEUKUPNO</strong></td>
+                                                <td class="text-end"><strong>@_model.UkupnaKolicinaGotoveRobe.ToString("N2", _kultura)</strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Utrošene sirovine -->
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-warning text-dark fw-semibold py-2">
+                            <i class="bi bi-archive me-2"></i>2. Utrošene sirovine
+                        </div>
+                        <div class="card-body p-0">
+                            @if (_model.UtroseneSirovine.Count == 0)
+                            {
+                                <p class="text-muted p-3 mb-0">Nema podataka.</p>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover table-striped mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Datum</th>
+                                                <th>Artikal</th>
+                                                <th class="text-end">Količina (kg)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var r in _model.UtroseneSirovine)
+                                            {
+                                                <tr>
+                                                    <td>@r.Datum.ToString("dd.MM.yyyy")</td>
+                                                    <td>@r.Artikal</td>
+                                                    <td class="text-end">@r.Kolicina.ToString("N2", _kultura)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot class="table-dark fw-semibold">
+                                            <tr>
+                                                <td colspan="2"><strong>SVEUKUPNO</strong></td>
+                                                <td class="text-end"><strong>@_model.UtroseneSirovine.Sum(r => r.Kolicina).ToString("N2", _kultura)</strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Utrošena ambalaza – dnevni (sa datumom) -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-info text-white fw-semibold py-2">
+                    <i class="bi bi-bag me-2"></i>3. Utrošena ambalaza
+                </div>
+                <div class="card-body p-0">
+                    @if (_model.UtrosenaAmbalaza.Count == 0)
+                    {
+                        <p class="text-muted p-3 mb-0">Nema podataka.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover table-striped mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Datum</th>
+                                        <th>Artikal</th>
+                                        <th>Vrsta ambalaže</th>
+                                        <th class="text-end">Količina</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var r in _model.UtrosenaAmbalaza)
+                                    {
+                                        <tr>
+                                            <td>@r.Datum.ToString("dd.MM.yyyy")</td>
+                                            <td>@r.Artikal</td>
+                                            <td>@r.VrstaAmbalazeNaziv</td>
+                                            <td class="text-end">@r.Kolicina.ToString("N2", _kultura)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-info fw-semibold">
+                                    @foreach (var kv in _model.SumaAmbalazePoVrsti)
+                                    {
+                                        <tr>
+                                            <td colspan="3">Ukupno – @kv.Key</td>
+                                            <td class="text-end">@kv.Value.ToString("N2", _kultura)</td>
+                                        </tr>
+                                    }
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- ══ NEDELJNI / MESEČNI: tabele 1 i 2 jedna pored druge, bez datuma, grupisano po artiklu ══ -->
+            <div class="row g-3 mb-3">
+                <!-- 1. Dobijena gotova roba -->
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-success text-white fw-semibold py-2">
+                            <i class="bi bi-box-seam me-2"></i>1. Dobijena gotova roba
+                        </div>
+                        <div class="card-body p-0">
+                            @if (_model.GotovaRoba.Count == 0)
+                            {
+                                <p class="text-muted p-3 mb-0">Nema podataka.</p>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover table-striped mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Artikal</th>
+                                                <th class="text-end">Količina (kg)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var kv in _model.SumaGotovaRobaPoArtiklu)
+                                            {
+                                                <tr>
+                                                    <td>@kv.Key</td>
+                                                    <td class="text-end">@kv.Value.ToString("N2", _kultura)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot class="table-dark fw-semibold">
+                                            <tr>
+                                                <td><strong>SVEUKUPNO</strong></td>
+                                                <td class="text-end"><strong>@_model.UkupnaKolicinaGotoveRobe.ToString("N2", _kultura)</strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Utrošene sirovine -->
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-warning text-dark fw-semibold py-2">
+                            <i class="bi bi-archive me-2"></i>2. Utrošene sirovine
+                        </div>
+                        <div class="card-body p-0">
+                            @if (_model.UtroseneSirovine.Count == 0)
+                            {
+                                <p class="text-muted p-3 mb-0">Nema podataka.</p>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover table-striped mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Artikal</th>
+                                                <th class="text-end">Količina (kg)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var kv in _model.SumaSirovinePоArtiklu)
+                                            {
+                                                <tr>
+                                                    <td>@kv.Key</td>
+                                                    <td class="text-end">@kv.Value.ToString("N2", _kultura)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot class="table-dark fw-semibold">
+                                            <tr>
+                                                <td><strong>SVEUKUPNO</strong></td>
+                                                <td class="text-end"><strong>@_model.UtroseneSirovine.Sum(r => r.Kolicina).ToString("N2", _kultura)</strong></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Utrošena ambalaza – nedeljni/mesečni (bez datuma, grupisano po artiklu) -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-info text-white fw-semibold py-2">
+                    <i class="bi bi-bag me-2"></i>3. Utrošena ambalaza
+                </div>
+                <div class="card-body p-0">
+                    @if (_model.UtrosenaAmbalaza.Count == 0)
+                    {
+                        <p class="text-muted p-3 mb-0">Nema podataka.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover table-striped mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Artikal</th>
+                                        <th>Vrsta ambalaže</th>
+                                        <th class="text-end">Količina</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var r in _model.UtrosenaAmbalaza
+                                        .GroupBy(x => x.Artikal)
+                                        .Select(g => new { Artikal = g.Key, VrstaAmbalazeNaziv = g.First().VrstaAmbalazeNaziv, Kolicina = g.Sum(x => x.Kolicina) }))
+                                    {
+                                        <tr>
+                                            <td>@r.Artikal</td>
+                                            <td>@r.VrstaAmbalazeNaziv</td>
+                                            <td class="text-end">@r.Kolicina.ToString("N2", _kultura)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-info fw-semibold">
+                                    @foreach (var kv in _model.SumaAmbalazePoVrsti)
+                                    {
+                                        <tr>
+                                            <td colspan="2">Ukupno – @kv.Key</td>
+                                            <td class="text-end">@kv.Value.ToString("N2", _kultura)</td>
+                                        </tr>
+                                    }
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- ══ 4. Trošak radne snage – Direktan ══ -->
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header bg-primary text-white fw-semibold py-2">
+                <i class="bi bi-person-gear me-2"></i>4. Trošak radne snage – Direktan
+            </div>
+            <div class="card-body p-0">
+                @if (_model.TrosakDirektan.Count == 0)
+                {
+                    <p class="text-muted p-3 mb-0">Nema podataka.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Datum</th>
+                                    <th class="text-end">Br. radnih sati</th>
+                                    <th class="text-end">Iznos (RSD)</th>
+                                    <th class="text-end">Trošak / kg</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in _model.TrosakDirektan)
+                                {
+                                    <tr>
+                                        <td>@r.Datum.ToString("dd.MM.yyyy")</td>
+                                        <td class="text-end">@r.BrojRadnihSati.ToString("N2", _kultura)</td>
+                                        <td class="text-end">@r.Iznos.ToString("N2", _kultura)</td>
+                                        <td class="text-end">@r.TrosakPoKg.ToString("N2", _kultura)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-primary fw-semibold">
+                                <tr>
+                                    <td><strong>Saldo</strong></td>
+                                    <td class="text-end">@_model.UkupnoSatiDirektan.ToString("N2", _kultura)</td>
+                                    <td class="text-end">@_model.UkupnoIznosDirektan.ToString("N2", _kultura)</td>
+                                    <td class="text-end">@_model.TrosakPoKgDirektan.ToString("N2", _kultura)</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ══ 5. Trošak radne snage – Indirektan ══ -->
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header bg-secondary text-white fw-semibold py-2">
+                <i class="bi bi-people me-2"></i>5. Trošak radne snage – Indirektan
+            </div>
+            <div class="card-body p-0">
+                @if (_model.TrosakIndirektan.Count == 0)
+                {
+                    <p class="text-muted p-3 mb-0">Nema podataka.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Datum</th>
+                                    <th class="text-end">Br. radnih sati</th>
+                                    <th class="text-end">Iznos (RSD)</th>
+                                    <th class="text-end">Trošak / kg</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in _model.TrosakIndirektan)
+                                {
+                                    <tr>
+                                        <td>@r.Datum.ToString("dd.MM.yyyy")</td>
+                                        <td class="text-end">@r.BrojRadnihSati.ToString("N2", _kultura)</td>
+                                        <td class="text-end">@r.Iznos.ToString("N2", _kultura)</td>
+                                        <td class="text-end">@r.TrosakPoKg.ToString("N2", _kultura)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-secondary fw-semibold">
+                                <tr>
+                                    <td><strong>Saldo</strong></td>
+                                    <td class="text-end">@_model.UkupnoSatiIndirektan.ToString("N2", _kultura)</td>
+                                    <td class="text-end">@_model.UkupnoIznosIndirektan.ToString("N2", _kultura)</td>
+                                    <td class="text-end">@_model.TrosakPoKgIndirektan.ToString("N2", _kultura)</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ══ 6. Ukupni trošak ══ -->
+        <div class="card mb-3 shadow-sm border-dark">
+            <div class="card-header bg-dark text-white fw-semibold py-2">
+                <i class="bi bi-calculator me-2"></i>6. Ukupni trošak radne snage
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="card text-center border-0 bg-light h-100">
+                            <div class="card-body py-3">
+                                <div class="text-muted small">Ukupan broj radnih sati</div>
+                                <div class="fs-4 fw-bold text-dark">@_model.UkupnoSati.ToString("N2", _kultura)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center border-0 bg-light h-100">
+                            <div class="card-body py-3">
+                                <div class="text-muted small">Ukupan trošak (dir. + indir.)</div>
+                                <div class="fs-4 fw-bold text-danger">@_model.UkupnoIznos.ToString("N2", _kultura) RSD</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center border-0 bg-light h-100">
+                            <div class="card-body py-3">
+                                <div class="text-muted small">Ukupni trošak / kg got. proizvoda</div>
+                                <div class="fs-4 fw-bold text-primary">@_model.TrosakPoKgUkupno.ToString("N2", _kultura) RSD/kg</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Vrsta</th>
+                                <th class="text-end">Sati</th>
+                                <th class="text-end">Iznos (RSD)</th>
+                                <th class="text-end">RSD / kg</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Direktan rad</td>
+                                <td class="text-end">@_model.UkupnoSatiDirektan.ToString("N2", _kultura)</td>
+                                <td class="text-end">@_model.UkupnoIznosDirektan.ToString("N2", _kultura)</td>
+                                <td class="text-end">@_model.TrosakPoKgDirektan.ToString("N2", _kultura)</td>
+                            </tr>
+                            <tr>
+                                <td>Indirektan rad</td>
+                                <td class="text-end">@_model.UkupnoSatiIndirektan.ToString("N2", _kultura)</td>
+                                <td class="text-end">@_model.UkupnoIznosIndirektan.ToString("N2", _kultura)</td>
+                                <td class="text-end">@_model.TrosakPoKgIndirektan.ToString("N2", _kultura)</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-dark fw-semibold">
+                            <tr>
+                                <td>UKUPNO</td>
+                                <td class="text-end">@_model.UkupnoSati.ToString("N2", _kultura)</td>
+                                <td class="text-end">@_model.UkupnoIznos.ToString("N2", _kultura)</td>
+                                <td class="text-end">@_model.TrosakPoKgUkupno.ToString("N2", _kultura)</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly System.Globalization.CultureInfo _kultura =
+        System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS");
+
+    private string AktivniTab = "dnevni";
+    private DateTime _odabranDatum = DateTime.Today;
+    private DateTime _periodOd;
+    private DateTime _periodDo;
+
+    private IzvestajProizvodnjeModel? _model;
+    private bool _ucitavam;
+    private string? _greska;
+
+    private void PostaviTab(string tab)
+    {
+        AktivniTab = tab;
+        _model = null;
+    }
+
+    private void OnDatumChange(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+            _odabranDatum = d;
+    }
+
+    private async Task UcitajPodatke()
+    {
+        _greska = null;
+        _ucitavam = true;
+        StateHasChanged();
+
+        try
+        {
+            (_periodOd, _periodDo) = IzracunajPeriod();
+            _model = await IzvestajService.UcitajIzvestaj(_periodOd, _periodDo);
+        }
+        catch (Exception ex)
+        {
+            _greska = $"Greška pri učitavanju: {ex.Message}";
+            _model = null;
+        }
+        finally
+        {
+            _ucitavam = false;
+        }
+    }
+
+    private (DateTime od, DateTime do_) IzracunajPeriod() => AktivniTab switch
+    {
+        "dnevni"   => (_odabranDatum.Date, _odabranDatum.Date),
+        "nedeljni" => (
+            _odabranDatum.Date.AddDays(-(int)_odabranDatum.DayOfWeek == 0 ? 6 : (int)_odabranDatum.DayOfWeek - 1),
+            _odabranDatum.Date.AddDays(6 - ((int)_odabranDatum.DayOfWeek == 0 ? 6 : (int)_odabranDatum.DayOfWeek - 1))
+        ),
+        "mesecni"  => (
+            new DateTime(_odabranDatum.Year, _odabranDatum.Month, 1),
+            new DateTime(_odabranDatum.Year, _odabranDatum.Month,
+                DateTime.DaysInMonth(_odabranDatum.Year, _odabranDatum.Month))
+        ),
+        _ => (_odabranDatum.Date, _odabranDatum.Date)
+    };
+}

@@ -45,35 +45,22 @@
                                         <i class="bi bi-house-door me-2" aria-hidden="true"></i>Prerada početna
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/ucitaj-radne-naloge">
-                                        <i class="bi bi-truck me-2" aria-hidden="true"></i>Pregled Isporučenih RN
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/otvoreni-radni-nalozi">
-                                        <i class="bi bi-clipboard-pulse me-2" aria-hidden="true"></i>Pregled Otvorenih RN
+                                    <li><a class="dropdown-item" href="/pregled-radnih-naloga">
+                                        <i class="bi bi-clipboard-data me-2" aria-hidden="true"></i>Pregled Radnih Naloga
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/izvestaj-proizvodnje">
+                                        <i class="bi bi-clipboard-data me-2" aria-hidden="true"></i>Izveštaj Proizvodnje
+                                    </a></li>
                                     <li><a class="dropdown-item" href="/proizvodnja">
                                         <i class="bi bi-gear me-2" aria-hidden="true"></i>Utrošak Sirovina RN
                                     </a></li>
-                                    <li><a class="dropdown-item" href="/lager-proizvodnje">
-                                        <i class="bi bi-boxes me-2" aria-hidden="true"></i>Lager proizvodnje
-                                    </a></li>
                                     <li><a class="dropdown-item" href="/radni-nalozi">
-                                        <i class="bi bi-clipboard-data me-2" aria-hidden="true"></i>Utrošak Radne Snage RN
+                                        <i class="bi bi-people me-2" aria-hidden="true"></i>Utrošak Radne Snage RN
                                     </a></li>
                                     <li><a class="dropdown-item" href="/smenski-izvestaji">
                                         <i class="bi bi-calendar3 me-2" aria-hidden="true"></i>Utrošak Radne Snage SI
                                     </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/troskovi-radne-snage">
-                                        <i class="bi bi-people-fill me-2" aria-hidden="true"></i>Troškovi Radne Snage
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/troskovi-proizvodnje">
-                                        <i class="bi bi-gear-wide-connected me-2" aria-hidden="true"></i>Troškovi Proizvodnje
-                                    </a></li>
-                                    @* <li><a class="dropdown-item" href="/poslovodja">
-                                        <i class="bi bi-person-badge me-2" aria-hidden="true"></i>Poslovođa
-                                    </a></li> *@
                                 </ul>
                             </li>
 
@@ -87,11 +74,8 @@
                                         <i class="bi bi-house-door me-2" aria-hidden="true"></i>Kvalitet početna
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/ucitaj-radne-naloge">
-                                        <i class="bi bi-truck me-2" aria-hidden="true"></i>Pregled Isporučenih RN
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/otvoreni-radni-nalozi">
-                                        <i class="bi bi-clipboard-pulse me-2" aria-hidden="true"></i>Pregled Otvorenih RN
+                                    <li><a class="dropdown-item" href="/pregled-radnih-naloga">
+                                        <i class="bi bi-clipboard-data me-2" aria-hidden="true"></i>Pregled Radnih Naloga
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="/sledljivost">
@@ -107,6 +91,10 @@
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="/paletni-list-pregled">
                                         <i class="bi bi-layers me-2" aria-hidden="true"></i>Paletni List Pregled
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/efikasnost-poslovodja">
+                                        <i class="bi bi-person-check me-2" aria-hidden="true"></i>Efikasnost Poslovođa
                                     </a></li>
                                 </ul>
                             </li>
@@ -141,6 +129,10 @@
                                         <li><a class="dropdown-item" href="/finansijsko-stanje">
                                             <i class="bi bi-graph-up-arrow me-2" aria-hidden="true"></i>Finansijsko Stanje
                                         </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="/artikli-statistika">
+                                            <i class="bi bi-bar-chart-line me-2" aria-hidden="true"></i>Artikli Statistika
+                                        </a></li>
                                     </ul>
                                 </li>
 
@@ -166,6 +158,25 @@
                                         <li><a class="dropdown-item" href="/kartica-komitenta">
                                             <i class="bi bi-person-lines-fill me-2" aria-hidden="true"></i>Kartice Komitenata
                                         </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="/kalkulacija">
+                                            <i class="bi bi-calculator me-2" aria-hidden="true"></i>Kalkulacija
+                                        </a></li>
+                                    </ul>
+                                </li>
+
+                                <!-- ENERGIJA / SOLAR (izolovani modul) -->
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-sun me-1" aria-hidden="true"></i>Energija
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="/solar-hala">
+                                            <i class="bi bi-display me-2" aria-hidden="true"></i>Proizvodnja uživo (hala)
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/solar-pregled">
+                                            <i class="bi bi-list-check me-2" aria-hidden="true"></i>Dostupni podaci
+                                        </a></li>
                                     </ul>
                                 </li>
                             }
@@ -181,19 +192,10 @@
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="/lager">
-                                        <i class="bi bi-archive me-2" aria-hidden="true"></i>Magacin lager
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/lager-proizvodnje">
-                                        <i class="bi bi-gear-wide-connected me-2" aria-hidden="true"></i>Lager proizvodnje
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/ambalaza">
-                                        <i class="bi bi-gear-wide-connected me-2" aria-hidden="true"></i>Lager Ambalaže
+                                        <i class="bi bi-archive me-2" aria-hidden="true"></i>Magacin Lager
                                     </a></li>
                                     <li><a class="dropdown-item" href="/stanje-kese-altiva">
                                         <i class="bi bi-bag-check me-2" aria-hidden="true"></i>Stanje Kesa - Altiva
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/roba">
-                                        <i class="bi bi-gear-wide-connected me-2" aria-hidden="true"></i>Lager Sirovina
                                     </a></li>
                                 </ul>
                             </li>
@@ -232,12 +234,13 @@
                              <!-- 5. PROMET Dropdown -->
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-gear-wide-connected me-1" aria-hidden="true"></i>Promet Roba
+                                    <i class="bi bi-truck me-1" aria-hidden="true"></i>Promet Roba
                                 </a>
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="/promethome">
                                         <i class="bi bi-house-door me-2" aria-hidden="true"></i>Promet početna
                                     </a></li>
+                                    <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="/prezentacija">
                                         <i class="bi bi-bar-chart-line me-2" aria-hidden="true"></i>Prezentacija
                                     </a></li>
@@ -252,10 +255,7 @@
                                         </a></li>
                                     }
                                     <li><a class="dropdown-item" href="/izvestaj-prijem">
-                                        <i class="bi bi-gear-wide-connected me-2" aria-hidden="true"></i>Prijem Uživo
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/izvestaj-prijem-istorija">
-                                        <i class="bi bi-gear-wide-connected me-2" aria-hidden="true"></i>Prijem Statistika
+                                        <i class="bi bi-calculator me-2" aria-hidden="true"></i>Prijem Robe
                                     </a></li>
                                     <li><a class="dropdown-item" href="/povratna-ambalaza">
                                         <i class="bi bi-arrow-repeat me-2" aria-hidden="true"></i>Povratna Ambalaža
@@ -263,13 +263,6 @@
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="/paletni-list-pregled">
                                         <i class="bi bi-layers me-2" aria-hidden="true"></i>Paletni List Pregled
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/otvoreni-radni-nalozi">
-                                        <i class="bi bi-clipboard-pulse me-2" aria-hidden="true"></i>Pregled Otvorenih RN
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/ucitaj-radne-naloge">
-                                        <i class="bi bi-truck me-2" aria-hidden="true"></i>Pregled Isporučenih RN
                                     </a></li>
                                 </ul>
                             </li>
@@ -304,7 +297,7 @@
             </nav>
         </div>
     </div>
-    
+
     <div class="row">
         <div class="col-12">
             @Body
@@ -316,11 +309,14 @@
 <div class="@NavMenuCssClass navbar-toggler-target" @onclick="ToggleNavMenu">
     <nav class="flex-column">
         <!-- Home -->
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house" aria-hidden="true"></span> Početna
-            </NavLink>
-        </div>
+        @if (ImaPuniPristup())
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="bi bi-house" aria-hidden="true"></span> Početna
+                </NavLink>
+            </div>
+        }
 
         <!-- Prerada Section -->
         <div class="nav-item px-3">
@@ -329,6 +325,16 @@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="preradahome">
                 <span class="bi bi-house-door" aria-hidden="true"></span> Prerada početna
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="pregled-radnih-naloga">
+                <span class="bi bi-clipboard-data" aria-hidden="true"></span> Pregled Radnih Naloga
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="izvestaj-proizvodnje">
+                <span class="bi bi-clipboard-data" aria-hidden="true"></span> Izveštaj Proizvodnje
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
@@ -342,61 +348,128 @@
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="ucitaj-radne-naloge">
-                <span class="bi bi-truck" aria-hidden="true"></span> Pregled Isporučenih RN
-            </NavLink>
-        </div>
-        <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="otvoreni-radni-nalozi">
-                <span class="bi bi-clipboard-pulse" aria-hidden="true"></span> Pregled Otvorenih RN
-            </NavLink>
-        </div>
-        <div class="nav-item px-3 ms-3">
             <NavLink class="nav-link" href="smenski-izvestaji">
                 <span class="bi bi-calendar3" aria-hidden="true"></span> Utrošak Radne Snage SI
             </NavLink>
         </div>
-        @* <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="poslovodja">
-                <span class="bi bi-person-badge" aria-hidden="true"></span> Poslovođa
-            </NavLink>
-        </div> *@
 
-        <!-- Finansije Section -->
+        <!-- Kvalitet Section -->
         <div class="nav-item px-3">
-            <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">FINANSIJE</div>
+            <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">KVALITET</div>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="finansijehome">
-                <span class="bi bi-house-door" aria-hidden="true"></span> Finansije početna
-            </NavLink>
-        </div>
-        <!-- ✅ NOVI LINKOVI U SIDEBAR -->
-        <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="finansijski-pregled">
-                <span class="bi bi-speedometer2" aria-hidden="true"></span> Obračun Poslovanja
+            <NavLink class="nav-link" href="kvalitethome">
+                <span class="bi bi-house-door" aria-hidden="true"></span> Kvalitet početna
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="nabavka">
-                <span class="bi bi-truck" aria-hidden="true"></span> Pregled Nabavke
+            <NavLink class="nav-link" href="pregled-radnih-naloga">
+                <span class="bi bi-clipboard-data" aria-hidden="true"></span> Pregled Radnih Naloga
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="prodaja">
-                <span class="bi bi-cart-check" aria-hidden="true"></span> Pregled Prodaje
+            <NavLink class="nav-link" href="sledljivost">
+                <span class="bi bi-diagram-3" aria-hidden="true"></span> Sledljivost
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="finansije">
-                <span class="bi bi-calculator" aria-hidden="true"></span> Pregled Stanja
+            <NavLink class="nav-link" href="kontrola-radni-nalog">
+                <span class="bi bi-clipboard2-check" aria-hidden="true"></span> Kontrole RN
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="ulazizlaz">
-                <span class="bi bi-arrow-left-right" aria-hidden="true"></span> Ulaz-Izlaz
+            <NavLink class="nav-link" href="reklamacije">
+                <span class="bi bi-exclamation-triangle" aria-hidden="true"></span> Reklamacije
             </NavLink>
         </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="paletni-list-pregled">
+                <span class="bi bi-layers" aria-hidden="true"></span> Paletni List Pregled
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="efikasnost-poslovodja">
+                <span class="bi bi-person-check" aria-hidden="true"></span> Efikasnost Poslovođa
+            </NavLink>
+        </div>
+
+        <!-- Finansije Section (samo Full Access) -->
+        @if (ImaPuniPristup())
+        {
+            <div class="nav-item px-3">
+                <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">FINANSIJE</div>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="finansijehome">
+                    <span class="bi bi-house-door" aria-hidden="true"></span> Finansije početna
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="finansijski-pregled">
+                    <span class="bi bi-speedometer2" aria-hidden="true"></span> Obračun Poslovanja
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="nabavka">
+                    <span class="bi bi-truck" aria-hidden="true"></span> Pregled Nabavke
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="prodaja">
+                    <span class="bi bi-cart-check" aria-hidden="true"></span> Pregled Prodaje
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="finansije">
+                    <span class="bi bi-calculator" aria-hidden="true"></span> Pregled Stanja
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="pregled-salda">
+                    <span class="bi bi-balance-scale" aria-hidden="true"></span> Pregled Salda
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="finansijsko-stanje">
+                    <span class="bi bi-graph-up-arrow" aria-hidden="true"></span> Finansijsko Stanje
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="artikli-statistika">
+                    <span class="bi bi-bar-chart-line" aria-hidden="true"></span> Artikli Statistika
+                </NavLink>
+            </div>
+
+            <!-- Poslovanje Section (samo Full Access) -->
+            <div class="nav-item px-3">
+                <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">POSLOVANJE</div>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="poslovanje">
+                    <span class="bi bi-house-door" aria-hidden="true"></span> Poslovanje početna
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="promene">
+                    <span class="bi bi-arrow-left-right" aria-hidden="true"></span> Promene
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="fakture">
+                    <span class="bi bi-receipt" aria-hidden="true"></span> Fakture
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="ugovori">
+                    <span class="bi bi-file-earmark-text" aria-hidden="true"></span> Ugovori
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="kartica-komitenta">
+                    <span class="bi bi-person-lines-fill" aria-hidden="true"></span> Kartice Komitenata
+                </NavLink>
+            </div>
+        }
 
         <!-- Lager Section -->
         <div class="nav-item px-3">
@@ -409,22 +482,12 @@
         </div>
         <div class="nav-item px-3 ms-3">
             <NavLink class="nav-link" href="lager">
-                <span class="bi bi-archive" aria-hidden="true"></span> Magacin lager
+                <span class="bi bi-archive" aria-hidden="true"></span> Magacin Lager
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="lager-proizvodnje">
-                <span class="bi bi-gear-wide-connected" aria-hidden="true"></span> Lager proizvodnje
-            </NavLink>
-        </div>
-        <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="ambalaza">
-                <span class="bi bi-gear-wide-connected" aria-hidden="true"></span> Lager Ambalaže
-            </NavLink>
-        </div>
-        <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="roba">
-                <span class="bi bi-gear-wide-connected" aria-hidden="true"></span> Lager Sirovina
+            <NavLink class="nav-link" href="stanje-kese-altiva">
+                <span class="bi bi-bag-check" aria-hidden="true"></span> Stanje Kesa - Altiva
             </NavLink>
         </div>
 
@@ -438,50 +501,77 @@
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="troskovi-proizvodnje">
+                <span class="bi bi-gear-wide-connected" aria-hidden="true"></span> Troškovi proizvodnje
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="troskovi-radne-snage">
+                <span class="bi bi-people-fill" aria-hidden="true"></span> Troškovi radne snage
+            </NavLink>
+        </div>
+        <div class="nav-item px-3 ms-3">
             <NavLink class="nav-link" href="cena-kostanja">
                 <span class="bi bi-coin" aria-hidden="true"></span> Cena Koštanja
             </NavLink>
         </div>
-        <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link disabled" href="#">
-                <span class="bi bi-people-fill text-muted" aria-hidden="true"></span> <small class="text-muted">Troškovi rada</small>
+        @if (ImaPuniPristup())
+        {
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="troskovi-ambalaze">
+                    <span class="bi bi-box-seam" aria-hidden="true"></span> Troškovi ambalaze
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="troskovi-poslovanja">
+                    <span class="bi bi-briefcase" aria-hidden="true"></span> Troškovi poslovanja
+                </NavLink>
+            </div>
+        }
+
+        <!-- Promet Roba Section -->
+        <div class="nav-item px-3">
+            <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">PROMET ROBA</div>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="promethome">
+                <span class="bi bi-house-door" aria-hidden="true"></span> Promet početna
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link disabled" href="#">
-                <span class="bi bi-box-seam text-muted" aria-hidden="true"></span> <small class="text-muted">Troškovi materijala</small>
+            <NavLink class="nav-link" href="prezentacija">
+                <span class="bi bi-bar-chart-line" aria-hidden="true"></span> Prezentacija
+            </NavLink>
+        </div>
+        @if (ImaPuniPristup())
+        {
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="nabavka-roba">
+                    <span class="bi bi-truck" aria-hidden="true"></span> Nabavka Roba
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ms-3">
+                <NavLink class="nav-link" href="prodaja-roba">
+                    <span class="bi bi-cart-check" aria-hidden="true"></span> Prodaja Roba
+                </NavLink>
+            </div>
+        }
+        <div class="nav-item px-3 ms-3">
+            <NavLink class="nav-link" href="izvestaj-prijem">
+                <span class="bi bi-calculator" aria-hidden="true"></span> Prijem Robe
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link disabled" href="#">
-                <span class="bi bi-lightning-charge text-muted" aria-hidden="true"></span> <small class="text-muted">Režijski troškovi</small>
+            <NavLink class="nav-link" href="povratna-ambalaza">
+                <span class="bi bi-arrow-repeat" aria-hidden="true"></span> Povratna Ambalaža
             </NavLink>
         </div>
         <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link disabled" href="#">
-                <span class="bi bi-truck text-muted" aria-hidden="true"></span> <small class="text-muted">Troškovi transporta</small>
+            <NavLink class="nav-link" href="paletni-list-pregled">
+                <span class="bi bi-layers" aria-hidden="true"></span> Paletni List Pregled
             </NavLink>
         </div>
 
-        <!-- Tools Section -->
-        <div class="nav-item px-3">
-            <div class="nav-section-header text-muted small fw-bold mt-3 mb-2">ALATI</div>
-        </div>
-        <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="test-mapping">
-                <span class="bi bi-code-slash" aria-hidden="true"></span> TypeMapping Test
-            </NavLink>
-        </div>
-        <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="charts-test">
-                <span class="bi bi-bar-chart" aria-hidden="true"></span> Charts Test
-            </NavLink>
-        </div>
-        <div class="nav-item px-3 ms-3">
-            <NavLink class="nav-link" href="prerada">
-                <span class="bi bi-wrench text-muted" aria-hidden="true"></span> <small class="text-muted">Prerada (Legacy)</small>
-            </NavLink>
-        </div>
     </nav>
 </div>
 
@@ -538,7 +628,7 @@
         left: 0;
     }
 
-    media (max-width: 768px) {
+    @@media (max-width: 768px) {
         .dropdown-menu {
             position: static;
             float: none;
@@ -563,13 +653,6 @@
         try
         {
             currentUser = await AuthService.GetCurrentUser();
-
-            // Debug logging
-            if (currentUser != null)
-            {
-                Console.WriteLine($"NavMenu - Korisnik: {currentUser.Ime}, GrupaID: {currentUser.GrupaKorisnikaID}, Grupa: {currentUser.GrupaNaziv}");
-                Console.WriteLine($"NavMenu - Puni pristup: {currentUser.ImaPuniPristup()}, Ograničeni: {currentUser.ImaOgraniceniPristup()}");
-            }
         }
         catch (Exception ex)
         {

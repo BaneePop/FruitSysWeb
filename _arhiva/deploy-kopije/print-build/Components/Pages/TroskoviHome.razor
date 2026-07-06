@@ -1,0 +1,414 @@
+@page "/troskovihome"
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Models
+@using FruitSysWeb.Constants
+
+@inject NavigationManager NavigationManager
+@inject IFinansijeService FinansijeService
+@inject IPreradaService PreradaService
+@inject ITypeMappingService TypeMapping
+@inject IJSRuntime JSRuntime
+@inject ILogger<TroskoviHome> Logger
+@inject IAuthService AuthService
+
+<style>
+    .troskovi-header {
+        background: linear-gradient(135deg, #1a2332, #232d3f);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid #374151;
+    }
+
+    .section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .section-card {
+        background: #1a2332;
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+        border-left: 4px solid #3e6b1f;
+        cursor: pointer;
+        border: 1px solid #374151;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .section-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 20px rgba(62, 107, 31, 0.4);
+        border-left-color: #28a745;
+    }
+
+    .chart-row {
+        margin-bottom: 2rem;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="troskovi-header p-4">
+        <h1 class="text-white mb-0">
+            <i class="bi bi-cash-stack me-3"></i>Troškovi Početna
+        </h1>
+        <p class="text-white-50 mb-0 mt-2">Pregled troškova i rashoda — proizvodnja, radna snaga, ambalaža, poslovanje i cena koštanja po nalogu</p>
+    </div>
+
+    <!-- Navigation Cards -->
+    <div class="section-grid" style="grid-template-columns: repeat(5, 1fr);">
+        <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-proizvodnje")'>
+            <i class="bi bi-gear-wide-connected fs-1 text-success"></i>
+            <div class="text-start">
+                <h5 class="text-white mb-0">Troškovi</h5>
+                <h6 class="text-white mb-0">Proizvodnje</h6>
+            </div>
+        </div>
+
+        <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-radne-snage")'>
+            <i class="bi bi-people-fill fs-1 text-success"></i>
+            <div class="text-start">
+                <h5 class="text-white mb-0">Troškovi</h5>
+                <h6 class="text-white mb-0">Radne Snage</h6>
+            </div>
+        </div>
+
+        <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/cena-kostanja")'>
+            <i class="bi bi-coin fs-1 text-success"></i>
+            <div class="text-start">
+                <h5 class="text-white mb-0">Cena</h5>
+                <h6 class="text-white mb-0">Koštanja</h6>
+            </div>
+        </div>
+
+        @if (currentUser?.ImaPuniPristup() ?? false)
+        {
+            <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-ambalaze")'>
+                <i class="bi bi-box-seam fs-1 text-success"></i>
+                <div class="text-start">
+                    <h5 class="text-white mb-0">Troškovi</h5>
+                    <h6 class="text-white mb-0">Ambalaze</h6>
+                </div>
+            </div>
+
+            <div class="section-card" @onclick='() => NavigationManager.NavigateTo("/troskovi-poslovanja")'>
+                <i class="bi bi-briefcase fs-1 text-success"></i>
+                <div class="text-start">
+                    <h5 class="text-white mb-0">Troškovi</h5>
+                    <h6 class="text-white mb-0">Poslovanja</h6>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Trošak po kg Gotovog Proizvoda - Line Charts -->
+    <div class="row mb-4">
+        <!-- Trošak Direktan po kg -->
+        <div class="col-md-6">
+            <ApexMultiSeriesLineChart
+                Title="Trošak Direktan po kg - Zadnjih 20 Smena"
+                Icon="bi bi-cash-coin"
+                SeriesData="@trosakDirektniPoKgData"
+                Unit="RSD/kg"
+                IsLoading="@isLoadingTrosakDirektni"
+                HasError="@hasErrorTrosakDirektni"
+                ShowSummary="false"
+                OnRefresh="@RefreshTrosakDirektni" />
+        </div>
+
+        <!-- Trošak Ukupan po kg -->
+        <div class="col-md-6">
+            <ApexMultiSeriesLineChart
+                Title="Trošak Ukupan po kg - Zadnjih 20 Smena"
+                Icon="bi bi-cash-stack"
+                SeriesData="@trosakUkupniPoKgData"
+                Unit="RSD/kg"
+                IsLoading="@isLoadingTrosakUkupni"
+                HasError="@hasErrorTrosakUkupni"
+                ShowSummary="false"
+                OnRefresh="@RefreshTrosakUkupni" />
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Učitavanje...</span>
+            </div>
+            <p class="mt-2 text-muted">Učitavam podatke...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Troškovi po Smeni - Tabela -->
+        <div class="chart-row">
+            <div class="card" style="background: #1a2332; border: 1px solid #374151;">
+                <div class="card-header" style="background: #232d3f; border-bottom: 1px solid #374151;">
+                    <h5 class="mb-0 text-white">
+                        <i class="bi bi-calendar-check me-2"></i>Troškovi po Smeni (Zadnjih 14 Smena)
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (SmeneRawData != null && SmeneRawData.Any())
+                    {
+                        // Priprema podataka direktno iz sirovih podataka
+                        var smeneZaPrikaz = SmeneRawData
+                            .Select(s =>
+                            {
+                                var brojSmene = s.BrojIzvestaja.Contains("/1") ? "Prva" : s.BrojIzvestaja.Contains("/2") ? "Druga" : "N/A";
+
+                                return new
+                                {
+                                    Datum = s.Datum ?? DateTime.MinValue,
+                                    Smena = brojSmene,
+                                    Poslovodja = s.RadnikImePrezime ?? "N/A",
+                                    BrojRadnika = s.BrojRadnika,
+                                    Iznos = s.TrosakPoRadnomNalogu
+                                };
+                            })
+                            .OrderByDescending(x => x.Datum)
+                            .ToList();
+
+                        // Sortiranje za bojenje - top 3 najskuplje i top 3 najjeftinije
+                        var sortiranoPoIznosu = smeneZaPrikaz.OrderByDescending(x => x.Iznos).ToList();
+                        var top3Najskuplje = sortiranoPoIznosu.Take(3).ToList();
+                        var top3Najjeftinije = sortiranoPoIznosu.TakeLast(3).ToList();
+
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" style="color: #e5e7eb;">
+                                <thead style="background: #232d3f;">
+                                    <tr>
+                                        <th class="text-white">Datum</th>
+                                        <th class="text-white">Poslovođa</th>
+                                        <th class="text-white text-center">Smena</th>
+                                        <th class="text-end text-white">Broj Radnika</th>
+                                        <th class="text-end text-white">Iznos (RSD)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in smeneZaPrikaz)
+                                    {
+                                        // Određivanje boje za iznos
+                                        var colorStyle = "";
+                                        var index = top3Najskuplje.IndexOf(item);
+                                        if (index >= 0)
+                                        {
+                                            // Top 3 najskuplje - crvene nijanse (od najtamnije do svetlije)
+                                            var opacity = index == 0 ? "1.0" : index == 1 ? "0.7" : "0.4";
+                                            colorStyle = $"color: rgba(220, 53, 69, {opacity}); font-weight: bold;";
+                                        }
+                                        else
+                                        {
+                                            index = top3Najjeftinije.IndexOf(item);
+                                            if (index >= 0)
+                                            {
+                                                // Top 3 najjeftinije - zelene nijanse (od najtamnije do svetlije)
+                                                var opacity = index == 0 ? "0.4" : index == 1 ? "0.7" : "1.0";
+                                                colorStyle = $"color: rgba(25, 135, 84, {opacity}); font-weight: bold;";
+                                            }
+                                        }
+
+                                        <tr style="border-bottom: 1px solid #374151;">
+                                            <td>@item.Datum.ToString("dd.MM.yyyy")</td>
+                                            <td>@item.Poslovodja</td>
+                                            <td class="text-center">
+                                                <span class="badge @(item.Smena == "Prva" ? "bg-primary" : "bg-info")">
+                                                    @item.Smena
+                                                </span>
+                                            </td>
+                                            <td class="text-end">@item.BrojRadnika</td>
+                                            <td class="text-end fw-bold" style="@colorStyle">@TypeMapping.FormatDecimal(item.Iznos)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot style="background: #232d3f; border-top: 2px solid #374151;">
+                                    <tr>
+                                        <th colspan="4" class="text-white">UKUPNO:</th>
+                                        <th class="text-end text-success">@TypeMapping.FormatDecimal(smeneZaPrikaz.Sum(x => x.Iznos))</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-info-circle fs-3 mb-2"></i>
+                            <p>Nema podataka za prikaz</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private KorisnikModel? currentUser;
+
+    // Loading States
+    private bool IsLoading = true;
+    private bool IsLoadingSmene = false;
+
+    // Error States
+#pragma warning disable CS0414
+    private bool HasErrorSmene = false;
+#pragma warning restore CS0414
+
+    // Trošak po kg Data
+    private List<ChartSeriesData> trosakDirektniPoKgData = new();
+    private List<ChartSeriesData> trosakUkupniPoKgData = new();
+    private bool isLoadingTrosakDirektni = false;
+    private bool isLoadingTrosakUkupni = false;
+    private bool hasErrorTrosakDirektni = false;
+    private bool hasErrorTrosakUkupni = false;
+
+    // Raw Data za tabele
+    private List<SmenskiIzvestajModel>? SmeneRawData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await AuthService.GetCurrentUser();
+        await RefreshAllCharts();
+    }
+
+    private async Task RefreshAllCharts()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        await Task.WhenAll(
+            RefreshTrosakDirektni(),
+            RefreshTrosakUkupni(),
+            RefreshSmene()
+        );
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    // Trošak Direktan po kg - Zadnjih 20 Smena
+    private async Task RefreshTrosakDirektni()
+    {
+        if (isLoadingTrosakDirektni) return;
+
+        isLoadingTrosakDirektni = true;
+        hasErrorTrosakDirektni = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(100);
+            var podaciPoSmeni = await PreradaService.UcitajTrosakPoKgDirektni(20);
+            trosakDirektniPoKgData = ChartDataHelper.ConvertToChartSeriesData(podaciPoSmeni);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading trošak direktan po kg");
+            hasErrorTrosakDirektni = true;
+            trosakDirektniPoKgData = new List<ChartSeriesData>();
+        }
+        finally
+        {
+            isLoadingTrosakDirektni = false;
+            StateHasChanged();
+        }
+    }
+
+    // Trošak Ukupan po kg - Zadnjih 20 Smena
+    private async Task RefreshTrosakUkupni()
+    {
+        if (isLoadingTrosakUkupni) return;
+
+        isLoadingTrosakUkupni = true;
+        hasErrorTrosakUkupni = false;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(120);
+            var podaciPoSmeni = await PreradaService.UcitajTrosakPoKgUkupni(20);
+            trosakUkupniPoKgData = ChartDataHelper.ConvertToChartSeriesData(podaciPoSmeni);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading trošak ukupan po kg");
+            hasErrorTrosakUkupni = true;
+            trosakUkupniPoKgData = new List<ChartSeriesData>();
+        }
+        finally
+        {
+            isLoadingTrosakUkupni = false;
+            StateHasChanged();
+        }
+    }
+
+    // Troškovi po Smeni (14 smena)
+    private async Task RefreshSmene()
+    {
+        if (IsLoadingSmene) return;
+
+        IsLoadingSmene = true;
+        HasErrorSmene = false;
+        StateHasChanged();
+
+        try
+        {
+            var filter = new FilterRequest
+            {
+                OdDatum = DateTime.Now.AddDays(-30), // Uzmi dovoljno dana da imamo 14 smena
+                DoDatum = DateTime.Now
+            };
+
+            var smene = await PreradaService.UcitajSmenskeIzvestaje(filter);
+
+            // Sačuvaj sirove podatke za tabelu - AGREGIRANO PO SMENI
+            SmeneRawData = smene
+                .Where(s => !string.IsNullOrEmpty(s.BrojIzvestaja))
+                .GroupBy(s => s.BrojIzvestaja)  // Grupiši po smeni
+                .Select(g => {
+                    var ukupniSati = g.Sum(x => x.BrojRadnihSati);  // Saberi SVE sate za smenu
+                    var brojRadnika = (int)Math.Round(ukupniSati / 8m, 0, MidpointRounding.AwayFromZero);  // Podeli sa 8
+
+                    return new SmenskiIzvestajModel
+                    {
+                        BrojIzvestaja = g.Key,
+                        Datum = g.First().Datum,
+                        RadnikImePrezime = g.First().RadnikImePrezime,
+                        BrojRadnihSati = ukupniSati,  // Postavi ukupne sate
+                        BrojRadnika = brojRadnika,     // Postavi izračunati broj radnika
+                        TrosakPoRadnomNalogu = g.Sum(x => x.TrosakPoRadnomNalogu)  // Saberi troškove
+                    };
+                })
+                .OrderByDescending(s => s.BrojIzvestaja)
+                .Take(14)
+                .ToList();
+
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading troskovi po smeni");
+            HasErrorSmene = true;
+        }
+        finally
+        {
+            IsLoadingSmene = false;
+            StateHasChanged();
+        }
+    }
+}

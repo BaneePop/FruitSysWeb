@@ -666,7 +666,37 @@ public class BrziPregledService : IBrziPregledService
         }
     }
 
-    private static readonly int[] PraceneKlasifikacije = { 6, 10, 11, 15, 28, 34, 39 };
+    private static readonly int[] PraceneKlasifikacije = PrenosZalihaHelper.PraceneKlasifikacijeSaBorovnicom;
+
+    /// <summary>
+    /// Prenos zaliha na dan pre pocetka sezone (rekonstrukcija iz trenutnog stanja i prometa).
+    /// </summary>
+    public async Task<Dictionary<int, decimal>> IzracunajPrenosZalihaAsync(
+        DateTime pocetakSezone,
+        bool usluga = false,
+        bool samoSirovine = false,
+        bool ukljuciBorovnicu = true)
+    {
+        var klasifikacije = ukljuciBorovnicu
+            ? PrenosZalihaHelper.PraceneKlasifikacijeSaBorovnicom
+            : PrenosZalihaHelper.PraceneKlasifikacije;
+
+        PrenosZalihaHelper.SqlStanjePoVrsti(
+            klasifikacije, samoSirovine, samoUsluga: null, out var sqlLager);
+        PrenosZalihaHelper.SqlPrometPoVrsti(
+            klasifikacije, samoSirovine, samoUsluga: null, out var sqlPromet);
+
+        var paramPromet = new
+        {
+            OdSezona = pocetakSezone.ToString("yyyy-MM-dd"),
+            Danas = DateTime.Today.ToString("yyyy-MM-dd")
+        };
+
+        var lagerRows = await _db.QueryAsync<dynamic>(sqlLager);
+        var prometRows = await _db.QueryAsync<dynamic>(sqlPromet, paramPromet);
+
+        return PrenosZalihaHelper.RekonstruisiPoVrsti(lagerRows, prometRows, klasifikacije);
+    }
 
     /// <summary>
     /// Ucitava promet iz baze od datumOd do datumDo i vraca neto (Ulaz-Izlaz) po KlasifikacijaID i po danu.
@@ -674,18 +704,20 @@ public class BrziPregledService : IBrziPregledService
     /// </summary>
     private async Task<Dictionary<int, Dictionary<DateTime, decimal>>> UcitajPrometPoKlasifikacijiAsync(DateTime datumOd, DateTime datumDo)
     {
-        var sql = @"
+        var sql = $@"
             SELECT
                 DATE(fm.Datum) as Datum,
                 fm.ArtikalPrvaKlasifikacijaID as KlasifikacijaID,
                 SUM(CASE WHEN LEFT(fm.Dokument, 2) = 'PR' THEN COALESCE(fm.Ulaz, 0) ELSE 0 END) as Ulaz,
                 SUM(CASE WHEN LEFT(fm.Dokument, 2) = 'OT' THEN COALESCE(fm.Izlaz, 0) ELSE 0 END) as Izlaz
             FROM vPrometRobav6 fm
+            INNER JOIN Artikal a ON a.ID = fm.ArtikalID
             WHERE fm.DokumentStatus = 3
-              AND fm.ArtikalPrvaKlasifikacijaID IN (6, 10, 11, 15, 28, 34, 39)
+              AND fm.ArtikalPrvaKlasifikacijaID IN ({PrenosZalihaHelper.KlasifikacijeInClause(PraceneKlasifikacije)})
               AND fm.Datum >= @DatumOd
               AND fm.Datum <= @DatumDo
               AND (fm.Ulaz > 0 OR fm.Izlaz > 0)
+              {PrenosZalihaHelper.FilterIskljuciUslugu}
             GROUP BY DATE(fm.Datum), fm.ArtikalPrvaKlasifikacijaID
             ORDER BY Datum ASC";
 
@@ -717,14 +749,15 @@ public class BrziPregledService : IBrziPregledService
     private async Task<Dictionary<int, decimal>> IzracunajPocetnoStanjeSezonAsync(DateTime pocetakSezone)
     {
         // 1. Trenutno stanje iz MagacinLager JOIN Artikal, grupisano po PrvaKlasifikacijaID
-        var sqlLager = @"
+        var sqlLager = $@"
             SELECT
                 a.PrvaKlasifikacijaID as KlasifikacijaID,
                 SUM(ml.Kolicina) as Kolicina
             FROM MagacinLager ml
             JOIN ArtikalInstanca ai ON ml.ArtikalInstancaID = ai.ID
             JOIN Artikal a ON ai.ArtikalID = a.ID
-            WHERE a.PrvaKlasifikacijaID IN (6, 10, 11, 15, 28, 34, 39)
+            WHERE a.PrvaKlasifikacijaID IN ({PrenosZalihaHelper.KlasifikacijeInClause(PraceneKlasifikacije)})
+              {PrenosZalihaHelper.FilterIskljuciUslugu}
             GROUP BY a.PrvaKlasifikacijaID";
 
         var lagerRezultat = await _db.QueryAsync<dynamic>(sqlLager);

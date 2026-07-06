@@ -37,29 +37,12 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                         COALESCE(rn.Sifra, 'N/A') as RadniNalog,
                         si.Datum,
                         si.DokumentStatus,
-                        COALESCE(
-                            (SELECT TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM a2.Naziv))
-                             FROM vPreradaPregled vpp2
-                             LEFT JOIN Artikal a2 ON vpp2.ArtikalID = a2.ID
-                             WHERE vpp2.RadniNalogID = rn.ID
-                               AND a2.MagacinID = 6
-                             LIMIT 1),
-                            'Gotov proizvod'
-                        ) as VrstaArtikla,
+                        COALESCE(vrsta.VrstaArtikla, 'Gotov proizvod') as VrstaArtikla,
                         COALESCE(k.Naziv, 'Nepoznato') as Komitent,
                         SUM(er.BrojRadnika) as BrojRadnika,
                         SUM(er.BrojRadnihSati) as BrojRadnihSati,
                         SUM(er.CenaKostanjaDirektanRad) as TrosakPoRadnomNalogu,
-                        COALESCE(
-                            (SELECT MAX(verm2.Mnozilac) * 100
-                             FROM vEvidencijaRadaPreradaMnozilac verm2
-                             WHERE verm2.EvidencijaRadaID IN (
-                                 SELECT er2.ID FROM EvidencijaRada er2
-                                 WHERE er2.SmenskiIzvestajID = si.ID AND er2.RadniNalogID = rn.ID
-                             )
-                             LIMIT 1),
-                            0
-                        ) as ProcenatIskoriscenja,
+                        COALESCE(mnozilac.MaxMnozilac * 100, 0) as ProcenatIskoriscenja,
                         er.RadniNalogID,
                         er.SmenskiIzvestajID,
                         MIN(er.RadniProcesID) as RadniProcesID,
@@ -77,6 +60,19 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
                     INNER JOIN SmenskiIzvestaj si ON er.SmenskiIzvestajID = si.ID
                     LEFT JOIN RadniNalog rn ON er.RadniNalogID = rn.ID
                     LEFT JOIN Komitent k ON rn.KomitentID = k.ID
+                    LEFT JOIN (
+                        SELECT vpp2.RadniNalogID,
+                               TRIM(TRAILING '+' FROM TRIM(TRAILING '-' FROM MIN(a2.Naziv))) as VrstaArtikla
+                        FROM vPreradaPregled vpp2
+                        INNER JOIN Artikal a2 ON vpp2.ArtikalID = a2.ID AND a2.MagacinID = 6
+                        GROUP BY vpp2.RadniNalogID
+                    ) vrsta ON vrsta.RadniNalogID = rn.ID
+                    LEFT JOIN (
+                        SELECT er2.SmenskiIzvestajID, er2.RadniNalogID, MAX(verm2.Mnozilac) as MaxMnozilac
+                        FROM EvidencijaRada er2
+                        INNER JOIN vEvidencijaRadaPreradaMnozilac verm2 ON verm2.EvidencijaRadaID = er2.ID
+                        GROUP BY er2.SmenskiIzvestajID, er2.RadniNalogID
+                    ) mnozilac ON mnozilac.SmenskiIzvestajID = si.ID AND mnozilac.RadniNalogID = rn.ID
                     WHERE er.Obrisan = 0
                       AND er.DirektanRadObracunat = 1
                       AND rn.Aktivno = 1
@@ -94,8 +90,8 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 if (filter.DoDatum.HasValue)
                 {
-                    sql += " AND si.Datum <= @DoDatum";
-                    parameters.Add("@DoDatum", filter.DoDatum.Value);
+                    sql += " AND si.Datum < @DoDatum";
+                    parameters.Add("@DoDatum", filter.DoDatum.Value.Date.AddDays(1));
                 }
 
                 if (!string.IsNullOrEmpty(filter.RadniNalog))
@@ -125,7 +121,7 @@ namespace FruitSysWeb.Services.Implementations.IzvestajService
 
                 Console.WriteLine($"🔍 Izvršavam SQL (agregacija po smenskom izveštaju)...");
 
-                var rezultat = await _databaseService.QueryAsync<RadniNalogIzvestajModel>(sql, parameters);
+                var rezultat = await _databaseService.QueryAsync<RadniNalogIzvestajModel>(sql, parameters, commandTimeout: 300);
 
                 Console.WriteLine($"✅ SQL završen, dobijeno {rezultat?.Count() ?? 0} AGREGIRANIH redova");
                 return rezultat?.ToList() ?? new List<RadniNalogIzvestajModel>();

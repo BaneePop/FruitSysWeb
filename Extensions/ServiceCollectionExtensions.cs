@@ -7,7 +7,8 @@ using FruitSysWeb.Services.Implementations;
 using FruitSysWeb.Services.Implementations.IzvestajService;
 using FruitSysWeb.Services.Implementations.ExportService;
 using FruitSysWeb.Services.Core;
-using Microsoft.AspNetCore.Components;
+using FruitSysWeb.Services.Solar;
+using FruitSysWeb.Services.Print;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Blazor_ApexCharts;
 
@@ -15,7 +16,7 @@ namespace FruitSysWeb.Extensions
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddFruitSysServices(this IServiceCollection services)
+        public static IServiceCollection AddFruitSysServices(this IServiceCollection services, IConfiguration configuration)
         {
             // ========================================
             // DATABASE & CORE SERVICES
@@ -43,6 +44,7 @@ namespace FruitSysWeb.Extensions
             // BUSINESS LOGIC SERVICES
             // ========================================
             services.AddScoped<IProizvodnjaService, ProizvodnjaService>();
+            services.AddScoped<IIzvestajProizvodnjeService, IzvestajProizvodnjeService>();
             services.AddScoped<IFinansijeService, FinansijeService>();
             services.AddScoped<IMagacinLagerService, MagacinLagerService>();
             services.AddScoped<IPreradaService, PreradaService>();
@@ -94,6 +96,36 @@ namespace FruitSysWeb.Extensions
             services.AddScoped<ISledljivostService, SledljivostService>();
             services.AddScoped<SledljivostExcelService>();
             services.AddScoped<SledljivostHtmlService>();
+            services.AddScoped<IPregledIskoriscenjaService, PregledIskoriscenjaService>();
+            services.AddScoped<IEfikasnostService, EfikasnostService>();
+            services.AddScoped<IArtikliStatistikaService, ArtikliStatistikaService>();
+            services.AddScoped<ArtikliStatistikaExcelService>();
+            services.AddScoped<ArtikliStatistikaPdfService>();
+            services.AddScoped<OtkupniListPdfService>();
+            services.AddScoped<PaletniListPdfService>();
+
+            // ========================================
+            // KALKULACIJA
+            // ========================================
+            services.AddSingleton<KalkulacijaKonfiguracijaService>();
+            services.AddScoped<IKalkulacijaService, KalkulacijaService>();
+
+            // ========================================
+            // SOLAR (FusionSolar — izolovani modul)
+            // ========================================
+            services.Configure<FusionSolarOptions>(configuration.GetSection(FusionSolarOptions.SectionName));
+            services.AddSingleton<FusionSolarClient>();
+            services.AddSingleton<SolarLocalDbService>();
+            services.AddSingleton<SolarIntradaySyncService>();
+            services.AddHostedService<SolarPollingService>();
+
+            // ========================================
+            // PRINT API (desktop štampa dokumenata)
+            // ========================================
+            services.Configure<PrintApiOptions>(configuration.GetSection(PrintApiOptions.SectionName));
+            services.AddScoped<IPrintTokenService, PrintTokenService>();
+            services.AddScoped<IDokumentPdfStore, DokumentPdfStore>();
+            services.AddScoped<IPrintDocumentService, PrintDocumentService>();
 
             return services;
         }

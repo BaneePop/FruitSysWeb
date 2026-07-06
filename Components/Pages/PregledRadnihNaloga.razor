@@ -1,0 +1,576 @@
+@page "/ucitaj-radne-naloge"
+@page "/otvoreni-radni-nalozi"
+@page "/pregled-radnih-naloga"
+@using FruitSysWeb.Models
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+
+@inject IKontrolaService KontrolaService
+@inject IKomitentService KomitentService
+@inject IPreradaService PreradaService
+@inject NavigationManager NavigationManager
+@inject ILogger<PregledRadnihNaloga> Logger
+
+<PageTitle>Pregled Radnih Naloga</PageTitle>
+
+<div class="container-fluid">
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <h4 class="mb-0">
+                <i class="bi bi-clipboard-data me-2"></i>Pregled Radnih Naloga
+            </h4>
+            <small class="text-muted">Lista radnih naloga sa brzim pristupom sledljivosti, kontrolama i troškovima</small>
+        </div>
+    </div>
+
+    <!-- Tabovi -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <button class="nav-link @(aktivniTab == 1 ? "active fw-bold" : "")" @onclick="() => PrebaciiNaTab(1)">
+                <i class="bi bi-clipboard-pulse me-1"></i>
+                Otvoreni RN
+                @if (otvoreniNalozi.Count > 0)
+                {
+                    <span class="badge bg-warning text-dark ms-1">@otvoreniNalozi.Count</span>
+                }
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(aktivniTab == 2 ? "active fw-bold" : "")" @onclick="() => PrebaciiNaTab(2)">
+                <i class="bi bi-truck me-1"></i>
+                Isporučeni RN
+            </button>
+        </li>
+    </ul>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- TAB 1 — Otvoreni RN -->
+    <!-- ═══════════════════════════════════ -->
+    @if (aktivniTab == 1)
+    {
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Otvoreni radni nalozi
+                    <span class="badge bg-secondary ms-2">@otvoreniNalozi.Count</span>
+                </h5>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="UcitajOtvorene" disabled="@ucitavaOtvorene">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Osveži
+                </button>
+            </div>
+        </div>
+
+        @if (ucitavaOtvorene)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <div class="mt-2 text-muted">Učitavanje podataka...</div>
+            </div>
+        }
+        else if (otvoreniNalozi.Count == 0)
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>Nema otvorenih radnih naloga.
+            </div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width:30px;"></th>
+                                    <th>Radni nalog</th>
+                                    <th>Komitent</th>
+                                    <th>Artikal</th>
+                                    <th>Datum Početka</th>
+                                    <th>Broj dana</th>
+                                    <th class="text-end">Kol. naloga</th>
+                                    <th class="text-end">Kol. u lageru</th>
+                                    <th class="text-end">Fali do završetka</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var nalog in otvoreniNalozi)
+                                {
+                                    var jeOtvoren = otvoreniDetalji.Contains(nalog.ID);
+                                    var procenat = nalog.Kolicina > 0 ? Math.Round((nalog.KolicinaULageru / nalog.Kolicina) * 100, 1) : 0;
+                                    <tr style="cursor:pointer; background-color:@(jeOtvoren ? "#e8f0fe" : ""); border-bottom: 1px solid #dee2e6;" @onclick="() => ToggleOtvoreni(nalog.ID)">
+                                        <td class="text-center">
+                                            <i class="bi @(jeOtvoren ? "bi-chevron-down text-primary" : "bi-chevron-right text-muted")"></i>
+                                        </td>
+                                        <td><span class="badge bg-warning text-dark">@nalog.Sifra</span></td>
+                                        <td>@nalog.Komitent</td>
+                                        <td>@nalog.Artikal</td>
+                                        <td>@nalog.DatumPocetkaFormatted</td>
+                                        <td><span class="badge bg-secondary">@nalog.BrojDana dana</span></td>
+                                        <td class="text-end"><strong>@nalog.KolicinaFormatted</strong></td>
+                                        <td class="text-end"><span class="text-info fw-bold">@nalog.KolicinaULageruFormatted</span></td>
+                                        <td class="text-end">
+                                            @if (nalog.FaliDoZavrsetka > 0)
+                                            {
+                                                <span class="text-danger fw-bold">@nalog.FaliDoZavrsetkaFormatted</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-success fw-bold">Kompletno</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    @if (jeOtvoren)
+                                    {
+                                        <tr style="background-color:#f8f9fa;">
+                                            <td colspan="9" class="px-4 py-3" style="border-bottom: 2px solid #ffc107;">
+                                                <div class="row g-3 align-items-start">
+                                                    <div class="col-md-5">
+                                                        <div class="row g-2">
+                                                            <div class="col-6 col-md-4">
+                                                                <small class="text-muted d-block">LOT</small>
+                                                                @if (!string.IsNullOrEmpty(nalog.LotNaloga))
+                                                                {
+                                                                    <span class="badge bg-info text-dark">@nalog.LotNaloga</span>
+                                                                }
+                                                                else { <span class="text-muted">-</span> }
+                                                            </div>
+                                                            <div class="col-6 col-md-4">
+                                                                <small class="text-muted d-block">Pakovanje</small>
+                                                                <span>@(string.IsNullOrEmpty(nalog.Pakovanje) ? "-" : nalog.Pakovanje)</span>
+                                                            </div>
+                                                            <div class="col-6 col-md-4">
+                                                                <small class="text-muted d-block">Br. pakovanja</small>
+                                                                <strong>@nalog.BrojPakovanja</strong>
+                                                            </div>
+                                                            <div class="col-6 col-md-4">
+                                                                <small class="text-muted d-block">Br. evidencija</small>
+                                                                <span class="badge bg-secondary">@nalog.BrojEvidencija</span>
+                                                            </div>
+                                                            <div class="col-12 col-md-8 mt-1">
+                                                                <small class="text-muted d-block mb-1">Napredak</small>
+                                                                <div class="progress" style="height:18px;">
+                                                                    <div class="progress-bar @(procenat >= 100 ? "bg-success" : procenat >= 60 ? "bg-info" : "bg-warning")"
+                                                                         style="width:@(Math.Min(100, procenat))%">
+                                                                        @procenat%
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-7">
+                                                        <div class="row g-2">
+                                                            <div class="col-6">
+                                                                <button class="btn btn-primary w-100" @onclick:stopPropagation="true"
+                                                                        @onclick="() => OtvoriSledljivostOtvoreni(nalog)">
+                                                                    <i class="bi bi-diagram-3 me-1"></i>Sledljivost RN
+                                                                </button>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <button class="btn btn-warning w-100" @onclick:stopPropagation="true"
+                                                                        @onclick="() => OtvoriKontroleOtvoreni(nalog)">
+                                                                    <i class="bi bi-clipboard2-check me-1"></i>Kontrole RN
+                                                                </button>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <button class="btn btn-success w-100" @onclick:stopPropagation="true"
+                                                                        @onclick="() => OtvoriUtrosakSirovineOtvoreni(nalog)">
+                                                                    <i class="bi bi-box-arrow-in-down me-1"></i>Utrošena Sirovina
+                                                                </button>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <button class="btn btn-info w-100" @onclick:stopPropagation="true"
+                                                                        @onclick="() => OtvoriUtrosakRadneSnageOtvoreni(nalog)">
+                                                                    <i class="bi bi-people me-1"></i>Utrošak Radne Snage
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="6" class="text-end">UKUPNO:</th>
+                                    <th class="text-end"><strong>@otvoreniNalozi.Sum(x => x.Kolicina).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS"))</strong></th>
+                                    <th class="text-end text-info"><strong>@otvoreniNalozi.Sum(x => x.KolicinaULageru).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS"))</strong></th>
+                                    <th class="text-end text-danger"><strong>@otvoreniNalozi.Sum(x => x.FaliDoZavrsetka).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("sr-Latn-RS"))</strong></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- TAB 2 — Isporučeni RN -->
+    <!-- ═══════════════════════════════════ -->
+    @if (aktivniTab == 2)
+    {
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filteri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-2">
+                        <label class="form-label"><i class="bi bi-calendar3 me-1"></i>Od datuma</label>
+                        <input type="date" class="form-control" value="@(odDatum?.ToString("yyyy-MM-dd"))" @onchange="OnOdDatumChanged" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label"><i class="bi bi-calendar3 me-1"></i>Do datuma</label>
+                        <input type="date" class="form-control" value="@(doDatum?.ToString("yyyy-MM-dd"))" @onchange="OnDoDatumChanged" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-person me-1"></i>Komitent</label>
+                        <select class="form-select" @bind="izabraniKomitentId">
+                            <option value="0">Svi komitenti</option>
+                            @foreach (var k in komitentiLista)
+                            {
+                                <option value="@k.Id">@k.Naziv</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-clipboard-data me-1"></i>Radni nalog</label>
+                        <select class="form-select" @bind="izabraniRadniNalog">
+                            <option value="">Svi radni nalozi</option>
+                            @foreach (var rn in radniNaloziLista)
+                            {
+                                <option value="@rn">@rn</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end gap-2">
+                        <button class="btn btn-primary flex-grow-1" @onclick="PretrazIisporucene" disabled="@ucitavaListe">
+                            @if (ucitavaIsporucene)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-search me-1"></i>
+                            }
+                            Pretraži
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="ResetFilterIsporuceni" title="Reset">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (ucitavaIsporucene)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <div class="mt-2 text-muted">Učitavanje podataka...</div>
+            </div>
+        }
+        else if (pretragaObavljena && isporuceniNalozi.Count == 0)
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>Nema isporučenih radnih naloga za zadati filter.
+            </div>
+        }
+        else if (isporuceniNalozi.Count > 0)
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul me-2"></i>Isporučeni radni nalozi
+                        <span class="badge bg-secondary ms-2">@isporuceniNalozi.Count</span>
+                    </h5>
+                    <small class="text-muted">Kliknite na red za detalje i akcije</small>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width:30px;"></th>
+                                    <th>Radni nalog</th>
+                                    <th>Komitent</th>
+                                    <th>Artikal</th>
+                                    <th>Datum Početka</th>
+                                    <th>Datum Isporuke</th>
+                                    <th>Broj dana</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var nalog in isporuceniNalozi)
+                                {
+                                    var jeOtvoren = isporuceniDetalji.Contains(nalog.ID);
+                                    <tr style="cursor:pointer; background-color:@(jeOtvoren ? "#e8f0fe" : ""); border-bottom: 1px solid #dee2e6;" @onclick="() => ToggleIsporuceni(nalog.ID)">
+                                        <td class="text-center">
+                                            <i class="bi @(jeOtvoren ? "bi-chevron-down text-primary" : "bi-chevron-right text-muted")"></i>
+                                        </td>
+                                        <td><span class="badge bg-primary">@nalog.Sifra</span></td>
+                                        <td>@nalog.Komitent</td>
+                                        <td>@nalog.Artikal</td>
+                                        <td>@nalog.DatumPocetkaFormatted</td>
+                                        <td>@nalog.DatumIsporukeFormatted</td>
+                                        <td>
+                                            @if (nalog.BrojDana.HasValue)
+                                            {
+                                                <span class="badge bg-secondary">@nalog.BrojDana dana</span>
+                                            }
+                                            else { <span class="text-muted">-</span> }
+                                        </td>
+                                    </tr>
+                                    @if (jeOtvoren)
+                                    {
+                                        <tr style="background-color:#f8f9fa;">
+                                            <td colspan="7" class="px-4 py-3" style="border-bottom: 2px solid #0d6efd;">
+                                                <div class="row g-3 align-items-start">
+                                                    <div class="col-md-6">
+                                                        <div class="row g-2">
+                                                            <div class="col-6 col-md-4">
+                                                                <small class="text-muted d-block">Količina</small>
+                                                                <strong>@nalog.KolicinaFormatted kg</strong>
+                                                            </div>
+                                                            <div class="col-6 col-md-4">
+                                                                <small class="text-muted d-block">LOT</small>
+                                                                @if (!string.IsNullOrEmpty(nalog.LotNaloga))
+                                                                {
+                                                                    <span class="badge bg-info text-dark">@nalog.LotNaloga</span>
+                                                                }
+                                                                else { <span class="text-muted">-</span> }
+                                                            </div>
+                                                            <div class="col-6 col-md-4">
+                                                                <small class="text-muted d-block">Pakovanje</small>
+                                                                <span>@(string.IsNullOrEmpty(nalog.Pakovanje) ? "-" : nalog.Pakovanje)</span>
+                                                            </div>
+                                                            <div class="col-6 col-md-4">
+                                                                <small class="text-muted d-block">Br. pakovanja</small>
+                                                                <strong>@nalog.BrojPakovanja</strong>
+                                                            </div>
+                                                            <div class="col-6 col-md-4">
+                                                                <small class="text-muted d-block">Br. evidencija</small>
+                                                                <span class="badge bg-secondary">@nalog.BrojEvidencija</span>
+                                                            </div>
+                                                            <div class="col-6 col-md-4">
+                                                                <small class="text-muted d-block">Otpremnica</small>
+                                                                @if (!string.IsNullOrEmpty(nalog.OtpremnicaSifra))
+                                                                {
+                                                                    <code class="text-info">@nalog.OtpremnicaSifra</code>
+                                                                }
+                                                                else { <span class="text-muted">-</span> }
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="row g-2">
+                                                            <div class="col-6">
+                                                                <button class="btn btn-primary w-100" @onclick:stopPropagation="true"
+                                                                        @onclick="() => OtvoriSledljivostIsporuceni(nalog)">
+                                                                    <i class="bi bi-diagram-3 me-1"></i>Sledljivost RN
+                                                                </button>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <button class="btn btn-warning w-100" @onclick:stopPropagation="true"
+                                                                        @onclick="() => OtvoriKontroleIsporuceni(nalog)">
+                                                                    <i class="bi bi-clipboard2-check me-1"></i>Kontrole RN
+                                                                </button>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <button class="btn btn-success w-100" @onclick:stopPropagation="true"
+                                                                        @onclick="() => OtvoriUtrosakSirovineIsporuceni(nalog)">
+                                                                    <i class="bi bi-box-arrow-in-down me-1"></i>Utrošena Sirovina
+                                                                </button>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <button class="btn btn-info w-100" @onclick:stopPropagation="true"
+                                                                        @onclick="() => OtvoriUtrosakRadneSnageIsporuceni(nalog)">
+                                                                    <i class="bi bi-people me-1"></i>Utrošak Radne Snage
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+</div>
+
+@code {
+    private int aktivniTab = 1;
+
+    // Otvoreni RN
+    private bool ucitavaOtvorene = false;
+    private List<OtvoreniRadniNalogModel> otvoreniNalozi = new();
+    private HashSet<long> otvoreniDetalji = new();
+
+    // Isporučeni RN
+    private bool ucitavaIsporucene = false;
+    private bool ucitavaListe = true;
+    private bool pretragaObavljena = false;
+    private DateTime? odDatum = DateTime.Today.AddMonths(-1);
+    private DateTime? doDatum = DateTime.Today;
+    private long izabraniKomitentId = 0;
+    private string izabraniRadniNalog = "";
+    private List<Komitent> komitentiLista = new();
+    private List<string> radniNaloziLista = new();
+    private List<UcitajRadneNalogeModel> isporuceniNalozi = new();
+    private HashSet<long> isporuceniDetalji = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var komitentiTask = KomitentService.UcitajKomitenteKojiImajuRadneNaloge();
+            var naloziTask = PreradaService.UcitajSveRadneNaloge();
+            await Task.WhenAll(komitentiTask, naloziTask);
+            komitentiLista = komitentiTask.Result ?? new();
+            radniNaloziLista = naloziTask.Result ?? new();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju lista za filtriranje");
+        }
+        finally { ucitavaListe = false; }
+
+        await UcitajOtvorene();
+    }
+
+    private async Task PrebaciiNaTab(int tab)
+    {
+        aktivniTab = tab;
+        if (tab == 1 && otvoreniNalozi.Count == 0)
+            await UcitajOtvorene();
+    }
+
+    // ── Otvoreni ──────────────────────────────────────────
+
+    private async Task UcitajOtvorene()
+    {
+        ucitavaOtvorene = true;
+        otvoreniDetalji.Clear();
+        try
+        {
+            otvoreniNalozi = await KontrolaService.UcitajOtvoreneNaloge();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška pri učitavanju otvorenih naloga");
+            otvoreniNalozi = new();
+        }
+        finally { ucitavaOtvorene = false; }
+    }
+
+    private void ToggleOtvoreni(long id)
+    {
+        if (!otvoreniDetalji.Add(id)) otvoreniDetalji.Remove(id);
+    }
+
+    private void OtvoriSledljivostOtvoreni(OtvoreniRadniNalogModel nalog)
+        => NavigationManager.NavigateTo($"/sledljivost?radniNalog={Uri.EscapeDataString(nalog.Sifra)}");
+
+    private void OtvoriKontroleOtvoreni(OtvoreniRadniNalogModel nalog)
+    {
+        var od = FormatDate(nalog.DatumPocetka ?? DateTime.Today.AddMonths(-1));
+        NavigationManager.NavigateTo($"/kontrola-radni-nalog?radniNalog={Uri.EscapeDataString(nalog.Sifra)}&odDatum={od}&doDatum={FormatDate(DateTime.Today)}");
+    }
+
+    private void OtvoriUtrosakSirovineOtvoreni(OtvoreniRadniNalogModel nalog)
+    {
+        var od = FormatDate(nalog.DatumPocetka ?? DateTime.Today.AddMonths(-1));
+        NavigationManager.NavigateTo($"/proizvodnja?radniNalog={Uri.EscapeDataString(nalog.Sifra)}&odDatum={od}&doDatum={FormatDate(DateTime.Today)}");
+    }
+
+    private void OtvoriUtrosakRadneSnageOtvoreni(OtvoreniRadniNalogModel nalog)
+    {
+        var od = FormatDate(nalog.DatumPocetka ?? DateTime.Today.AddMonths(-1));
+        NavigationManager.NavigateTo($"/radni-nalozi?radniNalog={Uri.EscapeDataString(nalog.Sifra)}&odDatum={od}&doDatum={FormatDate(DateTime.Today)}");
+    }
+
+    // ── Isporučeni ────────────────────────────────────────
+
+    private async Task PretrazIisporucene()
+    {
+        ucitavaIsporucene = true;
+        isporuceniDetalji.Clear();
+        pretragaObavljena = false;
+        try
+        {
+            var filter = new FilterRequest { OdDatum = odDatum, DoDatum = doDatum };
+            int? komitentId = izabraniKomitentId > 0 ? (int?)izabraniKomitentId : null;
+            string? rn = string.IsNullOrEmpty(izabraniRadniNalog) ? null : izabraniRadniNalog;
+            isporuceniNalozi = await KontrolaService.UcitajIsporuceneNaloge(filter, komitentId, rn);
+            pretragaObavljena = true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Greška u pretrazi isporučenih naloga");
+            isporuceniNalozi = new();
+        }
+        finally { ucitavaIsporucene = false; }
+    }
+
+    private void ToggleIsporuceni(long id)
+    {
+        if (!isporuceniDetalji.Add(id)) isporuceniDetalji.Remove(id);
+    }
+
+    private void OtvoriSledljivostIsporuceni(UcitajRadneNalogeModel nalog)
+        => NavigationManager.NavigateTo($"/sledljivost?radniNalog={Uri.EscapeDataString(nalog.Sifra)}");
+
+    private void OtvoriKontroleIsporuceni(UcitajRadneNalogeModel nalog)
+    {
+        var od = FormatDate(nalog.DatumPocetka ?? nalog.DatumIsporuke ?? DateTime.Today.AddMonths(-1));
+        var do_ = FormatDate(nalog.DatumIsporuke ?? DateTime.Today);
+        NavigationManager.NavigateTo($"/kontrola-radni-nalog?radniNalog={Uri.EscapeDataString(nalog.Sifra)}&odDatum={od}&doDatum={do_}");
+    }
+
+    private void OtvoriUtrosakSirovineIsporuceni(UcitajRadneNalogeModel nalog)
+    {
+        var od = FormatDate(nalog.DatumPocetka ?? nalog.DatumIsporuke ?? DateTime.Today.AddMonths(-1));
+        var do_ = FormatDate(nalog.DatumIsporuke ?? DateTime.Today);
+        NavigationManager.NavigateTo($"/proizvodnja?radniNalog={Uri.EscapeDataString(nalog.Sifra)}&odDatum={od}&doDatum={do_}");
+    }
+
+    private void OtvoriUtrosakRadneSnageIsporuceni(UcitajRadneNalogeModel nalog)
+    {
+        var od = FormatDate(nalog.DatumPocetka ?? nalog.DatumIsporuke ?? DateTime.Today.AddMonths(-1));
+        var do_ = FormatDate(nalog.DatumIsporuke ?? DateTime.Today);
+        NavigationManager.NavigateTo($"/radni-nalozi?radniNalog={Uri.EscapeDataString(nalog.Sifra)}&odDatum={od}&doDatum={do_}");
+    }
+
+    private async Task ResetFilterIsporuceni()
+    {
+        odDatum = DateTime.Today.AddMonths(-1);
+        doDatum = DateTime.Today;
+        izabraniKomitentId = 0;
+        izabraniRadniNalog = "";
+        isporuceniNalozi = new();
+        isporuceniDetalji.Clear();
+        pretragaObavljena = false;
+        await Task.CompletedTask;
+    }
+
+    private void OnOdDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d)) odDatum = d;
+    }
+
+    private void OnDoDatumChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d)) doDatum = d;
+    }
+
+    private static string FormatDate(DateTime d) => d.ToString("yyyy-MM-dd");
+}

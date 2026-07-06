@@ -1,0 +1,474 @@
+@page "/solar-hala"
+@rendermode @(new InteractiveServerRenderMode())
+@using ApexCharts
+@using FruitSysWeb.Models
+@using FruitSysWeb.Models.Solar
+@using FruitSysWeb.Services.Solar
+@using Microsoft.Extensions.Options
+@implements IDisposable
+@inject SolarLocalDbService SolarDb
+@inject SolarIntradaySyncService SolarIntradaySync
+@inject IOptions<FusionSolarOptions> SolarOptionsAccessor
+@inject ILogger<SolarHala> Logger
+
+<PageTitle>FruitSys Solar Dashboard</PageTitle>
+
+<div class="solar-dashboard">
+    <header class="solar-header">
+        <div>
+            <h1 class="solar-title">Solarna elektrana</h1>
+            <span class="solar-subtitle">@SolarPodatakKatalog.Postrojenje · Huawei SmartLogger3000</span>
+        </div>
+        <div class="solar-header-right">
+            <span class="status-pill @(_livePolling ? "" : "status-pill-offline")">
+                ● @(_livePolling ? "Online" : "Lokalna baza")
+            </span>
+            @if (_poslednji != null)
+            {
+                <span class="solar-last-read">
+                    Poslednje očitavanje: <strong>@_poslednji.Timestamp.ToLocalTime():HH:mm</strong>
+                </span>
+            }
+            <span class="solar-filter-pills">
+                <span class="filter-pill filter-pill-active">Danas</span>
+            </span>
+            <button type="button" class="btn-solar-refresh" @onclick="OsveziPodatke">Osveži</button>
+        </div>
+    </header>
+
+    @if (!_hasDbData && !_livePolling)
+    {
+        <div class="alert alert-warning">Nema podataka u solar.db i FusionSolar polling nije uključen. Proveri konfiguraciju.</div>
+    }
+    else
+    {
+        @if (!_livePolling)
+        {
+            <div class="alert alert-secondary py-2 mb-3">Prikaz iz lokalne baze (istorija). Za live podatke uključi <code>FusionSolar:Enabled</code>.</div>
+        }
+
+        var solarKw = (double)(_poslednji?.CurrentPower ?? 0);
+        var factoryKw = (double)(_poslednji?.LoadPower ?? 0);
+        var gridKw = Math.Max((double)(_poslednji?.GridPower ?? 0), 0);
+        var solarCoverage = factoryKw > 0 ? Math.Round(solarKw / factoryKw * 100) : (solarKw > 0 ? 100 : 0);
+        var alarmCount = (_poslednji?.TroubleDevices ?? 0) + (_poslednji?.DisconnectedDevices ?? 0);
+        var devicesOnline = _poslednji?.ConnectedDevices ?? 0;
+        var devicesTotal = _poslednji?.TotalDevices ?? SolarPodatakKatalog.InverterDns.Count;
+        var inverterOnline = devicesTotal > 0 && devicesOnline >= devicesTotal;
+
+        string statusKlasa;
+        string statusNaslov;
+        string statusOpis;
+        if (solarCoverage >= 70)
+        {
+            statusKlasa = "sd-status-good";
+            statusNaslov = "DOBAR TRENUTAK ZA PALJENJE MAŠINA";
+            statusOpis = $"Solar pokriva {solarCoverage:N0}% potrošnje";
+        }
+        else if (solarCoverage < 50)
+        {
+            statusKlasa = "sd-status-wait";
+            statusNaslov = "SAČEKATI SA VELIKIM POTROŠAČIMA";
+            statusOpis = $"Solar pokriva samo {solarCoverage:N0}% potrošnje";
+        }
+        else
+        {
+            statusKlasa = "sd-status-normal";
+            statusNaslov = "NORMALAN RAD";
+            statusOpis = $"Solar pokriva {solarCoverage:N0}% potrošnje";
+        }
+
+        var preporuceniTekst = _preporuceniPeriod.Start.HasValue && _preporuceniPeriod.End.HasValue
+            ? $"{_preporuceniPeriod.Start:HH:mm} – {_preporuceniPeriod.End:HH:mm}"
+            : "Nema perioda danas";
+
+        var maxSolarKw = _istorijaDanas.Count > 0
+            ? _istorijaDanas.Max(r => (double)(r.CurrentPower ?? 0))
+            : solarKw;
+        var maxGridKw = _istorijaDanas.Count > 0
+            ? _istorijaDanas.Max(r => Math.Max((double)(r.GridPower ?? 0), 0))
+            : gridKw;
+
+        <section class="solar-kpi-grid">
+            <div class="solar-kpi-card kpi-power">
+                <div class="solar-kpi-label">Sunce trenutno</div>
+                <div class="solar-kpi-value">@solarKw.ToString("N0")<span class="kpi-unit"> kW</span></div>
+            </div>
+            <div class="solar-kpi-card kpi-factory">
+                <div class="solar-kpi-label">Potrošnja hala / fabrika</div>
+                <div class="solar-kpi-value">@factoryKw.ToString("N0")<span class="kpi-unit"> kW</span></div>
+            </div>
+            <div class="solar-kpi-card kpi-grid-kw">
+                <div class="solar-kpi-label">Iz mreže</div>
+                <div class="solar-kpi-value">@gridKw.ToString("N0")<span class="kpi-unit"> kW</span></div>
+            </div>
+            <div class="solar-kpi-card kpi-coverage">
+                <div class="solar-kpi-label">Solarno pokriveno</div>
+                <div class="solar-kpi-value">@solarCoverage.ToString("N0")<span class="kpi-unit"> %</span></div>
+            </div>
+            <div class="solar-kpi-card kpi-period">
+                <div class="solar-kpi-label">Preporučeni period</div>
+                <div class="solar-kpi-value solar-kpi-value-sm">@preporuceniTekst</div>
+            </div>
+        </section>
+
+        <section class="solar-chart-row">
+            <div class="solar-chart-section">
+                <div class="sd-chart-head">
+                    <div>
+                        <h2 class="solar-chart-title">Proizvodnja, potrošnja i mreža tokom dana</h2>
+                        @if (_grafOpsegTekst != null)
+                        {
+                            <p class="sd-chart-period">@_grafOpsegTekst</p>
+                        }
+                    </div>
+                    <span class="panel-meta">kW · @_istorijaDanas.Count očitavanja</span>
+                </div>
+                @if (_istorijaDanas.Count == 0)
+                {
+                    <p class="panel-meta mb-0">Nema intraday očitavanja za danas. Podaci se sakupljaju svakih @_pollIntervalSeconds s dok je polling uključen.</p>
+                }
+                else if (_grafOptions != null)
+                {
+                    <ApexChart @key="@_chartKey" TItem="SolarKpiRecord" Options="@_grafOptions" Height="300">
+                        <ApexPointSeries TItem="SolarKpiRecord"
+                                         Items="_istorijaDanas"
+                                         Name="Sunce"
+                                         SeriesType="SeriesType.Area"
+                                         XValue="@(e => e.Timestamp.ToLocalTime())"
+                                         YValue="@(e => e.CurrentPower ?? 0)" />
+                        <ApexPointSeries TItem="SolarKpiRecord"
+                                         Items="_istorijaDanas"
+                                         Name="Hala / Fabrika"
+                                         SeriesType="SeriesType.Area"
+                                         XValue="@(e => e.Timestamp.ToLocalTime())"
+                                         YValue="@(e => e.LoadPower ?? 0)" />
+                        <ApexPointSeries TItem="SolarKpiRecord"
+                                         Items="_istorijaDanas"
+                                         Name="Iz mreže"
+                                         SeriesType="SeriesType.Area"
+                                         XValue="@(e => e.Timestamp.ToLocalTime())"
+                                         YValue="@(e => Math.Max(e.GridPower ?? 0, 0))" />
+                    </ApexChart>
+                }
+            </div>
+
+            <aside class="solar-advice-card @statusKlasa">
+                <div class="solar-advice-title">Preporuka za mašine</div>
+                <div class="sd-decision-title">@statusNaslov</div>
+                <div class="sd-decision-sub">@statusOpis</div>
+                <div class="solar-advice-metrics">
+                    <div>
+                        <span class="solar-advice-label">Period</span>
+                        <strong>@preporuceniTekst</strong>
+                    </div>
+                    <div>
+                        <span class="solar-advice-label">Pokrivenost</span>
+                        <strong>@solarCoverage.ToString("N0")%</strong>
+                    </div>
+                    <div>
+                        <span class="solar-advice-label">Mreža sada</span>
+                        <strong>@gridKw.ToString("N0") kW</strong>
+                    </div>
+                </div>
+            </aside>
+        </section>
+
+        <section class="solar-mini-stats">
+            <div class="solar-mini-stat">
+                <span class="solar-mini-stat-label">Najbolji period danas</span>
+                <span class="solar-mini-stat-value solar-mini-stat-cyan">@preporuceniTekst</span>
+            </div>
+            <div class="solar-mini-stat">
+                <span class="solar-mini-stat-label">Maksimalna solarna snaga</span>
+                <span class="solar-mini-stat-value solar-mini-stat-yellow">@maxSolarKw.ToString("N1") kW</span>
+            </div>
+            <div class="solar-mini-stat">
+                <span class="solar-mini-stat-label">Potrošnja iz mreže (max)</span>
+                <span class="solar-mini-stat-value solar-mini-stat-red">@maxGridKw.ToString("N1") kW</span>
+            </div>
+        </section>
+
+        <details class="solar-details">
+            <summary>Detalji — inverteri, mreža, alarmi, dnevni rezime</summary>
+        <section class="solar-bottom-grid">
+            <div class="solar-card">
+                <h3 class="panel-title">Inverteri</h3>
+                <table class="inverter-table">
+                    <thead>
+                        <tr>
+                            <th>Inverter</th>
+                            <th>Status</th>
+                            <th>Ukupna snaga</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < InverterNazivi.Length; i++)
+                        {
+                            <tr>
+                                <td>@InverterNazivi[i]</td>
+                                <td>
+                                    <span class="@(inverterOnline ? "status-online" : "status-offline")">
+                                        @(inverterOnline ? "Online" : "Provera")
+                                    </span>
+                                </td>
+                                <td class="muted">@(i == 0 ? $"{solarKw:N0} kW (ukupno)" : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="solar-card">
+                <h3 class="panel-title">Mreža / PowerMeter</h3>
+                <ul class="metric-list">
+                    <li><span>Load trenutno</span><span class="val-blue">@factoryKw.ToString("N0") kW</span></li>
+                    <li><span>Grid trenutno</span><span class="val-red">@gridKw.ToString("N0") kW</span></li>
+                    <li><span>Kupljeno danas</span><span class="val-red">@FormatKwh(_poslednji?.DailyBuyEnergy)</span></li>
+                    <li><span>Predato u mrežu</span><span class="val-cyan">@FormatKwh(_poslednji?.DailyOnGridEnergy)</span></li>
+                </ul>
+            </div>
+
+            <div class="solar-card">
+                <h3 class="panel-title">Alarmi</h3>
+                <div class="alarm-count @(alarmCount == 0 ? "alarm-count-ok" : "alarm-count-warn")">@alarmCount</div>
+                <ul class="metric-list">
+                    <li><span>Connected</span><span class="val-green">@(_poslednji?.ConnectedDevices?.ToString() ?? "—")</span></li>
+                    <li><span>Disconnected</span><span class="val-red">@(_poslednji?.DisconnectedDevices?.ToString() ?? "—")</span></li>
+                    <li><span>Trouble</span><span class="val-red">@(_poslednji?.TroubleDevices?.ToString() ?? "—")</span></li>
+                    <li><span>Događaji</span><span>@(_poslednji?.EventCount?.ToString() ?? "—")</span></li>
+                </ul>
+            </div>
+
+            <div class="solar-card">
+                <h3 class="panel-title">Dnevni rezime</h3>
+                <ul class="metric-list">
+                    <li><span>Proizvedeno</span><span class="val-yellow">@FormatKwh(_poslednji?.DailyEnergy)</span></li>
+                    <li><span>Potrošnja</span><span class="val-blue">@FormatKwh(_poslednji?.DailyUseEnergy)</span></li>
+                    <li><span>Sopstvena upotreba</span><span class="val-green">@FormatKwh(_poslednji?.DailySelfUseEnergy)</span></li>
+                    <li><span>Preporučeno</span><span>@preporuceniTekst</span></li>
+                </ul>
+            </div>
+        </section>
+        </details>
+    }
+</div>
+
+@code {
+    private static readonly string[] InverterNazivi =
+    {
+        "SUN2000-110KTL-M2",
+        "SUN2000-110KTL-M2",
+        "SUN2000-100KTL-M2"
+    };
+
+    private bool _livePolling;
+    private bool _hasDbData;
+    private int _pollIntervalSeconds;
+    private string _stationDn = string.Empty;
+    private SolarKpiRecord? _poslednji;
+    private List<SolarKpiRecord> _istorijaDanas = new();
+    private PeriodicTimer? _timer;
+    private CancellationTokenSource? _timerCts;
+    private ApexChartOptions<SolarKpiRecord>? _grafOptions;
+    private string _chartKey = "0";
+    private string? _grafOpsegTekst;
+    private (DateTime? Start, DateTime? End) _preporuceniPeriod;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var options = SolarOptionsAccessor.Value;
+        _livePolling = options.IsConfigured;
+        _pollIntervalSeconds = options.PollIntervalSeconds;
+        _stationDn = string.IsNullOrWhiteSpace(options.StationDn)
+            ? SolarPodatakKatalog.StationDn
+            : options.StationDn;
+
+        if (_livePolling)
+        {
+            try
+            {
+                await SolarIntradaySync.SyncTodayIfNeededAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Intraday sync iz FusionSolar nije uspeo — prikaz iz lokalne baze");
+            }
+        }
+
+        await UcitajPodatke();
+
+        _hasDbData = _poslednji != null || _istorijaDanas.Count > 0;
+
+        if (_livePolling)
+        {
+            _timerCts = new CancellationTokenSource();
+            _ = PokreniAutoOsvezavanje(_timerCts.Token);
+        }
+    }
+
+    private async Task OsveziPodatke()
+    {
+        await UcitajPodatke();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task UcitajPodatke()
+    {
+        _poslednji = await SolarDb.GetLatestKpiAsync(_stationDn);
+        _istorijaDanas = await SolarDb.GetTodayHistoryAsync(_stationDn);
+        _preporuceniPeriod = IzracunajPreporuceniPeriod();
+        _grafOptions = BuildGlavniGrafOptions(_preporuceniPeriod, _istorijaDanas.Count);
+        _chartKey = $"{_istorijaDanas.Count}:{_poslednji?.Timestamp.Ticks ?? 0}";
+
+        if (_istorijaDanas.Count > 0)
+        {
+            var od = _istorijaDanas.Min(r => r.Timestamp).ToLocalTime();
+            var doVreme = _istorijaDanas.Max(r => r.Timestamp).ToLocalTime();
+            _grafOpsegTekst = $"Period očitavanja: {od:HH:mm} – {doVreme:HH:mm} ({_istorijaDanas.Count} tačaka)";
+        }
+        else
+        {
+            _grafOpsegTekst = null;
+        }
+    }
+
+    private static string FormatKwh(decimal? kwh) =>
+        kwh.HasValue ? $"{kwh.Value:N1} kWh" : "—";
+
+    private async Task PokreniAutoOsvezavanje(CancellationToken ct)
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(Math.Max(_pollIntervalSeconds, 10)));
+        try
+        {
+            while (await _timer.WaitForNextTickAsync(ct))
+            {
+                if (ct.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                try
+                {
+                    await UcitajPodatke();
+                    if (!ct.IsCancellationRequested)
+                    {
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+                catch (Exception ex) when (!ct.IsCancellationRequested)
+                {
+                    Logger.LogError(ex, "Greška pri osvežavanju solar dashboard-a");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // stranica zatvorena, prekini tiho
+        }
+    }
+
+    private (DateTime? Start, DateTime? End) IzracunajPreporuceniPeriod()
+    {
+        DateTime? start = null;
+        DateTime? end = null;
+        DateTime? bestStart = null;
+        DateTime? bestEnd = null;
+
+        foreach (var rec in _istorijaDanas.OrderBy(r => r.Timestamp))
+        {
+            var solar = (double)(rec.CurrentPower ?? 0);
+            var load = (double)(rec.LoadPower ?? 0);
+            var pokrivenost = load > 0 ? (solar / load) * 100 : (solar > 0 ? 100 : 0);
+
+            if (pokrivenost >= 70)
+            {
+                start ??= rec.Timestamp;
+                end = rec.Timestamp;
+            }
+            else
+            {
+                if (start.HasValue && end.HasValue && (!bestStart.HasValue || (end.Value - start.Value) > (bestEnd!.Value - bestStart!.Value)))
+                {
+                    bestStart = start;
+                    bestEnd = end;
+                }
+
+                start = null;
+                end = null;
+            }
+        }
+
+        if (start.HasValue && end.HasValue && (!bestStart.HasValue || (end.Value - start.Value) > (bestEnd!.Value - bestStart!.Value)))
+        {
+            bestStart = start;
+            bestEnd = end;
+        }
+
+        return (bestStart?.ToLocalTime(), bestEnd?.ToLocalTime());
+    }
+
+    private static ApexChartOptions<SolarKpiRecord> BuildGlavniGrafOptions((DateTime? Start, DateTime? End) period, int pointCount)
+    {
+        int markerSize = pointCount <= 5 ? 5 : 0;
+        var options = SolarChartOptionsFactory.ZaSolarKpi(
+            darkTheme: true,
+            colors: new[] { "#facc15", "#38bdf8", "#ef4444" },
+            strokeWidth: 3,
+            markerSize: markerSize);
+
+        options.Chart!.Type = ChartType.Area;
+        options.Fill = new Fill
+        {
+            Type = FillType.Gradient,
+            Gradient = new FillGradient
+            {
+                ShadeIntensity = 0.3,
+                OpacityFrom = 0.35,
+                OpacityTo = 0.03,
+                Stops = new List<double> { 0, 90, 100 }
+            }
+        };
+        options.Grid!.BorderColor = "rgba(148, 163, 184, 0.12)";
+        options.Grid.StrokeDashArray = 4;
+        options.Legend!.HorizontalAlign = Align.Right;
+        options.Legend.Labels = new LegendLabels { Colors = "#cbd5e1" };
+        options.Xaxis!.Labels!.Style = new AxisLabelStyle { Colors = "#8ea3ba" };
+
+        if (period.Start.HasValue && period.End.HasValue)
+        {
+            options.Annotations = new Annotations
+            {
+                Xaxis = new List<AnnotationsXAxis>
+                {
+                    new AnnotationsXAxis
+                    {
+                        X = period.Start.Value.ToUnixTimeMilliseconds(),
+                        X2 = period.End.Value.ToUnixTimeMilliseconds(),
+                        FillColor = "#22c55e",
+                        Opacity = 0.12,
+                        BorderColor = "#22c55e",
+                        Label = new Label
+                        {
+                            Text = "Preporučeno za paljenje mašina",
+                            Style = new Style { Background = "#22c55e", Color = "#07111f" }
+                        }
+                    }
+                }
+            };
+        }
+
+        return options;
+    }
+
+    public void Dispose()
+    {
+        _timerCts?.Cancel();
+        _timer?.Dispose();
+        _timerCts?.Dispose();
+    }
+}

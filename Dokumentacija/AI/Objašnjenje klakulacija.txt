@@ -1,0 +1,187 @@
+Sad napravi izvestaj sta smo do sada uradili i kako isto tako napisi koji su sledeci potezi da bi kad nastavimo dalje da radimo brze znali sta je sledece. Nazovi ga Kalkulacije.md
+
+Ovo je novi deo i dosta važan deo našeg projekta FruitSysWeb dobro prvo procitaj sve sta treba da se uradi i pregledaj priložene dokumente pa onda daj tvoje mišljenje i ako imaš pedloge kako bi mogli da ovo uradimo i dali imaš neke svoje predloge. Imaj na umu da ne treba da žurimo jer su izveštaji koje pravimo dosta važni za vođenje fabrike.
+
+Nova stranica i izvestaj u delu programa Poslovanje izvestj bi se zavao Kalkulacija. Podatci bi bili za određen vremenski preriod koji bi mozemo izabrati i on bi snimljen i ne bi se menjao dok ne promenimo datim  
+Na toj stranici bi imali tri tabele
+ 1. Stanje robe 
+( Ovde bi imali kolone Vrsta voca,Kupljeno,Prodato,kalo smzavanja ( ovo se racuna po podatcima iz tabele ProcesSmrzavanjeSema u koloni UlazniArtikalID imamo artikle za koje racunamo kalo smrzavanja a u koloni ProcenatKaloSmrzavanja imamo koliki je procenat kala smrzavanja), Kalo Prerade ( ovo se racuna po vrsti voca Malina 2%,Kupina 3%, Šljiva 7%, Višnja 5%,Kajsija 8%) i kolona Na zalihama ). Redovi su vrste voca Malina,Kupina ( Ovde računamo samo kupine koje u nazivu imaju Čačanka ),Kupina Slatka( Ovo su sve vrste kupine sem kupine koje u nazivu imaju Čačanka), Šljiva,Višnja,Kajsija itd.
+
+2. Obračun otkupa
+Kolone Vrednost roba, Vrednost sa maržom,Isplata,Stanje roba,Stanje ukupno
+Redovi bi bili Dobavljaci i bilo bi dobro da postoji način da se mogu izabrati dobavljaci i da se snimi izbor. Makslimalno 10 
+
+3. Obracun poslovanja
+Kolone Naziv, Ukupno Din, Ukupno EUR
+Redovi  
+	1.Nabavna Vrednost Sezona( Ukupna nabavna vrednost svog voca)
+	2. Nabavna Vrednost Lager ( Ovo je nabavnu vrednost  kolicine lagera koje prenosimo iz predhodnog perioda tj ako izaberemo da je pocetni dan sezone 28.05.2026 onda je ovo stanje lagera na dan pre tj 27.06.2026.  Onda na osnovu prosecnih nabavnih cena tih roba u prethodnih 12 meseci dobijamo nabavnu vrednost.
+	2.Prerada (  Ovde bi trebalo da imamo nacin da za svaku vrstu sirovine voca koje trenutno imamo na zalihama  mozemo uneti cene prerade po kg i da mozemo snimiti izbor i onda pomnoziti sa kolicinom tog voca i tako dobijamo trosak prerade) 
+	3.Prodaja (ukupna vrednost prodate robe)
+	4.Vrednost robe na zalihama (ovde bi morali da napravimo nekoliko posebnih izvestaja .
+Prvi gde bi za svaku sirovinu imali formu gde bi unosili pretpostavljeno iskoriscenje na primer za D/Z Malinu Original od jednog kg maline originala dobicemo 85% Rolenda 10% Griza, 4,5 % Bloka, 0,5% Otpada.Onda bi na osnovu togaimali  predviđene kolicine proizvoda tj predviđeni lager gotovih roba.  
+Drugi bi nam trebao sto za svaki vrstu robe imali imamo formu da Unosimo pretpostavljene prodajne cene ovde mozemo kao prvo ako postoje otvoreni ugovori prodaje povuci prosecne prodajne cene a ako nemamo onda da mozemo rucno uneti prodajnu cenu.
+Znači da bio ovo dobili prvo moramo videti stanje lagera onda na sirovine primeniti formulu za pretpostavljeno iskorišćenje i onda te predvidjene kolicine gotovih proizvoda dodati vec postojece stanje lagera tih proizvoda onda te količine pomnožiti sa predviđenom prodajnom cenom .
+	5.Profit (Ovde bi od Sume (Prodaja i Vrednost robe na zalihama) oduzme (Nabavna vrednost, Nabavna Vrednost lager i prerada) i tako dobijemo pretpostavljeni profit.)
+	5.Profitna Stopa ( Ovo dobijmao kada Profit podelimo sa sumom ( Nabavna vrednost Sezona , Nabavna vrednost Lager, Prerada) I dobijemo Profitnu stopu u %
+	6. Profit po kg  ( Ovo dobijamo Kada Profit podelimo san sumom kolicinu u kg Nabavljene robo od pocetka sezon sa kolicinom kg robe Lageru na dan pre pocetka  sezone i tako dobijamo iznos profita po kg robe)
+
+
+Imam excel dokument koji ti mogu podeliti nalazi se '/Users/Bane/Desktop/Obračun 2025.xlsm' gde imaju primeri kako sad to računamo, imaj u vidu da je dokument veliki ali ima kartice
+1.Kalkulacija gde imaju primeri tabela za Stanje robe na Zalihama, Obračun Otkupa,Obračun poslovanja( Samo je naziv u izvestaju drugaciji Obracin sva roba
+2.Vrednost Zaliha ovre ima primer kako sad racunamo vrednost zaliha
+
+3.Prerada ovde dobijamo cene prerade po kg sirovina
+4.Izvestaj ovde ima primer kako sad računamo pretpostavljene kolicine gotovih roba
+
+Dobro pogledaj dokument nasi izvestaji ce biti slicni ovima ali dosta dataljniji.
+
+
+
+
+Odgovor..............
+Moje mišljenje o Kalkulacija izveštaju
+Ovo je najkompleksnija stvar koju smo do sada radili u ovom projektu — daleko veća od Faktura ili Paletnih listova. Veoma je dobra ideja što ne žurite.
+
+Šta je dobro osmišljeno
+Logika tri odvojene tabele ima smisla — svaka je nezavisna i može se razvijati posebno
+Zamrzavanje perioda (snapshot pristup) je ispravan za ovaj tip kalkulacije — niko ne treba da vidi kako se brojevi menjaju usred sezone
+Ideja sa snimanjem korisničkih unosa (cene prerade, iskorišćenje, prodajne cene) je praktična
+Šta treba razjasniti pre kodiranja
+1. Tabela ProcesSmrzavanjeSema -  Odgovor: u bazi ima tabela ProcesSmrzavanjeSema tu imaju 4 kolone koje nam trebaju UlazniArtikalID( Ovde je ID artikla koji se smrzava) ProcenatKaloSmrzavanja ( Ovo je procenat kala smrzavanja za taj artikal) IzlazniArtikalID ( Ovo je ID artikala koji dobijamo) ovaj podatak  informacija koliko kg robe smo izgubili uprocesu smrzavanja nabavljene sveze robe kako znamo da je nesto sveža roba je Artikal ima MagacinID=2 . Onda ovu kolicinu kala treba oduzeti od kolicine nabavljene robe pošto kad saberemo svu nabavljenu robu tu ima sveze robe koja je kad prodje kroz proces smrzavanja na desktop aplikaciji FruitSys ide na lager kao Sirovina tj MagacinID=3. Naravno ovo se samo primenjuje na robu koja je kupljena od pocetka sezone.
+
+2. Kupljeno vs. Na Zalihama razlika — u Tabeli 1 kolona "Na Zalihama" računa se kao Kupljeno − Prodato − Kalo Smrzavanja − Kalo Prerade, ali ovo ne odgovara stvarnom lageru (ne uzima u obzir početni lager iz prethodne sezone). Treba da potvrdite da li ovo treba da bude ova formula ili stvarni lager iz vwMagacinLager. -Odgovor : U pravu si treba Dodati jos jednu kolonu posle Kupljeno Prenos Zaliha i tu treba da bude kolicina koja je na zalihama pre sezone.U koloni Kupljeno treba da bude sva nabavljena roba od početka sezone.
+
+3. Persistencija korisničkih unosa — za Tabelu 3 (cene prerade, formule iskorišćenja, prodajne cene) predlažem da koristimo isti pattern kao KesaSelekcijaService (JSON u Data/ folder). Pitanje: da li ove vrednosti treba da budu zajedničke za sve korisnike ili per-user?Odgovor- Za snimanje Korisnickih unosa  moze da bude isto kao KesaSelekcijaService i treba da postoji link na dnu izvestaja ka tim stranama. Vrednosti treba da budu za sve korisnike kao i KesaSelekcijaService ili kao na stranici brzi-pregled-konfiguracija.
+
+4. Kupina Čačanka vs. Kupina Slatka — logika sa LIKE '%Čačanka%' je jasna, ali treba proveriti da li se u bazi koristi ćirilica ili latinica u nazivima. Odgovor: Svuda je naziv isti Čačanka samo ne treba da se gledaju velika ili mala slova.
+
+Predlog faza razvoja
+Faza 1 — Tabela 1 (Stanje Robe): samo čitanje baze, nema snimanja. Relativno jednostavno — 1 sesija.
+
+Faza 2 — Tabela 2 (Obračun Otkupa): dodaje logiku isplata i marže, plus izbor dobavljača sa snimanjem. Umerenost složenosti — 1-2 sesije.
+
+Faza 3 — Tabela 3 redovi 1-4 (Nabavna vrednost + Prerada + Prodaja): čitanje baze + unos i snimanje cena prerade. Složenije — 2 sesije.
+
+Faza 4 — Tabela 3 red 5 (Vrednost Robe na Zalihama): najsloženiji deo, formula iskorišćenja + predviđene prodajne cene. Ovo zahteva posebnu formu za unos i puno logike — 2-3 sesije.
+
+Faza 5 — Profit, Profitna Stopa, Profit po kg: ovo je samo zbrajanje/deljenje vrednosti iz prethodnih faza — brzo.
+
+Moj predlog za početak
+Pre nego što počnemo da kodiramo, predlažem da:
+
+Proverimo ProcesSmrzavanjeSema strukturu direktno u bazi
+Potvrdite odgovor na pitanje o persistenciji (zajednička za sve vs. per-user)
+Počnemo sa Fazom 1 — Tabela 1 (Stanje Robe) — jer je ona osnova za sve ostalo
+Da li ovo zvuči kao dobar plan? I možete li potvrditi detalje oko tih pitanja?
+
+
+
+Počnemo sa Fazom 1 — ona je samostalna, odmah daje vrednost, i identifikuje eventualne probleme sa vwMagacinLager historijskim podacima (da li view podržava filtriranje po datumu ili samo daje trenutno stanje). Odgovor :Kreni sa njom
+
+Pre Faze 2 odgovori mi na pitanje o marži. Sve ostalo je jasno. Odgovor:Marza kao podatak postoji u bazi ali se ne unosi posto se unosi ukupna nbavna cena ali to mozemo da  u JSON dodamo za svakog izabranog dobavljaca unosimo i cenu marže po vrsti robe onda to mnozimo sa kolicinom nabavlejnih roba i dobijemo sumu marze onda da bi dobili iznose u kolonama  Vrednost robe Oduzmemo od Ukupne vrednosti Iiznos marže ii dobijamo Vrednost samo robe, U koloni Stanje roba Od Iznosa ukupne isplate oduzimamo Vrednost robe i dobijamo iznos potreazivanja a u koloni Stanje ukupno od ukupne isplate oduzimamo ne postoji ali Možemo Vrednost robe
+
+Kažeš kad si spreman da počnemo Fazu 1?
+_____Ideje jos ne iskorišćene________________
+
+
+Greska Kolona Prenos zaliha se ne računa dobro, taj podatak imamo na stranici lagerhome u grafikonu Stanje Lagera po Vrsti Voća tu imamo stanje lagera na dan. Isto u tabeli u Hederu naziv kolona treba da bude u jednom redu sad ide naziv pa ispod kg. I kad se jednom izabere datum Od do onda izvestaj treba da se ucitava odmah cim se otvori po tom razdoblju sve dok se ne izmeni
+
+Nije dobro ne ucitavas dobro kolicine problem je sto nismo utvrdili vrste voca u bazi u tabeli Artikali ima kolona PrvaKlasifikacijaID taj ID odredjuje koja vrsta robe je Artikal i to je ovako  ako je PrvaKlasifikacijaID =
+		   6,  "Malina" 
+              10, "Kupina"
+              11, "Višnja" 
+              15, "Šljiva" 
+             28, "Kajsija"
+             34, "Jagoda"
+             39, "Borovnica"
+Ovo imas i u Services/Implementations/IzvestajService/ArtikliStatistikaService.cs 
+Ma primer u koloni Prenos Zaliha sva roba na zalihama kojoj je Sva roba kojoj je PrvaKlasifikacijaID =6 je Malina i sabira se itd za svaku kolonu jedino Se kod kupine jos jednom deli na Kupinu i Kupinu Slatku
+
+Smo nije dobra kolona 
+
+Koji su nam sledeći potezi i imas li neka pitanja?
+Otvorena pitanja — tri stvari koje treba potvrditi pre Faze 3 (prosečna nabavna cena , EUR kurs , IS- dokumenti)
+
+
+
+
+
+
+U vPrometFinansijev9 postoje dokumenti tipa IS- (isplata). Treba mi potvrda: Odgovor: Da postoji
+
+Da li IS- dokumenti imaju KomitentID koji odgovara istom dobavljaču kao i KL- dokumenti? Tj. ako je Komitent "Petar Petrović" na KL- nabavkama, da li isti KomitentID stoji i na IS- isplatama?Odgovor:  Da u svakoj tabeli u bazi KomintentID je isti.
+
+Kolona za iznos — na KL- dokumentima se gleda Potrazuje (vrednost robe). Na IS- dokumentima — da li je to Duguje, Potrazuje, ili neka druga kolona?Odgovor:  Ako je  IS- to je isplata a iznos je u koloni Duguje.
+
+Filter po datumu — isplate se filtriraju po istom periodu kao i nabavka (Od/Do), ili isplate idu u poseban period? Isto se filtrira kao i nabavka Od/Do cak mozemo koristiti isti filter za sve izvetaje .
+
+Što se tiče marže, razumeo sam iz prethodne sesije: korisnik unosi cenu marže po kg ručno u JSON konfiguraciju, a formula je: 
+
+Vrednost Roba = Vrednost sa Maržom − (marža/kg × kupljene kg) Odgovor: Da 
+Vrednost sa Maržom = SUM Potrazuje na KL- dokumentima Odgovor: Da
+Samo ako se u JSON ne upiše cenu marze onda unosimo Vrednost  sa Maržom pošto neki dobavljači nemaju maržu.
+
+
+Moramo proveriti dali se kada racunamo lager po vrsti robe racunamo i robu na lageru proizvodnje, 
+
+
+Greske 
+1.Iako sam izabrao 10 komintenata ucitava samo 6. 
+2. Unos marze mora biti za svaku vrstu voća posto su drugacije cene za različite vrste robe 
+3. Pri unosu marze kad se unese iznos nece da sacuva
+4. Fali kolona Stanje Roba gde treba da od Isplate oduzme Vrednost roba da bi dobili dug samo za robu
+
+Moramo proveriti dali se kada racunamo lager po vrsti robe racunamo i robu na lageru proizvodnje, 
+
+
+Greske: 
+1.Kolona Marža treba ako nema podataka 0,00 a ne kao sad samo - 
+2. I dalje nemamo kolonu Stanje Ukupno ( Isplata - Vrednost sa Maržom)
+
+
+1. Nabavna Vrednost Sezona — ovo je jednostavno: SUM(Potrazuje) na KL- dokumentima za period. Da li treba i u EUR ili samo RSD? Za sad samo RSD dok ne ubacimo srednji kurs eura kasnije.
+
+2. Nabavna Vrednost Lager — vrednost robe koja je bila na lageru na dan pre sezone. Formula:
+
+PrenosaZaliha (kg) × prosečna nabavna cena (din/kg) 
+
+Prosečna cena — moj predlog: SUM(Potrazuje) / SUM(ABS(Kolicina)) iz vPrometFinansijev9 WHERE KL- za prethodnih 12 meseci pre početka sezone. Da li to odgovara, ili imaš drugi izvor za cenu?Treba  pripaziti da  kada izracunavamo Nabavnu cenu da pri racunjanju ne koristi kalkulacije gde je cena robe 0 samo one koje imaju vrednost. Isto pripaziti za cene poluproizvoda na zalihama mozda nema nabavke za tu vrstu poluproizvoda mozda i za ovo bi mogli da dodamo JSON gde bi imali tabelu svih roba i njihovih nabavnih cena pa ako nesto treba izmeniti moze se rucno uneti i snimiti. 
+
+3. Prerada — u dokumentu stoji da korisnik unosi cenu prerade po kg. Da li je to cena prerade po kg gotovog proizvoda (npr. din/kg D/Z Maline), ili po kg sirovine (din/kg sveze Maline)?To je cena po kg sirovine 
+
+4. Prodaja — SUM(Duguje) na FK- dokumentima za period. Samo RSD ili i EUR? Samo RSD
+
+Izmene 
+1.Svuda gde u nazivu voca ima -ALTIVA tu be treba racunati niti u Lageru niti u prodaji niti u vrednostima raoba na lageru svuda treba da se ta roba ne racuna. 
+2. Treba iz svih izvestaja koje smo uradili da se izbaci vrsta voca Borovnica MagacinID= 39 i netreba je nigde racunati
+Te robe su na usluznoj preradi i to ce mo kasnije dodati jos jednu tabelu usluga.
+
+Kad ovo urdis onda mozemo dalje
+
+
+Nije dobro u formula Iskorišćenja (Sirovina → Gotov Proizvod)  delu kad se dodaje gotovi proizvod pa u formi za pretragu treba da lista samo artikle sa istom PrvaKlasifikacijaID  tj samo taj tip voca. Isto treba da ucitava sve artikle tog voca a ne samo gotove proizvode. 
+A u delu 4. Prodajne Cene Gotove Robe (din/kg) sad ucitava sve gotove proizvoda a  tu treba da budu ucitani samo Artikli koje koje smo izabrali u delu Formula Iskorišcenja znaci tu se pojavljuju Artikli za koje su nam i potrebne cene
+
+
+Sad sam pogledao kako racunamo prosečne nabavne cene robe na lager I imamo gresku prosecnu cenu koju sad dobijamo je u principu tacna ali je 
+Imamo problem u delu izvestaja  Obračun Poslovanja  i to 
+1. Nabavna vrednost sezona, mi vrednost dobijamo iz dokumenata KL- kolona Potrazuje Ali to je iznos ukupan sa PDV(porezom) Ali za obracun zarade ne mozemo koristiti vrednost sa porezom posto se on vraca. Trebalo bi umanjiti vrednost nabavke za 10% to jeste vrednost bez PDV. Po meni najlakse je kad dobijemo ukupnu vrednost jedne vrste Voca samo taj iznos pomnozimo sa O,9090 i tako dobijamo nabavnu vrednost bez PDV
+2.Nabavna Vrednost Lager isto kao prethodni iznosi treba da budu bez pdv. Isto se izracunava kao iz prrethodni primer
+3.Prodaja, Ovde imamo problem posto uzimamo vrednost iz FK- kolona Duguje to su Bruto cene sa PDV za sve kupce sem Inostranih kupaca gde je ova vrednost bez PDV. Znaci trebalo bi sumu vrednosti prodajev kupaca koji nisu Ino oduzeti PDV 10% kao i na prethodnim primerima a Sume vrednosti ino kupcima ostaviti ona je dobra.
+Vrednosti zaliha su dobro posto su ubacene cene bez PDV
+
+
+
+Ovde smo stale ovo sam pokušao da ovjasnim ali nisam uspeo.
+
+
+Imamo greske opet. Pomešali smo izvestaje I sta menjamo. Evo bolje objašnjenje za podatke koje nam trebaju u izveštaju  Obračun Poslovanja u tom izveštaju imamo redove i iznose koje treba da izračunamo. Idemo jedan po jedan 
+1. Nabavna Vrednost Sezona ovo se dobro računa izgleda ne diram sad ništa testiraćemo na kraju.
+2. Zalihe Vrednost. Ovo je podatak koji pogrešno računamo prvo moramo promenit naziv treba ga primenovati u  Prenete Zalihe Vrednost. Ovde treba da dobijemo nabavnu vrednost roba koje prenosimo iz prethodne sezone. Kolicine roba koje imamo kad smo racunali kolicinu Prenetih zaliha u prvim izvestaju na stranici. Za te kolicine povlacimo prosecne nabavne cene iz prethodne sezone bez pdv a ako nemamo onda u konfiguraciji ubacujemo rucno cene u Nabavne Cene Robe na Lageru i ovde mislim da je problem prvo moramo promeniti ime konfiguracije u Nabavne Cene Zaliha i ovde ucitavamo kolicine i robe iz Prenete Zalihe. 
+3. Prerada izgleda da je dobra necemo dirati za sada 
+4. Prodaja izgleda da je dobra i netreb dirati
+5. Vrednost Robe na Zalihama ovde treba da ucitavamo kolicine Robe trenutno na lageru i koristimo formula u kalkulaciji 3. Formula Iskorišćenja (Sirovina → Gotov Proizvod). 
+Ovu formulu moramo malo izmeniti. Ista je forma kao I sada Ali treba da se za svaku Vrstu voca postojecu formu promeniti naziv tabele umesto  Malina treba Malina Sirovine I to bi bio prvi tab kalkulacije I dodati drugi tab Malina Poluproizvodi i tako za svaku vrstu voca.Onda U prvim tabovima tj Sirovine ucitavamo trenutne kolicine sirovina na lageru bez usluge onda te kolicine provlacimo kroz formulu da bi dobili kolicine gotove robe po formuli ali ovde je isto greska mi sad imamo mogucnost da dodajemo samo gotov proizvod u tabelu ali to nije dobro jer see pri preradi ne dobija samo gotov proizvod već i poluproizvodi znači trebalo bi dodati za svaku vrstu voća i Dodaj Poluproizvod. Kada Formula iskorišcenja dobijemo količine u tabu  Poluproizvodi povlačimo kolicine Poluproizvoda koji su trenutno nalaze na lageru plus količine Poluproizvoda koje smo dobili iz Taba Sirovine i onda ovde dobijamo koliko cemo iz Poluproizvoda dobiti gotovih proizvoda. Onda te dobijene Količine gotovih proizvoda sabiramo sa količinama gotovih roba koje su na lageru i onda te kolicine gotovih proizvoda množimo sa cenama iz forme 4. Prodajne Cene Gotove Robe (din/kg) i tako dobijamo prodajnu vrednost trenutnog lagera. 
+6. Profit se racuna ( Prodaja + Vrednost Robe na Zalihama) - (Nabavna Vrednost Sezona + Prenete zlihe vrednost + Prerada) = Profit
+7. Profitna Stopa se dobija ( (profit / (Nabavna Vrednost Sezona + Prenete zlihe vrednost + Prerada) x 100)

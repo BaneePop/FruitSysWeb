@@ -1,0 +1,143 @@
+@rendermode @(new InteractiveServerRenderMode())
+@using Microsoft.AspNetCore.Components.Web
+@using ApexCharts
+@using FruitSysWeb.Components.Charts
+
+@* All styles moved to wwwroot/css/shared-components.css *@
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="@Icon"></i>
+            @Title
+        </h6>
+        @if (ShowRefreshButton)
+        {
+            <button class="btn btn-sm btn-outline-primary" @onclick="RefreshChart" disabled="@IsLoading">
+                <i class="bi bi-arrow-clockwise @(IsLoading ? "spin" : "")"></i>
+            </button>
+        }
+    </div>
+    <div class="card-body">
+        @if (IsLoading)
+        {
+            <div class="text-center p-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Učitavam podatke...</p>
+            </div>
+        }
+        else if (HasError)
+        {
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+                Greška pri učitavanju podataka.
+                <button class="btn btn-sm btn-outline-danger ms-2" @onclick="RefreshChart">
+                    Pokušaj ponovo
+                </button>
+            </div>
+        }
+        else if (Data == null || !Data.Any())
+        {
+            <div class="text-center p-4 text-muted">
+                <i class="bi bi-pie-chart" style="font-size: 2rem;"></i>
+                <p class="mt-2">Nema podataka za prikaz</p>
+            </div>
+        }
+        else
+        {
+            <ApexChart TItem="ChartDataPoint"
+                       @key="@($"pie-chart-{Title}-{Data?.Count ?? 0}")"
+                       Title="@ChartTitle"
+                       Height="@Height"
+                       Options="@ChartOptions">
+                <ApexPointSeries TItem="ChartDataPoint"
+                                 Items="@Data"
+                                 Name="@SeriesName"
+                                 SeriesType="SeriesType.Pie"
+                                 XValue="@(e => e.Label)"
+                                 YValue="@(e => (decimal?)e.Value)" />
+            </ApexChart>
+            
+            @if (ShowSummary && Data?.Any() == true)
+            {
+                var ukupno = Data.Sum(x => x.Value);
+                <div class="mt-2">
+                    <table class="table table-sm mb-1" style="font-size:0.8rem;">
+                        <tbody>
+                            @foreach (var item in Data)
+                            {
+                                <tr>
+                                    <td style="width:12px; padding:2px 4px;">
+                                        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:@(item.Color ?? "#888");"></span>
+                                    </td>
+                                    <td style="padding:2px 6px;">@item.Label</td>
+                                    <td class="text-end" style="padding:2px 4px;"><strong>@item.Value.ToString("N0") @Unit</strong></td>
+                                    <td class="text-end text-muted" style="padding:2px 4px;">@((item.Value / ukupno * 100).ToString("F1"))%</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <small class="text-muted"><strong>Ukupno:</strong> @ukupno.ToString("N0") @Unit</small>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Pie Chart";
+    [Parameter] public string ChartTitle { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "bi bi-pie-chart";
+    [Parameter] public string SeriesName { get; set; } = "Vrednost";
+    [Parameter] public string Unit { get; set; } = "";
+    [Parameter] public int Height { get; set; } = 350;
+    [Parameter] public bool ShowRefreshButton { get; set; } = true;
+    [Parameter] public bool ShowSummary { get; set; } = true;
+    [Parameter] public bool IsLoading { get; set; } = false;
+    [Parameter] public bool HasError { get; set; } = false;
+    [Parameter] public List<ChartDataPoint>? Data { get; set; }
+    [Parameter] public EventCallback OnRefresh { get; set; }
+    [Parameter] public List<string>? Colors { get; set; }
+    private List<string> DefaultColors => new List<string>
+    {
+        "#28a745", "#dc3545", "#007bff", "#ffc107", "#6f42c1",
+        "#20c997", "#fd7e14", "#e83e8c", "#6c757d", "#17a2b8"
+    };
+
+    private ApexChartOptions<ChartDataPoint> ChartOptions => new()
+    {
+        Chart = new Chart
+        {
+            Toolbar = new Toolbar { Show = false }
+        },
+        Colors = Colors ?? DefaultColors,
+        Labels = Data?.Select(x => x.Label).ToList() ?? new List<string>(),
+        DataLabels = new DataLabels
+        {
+            Enabled = true,
+            Formatter = "function(val) { return Math.round(val) + '%' }",
+            Style = new DataLabelsStyle { FontSize = "11px" },
+            DropShadow = new DropShadow { Enabled = false }
+        },
+        Legend = new Legend { Show = false },
+        Tooltip = new Tooltip
+        {
+            Y = new TooltipY
+            {
+                Formatter = $"function(val) {{ return val.toLocaleString() + ' {Unit}' }}"
+            }
+        }
+    };
+
+    private async Task RefreshChart()
+    {
+        if (OnRefresh.HasDelegate)
+        {
+            await OnRefresh.InvokeAsync();
+        }
+    }
+}
+
+

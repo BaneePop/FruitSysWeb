@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<title>Planska vs. stvarna cena koštanja — PODACI NEDOSTUPNI</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--text:#1a2332;--muted:#6b7280;--border:#e5e7eb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);padding:24px}
+.container{max-width:900px;margin:0 auto}
+.header{background:linear-gradient(135deg,#0f766e,#115e59);color:#fff;padding:24px;border-radius:12px;margin-bottom:20px}
+.header h1{font-size:22px;margin-bottom:4px}
+.header p{opacity:.85;font-size:14px}
+.badge-warn{display:inline-block;background:#fbbf24;color:#78350f;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-left:8px}
+.card{background:var(--card);border-radius:10px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:20px}
+.card h3{font-size:16px;margin-bottom:12px;color:#115e59}
+.card p{line-height:1.7;margin-bottom:10px;color:#374151}
+.card ul{margin:10px 0 10px 20px;line-height:1.8}
+code{background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:13px;color:#be123c}
+.tbl{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+.tbl th,.tbl td{padding:8px 10px;text-align:left;border-bottom:1px solid #e5e7eb}
+.tbl th{background:#f9fafb;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:11px}
+.ok{color:#059669;font-weight:600}
+.bad{color:#dc2626;font-weight:600}
+.sample-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+.sample-tbl th,.sample-tbl td{padding:8px;border-bottom:1px solid #f0f0f0;text-align:right}
+.sample-tbl th:first-child,.sample-tbl td:first-child{text-align:left}
+.sample-tbl thead th{background:#f9fafb;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Planska vs. stvarna cena koštanja <span class="badge-warn">PODACI NEDOSTUPNI</span></h1>
+    <p>Planski trošak (<code>ObracunatiPlanskiTrosak</code>) nije popunjen u bazi</p>
+  </div>
+
+  <div class="card">
+    <h3>Analiza kolona iz <code>RadniNalog</code> (2024+)</h3>
+    <p>Za 713 radnih naloga od 2024. do danas proverene su 4 relevantne kolone:</p>
+    <table class="tbl">
+      <thead><tr><th>Kolona</th><th>Prosek</th><th>Broj nenultih</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><code>Kolicina</code> (plan kg)</td><td>—</td><td>713 / 713</td><td class="ok">✓ popunjeno</td></tr>
+        <tr><td><code>ObracunatiPlanskiTrosak</code></td><td>0</td><td>0 / 713</td><td class="bad">✗ nikada nije popunjeno</td></tr>
+        <tr><td><code>DirektanRadUkupno</code> (stvarni rad)</td><td>162.488 RSD</td><td>652 / 713</td><td class="ok">✓ popunjeno</td></tr>
+        <tr><td><code>DirektanRadObracunato</code></td><td>162.488 RSD</td><td>652 / 713</td><td class="ok">✓ popunjeno</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Primer 3 poslednjih naloga</h3>
+    <table class="sample-tbl">
+      <thead><tr><th>RN</th><th>Datum</th><th>Artikal</th><th>Plan (kg)</th><th>Planski trošak</th><th>Stvarni rad</th></tr></thead>
+      <tbody>
+        <tr><td>RN-26-0119</td><td>16.04.2026</td><td>D/Z Malina - ALTIVA</td><td>10.080</td><td class="bad">0 RSD</td><td class="ok">166.362 RSD</td></tr>
+        <tr><td>RN-26-0118</td><td>15.04.2026</td><td>D/Z Malina - ALTIVA</td><td>10.170</td><td class="bad">0 RSD</td><td class="ok">149.940 RSD</td></tr>
+        <tr><td>RN-26-0117</td><td>14.04.2026</td><td>Malina Rollend</td><td>17.820</td><td class="bad">0 RSD</td><td class="ok">288.456 RSD</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Zašto ovo ne radi</h3>
+    <p>Za poređenje "planska vs. stvarna" potrebne su <strong>obe strane</strong>: plan (koliko je <em>očekivano</em> da košta) i stvarno (koliko je <em>izašlo</em> iz proizvodnje). Trenutno postoji samo stvarna strana (direktan rad), ali <strong>niko ne unosi / ne računa planski trošak</strong> pre pokretanja naloga.</p>
+  </div>
+
+  <div class="card">
+    <h3>Šta treba uraditi pre nego što ovaj izveštaj bude imao smisla</h3>
+    <ul>
+      <li>Odlučiti <strong>izvor planskog troška</strong>: da li se ručno unosi prilikom otvaranja RN, da li se povlači iz <code>PlanskiTrosak</code> tabele (sadrži samo 28 redova), ili se računa po artiklu iz normativa (<code>RadnaProcesProizvodTroskovnik</code>).</li>
+      <li>Dodati u UI <strong>polje/formu</strong> za unos planskog troška pri kreiranju naloga, ili <strong>automatski obračun</strong> na osnovu normativa.</li>
+      <li>Popuniti retroaktivno planski trošak za istorijske naloge (ili prihvatiti da izveštaj počinje od nekog datuma).</li>
+    </ul>
+  </div>
+
+  <div class="card" style="background:#ecfdf5;border-left:4px solid #059669">
+    <h3 style="color:#065f46">Alternativa koja može odmah</h3>
+    <p style="color:#065f46">Umesto "planska vs. stvarna", može se napraviti:</p>
+    <ul style="color:#065f46">
+      <li><strong>Stvarna cena koštanja po artiklu — trend</strong>: prosek <code>DirektanRadUkupno / Kolicina</code> po artiklu po mesecima. Pokazuje da li trošak rada po kg raste ili opada.</li>
+      <li><strong>Odstupanje od proseka</strong>: za svaki RN, koliko odstupa direktan rad po kg od 12-mesečnog proseka za taj artikal. Izoluje neobične naloge.</li>
+    </ul>
+    <p style="color:#065f46;margin-top:10px;">Ako ti ovo zvuči korisno, mogu odmah da napravim prototip — javi.</p>
+  </div>
+</div>
+</body>
+</html>

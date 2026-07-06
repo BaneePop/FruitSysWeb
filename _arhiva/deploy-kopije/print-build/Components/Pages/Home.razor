@@ -1,0 +1,523 @@
+@page "/"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using FruitSysWeb.Services.Interfaces
+@using FruitSysWeb.Services.Models.Requests
+@using FruitSysWeb.Components.Charts
+@using FruitSysWeb.Components.Shared.Layout
+@using FruitSysWeb.Services.Core
+@using FruitSysWeb.Models
+
+@inject IFinansijeService FinansijeService
+@inject IProizvodnjaService ProizvodnjaService
+@inject IMagacinLagerService LagerService
+@inject IExportService exportService
+@inject NavigationManager NavigationManager
+@inject ITypeMappingService TypeMapping
+@inject IPreradaService PreradaService
+@inject IBrziPregledService BrziPregledService
+
+<style>
+    .main-header {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        border-radius: 15px;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        border: 1px solid #0b5ed7;
+    }
+    
+    .section-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .section-card {
+        background: #1a2332;
+        border-radius: 10px;
+        padding: 1.25rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+        border-left: 4px solid #198754;
+        cursor: pointer;
+        border: 1px solid #374151;
+    }
+
+    .section-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        border-left-color: #20c997;
+    }
+
+    .section-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        color: #198754;
+        transition: all 0.3s ease;
+    }
+
+    .section-card:hover .section-icon {
+        color: #20c997;
+        transform: scale(1.1);
+    }
+
+    .section-title {
+        font-weight: 700;
+        color: #e5e7eb;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    .section-description {
+        color: #9ca3af;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        margin: 0;
+    }
+
+    @@media (max-width: 1200px) {
+        .section-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .section-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .section-card {
+            padding: 1.5rem;
+        }
+
+        .section-icon {
+            font-size: 2.5rem;
+        }
+    }
+</style>
+
+<!-- Header -->
+<div class="main-header text-white py-5 mb-4">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-5 mb-2 fw-bold">
+                    FruitSysWeb
+                </h1>
+                <p class="lead mb-0">Integrisani sistem za upravljanje proizvodnjom voća</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="text-white-50">
+                    <i class="bi bi-calendar-event me-2"></i>@DateTime.Now.ToString("dd.MM.yyyy")
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Main Sections -->
+    <div class="section-grid">
+        <!-- 1. Prerada Home -->
+        <div class="section-card" @onclick="@(() => NavigateTo("/preradahome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-gear-wide-connected"></i>
+                </div>
+                <h3 class="section-title">Prerada</h3>
+                <p class="section-description">
+                    Upravljanje proizvodnim procesima, radnim nalozima i smenskim izveštajima
+                </p>
+            </div>
+        </div>
+
+        <!-- 2. Kvalitet Home -->
+        <div class="section-card" @onclick="@(() => NavigateTo("/kvalitethome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <h3 class="section-title">Kvalitet</h3>
+                <p class="section-description">
+                    Sledljivost, kontrole radnih naloga i upravljanje reklamacijama
+                </p>
+            </div>
+        </div>
+
+        <!-- 3. Finansije Home -->
+        <div class="section-card" @onclick="@(() => NavigateTo("/finansijehome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <h3 class="section-title">Finansije</h3>
+                <p class="section-description">
+                    Pregled finansijskih tokova, nabavke i prodaje
+                </p>
+            </div>
+        </div>
+
+        <!-- 4. Poslovanje Home -->
+        <div class="section-card" @onclick="@(() => NavigateTo("/poslovanje"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-briefcase"></i>
+                </div>
+                <h3 class="section-title">Poslovanje</h3>
+                <p class="section-description">
+                    Fakture, ugovori, promene i kartice komitenata
+                </p>
+            </div>
+        </div>
+
+        <!-- 5. Lager Home -->
+        <div class="section-card" @onclick="@(() => NavigateTo("/lagerhome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-boxes"></i>
+                </div>
+                <h3 class="section-title">Lager</h3>
+                <p class="section-description">
+                    Upravljanje magacinskim operacijama i zalihama sirovina i gotovih proizvoda
+                </p>
+            </div>
+        </div>
+
+        <!-- 6. Troškovi Home -->
+        <div class="section-card" @onclick="@(() => NavigateTo("/troskovihome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-receipt-cutoff"></i>
+                </div>
+                <h3 class="section-title">Troškovi i Rashodi</h3>
+                <p class="section-description">
+                    Praćenje troškova, rashoda i operativnih pokazatelja po kategorijama
+                </p>
+            </div>
+        </div>
+
+        <!-- 7. Promet Home -->
+        <div class="section-card" @onclick="@(() => NavigateTo("/promethome"))">
+            <div class="text-center">
+                <div class="section-icon">
+                    <i class="bi bi-arrow-left-right"></i>
+                </div>
+                <h3 class="section-title">Promet Roba</h3>
+                <p class="section-description">
+                    Upravljanje nabavkom, prodajom i izveštajima o prometu robe
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Najavljeni Utovari Section -->
+    <div class="row mt-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-truck me-2 text-primary"></i>Najavljeni Utovari (narednih 20 dana)
+                    </h5>
+                    @if (najavljeniUtovari != null)
+                    {
+                        <span class="badge bg-primary">@najavljeniUtovari.Count stavki</span>
+                    }
+                </div>
+                <div class="card-body p-0">
+                    @if (najavljeniUtovari == null)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Učitavanje...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Učitavanje najavljenih utovara...</p>
+                        </div>
+                    }
+                    else if (!najavljeniUtovari.Any())
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-check display-3 text-muted"></i>
+                            <h5 class="mt-3 text-muted">Nema najavljenih utovara u narednih 20 dana</h5>
+                            <p class="text-muted">Svi radni nalozi su isporučeni ili trenutno nema aktivnih naloga</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Radni nalog</th>
+                                        <th>Datum utovara</th>
+                                        <th>Dana</th>
+                                        <th>Kupac</th>
+                                        <th>Artikal</th>
+                                        <th>Potrebna količina</th>
+                                        <th>Lot</th>
+                                        <th>Ugovor prodaja</th>
+                                        <th>Prioritet</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var utovar in najavljeniUtovari)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge @utovar.StatusBadgeClass">@utovar.RadniNalog</span>
+                                            </td>
+                                            <td>
+                                                <strong>@TypeMapping.FormatDate(utovar.DatumIsporuke ?? DateTime.MinValue)</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@utovar.DanaDoUtovara dana</span>
+                                            </td>
+                                            <td>@utovar.Kupac</td>
+                                            <td>
+                                                <span class="text-primary">@utovar.Artikal</span>
+                                            </td>
+                                            <td>
+                                                <strong>@TypeMapping.FormatWeight(utovar.Kolicina)</strong>
+                                            </td>
+                                            <td>
+                                                <code class="text-info">@(utovar.LotNaloga ?? "N/A")</code>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@(utovar.BrojUgovora ?? "N/A")</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge @utovar.UrgentnostBadgeClass">@utovar.StatusUrgentnosti</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nabavka i Prodaja Charts - Poslednjih 30 Dana -->
+    <div class="row mt-4 mb-4">
+        <!-- Nabavka Chart -->
+        <div class="col-md-6 mb-3">
+            <ApexMultiSeriesLineChart
+                Title="Nabavka po Vrsti Voća (Poslednjih 30 Dana)"
+                Icon="bi bi-cart-plus"
+                SeriesData="@nabavkaSeriesData"
+                Unit="kg"
+                IsWeight="true"
+                IsLoading="@isLoadingNabavka"
+                HasError="@hasErrorNabavka"
+                ShowSummary="true"
+                Height="450"
+                OnRefresh="@UcitajNabavkuPodatke" />
+        </div>
+
+        <!-- Prodaja Chart -->
+        <div class="col-md-6 mb-3">
+            <ApexMultiSeriesLineChart
+                Title="Prodaja po Vrsti Voća (Poslednjih 30 Dana)"
+                Icon="bi bi-cart-check"
+                SeriesData="@prodajaSeriesData"
+                Unit="kg"
+                IsWeight="true"
+                IsLoading="@isLoadingProdaja"
+                HasError="@hasErrorProdaja"
+                ShowSummary="true"
+                Height="450"
+                OnRefresh="@UcitajProdajuPodatke" />
+        </div>
+    </div>
+
+    <!-- Charts Section (Existing Dashboard Analytics) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart me-2"></i>Analitika i pregled
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <DashboardCharts />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<NajavljeniUtovarModel>? najavljeniUtovari;
+
+    // Nabavka chart data
+    private List<FruitSysWeb.Components.Charts.ChartSeriesData> nabavkaSeriesData = new();
+    private bool isLoadingNabavka = true;
+    private bool hasErrorNabavka = false;
+
+    // Prodaja chart data
+    private List<FruitSysWeb.Components.Charts.ChartSeriesData> prodajaSeriesData = new();
+    private bool isLoadingProdaja = true;
+    private bool hasErrorProdaja = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            UcitajNajavljeneUtovare(),
+            UcitajNabavkuPodatke(),
+            UcitajProdajuPodatke()
+        );
+    }
+
+    private async Task UcitajNajavljeneUtovare()
+    {
+        try
+        {
+            najavljeniUtovari = await PreradaService.UcitajNajavljeneUtovare();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Greška pri učitavanju najavljenih utovara: {ex.Message}");
+            najavljeniUtovari = new List<NajavljeniUtovarModel>();
+        }
+    }
+
+    private async Task UcitajNabavkuPodatke()
+    {
+        try
+        {
+            isLoadingNabavka = true;
+            hasErrorNabavka = false;
+            StateHasChanged();
+
+            // Učitaj podatke po danima (za chart) i ukupne vrednosti (za summary)
+            var podaciTask = BrziPregledService.UcitajNabavkuPoDanimaPoVociAsync();
+            var ukupnoTask = BrziPregledService.UcitajUkupneVrednostiNabavkeAsync();
+
+            await Task.WhenAll(podaciTask, ukupnoTask);
+
+            var podaci = await podaciTask;
+            var ukupno = await ukupnoTask;
+
+            // Kreiraj kompletan set svih datuma (unija svih datuma iz svih vrsta voća)
+            var sviDatumi = podaci
+                .SelectMany(voce => voce.Value.Keys)
+                .Distinct()
+                .OrderBy(d => {
+                    // Sortiraj po datumu parsiranjem "dd.MM" formata
+                    var parts = d.Split('.');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out var day) && int.TryParse(parts[1], out var month))
+                    {
+                        return new DateTime(DateTime.Now.Year, month, day);
+                    }
+                    return DateTime.MinValue;
+                })
+                .ToList();
+
+            // Konvertuj Dictionary<VrstaVoca, Dictionary<Datum, Kolicina>> u ChartSeriesData
+            // Svaka serija mora imati SVE datume, stavlja 0 gde nema podataka
+            nabavkaSeriesData = podaci
+                .Select(voce => new FruitSysWeb.Components.Charts.ChartSeriesData
+                {
+                    Name = voce.Key,
+                    Data = sviDatumi
+                        .Select(datum => new FruitSysWeb.Components.Charts.ChartDataPoint
+                        {
+                            Label = datum, // "dd.MM" format
+                            Value = voce.Value.ContainsKey(datum) ? voce.Value[datum] : 0 // 0 ako nema podataka
+                        })
+                        .ToList(),
+                    Color = FruitSysWeb.Components.Charts.ChartDataHelper.GetFruitColor(voce.Key),
+                    TotalKolicina = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Kolicina : 0,
+                    TotalVrednost = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Vrednost : 0
+                })
+                .ToList();
+
+            isLoadingNabavka = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Greška pri učitavanju nabavke: {ex.Message}");
+            hasErrorNabavka = true;
+            isLoadingNabavka = false;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task UcitajProdajuPodatke()
+    {
+        try
+        {
+            isLoadingProdaja = true;
+            hasErrorProdaja = false;
+            StateHasChanged();
+
+            // Učitaj podatke po danima (za chart) i ukupne vrednosti (za summary)
+            var podaciTask = BrziPregledService.UcitajProdajuPoDanimaPoVociAsync();
+            var ukupnoTask = BrziPregledService.UcitajUkupneVrednostiProdajeAsync();
+
+            await Task.WhenAll(podaciTask, ukupnoTask);
+
+            var podaci = await podaciTask;
+            var ukupno = await ukupnoTask;
+
+            // Kreiraj kompletan set svih datuma (unija svih datuma iz svih vrsta voća)
+            var sviDatumi = podaci
+                .SelectMany(voce => voce.Value.Keys)
+                .Distinct()
+                .OrderBy(d => {
+                    // Sortiraj po datumu parsiranjem "dd.MM" formata
+                    var parts = d.Split('.');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out var day) && int.TryParse(parts[1], out var month))
+                    {
+                        return new DateTime(DateTime.Now.Year, month, day);
+                    }
+                    return DateTime.MinValue;
+                })
+                .ToList();
+
+            // Konvertuj Dictionary<VrstaVoca, Dictionary<Datum, Kolicina>> u ChartSeriesData
+            // Svaka serija mora imati SVE datume, stavlja 0 gde nema podataka
+            prodajaSeriesData = podaci
+                .Select(voce => new FruitSysWeb.Components.Charts.ChartSeriesData
+                {
+                    Name = voce.Key,
+                    Data = sviDatumi
+                        .Select(datum => new FruitSysWeb.Components.Charts.ChartDataPoint
+                        {
+                            Label = datum, // "dd.MM" format
+                            Value = voce.Value.ContainsKey(datum) ? voce.Value[datum] : 0 // 0 ako nema podataka
+                        })
+                        .ToList(),
+                    Color = FruitSysWeb.Components.Charts.ChartDataHelper.GetFruitColor(voce.Key),
+                    TotalKolicina = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Kolicina : 0,
+                    TotalVrednost = ukupno.ContainsKey(voce.Key) ? ukupno[voce.Key].Vrednost : 0
+                })
+                .ToList();
+
+            isLoadingProdaja = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Greška pri učitavanju prodaje: {ex.Message}");
+            hasErrorProdaja = true;
+            isLoadingProdaja = false;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void NavigateTo(string url)
+    {
+        NavigationManager.NavigateTo(url);
+    }
+}

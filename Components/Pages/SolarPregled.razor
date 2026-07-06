@@ -1,0 +1,394 @@
+@page "/solar-pregled"
+@rendermode @(new InteractiveServerRenderMode())
+@using ApexCharts
+@using FruitSysWeb.Models
+@using FruitSysWeb.Models.Solar
+@using FruitSysWeb.Services.Solar
+@using Microsoft.Extensions.Options
+@inject SolarLocalDbService SolarDb
+@inject IOptions<FusionSolarOptions> SolarOptionsAccessor
+
+<PageTitle>Solarna energija — dostupni podaci</PageTitle>
+
+<div class="solar-header text-white py-3 mb-4">
+    <div class="container-fluid">
+        <h1 class="h2 mb-1">
+            <i class="bi bi-sun me-2"></i>FusionSolar — dostupni podaci
+        </h1>
+        <p class="mb-0 opacity-75">
+            Pregled svih podataka, grafikona i izveštaja koje možemo graditi iz Huawei FusionSolar API-ja
+            (postrojenje <strong>@SolarPodatakKatalog.Postrojenje</strong>)
+        </p>
+    </div>
+</div>
+
+<div class="solar-pregled-page container-fluid pb-4">
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card bg-dark border-secondary h-100">
+        <div class="card-body">
+          <div class="text-muted small">Postrojenje</div>
+          <div class="h5 mb-0">@SolarPodatakKatalog.Postrojenje</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-dark border-secondary h-100">
+        <div class="card-body">
+          <div class="text-muted small">stationDn</div>
+          <div class="h6 mb-0 font-monospace">@SolarPodatakKatalog.StationDn</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-dark border-secondary h-100">
+        <div class="card-body">
+          <div class="text-muted small">Logger SN</div>
+          <div class="h6 mb-0 font-monospace">@SolarPodatakKatalog.LoggerSn</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-dark border-secondary h-100">
+        <div class="card-body">
+          <div class="text-muted small">Uređaji</div>
+          <div class="h6 mb-0">3× inverter + 1× PowerMeter</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (_isConfigured)
+  {
+    <div class="alert alert-success border-success bg-dark text-success-emphasis mb-4" role="alert">
+      <i class="bi bi-check-circle me-2"></i>
+      Integracija je <strong>aktivna</strong> — <code>SolarPollingService</code> povlači real-time KPI svakih
+      @_pollIntervalSeconds sekundi i upisuje ga u lokalnu SQLite bazu (<code>Data/solar.db</code>, odvojeno od fruitsysdb_v2).
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card bg-dark border-success h-100">
+          <div class="card-body">
+            <div class="text-muted small">Trenutna snaga</div>
+            <div class="h4 mb-0">@(_poslednjiKpi?.CurrentPower?.ToString("N2") ?? "—") kW</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-dark border-success h-100">
+          <div class="card-body">
+            <div class="text-muted small">Proizvedeno danas</div>
+            <div class="h4 mb-0">@(_poslednjiKpi?.DailyEnergy?.ToString("N1") ?? "—") kWh</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-dark border-success h-100">
+          <div class="card-body">
+            <div class="text-muted small">Ukupno od instalacije</div>
+            <div class="h4 mb-0">@(_poslednjiKpi?.CumulativeEnergy?.ToString("N0") ?? "—") kWh</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-dark border-success h-100">
+          <div class="card-body">
+            <div class="text-muted small">Poslednje očitavanje</div>
+            <div class="h6 mb-0">@(_poslednjiKpi != null ? _poslednjiKpi.Timestamp.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss") : "Još nema podataka")</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card bg-dark border-secondary h-100">
+          <div class="card-body">
+            <div class="text-muted small">Status uređaja</div>
+            <div class="h5 mb-0">
+              @if (_poslednjiKpi?.TotalDevices != null)
+              {
+                <span class="@(_poslednjiKpi.TroubleDevices > 0 || _poslednjiKpi.DisconnectedDevices > 0 ? "text-warning" : "text-success")">
+                  @_poslednjiKpi.ConnectedDevices / @_poslednjiKpi.TotalDevices connected
+                </span>
+              }
+              else
+              {
+                <span>—</span>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-dark border-secondary h-100">
+          <div class="card-body">
+            <div class="text-muted small">Uređaji sa problemom</div>
+            <div class="h5 mb-0">@(_poslednjiKpi?.TroubleDevices ?? 0)</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-dark border-secondary h-100">
+          <div class="card-body">
+            <div class="text-muted small">Diskonektovani uređaji</div>
+            <div class="h5 mb-0">@(_poslednjiKpi?.DisconnectedDevices ?? 0)</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-dark border-secondary h-100">
+          <div class="card-body">
+            <div class="text-muted small">Notifikacije / eventi</div>
+            <div class="h5 mb-0">@(_poslednjiKpi?.NoticeCount ?? 0) / @(_poslednjiKpi?.EventCount ?? 0)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @if (_istorijaProizvodnje.Count >= 2)
+    {
+      <div class="card bg-dark border-secondary mb-4">
+        <div class="card-header border-secondary text-white">
+          <i class="bi bi-graph-up me-2"></i>Ukupna proizvodnja kroz vreme (od instalacije)
+        </div>
+        <div class="card-body">
+          <ApexChart TItem="SolarKpiRecord" Options="@CumulativeChartOptions" Height="320">
+            <ApexPointSeries TItem="SolarKpiRecord"
+                             Items="_istorijaProizvodnje"
+                             Name="Ukupna proizvodnja"
+                             SeriesType="SeriesType.Line"
+                             XValue="@(e => e.Timestamp.ToLocalTime())"
+                             YValue="@(e => e.CumulativeEnergy ?? 0)" />
+          </ApexChart>
+          <p class="text-muted small mb-0 mt-2">Uključuje istorijske tačke povučene iz AppLog fajlova (14.05.2026 — danas).</p>
+        </div>
+      </div>
+    }
+
+    @if (_dnevnaProizvodnja.Count >= 2)
+    {
+      <div class="card bg-dark border-secondary mb-4">
+        <div class="card-header border-secondary text-white">
+          <i class="bi bi-graph-up me-2"></i>Dnevna proizvodnja po danima
+        </div>
+        <div class="card-body">
+          <ApexChart TItem="SolarKpiRecord" Options="@DailyChartOptions" Height="320">
+            <ApexPointSeries TItem="SolarKpiRecord"
+                             Items="_dnevnaProizvodnja"
+                             Name="Dnevna proizvodnja"
+                             SeriesType="SeriesType.Line"
+                             XValue="@(e => e.Timestamp.ToLocalTime())"
+                             YValue="@(e => e.DailyEnergy ?? 0)" />
+          </ApexChart>
+          <p class="text-muted small mb-0 mt-2">
+            Izvor: FusionSolar "Korist komercijalnog i industrijskog PV-a" izveštaji (@_dnevnaProizvodnja.Count dana, @(_dnevnaProizvodnja.Count > 0 ? _dnevnaProizvodnja.Min(d => d.Timestamp).ToLocalTime().ToString("dd.MM.yyyy") : "") — @(_dnevnaProizvodnja.Count > 0 ? _dnevnaProizvodnja.Max(d => d.Timestamp).ToLocalTime().ToString("dd.MM.yyyy") : "")).
+          </p>
+        </div>
+      </div>
+    }
+
+    @if (_dnevnaUsteda.Count >= 2)
+    {
+      <div class="card bg-dark border-secondary mb-4">
+        <div class="card-header border-secondary text-white">
+          <i class="bi bi-cash-coin me-2"></i>Dnevna ušteda zahvaljujući solaru (EUR)
+        </div>
+        <div class="card-body">
+          <ApexChart TItem="SolarKpiRecord" Options="@SavingsChartOptions" Height="320">
+            <ApexPointSeries TItem="SolarKpiRecord"
+                             Items="_dnevnaUsteda"
+                             Name="Ušteda"
+                             SeriesType="SeriesType.Line"
+                             XValue="@(e => e.Timestamp.ToLocalTime())"
+                             YValue="@(e => e.DailySavingsEur ?? 0)" />
+          </ApexChart>
+          <p class="text-muted small mb-0 mt-2">
+            Izvor: FusionSolar "Ukupna komercijalna i industrijska korist" izveštaji (@_dnevnaUsteda.Count dana, @(_dnevnaUsteda.Count > 0 ? _dnevnaUsteda.Min(d => d.Timestamp).ToLocalTime().ToString("dd.MM.yyyy") : "") — @(_dnevnaUsteda.Count > 0 ? _dnevnaUsteda.Max(d => d.Timestamp).ToLocalTime().ToString("dd.MM.yyyy") : "")).
+          </p>
+        </div>
+      </div>
+    }
+  }
+  else
+  {
+    <div class="alert alert-warning border-warning bg-dark text-warning-emphasis mb-4" role="alert">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      <code>FusionSolarClient</code> i upis u SQLite (<code>Data/solar.db</code>) su implementirani, ali polling je
+      <strong>neaktivan</strong> jer nedostaje šifra — dodaj je u <code>appsettings.json</code> (sekcija <code>FusionSolar:Password</code>)
+      ili user-secrets za <code>Odetta_sabac</code> nalog.
+    </div>
+  }
+
+  <h2 class="h4 text-white mb-3"><i class="bi bi-database me-2"></i>Kategorije podataka</h2>
+
+  <div class="accordion mb-4" id="solarAccordion">
+    @for (var i = 0; i < SolarPodatakKatalog.Sve.Count; i++)
+    {
+      var stavka = SolarPodatakKatalog.Sve[i];
+      var id = $"cat{i}";
+      <div class="accordion-item bg-dark border-secondary">
+        <h2 class="accordion-header">
+          <button class="accordion-button @(i > 0 ? "collapsed" : "") bg-dark text-white"
+                  type="button" data-bs-toggle="collapse" data-bs-target="#@id">
+            <span class="badge bg-warning text-dark me-2">@stavka.Status</span>
+            @stavka.Kategorija
+          </button>
+        </h2>
+        <div id="@id" class="accordion-collapse collapse @(i == 0 ? "show" : "")" data-bs-parent="#solarAccordion">
+          <div class="accordion-body">
+            <div class="row g-3">
+              <div class="col-lg-4">
+                <h3 class="h6 text-warning">Podaci koje dobijamo</h3>
+                <ul class="small mb-0">
+                  @foreach (var p in stavka.Polja)
+                  {
+                    <li>@p</li>
+                  }
+                </ul>
+                <p class="small text-muted mt-2 mb-0">
+                  <i class="bi bi-arrow-repeat me-1"></i>@stavka.Ucestalost<br/>
+                  <code class="text-info">@stavka.Izvor</code>
+                </p>
+              </div>
+              <div class="col-lg-4">
+                <h3 class="h6 text-success">Grafikoni</h3>
+                <ul class="small mb-0">
+                  @foreach (var g in stavka.Grafikoni)
+                  {
+                    <li><i class="bi bi-graph-up text-success me-1"></i>@g</li>
+                  }
+                </ul>
+              </div>
+              <div class="col-lg-4">
+                <h3 class="h6 text-primary">Izveštaji</h3>
+                <ul class="small mb-0">
+                  @foreach (var iz in stavka.Izvestaji)
+                  {
+                    <li><i class="bi bi-file-earmark-text text-primary me-1"></i>@iz</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card bg-dark border-secondary h-100">
+        <div class="card-header border-secondary">
+          <i class="bi bi-hdd-network me-2"></i>Tipovi uređaja (mocId)
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-dark table-striped table-sm mb-0">
+            <thead><tr><th>ID</th><th>Tip</th></tr></thead>
+            <tbody>
+              @foreach (var (mocId, tip) in SolarPodatakKatalog.TipoviUredjaja)
+              {
+                <tr><td>@mocId</td><td>@tip</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card bg-dark border-secondary h-100">
+        <div class="card-header border-secondary">
+          <i class="bi bi-lightning me-2"></i>Signali invertera (SUN2000)
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-dark table-striped table-sm mb-0">
+            <thead><tr><th>Signal ID</th><th>Naziv</th><th>Jedinica</th></tr></thead>
+            <tbody>
+              @foreach (var (id, naziv, jed) in SolarPodatakKatalog.SignaliInvertera)
+              {
+                <tr><td>@id</td><td>@naziv</td><td>@jed</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-dark border-secondary mt-4">
+    <div class="card-header border-secondary">
+      <i class="bi bi-layout-text-window me-2"></i>Predloženi dashboard (jedna stranica)
+    </div>
+    <div class="card-body">
+      <div class="row g-3 small">
+        <div class="col-md-4">
+          <strong class="text-warning">Gornji red — KPI</strong>
+          <ul class="mb-0 mt-1">
+            <li>Trenutna snaga (kW)</li>
+            <li>Danas (kWh)</li>
+            <li>Ukupno (MWh)</li>
+            <li>Prihod danas</li>
+            <li>Status uređaja (4/4 connected)</li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <strong class="text-success">Srednji red — grafikoni</strong>
+          <ul class="mb-0 mt-1">
+            <li>Line — proizvodnja po satu (danas)</li>
+            <li>Bar — proizvodnja po inverteru</li>
+            <li>Flow — PV / mreža / potrošnja</li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <strong class="text-primary">Donji red — tabele</strong>
+          <ul class="mb-0 mt-1">
+            <li>Uređaji i status</li>
+            <li>Signali po inverteru (live)</li>
+            <li>Alarmi (ako ima)</li>
+            <li>CO₂ / stabla / uglje</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@code {
+    private bool _isConfigured;
+    private int _pollIntervalSeconds;
+    private SolarKpiRecord? _poslednjiKpi;
+    private List<SolarKpiRecord> _istorijaProizvodnje = new();
+    private List<SolarKpiRecord> _dnevnaProizvodnja = new();
+    private List<SolarKpiRecord> _dnevnaUsteda = new();
+
+    private ApexChartOptions<SolarKpiRecord> CumulativeChartOptions =>
+        SolarChartOptionsFactory.ZaSolarKpi(darkTheme: true, yAxisTitle: "kWh", markerSize: 4, kwFormatter: false);
+
+    private ApexChartOptions<SolarKpiRecord> DailyChartOptions =>
+        SolarChartOptionsFactory.ZaSolarKpi(darkTheme: true, yAxisTitle: "kWh/dan", strokeWidth: 2, kwFormatter: false);
+
+    private ApexChartOptions<SolarKpiRecord> SavingsChartOptions =>
+        SolarChartOptionsFactory.ZaSolarKpi(
+            darkTheme: true,
+            colors: new[] { "#f59e0b" },
+            yAxisTitle: "EUR/dan",
+            strokeWidth: 2,
+            kwFormatter: false);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var options = SolarOptionsAccessor.Value;
+        _isConfigured = options.IsConfigured;
+        _pollIntervalSeconds = options.PollIntervalSeconds;
+
+        var stationDn = string.IsNullOrWhiteSpace(options.StationDn)
+            ? SolarPodatakKatalog.StationDn
+            : options.StationDn;
+
+        _poslednjiKpi = await SolarDb.GetLatestKpiAsync(stationDn);
+        _istorijaProizvodnje = await SolarDb.GetCumulativeHistoryAsync(stationDn);
+        _dnevnaProizvodnja = await SolarDb.GetDailyEnergyHistoryAsync(stationDn);
+        _dnevnaUsteda = await SolarDb.GetDailySavingsHistoryAsync(stationDn);
+    }
+}

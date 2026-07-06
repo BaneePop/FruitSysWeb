@@ -1,0 +1,471 @@
+/* ========================================
+   🔥 CONTAINER-FLUID DARK FIX - ULTRA SPECIFIC
+   Ovaj fajl rešava SVE probleme sa svetlim elementima u container-fluid
+   ======================================== */
+
+/* 1️⃣ SAM CONTAINER-FLUID - FORCE DARK */
+.container-fluid {
+    background-color: #0f1729 !important;
+    color: #e5e7eb !important;
+}
+
+/* 2️⃣ SVI DIREKTNI CHILDREN - TRANSPARENTNO */
+.container-fluid > * {
+    background-color: transparent !important;
+}
+
+/* 3️⃣ SVI ROW-OVI UNUTAR CONTAINER-FLUID */
+.container-fluid .row {
+    background-color: transparent !important;
+}
+
+/* 4️⃣ SVE KOLONE UNUTAR CONTAINER-FLUID */
+.container-fluid .row > div,
+.container-fluid .row > [class*="col-"] {
+    background-color: transparent !important;
+}
+
+/* 5️⃣ SVE KARTICE UNUTAR CONTAINER-FLUID */
+.container-fluid .card {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .card-header {
+    background-color: #232d3f !important;
+    border-bottom: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .card-body {
+    background-color: #1a2332 !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .card-footer {
+    background-color: #232d3f !important;
+    border-top: 1px solid #374151 !important;
+    color: #9ca3af !important;
+}
+
+/* 6️⃣ DASHBOARD/STATS KARTICE */
+.container-fluid .dashboard-card,
+.container-fluid .stats-card {
+    background: linear-gradient(135deg, #1a2332 0%, #232d3f 100%) !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+/* 7️⃣ FILTER SEKCIJE */
+.container-fluid .filter-section {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+/* 8️⃣ TABELE */
+.container-fluid .table {
+    background-color: transparent !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .table thead th {
+    background-color: #232d3f !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+}
+
+.container-fluid .table tbody {
+    background-color: #1a2332 !important;
+}
+
+.container-fluid .table tbody tr {
+    background-color: transparent !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .table tbody td {
+    background-color: transparent !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+}
+
+/* 9️⃣ FORME */
+.container-fluid .form-control,
+.container-fluid .form-select {
+    background-color: #232d3f !important;
+    border: 1px solid #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .form-control:focus,
+.container-fluid .form-select:focus {
+    background-color: #2a3441 !important;
+    border-color: #3b82f6 !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .form-label {
+    color: #9ca3af !important;
+}
+
+/* 🔟 HEADERI (H1-H6) */
+.container-fluid h1,
+.container-fluid h2,
+.container-fluid h3,
+.container-fluid h4,
+.container-fluid h5,
+.container-fluid h6 {
+    color: #e5e7eb !important;
+}
+
+/* 1️⃣1️⃣ PARAGRAPHS */
+.container-fluid p {
+    color: #9ca3af !important;
+}
+
+/* 1️⃣2️⃣ ALERTS */
+.container-fluid .alert {
+    border: 1px solid !important;
+}
+
+.container-fluid .alert-success {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+    border-color: #10b981 !important;
+    color: #34d399 !important;
+}
+
+.container-fluid .alert-danger {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    border-color: #ef4444 !important;
+    color: #f87171 !important;
+}
+
+.container-fluid .alert-warning {
+    background-color: rgba(245, 158, 11, 0.1) !important;
+    border-color: #f59e0b !important;
+    color: #fbbf24 !important;
+}
+
+/* 1️⃣3️⃣ STATISTICS ROW (row.g-3, row.g-4) */
+.container-fluid .row.g-3 > div,
+.container-fluid .row.g-4 > div {
+    background-color: transparent !important;
+}
+
+.container-fluid .row.g-3 .card,
+.container-fluid .row.g-4 .card {
+    background-color: #1a2332 !important;
+}
+
+/* 1️⃣4️⃣ PAGE HEADER */
+.container-fluid .page-header {
+    background-color: transparent !important;
+    color: #e5e7eb !important;
+}
+
+/* 1️⃣5️⃣ SECTION HEADERS */
+.container-fluid .section-header {
+    background-color: transparent !important;
+    color: #e5e7eb !important;
+    border-bottom: 2px solid #374151 !important;
+}
+
+/* 1️⃣6️⃣ DIVS SA D-FLEX */
+.container-fluid .d-flex {
+    background-color: transparent !important;
+}
+
+/* 1️⃣7️⃣ NAVIGATION TABS */
+.container-fluid .nav-tabs {
+    background-color: transparent !important;
+    border-bottom-color: #374151 !important;
+}
+
+.container-fluid .nav-tabs .nav-link {
+    background-color: transparent !important;
+    color: #9ca3af !important;
+    border-color: transparent !important;
+}
+
+.container-fluid .nav-tabs .nav-link:hover {
+    background-color: #232d3f !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .nav-tabs .nav-link.active {
+    background-color: #1a2332 !important;
+    color: #60a5fa !important;
+    border-color: #374151 #374151 #1a2332 !important;
+}
+
+/* 1️⃣8️⃣ TAB CONTENT */
+.container-fluid .tab-content {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+    border-top: none !important;
+}
+
+.container-fluid .tab-pane {
+    background-color: #1a2332 !important;
+}
+
+/* 1️⃣9️⃣ BREADCRUMBS */
+.container-fluid .breadcrumb {
+    background-color: transparent !important;
+}
+
+.container-fluid .breadcrumb-item {
+    color: #9ca3af !important;
+}
+
+.container-fluid .breadcrumb-item.active {
+    color: #e5e7eb !important;
+}
+
+/* 2️⃣0️⃣ LIST GROUPS */
+.container-fluid .list-group-item {
+    background-color: #1a2332 !important;
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .list-group-item:hover {
+    background-color: #2a3441 !important;
+}
+
+/* 2️⃣1️⃣ BADGES */
+.container-fluid .badge.bg-primary {
+    background-color: #3b82f6 !important;
+    color: white !important;
+}
+
+.container-fluid .badge.bg-success {
+    background-color: #10b981 !important;
+    color: white !important;
+}
+
+.container-fluid .badge.bg-danger {
+    background-color: #ef4444 !important;
+    color: white !important;
+}
+
+.container-fluid .badge.bg-warning {
+    background-color: #f59e0b !important;
+    color: white !important;
+}
+
+.container-fluid .badge.bg-secondary {
+    background-color: #6b7280 !important;
+    color: white !important;
+}
+
+/* 2️⃣2️⃣ BUTTONS */
+.container-fluid .btn-primary {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+    color: white !important;
+}
+
+.container-fluid .btn-success {
+    background-color: #10b981 !important;
+    border-color: #10b981 !important;
+    color: white !important;
+}
+
+.container-fluid .btn-danger {
+    background-color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: white !important;
+}
+
+.container-fluid .btn-secondary {
+    background-color: #232d3f !important;
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+/* 2️⃣3️⃣ DROPDOWN MENU */
+.container-fluid .dropdown-menu {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+}
+
+.container-fluid .dropdown-item {
+    color: #e5e7eb !important;
+}
+
+.container-fluid .dropdown-item:hover {
+    background-color: #2a3441 !important;
+    color: #e5e7eb !important;
+}
+
+/* 2️⃣4️⃣ MODAL */
+.container-fluid .modal-content {
+    background-color: #1a2332 !important;
+    border: 1px solid #374151 !important;
+}
+
+.container-fluid .modal-header {
+    background-color: #232d3f !important;
+    border-bottom: 1px solid #374151 !important;
+}
+
+.container-fluid .modal-body {
+    background-color: #1a2332 !important;
+    color: #e5e7eb !important;
+}
+
+/* 2️⃣5️⃣ PAGINATION */
+.container-fluid .pagination .page-link {
+    background-color: #1a2332 !important;
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .pagination .page-link:hover {
+    background-color: #2a3441 !important;
+}
+
+.container-fluid .pagination .page-item.active .page-link {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+}
+
+/* 2️⃣6️⃣ TABLE FOOTER (TFOOT) - SALDO TABELE */
+.container-fluid .table tfoot {
+    background-color: #232d3f !important;
+    border-top: 2px solid #374151 !important;
+}
+
+.container-fluid .table tfoot tr {
+    background-color: #232d3f !important;
+    color: #e5e7eb !important;
+}
+
+.container-fluid .table tfoot th,
+.container-fluid .table tfoot td {
+    background-color: #232d3f !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+    font-weight: 600 !important;
+}
+
+/* GLOBALNI TFOOT OVERRIDE */
+tfoot {
+    background-color: #232d3f !important;
+}
+
+tfoot tr {
+    background-color: #232d3f !important;
+    color: #e5e7eb !important;
+}
+
+tfoot th,
+tfoot td {
+    background-color: #232d3f !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+}
+
+/* TABLE-SECONDARY OVERRIDE ZA TFOOT */
+.table-secondary,
+.table tfoot.table-secondary,
+tfoot.table-secondary tr,
+tfoot.table-secondary th,
+tfoot.table-secondary td {
+    background-color: #232d3f !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+}
+
+/* 2️⃣7️⃣ HEADER GRADIENTS - GLOBAL DARK OVERRIDE */
+.main-header,
+.finansije-header,
+.lager-header,
+.prerada-header {
+    background: linear-gradient(135deg, #1a2332, #232d3f, #2a3441) !important;
+    border: 1px solid #374151 !important;
+}
+
+/* ANY HEADER WITH LINEAR-GRADIENT */
+[class*="-header"][style*="linear-gradient"] {
+    background: linear-gradient(135deg, #1a2332, #232d3f, #2a3441) !important;
+    border: 1px solid #374151 !important;
+}
+
+/* ========================================
+   🔥 NUCLEAR OPTION - INLINE STYLES OVERRIDE
+   ======================================== */
+
+/* WHITE BACKGROUNDS - ANYWHERE IN CONTAINER-FLUID */
+.container-fluid div[style*="background-color: white"],
+.container-fluid div[style*="background: white"],
+.container-fluid div[style*="background-color:#fff"],
+.container-fluid div[style*="background:#fff"] {
+    background-color: #1a2332 !important;
+    background: #1a2332 !important;
+}
+
+/* TABLE INLINE STYLES */
+.container-fluid table[style*="background"],
+.container-fluid tbody[style*="background"],
+.container-fluid tr[style*="background"],
+.container-fluid td[style*="background"] {
+    background-color: transparent !important;
+}
+
+/* BG-WHITE/BG-LIGHT UTILITY CLASSES */
+.container-fluid .bg-white {
+    background-color: #1a2332 !important;
+}
+
+.container-fluid .bg-light {
+    background-color: #1a2332 !important;
+}
+
+/* TEXT-DARK OVERRIDE */
+.container-fluid .text-dark {
+    color: #e5e7eb !important;
+}
+
+/* ========================================
+   🎯 SPECIFIC PAGE FIXES
+   ======================================== */
+
+/* DASHBOARD SPECIFIC */
+.container-fluid .dashboard-stats .card,
+.container-fluid .quick-stats .card {
+    background: linear-gradient(135deg, #1a2332 0%, #232d3f 100%) !important;
+}
+
+/* FINANSIJE SPECIFIC */
+.container-fluid .saldo-table tbody {
+    background-color: #1a2332 !important;
+}
+
+/* PROIZVODNJA SPECIFIC */
+.container-fluid .proizvodnja-table tbody {
+    background-color: #1a2332 !important;
+}
+
+/* LAGER SPECIFIC */
+.container-fluid .lager-table tbody {
+    background-color: #1a2332 !important;
+}
+
+/* ========================================
+   🌟 FINAL CATCH-ALL
+   ======================================== */
+
+/* BILO KOJI ELEMENT SA POZADINOM UNUTAR CONTAINER-FLUID */
+.container-fluid *:not(.btn):not(.badge):not(.progress-bar):not(.nav-link.active) {
+    /* Ne override-uj komponente koje TREBA da imaju boju */
+}
+
+/* ALI OVERRIDE-UJ SVE BELE POZADINE */
+.container-fluid *[class*="bg-white"],
+.container-fluid *[class*="bg-light"] {
+    background-color: #1a2332 !important;
+}
