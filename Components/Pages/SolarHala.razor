@@ -155,14 +155,7 @@
         <div class="sd-hala-chart-row">
             <section class="sd-main-chart">
                 <div class="sd-chart-head">
-                    <div>
-                        <h2 class="solar-chart-title">Proizvodnja, potrošnja i mreža tokom dana</h2>
-                        @if (_grafOpsegTekst != null)
-                        {
-                            <p class="sd-chart-period">@_grafOpsegTekst</p>
-                        }
-                    </div>
-                    <span class="panel-meta">kW · @_istorijaDanas.Count očitavanja</span>
+                    <h2 class="solar-chart-title">Proizvodnja, potrošnja i mreža tokom dana</h2>
                 </div>
                 @if (_istorijaDanas.Count == 0)
                 {
@@ -298,10 +291,10 @@
     private string? _grafOpsegTekst;
     private (DateTime? Start, DateTime? End) _preporuceniPeriod;
 
-    private readonly ApexChartOptions<SolarKpiRecord> _sparkYellow = BuildSparklineOptions("#facc15");
-    private readonly ApexChartOptions<SolarKpiRecord> _sparkBlue = BuildSparklineOptions("#38bdf8");
-    private readonly ApexChartOptions<SolarKpiRecord> _sparkRed = BuildSparklineOptions("#ef4444");
-    private readonly ApexChartOptions<SolarKpiRecord> _sparkCyan = BuildSparklineOptions("#22d3ee");
+    private readonly ApexChartOptions<SolarKpiRecord> _sparkYellow = BuildSparklineOptions("#e8bf3d");
+    private readonly ApexChartOptions<SolarKpiRecord> _sparkBlue = BuildSparklineOptions("#5aabe0");
+    private readonly ApexChartOptions<SolarKpiRecord> _sparkRed = BuildSparklineOptions("#e05c5c");
+    private readonly ApexChartOptions<SolarKpiRecord> _sparkCyan = BuildSparklineOptions("#4ccadd");
 
     protected override async Task OnInitializedAsync()
     {
@@ -563,7 +556,7 @@
         int markerSize = pointCount <= 5 ? 5 : 0;
         var options = SolarChartOptionsFactory.ZaSolarKpi(
             darkTheme: true,
-            colors: new[] { "#facc15", "#38bdf8", "#ef4444" },
+            colors: new[] { "#e8bf3d", "#5aabe0", "#e05c5c" },
             strokeWidth: 3,
             markerSize: markerSize);
 
@@ -573,9 +566,9 @@
             Type = FillType.Gradient,
             Gradient = new FillGradient
             {
-                ShadeIntensity = 0.3,
-                OpacityFrom = 0.35,
-                OpacityTo = 0.03,
+                ShadeIntensity = 0.5,
+                OpacityFrom = 0.55,
+                OpacityTo = 0.08,
                 Stops = new List<double> { 0, 90, 100 }
             }
         };
@@ -595,13 +588,13 @@
                     {
                         X = period.Start.Value.ToUnixTimeMilliseconds(),
                         X2 = period.End.Value.ToUnixTimeMilliseconds(),
-                        FillColor = "#22c55e",
+                        FillColor = "#3fb873",
                         Opacity = 0.12,
-                        BorderColor = "#22c55e",
+                        BorderColor = "#3fb873",
                         Label = new Label
                         {
                             Text = "Preporučeno za paljenje mašina",
-                            Style = new Style { Background = "#22c55e", Color = "#07111f" }
+                            Style = new Style { Background = "#3fb873", Color = "#07111f" }
                         }
                     }
                 }

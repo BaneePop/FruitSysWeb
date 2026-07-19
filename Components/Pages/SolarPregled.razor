@@ -499,7 +499,7 @@
         int markerSize = pointCount <= 5 ? 5 : 0;
         var options = SolarChartOptionsFactory.ZaSolarKpi(
             darkTheme: true,
-            colors: new[] { "#facc15", "#38bdf8", "#ef4444" },
+            colors: new[] { "#e8bf3d", "#5aabe0", "#e05c5c" },
             strokeWidth: 3,
             markerSize: markerSize);
 
@@ -509,9 +509,9 @@
             Type = FillType.Gradient,
             Gradient = new FillGradient
             {
-                ShadeIntensity = 0.3,
-                OpacityFrom = 0.35,
-                OpacityTo = 0.03,
+                ShadeIntensity = 0.5,
+                OpacityFrom = 0.55,
+                OpacityTo = 0.08,
                 Stops = new List<double> { 0, 90, 100 }
             }
         };
@@ -531,13 +531,13 @@
                     {
                         X = period.Start.Value.ToUnixTimeMilliseconds(),
                         X2 = period.End.Value.ToUnixTimeMilliseconds(),
-                        FillColor = "#22c55e",
+                        FillColor = "#3fb873",
                         Opacity = 0.12,
-                        BorderColor = "#22c55e",
+                        BorderColor = "#3fb873",
                         Label = new Label
                         {
                             Text = "Preporučeno za paljenje mašina",
-                            Style = new Style { Background = "#22c55e", Color = "#07111f" }
+                            Style = new Style { Background = "#3fb873", Color = "#07111f" }
                         }
                     }
                 }

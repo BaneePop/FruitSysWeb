@@ -33,16 +33,16 @@
     <link href="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.css" rel="stylesheet">
 
     <!-- Custom CSS - VAŽAN REDOSLED! -->
-    <link href="css/site.css" rel="stylesheet" />
-    <link href="css/app.css" rel="stylesheet" />
-    <link href="css/shared-components.css" rel="stylesheet" /> <!-- ♻️ SHARED COMPONENT STYLES -->
-    <link href="css/dark-theme.css" rel="stylesheet" /> <!-- 🌙 NOVA TAMNA TEMA -->
-    <link href="css/charts-dark.css" rel="stylesheet" /> <!-- 📊 CHART STILOVI -->
-    <link href="css/dark-theme-enforcer.css" rel="stylesheet" /> <!-- 💪 JAKI OVERRIDE -->
-    <link href="css/container-fluid-fix.css" rel="stylesheet" /> <!-- 🔥 CONTAINER-FLUID FIX - NAJJAČI! -->
-    <link href="css/solar-tokens.css" rel="stylesheet" /> <!-- ☀️ Solar design tokeni -->
-    <link href="css/solar.css" rel="stylesheet" /> <!-- ☀️ Solar modul -->
-    <link href="css/app-shell.css" rel="stylesheet" /> <!-- 🧭 Sidebar shell (najjači, ide poslednji) -->
+    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/app.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/shared-components.css" rel="stylesheet" asp-append-version="true" /> <!-- ♻️ SHARED COMPONENT STYLES -->
+    <link href="~/css/dark-theme.css" rel="stylesheet" asp-append-version="true" /> <!-- 🌙 NOVA TAMNA TEMA -->
+    <link href="~/css/charts-dark.css" rel="stylesheet" asp-append-version="true" /> <!-- 📊 CHART STILOVI -->
+    <link href="~/css/dark-theme-enforcer.css" rel="stylesheet" asp-append-version="true" /> <!-- 💪 JAKI OVERRIDE -->
+    <link href="~/css/container-fluid-fix.css" rel="stylesheet" asp-append-version="true" /> <!-- 🔥 CONTAINER-FLUID FIX - NAJJAČI! -->
+    <link href="~/css/solar-tokens.css" rel="stylesheet" asp-append-version="true" /> <!-- ☀️ Solar design tokeni -->
+    <link href="~/css/solar.css" rel="stylesheet" asp-append-version="true" /> <!-- ☀️ Solar modul -->
+    <link href="~/css/app-shell.css" rel="stylesheet" asp-append-version="true" /> <!-- 🧭 Sidebar shell (najjači, ide poslednji) -->
 </head>
 <body>
     <!-- KLJUČNA IZMENA: Server umesto ServerPrerendered -->
@@ -70,6 +70,6 @@
     <script src="_framework/blazor.server.js"></script>
 
     <!-- App shell (sidebar collapse/mobile toggle) -->
-    <script src="js/app-shell.js"></script>
+    <script src="~/js/app-shell.js" asp-append-version="true"></script>
 </body>
 </html>

@@ -394,8 +394,13 @@
     min-height: 128px;
 }
 
-.solar-hala-page .solar-kpi-value {
-    font-size: 26px;
+.solar-hala-page .solar-kpi-value,
+.solar-hala-page .solar-kpi-value-sm {
+    font-size: 27px;
+}
+
+.solar-hala-page .solar-kpi-label {
+    font-size: 12px;
 }
 
 .sd-kpi-spark-chart {

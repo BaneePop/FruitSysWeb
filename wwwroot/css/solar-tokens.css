@@ -10,13 +10,13 @@
     --text-muted: #8ea3ba;
     --text-soft: #64748b;
 
-    --solar-yellow: #facc15;
-    --solar-orange: #fb923c;
-    --electric-blue: #38bdf8;
-    --cyan: #22d3ee;
-    --green: #22c55e;
-    --red: #ef4444;
-    --purple: #a78bfa;
+    --solar-yellow: #e8bf3d;
+    --solar-orange: #e8a35c;
+    --electric-blue: #5aabe0;
+    --cyan: #4ccadd;
+    --green: #3fb873;
+    --red: #e05c5c;
+    --purple: #a08cd4;
 
     /* legacy aliases (SolarPregled i ostalo) */
     --sd-bg: var(--bg-main);

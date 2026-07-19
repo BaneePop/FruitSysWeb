@@ -53,7 +53,7 @@ public static class SolarChartOptionsFactory
                 },
                 Zoom = new Zoom { Enabled = true, Type = AxisType.X, AutoScaleYaxis = false }
             },
-            Colors = colors?.ToList() ?? new List<string> { "#22c55e" },
+            Colors = colors?.ToList() ?? new List<string> { "#3fb873" },
             Stroke = new Stroke { Curve = smooth ? Curve.Smooth : Curve.Straight, Width = strokeWidth },
             Markers = new Markers
             {
