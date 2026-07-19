@@ -11,8 +11,8 @@
 <div class="login-container">
     <div class="login-card">
         <div class="text-center mb-4">
-            <i class="bi bi-box-seam display-1 text-success"></i>
-            <h2 class="mt-3">FruitSys web verzija</h2>
+            <i class="bi bi-sun display-1 text-success"></i>
+            <h2 class="mt-3">Odetta Solar</h2>
             <p class="text-muted">Prijavite se na vaš nalog</p>
         </div>
 
@@ -38,8 +38,8 @@
                 <label class="form-label">Korisničko ime</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <InputText @bind-Value="loginRequest.Username" 
-                               class="form-control" 
+                    <InputText @bind-Value="loginRequest.Username"
+                               class="form-control"
                                placeholder="Unesite korisničko ime"
                                disabled="@isLoading" />
                 </div>
@@ -49,21 +49,12 @@
                 <label class="form-label">Lozinka</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <InputText @bind-Value="loginRequest.Password" 
+                    <InputText @bind-Value="loginRequest.Password"
                                type="password"
-                               class="form-control" 
+                               class="form-control"
                                placeholder="Unesite lozinku"
                                disabled="@isLoading" />
                 </div>
-            </div>
-
-            <div class="mb-3 form-check">
-                <InputCheckbox @bind-Value="loginRequest.RememberMe" 
-                               class="form-check-input" 
-                               id="rememberMe" />
-                <label class="form-check-label" for="rememberMe">
-                    Zapamti me
-                </label>
             </div>
 
             <button type="submit" class="btn btn-success w-100" disabled="@isLoading">
@@ -80,7 +71,7 @@
         </EditForm>
 
         <div class="text-center mt-3">
-            <small class="text-muted">FruitSys © 2025</small>
+            <small class="text-muted">Odetta Solar © 2026</small>
         </div>
     </div>
 </div>
@@ -126,16 +117,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Proveri da li je automatska odjava
         var uri = new Uri(Navigation.Uri);
         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
         autoOdjava = query["razlog"] == "neaktivnost";
 
-        // Proveri da li je već ulogovan
         if (await AuthService.IsAuthenticated())
         {
-            var pocetnaStranica = await AuthService.PocetnaStranica();
-            Navigation.NavigateTo(pocetnaStranica);
+            Navigation.NavigateTo("/solar-hala");
         }
     }
 
@@ -151,16 +139,7 @@
 
             if (response.Success && response.Korisnik != null)
             {
-                // Debug - prikazi informacije o korisniku
-                Console.WriteLine($"🔑 Login success");
-                Console.WriteLine($"   - Korisnik: {response.Korisnik.Ime}");
-                Console.WriteLine($"   - GrupaKorisnikaID: {response.Korisnik.GrupaKorisnikaID}");
-                Console.WriteLine($"   - GrupaNaziv: {response.Korisnik.GrupaNaziv}");
-
-                // Odrediti početnu stranicu na osnovu IMENA korisnika
-                var pocetnaStranica = GrupaKorisnikaHelper.PocetnaStranica(response.Korisnik.Ime);
-                Console.WriteLine($"   - Redirect na: {pocetnaStranica}");
-                Navigation.NavigateTo(pocetnaStranica, forceLoad: true);
+                Navigation.NavigateTo("/solar-hala", forceLoad: true);
             }
             else
             {
@@ -177,9 +156,5 @@
             isLoading = false;
             StateHasChanged();
         }
-
-
-
-        
     }
 }

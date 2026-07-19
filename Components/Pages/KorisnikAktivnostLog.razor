@@ -2,26 +2,15 @@
 @using FruitSysWeb.Models
 @using FruitSysWeb.Services.Interfaces
 @inject IKorisnikAktivnostService AktivnostService
-@inject IAuthService AuthService
-@inject NavigationManager Navigation
 
 @code {
     private List<KorisnikAktivnostModel>? aktivnosti;
     private List<string> sviKorisnici = new();
     private KorisnikAktivnostFilter filter = new();
     private bool ucitavanje = false;
-    private bool pristupDozvoljen = false;
 
     protected override async Task OnInitializedAsync()
     {
-        // Samo administratori mogu videti ovaj izveštaj
-        if (!await AuthService.IsAdministrator())
-        {
-            Navigation.NavigateTo("/");
-            return;
-        }
-        pristupDozvoljen = true;
-
         filter.DatumOd = DateTime.Today.AddDays(-7);
         filter.DatumDo = DateTime.Today;
 
@@ -57,12 +46,6 @@
         };
         await UcitajPodatke();
     }
-}
-
-@if (!pristupDozvoljen)
-{
-    <div class="alert alert-danger m-4">Nemate pristup ovoj stranici.</div>
-    return;
 }
 
 <div class="container-fluid">

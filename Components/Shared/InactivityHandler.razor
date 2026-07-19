@@ -2,15 +2,14 @@
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject IConfiguration Config
 @implements IAsyncDisposable
 
 @code {
-    // Korisnici koji se NE izloguju automatski
-    private static readonly HashSet<string> Izuzeti = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "x",
-        "Bane"
-    };
+    // Korisnici koji se NE izloguju automatski — appsettings: Auth:InactivityExemptUsers
+    private HashSet<string> Izuzeti => new(
+        Config.GetSection("Auth:InactivityExemptUsers").Get<string[]>() ?? Array.Empty<string>(),
+        StringComparer.OrdinalIgnoreCase);
 
     private const int TimeoutMinuta = 30;
 
