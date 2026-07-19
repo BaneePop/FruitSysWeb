@@ -65,29 +65,21 @@
 
         string statusKlasa;
         string statusNaslov;
-        string statusOpis;
         if (solarCoverage >= 70)
         {
             statusKlasa = "sd-status-good";
             statusNaslov = "DOBAR TRENUTAK ZA PALJENJE MAŠINA";
-            statusOpis = $"Solar pokriva {solarCoverage:N0}% potrošnje";
         }
         else if (solarCoverage < 50)
         {
             statusKlasa = "sd-status-wait";
-            statusNaslov = "SAČEKATI SA VELIKIM POTROŠAČIMA";
-            statusOpis = $"Solar pokriva samo {solarCoverage:N0}% potrošnje";
+            statusNaslov = "Smanjite Potrošnju";
         }
         else
         {
             statusKlasa = "sd-status-normal";
             statusNaslov = "NORMALAN RAD";
-            statusOpis = $"Solar pokriva {solarCoverage:N0}% potrošnje";
         }
-
-        var preporuceniTekst = _preporuceniPeriod.Start.HasValue && _preporuceniPeriod.End.HasValue
-            ? $"{_preporuceniPeriod.Start:HH:mm} – {_preporuceniPeriod.End:HH:mm}"
-            : "Nema perioda danas";
 
         <section class="solar-kpi-grid sd-kpi-top">
             <div class="solar-kpi-card kpi-power">
@@ -96,7 +88,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="53">
+                        <ApexChart @key="@("spark-power-top")" TItem="SolarKpiRecord" Options="@BuildSparklineOptions(SparkYellow)" Height="53">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kW"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -111,7 +103,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkBlue" Height="53">
+                        <ApexChart @key="@("spark-factory-top")" TItem="SolarKpiRecord" Options="@BuildSparklineOptions(SparkBlue)" Height="53">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kW"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -126,7 +118,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkRed" Height="53">
+                        <ApexChart @key="@("spark-grid-top")" TItem="SolarKpiRecord" Options="@BuildSparklineOptions(SparkRed)" Height="53">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kW"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -141,7 +133,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="53">
+                        <ApexChart @key="@("spark-coverage-top")" TItem="SolarKpiRecord" Options="@BuildSparklineOptions(SparkYellow)" Height="53">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="%"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -188,21 +180,16 @@
 
             <aside class="sd-advice-panel @statusKlasa">
                 <div class="sd-advice-panel-head">
-                    <div class="solar-advice-title">Preporuka za mašine</div>
+                    <div class="solar-advice-title">Preporuka za potrošnju</div>
                     <div class="sd-decision-title">@statusNaslov</div>
-                    <div class="sd-decision-sub">@statusOpis</div>
                 </div>
                 <div class="sd-advice-kpi-stack">
                     <div class="sd-advice-kpi-item">
-                        <div class="sd-advice-kpi-num sd-advice-kpi-num-sm">@preporuceniTekst</div>
-                        <div class="sd-advice-kpi-label">Period</div>
-                    </div>
-                    <div class="sd-advice-kpi-item">
-                        <div class="sd-advice-kpi-num">@solarCoverage.ToString("N0")<span class="sd-advice-kpi-unit">%</span></div>
+                        <div class="sd-advice-kpi-num sd-advice-kpi-num-big">@solarCoverage.ToString("N0")<span class="sd-advice-kpi-unit">%</span></div>
                         <div class="sd-advice-kpi-label">Pokrivenost</div>
                     </div>
                     <div class="sd-advice-kpi-item">
-                        <div class="sd-advice-kpi-num">@gridKw.ToString("N0")<span class="sd-advice-kpi-unit"> kW</span></div>
+                        <div class="sd-advice-kpi-num sd-advice-kpi-num-big">@gridKw.ToString("N0")<span class="sd-advice-kpi-unit"> kW</span></div>
                         <div class="sd-advice-kpi-label">Mreža sada</div>
                     </div>
                 </div>
@@ -216,7 +203,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="48">
+                        <ApexChart @key="@("spark-power-bottom")" TItem="SolarKpiRecord" Options="@BuildSparklineOptions(SparkYellow)" Height="48">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kWh"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -231,7 +218,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkBlue" Height="48">
+                        <ApexChart @key="@("spark-factory-bottom")" TItem="SolarKpiRecord" Options="@BuildSparklineOptions(SparkBlue)" Height="48">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kWh"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -246,7 +233,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkRed" Height="48">
+                        <ApexChart @key="@("spark-grid-bottom")" TItem="SolarKpiRecord" Options="@BuildSparklineOptions(SparkRed)" Height="48">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kWh"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -261,7 +248,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="48">
+                        <ApexChart @key="@("spark-coverage-bottom")" TItem="SolarKpiRecord" Options="@BuildSparklineOptions(SparkYellow)" Height="48">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="%"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -291,10 +278,11 @@
     private string? _grafOpsegTekst;
     private (DateTime? Start, DateTime? End) _preporuceniPeriod;
 
-    private readonly ApexChartOptions<SolarKpiRecord> _sparkYellow = BuildSparklineOptions("#e8bf3d");
-    private readonly ApexChartOptions<SolarKpiRecord> _sparkBlue = BuildSparklineOptions("#5aabe0");
-    private readonly ApexChartOptions<SolarKpiRecord> _sparkRed = BuildSparklineOptions("#e05c5c");
-    private readonly ApexChartOptions<SolarKpiRecord> _sparkCyan = BuildSparklineOptions("#4ccadd");
+    // Svaka sparkline mora dobiti SVOJU instancu ApexChartOptions — deljenje jednog objekta
+    // između više <ApexChart> instanci na istoj stranici izazivalo je da neki grafici ne renderuju.
+    private const string SparkYellow = "#e8bf3d";
+    private const string SparkBlue = "#5aabe0";
+    private const string SparkRed = "#e05c5c";
 
     protected override async Task OnInitializedAsync()
     {

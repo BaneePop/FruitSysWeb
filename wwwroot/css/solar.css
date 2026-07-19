@@ -445,8 +445,12 @@
     min-width: 0;
 }
 
+.sd-advice-panel-head {
+    text-align: center;
+}
+
 .sd-advice-panel-head .solar-advice-title {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -459,12 +463,6 @@
     font-weight: 800;
     line-height: 1.25;
     margin: 0;
-}
-
-.sd-advice-panel-head .sd-decision-sub {
-    font-size: 11px;
-    margin-top: 4px;
-    color: var(--text-muted);
 }
 
 .sd-advice-kpi-stack {
@@ -494,6 +492,12 @@
 .sd-advice-kpi-num-sm {
     font-size: 22px;
     line-height: 1.15;
+}
+
+.sd-advice-kpi-num-big {
+    font-size: 58px;
+    line-height: 1;
+    color: var(--electric-blue);
 }
 
 .sd-advice-kpi-unit {
