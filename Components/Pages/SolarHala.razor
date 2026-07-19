@@ -15,10 +15,6 @@
 
 <div class="solar-dashboard solar-hala-page">
     <header class="solar-header">
-        <div>
-            <h1 class="solar-title">Solarna elektrana</h1>
-            <span class="solar-subtitle">@SolarPodatakKatalog.Postrojenje · Huawei SmartLogger3000</span>
-        </div>
         <div class="solar-header-right">
             <nav class="sd-day-nav" aria-label="Navigacija kroz dane">
                 <button type="button" class="btn-sd-day" @onclick="PrethodniDan" disabled="@_ucitavanje">
@@ -100,7 +96,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="62">
+                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="53">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kW"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -115,7 +111,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkBlue" Height="62">
+                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkBlue" Height="53">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kW"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -130,7 +126,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkRed" Height="62">
+                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkRed" Height="53">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kW"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -145,7 +141,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="62">
+                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="53">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="%"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -174,7 +170,7 @@
                 }
                 else if (_grafOptions != null)
                 {
-                    <ApexChart @key="@_chartKey" TItem="SolarKpiRecord" Options="@_grafOptions" Height="268">
+                    <ApexChart @key="@_chartKey" TItem="SolarKpiRecord" Options="@_grafOptions" Height="308">
                         <ApexPointSeries TItem="SolarKpiRecord"
                                          Items="_istorijaDanas"
                                          Name="Sunce"
@@ -227,7 +223,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="56">
+                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="48">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kWh"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -242,7 +238,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkBlue" Height="56">
+                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkBlue" Height="48">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kWh"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -257,7 +253,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkRed" Height="56">
+                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkRed" Height="48">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="kWh"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"
@@ -272,7 +268,7 @@
                 @if (hasSpark)
                 {
                     <div class="sd-kpi-spark-chart">
-                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="56">
+                        <ApexChart TItem="SolarKpiRecord" Options="@_sparkYellow" Height="48">
                             <ApexPointSeries TItem="SolarKpiRecord" Items="_istorijaDanas" Name="%"
                                              SeriesType="SeriesType.Area"
                                              XValue="@(e => e.Timestamp.ToLocalTime())"

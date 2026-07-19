@@ -168,9 +168,10 @@
 
 .app-content {
     margin-left: calc(var(--shell-sidebar-width) + var(--shell-gap) * 2);
-    min-height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     transition: margin-left 0.2s ease;
 }
 
@@ -216,7 +217,9 @@
 }
 
 .app-main {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 /* ── Collapsed (desktop, icon-only) ── */

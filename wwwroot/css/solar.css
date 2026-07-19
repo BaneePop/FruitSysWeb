@@ -324,10 +324,48 @@
 
 .solar-hala-page {
     padding: 10px 16px 14px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* Fiksan raspored bez skrola: KPI redovi su fiksne visine, chart red uzima sav
+   preostali prostor (grafik i "Preporuka za mašine" panel se automatski
+   prilagođavaju veličini ekrana umesto da izazovu skrol). */
+.solar-hala-page .solar-header,
+.solar-hala-page .solar-kpi-grid {
+    flex: 0 0 auto;
+}
+
+.solar-hala-page .sd-hala-chart-row {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.solar-hala-page .sd-main-chart {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.solar-hala-page .sd-main-chart > *:last-child {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.solar-hala-page .sd-advice-panel {
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .solar-hala-page .solar-header {
     margin-bottom: 8px;
+    justify-content: flex-end;
 }
 
 .solar-hala-page .solar-kpi-grid {
@@ -340,8 +378,8 @@
 }
 
 .solar-hala-page .solar-kpi-grid.sd-kpi-top .solar-kpi-card {
-    padding: 12px 14px 8px;
-    min-height: 165px;
+    padding: 10px 14px 6px;
+    min-height: 140px;
     display: flex;
     flex-direction: column;
 }
@@ -352,12 +390,12 @@
 }
 
 .solar-hala-page .solar-kpi-grid.sd-kpi-bottom .solar-kpi-card {
-    padding: 12px 14px 8px;
-    min-height: 151px;
+    padding: 10px 14px 6px;
+    min-height: 128px;
 }
 
 .solar-hala-page .solar-kpi-value {
-    font-size: 30px;
+    font-size: 26px;
 }
 
 .sd-kpi-spark-chart {
