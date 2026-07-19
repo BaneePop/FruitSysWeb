@@ -85,3 +85,16 @@ Data/
 deploy-*.ps1
 quick-*.ps1
 quick-deploy-temp/
+deploy/
+
+# IDE / agent folders
+.idea/
+.junie/
+.cursor/
+
+# App logovi / eksterni izvoz podataka (lokalno, ne commit)
+AppLog/
+
+# macOS folder icon artefakti
+Icon?
+Icon
