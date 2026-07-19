@@ -4,6 +4,7 @@
 @using FruitSysWeb.Models
 @using FruitSysWeb.Models.Solar
 @using FruitSysWeb.Services.Solar
+@using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.Extensions.Options
 @implements IDisposable
 @inject SolarLocalDbService SolarDb
@@ -13,31 +14,30 @@
 
 <PageTitle>Solarna elektrana — Odetta</PageTitle>
 
+<SectionContent SectionName="topbar-actions">
+    <nav class="sd-day-nav" aria-label="Navigacija kroz dane">
+        <button type="button" class="btn-sd-day" @onclick="PrethodniDan" disabled="@_ucitavanje">
+            ◀ Prethodni dan
+        </button>
+        <span class="sd-day-display">@_izabraniDatum.ToString("dd.MM.yyyy")</span>
+        <button type="button" class="btn-sd-day" @onclick="SledeciDan" disabled="@(_jeDanas || _ucitavanje)">
+            Sledeći dan ▶
+        </button>
+    </nav>
+    <span class="status-pill @(_livePolling && _jeDanas ? "" : "status-pill-offline")">
+        ● @(_livePolling && _jeDanas ? "Online" : "Lokalna baza")
+    </span>
+    @if (_poslednji != null)
+    {
+        <span class="solar-last-read">
+            Poslednje očitavanje: <strong>@_poslednji.Timestamp.ToLocalTime():HH:mm</strong>
+        </span>
+    }
+    <button type="button" class="btn-solar-refresh" @onclick="OsveziPodatke" disabled="@_ucitavanje">Osveži</button>
+    <a class="btn-solar-link" href="/solar-pregled">Detaljni pregled →</a>
+</SectionContent>
+
 <div class="solar-dashboard solar-hala-page">
-    <header class="solar-header">
-        <div class="solar-header-right">
-            <nav class="sd-day-nav" aria-label="Navigacija kroz dane">
-                <button type="button" class="btn-sd-day" @onclick="PrethodniDan" disabled="@_ucitavanje">
-                    ◀ Prethodni dan
-                </button>
-                <span class="sd-day-display">@_izabraniDatum.ToString("dd.MM.yyyy")</span>
-                <button type="button" class="btn-sd-day" @onclick="SledeciDan" disabled="@(_jeDanas || _ucitavanje)">
-                    Sledeći dan ▶
-                </button>
-            </nav>
-            <span class="status-pill @(_livePolling && _jeDanas ? "" : "status-pill-offline")">
-                ● @(_livePolling && _jeDanas ? "Online" : "Lokalna baza")
-            </span>
-            @if (_poslednji != null)
-            {
-                <span class="solar-last-read">
-                    Poslednje očitavanje: <strong>@_poslednji.Timestamp.ToLocalTime():HH:mm</strong>
-                </span>
-            }
-            <button type="button" class="btn-solar-refresh" @onclick="OsveziPodatke" disabled="@_ucitavanje">Osveži</button>
-            <a class="btn-solar-link" href="/solar-pregled">Detaljni pregled →</a>
-        </div>
-    </header>
 
     @if (!_hasDbData && !_livePolling)
     {
@@ -148,6 +148,11 @@
             <section class="sd-main-chart">
                 <div class="sd-chart-head">
                     <h2 class="solar-chart-title">Proizvodnja, potrošnja i mreža tokom dana</h2>
+                    <div class="sd-chart-legend">
+                        <span class="sd-legend-item"><i class="sd-legend-dot" style="background:var(--solar-yellow)"></i>Sunce</span>
+                        <span class="sd-legend-item"><i class="sd-legend-dot" style="background:var(--electric-blue)"></i>Hala / Fabrika</span>
+                        <span class="sd-legend-item"><i class="sd-legend-dot" style="background:var(--red)"></i>Iz mreže</span>
+                    </div>
                 </div>
                 @if (_istorijaDanas.Count == 0)
                 {
@@ -189,7 +194,7 @@
                         <div class="sd-advice-kpi-label">Pokrivenost</div>
                     </div>
                     <div class="sd-advice-kpi-item">
-                        <div class="sd-advice-kpi-num sd-advice-kpi-num-big">@gridKw.ToString("N0")<span class="sd-advice-kpi-unit"> kW</span></div>
+                        <div class="sd-advice-kpi-num sd-advice-kpi-num-big sd-advice-kpi-num-red">@gridKw.ToString("N0")<span class="sd-advice-kpi-unit"> kW</span></div>
                         <div class="sd-advice-kpi-label">Mreža sada</div>
                     </div>
                 </div>
@@ -562,8 +567,7 @@
         };
         options.Grid!.BorderColor = "rgba(148, 163, 184, 0.12)";
         options.Grid.StrokeDashArray = 4;
-        options.Legend!.HorizontalAlign = Align.Right;
-        options.Legend.Labels = new LegendLabels { Colors = "#cbd5e1" };
+        options.Legend!.Show = false;
         options.Xaxis!.Labels!.Style = new AxisLabelStyle { Colors = "#8ea3ba" };
 
         if (period.Start.HasValue && period.End.HasValue)

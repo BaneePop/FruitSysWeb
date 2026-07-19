@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @using FruitSysWeb.Shared
 @using FruitSysWeb.Components.Shared
+@using Microsoft.AspNetCore.Components.Sections
 
 <!-- Skip to main content link for keyboard accessibility -->
 <a href="#main-content" class="skip-link">Preskoči na glavni sadržaj</a>
@@ -16,6 +17,7 @@
                 <i class="bi bi-list" aria-hidden="true"></i>
             </button>
             <span class="app-topbar-title">Odetta Solar</span>
+            <SectionOutlet SectionName="topbar-actions" />
         </header>
 
         <main class="app-main" id="main-content">

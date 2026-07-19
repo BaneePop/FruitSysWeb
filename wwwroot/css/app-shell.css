@@ -183,6 +183,7 @@
     margin: var(--shell-gap) var(--shell-gap) 0;
     display: flex;
     align-items: center;
+    flex-wrap: nowrap;
     gap: 10px;
     padding: 0 14px;
     border-radius: 14px;
@@ -190,6 +191,13 @@
     background: rgba(10, 19, 34, 0.72);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+}
+
+.app-topbar > * {
+    flex-shrink: 0;
 }
 
 .app-hamb {
