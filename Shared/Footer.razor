@@ -1,41 +1,25 @@
-<footer class="footer mt-auto py-3 bg-dark text-white">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-6 mb-3 mb-md-0">
-                <h5>Odetta Solar</h5>
-                <p class="text-muted small">
-                    Praćenje rada i korišćenja solarne elektrane.
-                </p>
-            </div>
-            <div class="col-md-6">
-                <h6>Informacije</h6>
-                <p class="text-muted small mb-1">
-                    <i class="bi bi-calendar3 me-2" aria-hidden="true"></i>@DateTime.Now.Year
-                </p>
-                <p class="text-muted small mb-1">
-                    <i class="bi bi-clock me-2" aria-hidden="true"></i>Verzija 1.0.0
-                </p>
-            </div>
-        </div>
-        <hr class="my-3 bg-secondary" />
-        <div class="row">
-            <div class="col-12 text-center">
-                <p class="text-muted small mb-0">
-                    &copy; @DateTime.Now.Year Odetta Solar. Sva prava zadržana.
-                </p>
-            </div>
-        </div>
-    </div>
+<footer class="solar-footer">
+    <span>Odetta Solar</span>
+    <span class="solar-footer-sep">·</span>
+    <span>v1.0.0</span>
+    <span class="solar-footer-sep">·</span>
+    <span>&copy; @DateTime.Now.Year</span>
 </footer>
 
 <style>
-    .footer {
-        margin-top: 60px;
-        border-top: 1px solid #dee2e6;
+    .solar-footer {
+        margin-top: auto;
+        padding: 14px 24px;
+        border-top: 1px solid var(--border-soft, rgba(148, 163, 184, 0.18));
+        background: var(--bg-main, #07111f);
+        color: var(--text-soft, #64748b);
+        font-size: 12px;
+        letter-spacing: 0.02em;
+        text-align: center;
     }
 
-    .footer a:hover {
-        color: #fff !important;
-        text-decoration: underline !important;
+    .solar-footer-sep {
+        margin: 0 8px;
+        opacity: 0.5;
     }
 </style>

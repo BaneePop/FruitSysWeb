@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @using FruitSysWeb.Shared
 @using FruitSysWeb.Components.Shared
 
@@ -7,14 +7,23 @@
 
 <InactivityHandler />
 
-<div class="d-flex flex-column min-vh-100">
+<div class="app-shell" id="appShell">
     <NavMenu />
 
-    <main class="flex-grow-1">
-        @Body
-    </main>
+    <div class="app-content">
+        <header class="app-topbar">
+            <button type="button" class="app-hamb" onclick="odettaSidebar.toggle()" aria-label="Meni">
+                <i class="bi bi-list" aria-hidden="true"></i>
+            </button>
+            <span class="app-topbar-title">Odetta Solar</span>
+        </header>
 
-    <Footer />
+        <main class="app-main" id="main-content">
+            @Body
+        </main>
+
+        <Footer />
+    </div>
 </div>
 
 <style>

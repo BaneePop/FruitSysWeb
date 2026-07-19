@@ -1,0 +1,304 @@
+/* App shell — sidebar navigacija (dark modern glass), po uzoru na
+   Dokumentacija/UI/Inspiracija/04_sidebar_modern_glass.html */
+
+:root {
+    --shell-sidebar-width: 248px;
+    --shell-sidebar-collapsed-width: 76px;
+    --shell-topbar-height: 56px;
+    --shell-gap: 10px;
+}
+
+.app-shell {
+    min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+
+.app-sidebar {
+    position: fixed;
+    top: var(--shell-gap);
+    left: var(--shell-gap);
+    bottom: var(--shell-gap);
+    width: var(--shell-sidebar-width);
+    display: flex;
+    flex-direction: column;
+    border-radius: 18px;
+    border: 1px solid var(--border-soft);
+    background: rgba(13, 23, 39, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+    z-index: 1030;
+    transition: width 0.2s ease, transform 0.2s ease;
+    overflow: hidden;
+}
+
+.app-sidebar-brand {
+    height: var(--shell-topbar-height);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border-soft);
+    flex-shrink: 0;
+}
+
+.app-sidebar-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.22), rgba(56, 189, 248, 0.22));
+    border: 1px solid var(--border-soft);
+    color: var(--solar-yellow);
+    font-size: 16px;
+}
+
+.app-sidebar-brandtxt {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.app-sidebar-brandtxt strong {
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.app-sidebar-brandtxt span {
+    color: var(--text-soft);
+    font-size: 11px;
+}
+
+.app-sidebar-nav {
+    flex: 1;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow-y: auto;
+}
+
+.app-navlink {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: 10px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+
+.app-navlink:hover {
+    background: rgba(148, 163, 184, 0.08);
+    color: var(--text-main);
+    text-decoration: none;
+}
+
+.app-navlink.active {
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.16), rgba(56, 189, 248, 0.14));
+    border: 1px solid rgba(250, 204, 21, 0.28);
+    color: var(--text-main);
+}
+
+.app-navlink-icon {
+    flex-shrink: 0;
+    font-size: 15px;
+    width: 18px;
+    text-align: center;
+}
+
+.app-navlink-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-sidebar-foot {
+    border-top: 1px solid var(--border-soft);
+    padding: 10px 12px;
+    flex-shrink: 0;
+}
+
+.app-sidebar-user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.app-sidebar-user-name {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-sidebar-logout {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border-soft);
+    background: rgba(148, 163, 184, 0.06);
+    color: var(--text-muted);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.app-sidebar-logout:hover {
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── Content + topbar ── */
+
+.app-content {
+    margin-left: calc(var(--shell-sidebar-width) + var(--shell-gap) * 2);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.2s ease;
+}
+
+.app-topbar {
+    position: sticky;
+    top: var(--shell-gap);
+    z-index: 1020;
+    height: var(--shell-topbar-height);
+    margin: var(--shell-gap) var(--shell-gap) 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border-soft);
+    background: rgba(10, 19, 34, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.app-hamb {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid var(--border-soft);
+    background: rgba(148, 163, 184, 0.08);
+    color: var(--text-main);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 15px;
+}
+
+.app-hamb:hover {
+    background: rgba(148, 163, 184, 0.14);
+}
+
+.app-topbar-title {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.app-main {
+    flex: 1;
+}
+
+/* ── Collapsed (desktop, icon-only) ── */
+
+.app-shell.collapsed .app-sidebar {
+    width: var(--shell-sidebar-collapsed-width);
+}
+
+.app-shell.collapsed .app-content {
+    margin-left: calc(var(--shell-sidebar-collapsed-width) + var(--shell-gap) * 2);
+}
+
+.app-shell.collapsed .app-sidebar-brandtxt,
+.app-shell.collapsed .app-navlink-label,
+.app-shell.collapsed .app-sidebar-user-name {
+    display: none;
+}
+
+.app-shell.collapsed .app-sidebar-brand {
+    justify-content: center;
+    padding: 0;
+}
+
+.app-shell.collapsed .app-navlink {
+    justify-content: center;
+    padding: 0;
+}
+
+.app-shell.collapsed .app-sidebar-user {
+    justify-content: center;
+}
+
+/* ── Mobile: sidebar postaje off-canvas drawer ── */
+
+.app-sidebar-overlay {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .app-sidebar {
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 268px;
+        border-radius: 0 18px 18px 0;
+        transform: translateX(-110%);
+    }
+
+    .app-shell.mobile-open .app-sidebar {
+        transform: translateX(0);
+    }
+
+    .app-shell.mobile-open .app-sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 14, 0.55);
+        z-index: 1025;
+    }
+
+    .app-content {
+        margin-left: 0;
+    }
+
+    .app-topbar {
+        border-radius: 0;
+        margin: 0;
+        top: 0;
+    }
+
+    /* Na mobilnom "collapsed" ne važi — uvek pun sidebar kad je otvoren */
+    .app-shell.collapsed .app-sidebar {
+        width: 268px;
+    }
+
+    .app-shell.collapsed .app-sidebar-brandtxt,
+    .app-shell.collapsed .app-navlink-label,
+    .app-shell.collapsed .app-sidebar-user-name {
+        display: flex;
+    }
+
+    .app-shell.collapsed .app-navlink-label {
+        display: inline;
+    }
+}

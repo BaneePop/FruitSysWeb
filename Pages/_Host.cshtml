@@ -31,10 +31,7 @@
     
     <!-- ApexCharts CSS -->
     <link href="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.css" rel="stylesheet">
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <!-- Custom CSS - VAŽAN REDOSLED! -->
     <link href="css/site.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
@@ -45,6 +42,7 @@
     <link href="css/container-fluid-fix.css" rel="stylesheet" /> <!-- 🔥 CONTAINER-FLUID FIX - NAJJAČI! -->
     <link href="css/solar-tokens.css" rel="stylesheet" /> <!-- ☀️ Solar design tokeni -->
     <link href="css/solar.css" rel="stylesheet" /> <!-- ☀️ Solar modul -->
+    <link href="css/app-shell.css" rel="stylesheet" /> <!-- 🧭 Sidebar shell (najjači, ide poslednji) -->
 </head>
 <body>
     <!-- KLJUČNA IZMENA: Server umesto ServerPrerendered -->
@@ -71,168 +69,7 @@
     <!-- Blazor Script -->
     <script src="_framework/blazor.server.js"></script>
 
-    <!-- Chart.js Interop for Dark Theme -->
-    <script>
-        // Chart.js Interop for Blazor
-        window.ChartJsInterop = {
-            chartInstances: {},
-            
-            updateChart: function (canvasId, config) {
-                try {
-                    if (this.chartInstances[canvasId]) {
-                        this.chartInstances[canvasId].destroy();
-                    }
-
-                    const canvas = document.getElementById(canvasId);
-                    if (!canvas) {
-                        console.error('Canvas element not found:', canvasId);
-                        return;
-                    }
-
-                    const ctx = canvas.getContext('2d');
-                    
-                    // 🌙 Primeni dark theme boje na chart config
-                    if (config.options) {
-                        config.options.plugins = config.options.plugins || {};
-                        config.options.plugins.legend = config.options.plugins.legend || {};
-                        config.options.plugins.legend.labels = {
-                            color: '#e5e7eb',
-                            font: {
-                                family: 'Inter',
-                                size: 12
-                            }
-                        };
-                        
-                        config.options.scales = config.options.scales || {};
-                        if (config.options.scales.x) {
-                            config.options.scales.x.ticks = {
-                                color: '#9ca3af',
-                                font: {
-                                    family: 'Inter'
-                                }
-                            };
-                            config.options.scales.x.grid = {
-                                color: '#374151'
-                            };
-                        }
-                        if (config.options.scales.y) {
-                            config.options.scales.y.ticks = {
-                                color: '#9ca3af',
-                                font: {
-                                    family: 'Inter'
-                                }
-                            };
-                            config.options.scales.y.grid = {
-                                color: '#374151'
-                            };
-                        }
-                    }
-                    
-                    this.chartInstances[canvasId] = new Chart(ctx, config);
-                    
-                    console.log('Chart updated successfully:', canvasId);
-                } catch (error) {
-                    console.error('Error updating chart:', error);
-                }
-            },
-            
-            destroyChart: function (canvasId) {
-                try {
-                    if (this.chartInstances[canvasId]) {
-                        this.chartInstances[canvasId].destroy();
-                        delete this.chartInstances[canvasId];
-                        console.log('Chart destroyed successfully:', canvasId);
-                    }
-                } catch (error) {
-                    console.error('Error destroying chart:', error);
-                }
-            }
-        };
-
-        // Clean up on page unload
-        window.addEventListener('beforeunload', function() {
-            Object.keys(window.ChartJsInterop.chartInstances).forEach(canvasId => {
-                window.ChartJsInterop.destroyChart(canvasId);
-            });
-        });
-        
-        // Legacy support funkcije
-        window.initializeChart = function (canvasId, config) {
-            return window.ChartJsInterop?.updateChart(canvasId, config);
-        };
-
-        window.updateChart = function (canvasId, config) {
-            return window.ChartJsInterop?.updateChart(canvasId, config);
-        };
-
-        window.destroyChart = function (canvasId) {
-            return window.ChartJsInterop?.destroyChart(canvasId);
-        };
-
-        // Dodatne helper funkcije za debugging
-        window.chartDebug = {
-            listCharts: function() {
-                if (window.ChartJsInterop?.chartInstances) {
-                    console.log('Active charts:', Object.keys(window.ChartJsInterop.chartInstances));
-                    return Object.keys(window.ChartJsInterop.chartInstances);
-                }
-                return [];
-            },
-            
-            getChart: function(canvasId) {
-                return window.ChartJsInterop?.chartInstances?.[canvasId];
-            },
-            
-            destroyAllCharts: function() {
-                if (window.ChartJsInterop?.chartInstances) {
-                    Object.keys(window.ChartJsInterop.chartInstances).forEach(canvasId => {
-                        window.ChartJsInterop.destroyChart(canvasId);
-                    });
-                    console.log('All charts destroyed');
-                }
-            }
-        };
-
-        console.log('🌙 Dark Theme Chart.js support loaded');
-    </script>
-
-    <!-- Download File Script -->
-    <script>
-        // Alias koji koriste stranice (npr. Reklamacije)
-        function downloadFileFromBase64(base64Data, fileName, mimeType) {
-            return downloadFile(base64Data, fileName, mimeType);
-        }
-
-        function downloadFile(base64Data, fileName, mimeType) {
-            try {
-                const byteCharacters = atob(base64Data);
-                const byteNumbers = new Array(byteCharacters.length);
-                
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                
-                const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], { type: mimeType });
-                
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                
-                link.href = url;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                }, 100);
-                
-            } catch (error) {
-                console.error('Download error:', error);
-                alert('Došlo je do greške pri preuzimanju fajla: ' + error.message);
-            }
-        }
-    </script>
+    <!-- App shell (sidebar collapse/mobile toggle) -->
+    <script src="js/app-shell.js"></script>
 </body>
 </html>
