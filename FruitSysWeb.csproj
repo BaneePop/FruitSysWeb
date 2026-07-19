@@ -5,6 +5,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Lokalna arhiva i alati — ne ulaze u build -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);_arhiva/**;Tools/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,7 +32,6 @@
     <None Update="Logo.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Compile Remove="Tools/**" />
   </ItemGroup>
 
 </Project>

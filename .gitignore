@@ -67,6 +67,9 @@ implementacija_*.md
 
 .fake
 
+# Lokalna arhiva (ne build, ne commit novih fajlova)
+_arhiva/
+
 # Publish folder (deployment artifacts)
 publish/
 publish_output/
